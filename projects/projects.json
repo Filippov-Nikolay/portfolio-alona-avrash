@@ -1,0 +1,336 @@
+[
+    {
+        "id": 0,
+        "image": [],
+        "createdAt": "2026-08-07T00:00:00.000Z",
+        "name": "ESENCHA",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#F7BAE3",
+            "accentColor": "#3A1B16",
+            "buttonBackground": "#012D14",
+            "buttonTextColor": "#F7BAE3"
+        }
+    },
+    {
+        "id": 1,
+        "image": [],
+        "createdAt": "2026-07-06T00:00:00.000Z",
+        "name": "CRUSTY",
+        "categories": [
+            "branding",
+            "logo"
+        ],
+        "hover": {
+            "background": "#F9EAAD",
+            "accentColor": "#3E2517",
+            "buttonBackground": "#B6D3FE",
+            "buttonTextColor": "#3E2517"
+        }
+    },
+    {
+        "id": 2,
+        "image": [],
+        "createdAt": "2026-05-30T00:00:00.000Z",
+        "name": "LOGOFOLIO VOL.03",
+        "categories": [
+            "logo"
+        ],
+        "hover": {
+            "background": "#F4F6A6",
+            "accentColor": "#020202",
+            "buttonBackground": "#000417",
+            "buttonTextColor": "#F4F6A6"
+        }
+    },
+    {
+        "id": 3,
+        "image": [],
+        "createdAt": "2026-05-20T00:00:00.000Z",
+        "name": "OLVA",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#B9C42A",
+            "accentColor": "#102208",
+            "buttonBackground": "#243512",
+            "buttonTextColor": "#B9C42A"
+        }
+    },
+    {
+        "id": 4,
+        "image": [],
+        "createdAt": "2026-02-18T00:00:00.000Z",
+        "name": "BiteBox",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#E11111",
+            "accentColor": "#FFEDD7",
+            "buttonBackground": "#000417",
+            "buttonTextColor": "#FFEDD7"
+        }
+    },
+    {
+        "id": 5,
+        "image": [],
+        "createdAt": "2025-10-03T00:00:00.000Z",
+        "name": "Brunzo",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#F7F7F7",
+            "accentColor": "#000417",
+            "buttonBackground": "#000417",
+            "buttonTextColor": "#F7F7F7"
+        }
+    },
+    {
+        "id": 6,
+        "image": [],
+        "createdAt": "2025-04-27T00:00:00.000Z",
+        "name": "GlowMed",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#152C42",
+            "accentColor": "#CFDBDB",
+            "buttonBackground": "#000417",
+            "buttonTextColor": "#CFDBDB"
+        }
+    },
+    {
+        "id": 7,
+        "image": [],
+        "createdAt": "2024-10-05T00:00:00.000Z",
+        "name": "Florelle",
+        "categories": [
+            "ui-ux",
+            "branding",
+            "logo"
+        ],
+        "hover": {
+            "background": "#CFC8BA",
+            "accentColor": "#0E0E0E",
+            "buttonBackground": "#000417",
+            "buttonTextColor": "#CFC8BA"
+        }
+    },
+    {
+        "id": 8,
+        "image": [],
+        "createdAt": "2024-08-06T00:00:00.000Z",
+        "name": "Rosso",
+        "categories": [
+            "ui-ux",
+            "branding",
+            "logo",
+            "web-design"
+        ],
+        "hover": {
+            "background": "#D80000",
+            "accentColor": "#FFF2DF",
+            "buttonBackground": "#000417",
+            "buttonTextColor": "#FFF2DF"
+        }
+    },
+    {
+        "id": 9,
+        "image": [],
+        "createdAt": "2024-02-02T00:00:00.000Z",
+        "name": "GASIMI WINE",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#580500",
+            "accentColor": "#E0CFBA",
+            "buttonBackground": "#000417",
+            "buttonTextColor": "#E0CFBA"
+        }
+    },
+    {
+        "id": 10,
+        "image": [],
+        "createdAt": "2024-12-04T00:00:00.000Z",
+        "name": "MIRAGE",
+        "categories": [
+            "branding",
+            "logo"
+        ],
+        "hover": {
+            "background": "#EECB0F",
+            "accentColor": "#D32F47",
+            "buttonBackground": "#DF1F34",
+            "buttonTextColor": "#EECB0F"
+        }
+    },
+    {
+        "id": 11,
+        "image": [],
+        "createdAt": "2025-01-05T00:00:00.000Z",
+        "name": "Patel Science",
+        "categories": [
+            "branding",
+            "logo",
+            "web-design"
+        ],
+        "hover": {
+            "background": "#2B30A3",
+            "accentColor": "#FFFFFF",
+            "buttonBackground": "#000417",
+            "buttonTextColor": "#FFFFFF"
+        }
+    },
+    {
+        "id": 12,
+        "image": [],
+        "createdAt": "2024-07-12T00:00:00.000Z",
+        "name": "Mara Pasta",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#F3EAE9",
+            "accentColor": "#E74527",
+            "buttonBackground": "#EECB0F",
+            "buttonTextColor": "#E74527"
+        }
+    },
+    {
+        "id": 13,
+        "image": [],
+        "createdAt": "2024-05-26T00:00:00.000Z",
+        "name": "LogoLove",
+        "categories": [
+            "ui-ux",
+            "web-design"
+        ],
+        "hover": {
+            "background": "#433B9C",
+            "accentColor": "#FCBFFF",
+            "buttonBackground": "#49428D",
+            "buttonTextColor": "#FCBFFF"
+        }
+    },
+    {
+        "id": 14,
+        "image": [],
+        "createdAt": "2024-02-20T00:00:00.000Z",
+        "name": "RASH sport",
+        "categories": [
+            "branding",
+            "logo"
+        ],
+        "hover": {
+            "background": "#D04D2B",
+            "accentColor": "#FFEBE5",
+            "buttonBackground": "#000417",
+            "buttonTextColor": "#FFEBE5"
+        }
+    },
+    {
+        "id": 15,
+        "image": [],
+        "createdAt": "2024-02-15T00:00:00.000Z",
+        "name": "MAIR cosmetic",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#D8CBEC",
+            "accentColor": "#1B1C2C",
+            "buttonBackground": "#7156AD",
+            "buttonTextColor": "#E7E9FF"
+        }
+    },
+    {
+        "id": 16,
+        "image": [],
+        "createdAt": "2024-09-23T00:00:00.000Z",
+        "name": "FizzUp Craft lemonade package",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#F8D310",
+            "accentColor": "#C62526",
+            "buttonBackground": "#C62526",
+            "buttonTextColor": "#F8D310"
+        }
+    },
+    {
+        "id": 17,
+        "image": [],
+        "createdAt": "2024-01-26T00:00:00.000Z",
+        "name": "BROWNIE bakery",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#FFD5DB",
+            "accentColor": "#FF4513",
+            "buttonBackground": "#0960AD",
+            "buttonTextColor": "#FFD5DB"
+        }
+    },
+    {
+        "id": 18,
+        "image": [],
+        "createdAt": "2024-01-19T00:00:00.000Z",
+        "name": "PALUM clothing brand",
+        "categories": [
+            "branding",
+            "logo"
+        ],
+        "hover": {
+            "background": "#7156AD",
+            "accentColor": "#E4E987",
+            "buttonBackground": "#E4E987",
+            "buttonTextColor": "#7156AD"
+        }
+    },
+    {
+        "id": 19,
+        "image": [],
+        "createdAt": "2024-01-15T00:00:00.000Z",
+        "name": "DOZA coffee",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#F0C8C8",
+            "accentColor": "#E74527",
+            "buttonBackground": "#EB5425",
+            "buttonTextColor": "#F0C8C8"
+        }
+    }
+]

@@ -1,0 +1,120 @@
+@use "@/shared/styles/mixins" as *;
+
+.wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+// =============================================
+// Trigger
+// =============================================
+
+.trigger {
+    @include flex-center;
+
+    gap: 10px;
+    padding: 3px 8px;
+    border: 1px solid var(--color-border);
+    // No border-radius here — set by each usage context to avoid CSS Modules
+    // order-dependent overrides (e.g. langMobileTrigger needs radius-sm, not radius-v-sm)
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    color: var(--color-text-primary);
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    white-space: nowrap;
+    appearance: none;
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    @include transition(border-color, background);
+    @include focus-ring;
+}
+
+.triggerOpen {
+    border-color: rgba(234, 253, 39, 0.4);
+    background: rgba(234, 253, 39, 0.06);
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    box-shadow: 0 0 6px rgba(234, 253, 39, 0.8);
+    flex-shrink: 0;
+    transition: transform var(--transition-fast);
+}
+
+.dotOpen {
+    transform: scale(1.4);
+}
+
+// =============================================
+// Dropdown
+// =============================================
+
+.dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 100;
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    min-width: 100%;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+// =============================================
+// Options
+// =============================================
+
+.option {
+    display: block;
+    width: 100%;
+    padding: 6px 14px;
+    border: none;
+    border-radius: var(--radius-v-sm);
+    background: transparent;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    letter-spacing: 0.08em;
+    color: var(--color-text-secondary);
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+    @include transition(background, color);
+
+    @include can-hover {
+        &:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--color-text-primary);
+        }
+    }
+
+    &:active {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--color-text-primary);
+    }
+}
+
+.optionActive {
+    color: var(--color-primary);
+
+    @include can-hover {
+        &:hover {
+            background: rgba(234, 253, 39, 0.08);
+            color: var(--color-primary);
+        }
+    }
+
+    &:active {
+        background: rgba(234, 253, 39, 0.08);
+    }
+}

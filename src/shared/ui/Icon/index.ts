@@ -1,0 +1,16 @@
+export { default as ArrowIcon } from "./arrow.svg";
+export { default as GitHubIcon } from "./github-logo.svg";
+export { default as TelegramIcon } from "./telegram-logo.svg";
+export { default as LinkedInIcon } from "./linkedin-logo.svg";
+export { default as InstagramIcon } from "./instagram-logo.svg";
+export { default as UserIcon } from "./User.svg";
+export { default as ProjectIcon } from "./Code.svg";
+export { default as ContactIcon } from "./Mail.svg";
+export { default as CodeV2Icon } from "./CodeV2.svg";
+export { default as DatabaseIcon } from "./Database.svg";
+export { default as MonitorIcon } from "./Monitor.svg";
+export { default as PromptIcon } from "./Prompt.svg";
+export { default as StackIcon } from "./Stack.svg";
+export { default as ExternalLinkIcon } from "./externalLink.svg";
+export { default as FolderIcon } from "./Folders.svg";
+export { default as AiIDEIcon } from "./AiIDE.svg";

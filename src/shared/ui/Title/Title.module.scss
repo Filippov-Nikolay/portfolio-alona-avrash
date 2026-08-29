@@ -1,0 +1,25 @@
+.title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+}
+
+// === Sizes =============================================
+
+.xl {
+    font-size: clamp(48px, 6vw, 96px);
+}
+
+.lg {
+    font-size: clamp(36px, 4vw, 64px);
+}
+
+.md {
+    font-size: clamp(24px, 2.5vw, 40px);
+}
+
+.sm {
+    font-size: clamp(18px, 1.8vw, 24px);
+}

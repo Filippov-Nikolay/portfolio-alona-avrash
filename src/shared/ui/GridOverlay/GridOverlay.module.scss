@@ -1,0 +1,13 @@
+.grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+
+    background-image:
+        linear-gradient(var(--color-border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--color-border) 1px, transparent 1px);
+    background-size: 80px 80px;
+
+    // Fade to transparent at all edges; center shifted up so bottom fades before clip
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, black 35%, transparent 100%);
+}

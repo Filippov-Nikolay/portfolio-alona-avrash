@@ -1,5 +1,3 @@
-// Stats
-
 type StatItem = {
     id: number;
     value: string;

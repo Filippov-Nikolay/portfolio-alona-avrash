@@ -1,0 +1,121 @@
+@use "@/shared/styles/mixins" as *;
+
+.footer {
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-xl) 0 var(--space-lg);
+}
+
+.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding-bottom: var(--space-lg);
+
+    @include respond-to("tablet") {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-md);
+    }
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-v-sm);
+    background: var(--color-primary);
+    color: var(--color-text-primary-reverse);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.name {
+    font-family: var(--font-title-accent);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    font-size: var(--text-sm);
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    @include respond-to("tablet") {
+        flex-wrap: wrap;
+        gap: var(--space-sm) var(--space-md);
+    }
+
+    a {
+        font-size: var(--text-sm);
+        color: var(--color-text-secondary);
+        text-decoration: none;
+
+        @include can-hover {
+            &:hover {
+                color: var(--color-text-primary);
+            }
+        }
+
+        @include focus-ring;
+    }
+}
+
+.social {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.socialLink {
+    @include flex-center;
+
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-v-sm);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+
+    @include focus-ring;
+
+    @include can-hover {
+        &:hover {
+            color: var(--color-text-primary);
+            border-color: var(--color-primary);
+        }
+    }
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+.bottom {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-lg);
+}
+
+.copyright {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+}

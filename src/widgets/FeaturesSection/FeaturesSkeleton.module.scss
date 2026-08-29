@@ -1,0 +1,36 @@
+@use "@/shared/styles/mixins" as *;
+
+.iconBox {
+    border: 1px solid rgba(234, 253, 39, 0.2);
+    flex-shrink: 0;
+}
+
+.titleBar {
+    flex: 1;
+    min-width: 0;
+}
+
+.textLines {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tagRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.skillItems {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.skillItem {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}

@@ -1,0 +1,190 @@
+@use "@/shared/styles/mixins" as *;
+
+// === Section =============================================
+
+.section {
+    --_pad-top: 40px;
+    --_pad-bottom: 120px;
+    // Direct values guard against CSS-variable cascade failures in production
+    // (Section.module.scss uses var(--_pad-top, --section-spacing: 160px);
+    // if the variable resolves to nothing, padding would jump to 160px).
+    padding-block-start: 40px;
+    padding-block-end: 120px;
+}
+
+// === Header ==============================================
+
+.header {
+    margin-bottom: 52px;
+
+    @include respond-to("tablet") {
+        margin-bottom: 36px;
+    }
+}
+
+// === Headline display ====================================
+
+// Large split headline: first word left + tagline below, second word right.
+.headlineBlock {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 48px;
+
+    @include respond-to("tablet") {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        margin-bottom: 36px;
+    }
+}
+
+.headlineLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.headlineStart {
+    font-family: var(--font-mono);
+    font-size: clamp(52px, 9vw, 130px);
+    font-weight: 800;
+    line-height: 0.88;
+    letter-spacing: -0.04em;
+    color: var(--color-text-primary);
+    will-change: transform, filter;
+    backface-visibility: hidden;
+
+    @include respond-to("mobile") {
+        font-size: clamp(40px, 12vw, 64px);
+    }
+}
+
+.tagline {
+    font-family: var(--font-mono);
+    font-size: clamp(11px, 1.1vw, 16px);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    will-change: transform, filter;
+    backface-visibility: hidden;
+
+    @include respond-to("tablet") {
+        font-size: 11px;
+        margin-bottom: 12px;
+    }
+}
+
+.headlineEnd {
+    font-family: var(--font-mono);
+    font-size: clamp(52px, 9vw, 130px);
+    font-weight: 800;
+    line-height: 0.88;
+    letter-spacing: -0.04em;
+    color: var(--color-primary);
+    text-align: right;
+    will-change: transform, filter;
+    backface-visibility: hidden;
+    // Subtle glow on the accented word
+    text-shadow:
+        0 0 80px rgba(234, 253, 39, 0.2),
+        0 0 160px rgba(234, 253, 39, 0.08);
+
+    @include respond-to("tablet") {
+        text-align: left;
+    }
+
+    @include respond-to("mobile") {
+        font-size: clamp(40px, 12vw, 64px);
+    }
+}
+
+// === Social links ========================================
+
+.linksRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-top: 28px;
+    border-top: 1px solid var(--color-border);
+    will-change: transform, filter;
+    backface-visibility: hidden;
+
+    @include respond-to("tablet") {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+}
+
+// Shared pill link token
+%pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 9999px;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-primary);
+    font-family: var(--font-mono);
+    text-decoration: none;
+    white-space: nowrap;
+    @include transition(border-color, background, color);
+
+    @include can-hover {
+        &:hover {
+            border-color: rgba(234, 253, 39, 0.4);
+            background: rgba(234, 253, 39, 0.06);
+            color: var(--color-primary);
+        }
+    }
+
+    @include focus-ring;
+}
+
+.githubLink {
+    @extend %pill;
+
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.socialList {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+
+    @include respond-to("mobile") {
+        gap: 6px;
+    }
+}
+
+.socialLink {
+    @extend %pill;
+
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.linkIcon {
+    flex-shrink: 0;
+
+    // Logo SVGs (GitHub, Telegram, LinkedIn, Instagram) have explicit
+    // fill="#hex" attributes on their paths. Override to currentColor.
+    // Stroke-based icons (Mail.svg) use stroke="currentColor" on the SVG
+    // root and have no explicit fill on paths — left untouched.
+    path[fill]:not([fill="none"]),
+    circle[fill]:not([fill="none"]),
+    rect[fill]:not([fill="none"]) {
+        fill: currentColor;
+    }
+}

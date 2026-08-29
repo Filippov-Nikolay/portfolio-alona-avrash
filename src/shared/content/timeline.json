@@ -1,0 +1,79 @@
+{
+    "i18n": {
+        "en": {
+            "title": "Timeline",
+            "subtitle": "A track record of shipped work — milestones, releases and key changes over time.",
+            "present": "Present"
+        },
+        "pl": {
+            "title": "Oś czasu",
+            "subtitle": "Historia rozwoju — kluczowe kamienie milowe, wydania i zmiany w czasie.",
+            "present": "Teraz"
+        }
+    },
+    "entries": [
+        {
+            "id": "foundation",
+            "title": "Foundation & Maintenance",
+            "color": "#7c3aed",
+            "icon": "stack",
+            "startDate": "JAN 2024",
+            "endDate": null,
+            "subtitle": {
+                "en": "Core template",
+                "pl": "Podstawowy szablon"
+            },
+            "meta": {
+                "en": "Ongoing",
+                "pl": "W trakcie"
+            },
+            "description": {
+                "en": "Continuous improvements to the core layout, theming and animation system based on real-world usage.",
+                "pl": "Ciągłe usprawnienia podstawowego layoutu, systemu motywów i animacji na podstawie rzeczywistego użycia."
+            },
+            "tags": ["Next.js", "React", "TypeScript"]
+        },
+        {
+            "id": "localization",
+            "title": "Localization & SEO",
+            "color": "#f97316",
+            "icon": "prompt",
+            "startDate": "JUN 2023",
+            "endDate": "DEC 2023",
+            "subtitle": {
+                "en": "i18n rollout",
+                "pl": "Wdrożenie i18n"
+            },
+            "meta": {
+                "en": "Feature release",
+                "pl": "Wydanie funkcji"
+            },
+            "description": {
+                "en": "Added full multi-language support with locale routing, localized metadata and structured data.",
+                "pl": "Dodano pełne wsparcie wielojęzyczności: routing localizacji, zlokalizowane metadane i dane strukturalne."
+            },
+            "tags": ["next-intl", "SEO", "i18n"]
+        },
+        {
+            "id": "prototype",
+            "title": "Initial Prototype",
+            "color": "#34d399",
+            "icon": "monitor",
+            "startDate": "AUG 2022",
+            "endDate": "MAY 2023",
+            "subtitle": {
+                "en": "First version",
+                "pl": "Pierwsza wersja"
+            },
+            "meta": {
+                "en": "Project kickoff",
+                "pl": "Start projektu"
+            },
+            "description": {
+                "en": "Built the first version of the responsive layout, component library and animation system.",
+                "pl": "Zbudowano pierwszą wersję responsywnego layoutu, biblioteki komponentów i systemu animacji."
+            },
+            "tags": ["React", "SCSS", "Framer Motion"]
+        }
+    ]
+}

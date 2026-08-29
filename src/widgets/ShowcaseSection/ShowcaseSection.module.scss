@@ -1,0 +1,344 @@
+@use "@/shared/styles/mixins" as *;
+
+// === Section =============================================
+
+.srOnly {
+    @include sr-only;
+}
+
+.section {
+    --_pad-top: 0px;
+    --_pad-bottom: 40px;
+}
+
+// === Carousel viewport (Embla root) ======================
+
+.viewport {
+    width: 100%;
+    overflow: hidden;
+    touch-action: pan-y pinch-zoom;
+    outline: none;
+    cursor: grab;
+
+    &:active {
+        cursor: grabbing;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 4px;
+        border-radius: var(--radius-sm);
+    }
+}
+
+.wheelDragging {
+    cursor: grabbing;
+}
+
+// === Track (Embla container) =============================
+
+.track {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    padding-top: 20px;
+    padding-bottom: 48px;
+    will-change: transform;
+    backface-visibility: hidden;
+}
+
+// === Card slot (Embla slide) ==============================
+
+.slot {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+// === Slide entrance animation ============================
+
+.slideEntrance {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease-out;
+}
+
+.slideVisible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.slideNoFade {
+    opacity: 1;
+    transition: none;
+}
+
+// === Scale + opacity wrapper ==============================
+// Transform applied per-frame via applyTweens() — no CSS transition here.
+// Fixed height makes all slides identical so scale tweens produce consistent
+// visual positions regardless of card content length.
+
+.slotInner {
+    transform-origin: center bottom;
+    height: 520px;
+    // Promote to compositor layer so transform/opacity changes bypass the
+    // main thread and paint on the GPU without triggering layout or paint.
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+
+    @include respond-to("mobile") {
+        height: 480px;
+    }
+}
+
+// === Hover lift wrapper ==================================
+
+.hoverWrap {
+    height: 100%;
+
+    @include can-hover {
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+        &:hover {
+            transform: translateY(-8px);
+        }
+
+        @include reduced-motion {
+            transition: none;
+
+            &:hover {
+                transform: none;
+            }
+        }
+    }
+}
+
+// === More Projects Card ==================================
+
+.moreCard {
+    position: relative;
+    width: 440px;
+    height: 100%;
+    flex-shrink: 0;
+    // Frosted glass
+    background: rgba(234, 253, 39, 0.05);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(234, 253, 39, 0.15);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    cursor: pointer;
+    transition:
+        background 0.35s ease,
+        border-color 0.35s ease,
+        box-shadow 0.35s ease;
+
+    // Radial purple ambient
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+            ellipse 80% 60% at 50% 50%,
+            rgba(234, 253, 39, 0.07) 0%,
+            transparent 70%
+        );
+        pointer-events: none;
+    }
+
+    &.moreCardActive {
+        background: rgba(234, 253, 39, 0.09);
+        border-color: rgba(234, 253, 39, 0.32);
+        // box-shadow: 0 0 60px -10px rgba(234, 253, 39, 0.25);
+    }
+
+    @include can-hover {
+        &:hover {
+            background: rgba(234, 253, 39, 0.09);
+            border-color: rgba(234, 253, 39, 0.32);
+            // box-shadow: 0 0 60px -10px rgba(234, 253, 39, 0.25);
+        }
+    }
+
+    @include respond-to("tablet") {
+        width: clamp(300px, 82vw, 400px);
+    }
+
+    @include respond-to("mobile") {
+        width: clamp(280px, 88vw, 340px);
+    }
+}
+
+// Subtle grid behind glass
+.moreGrid {
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(234, 253, 39, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(234, 253, 39, 0.04) 1px, transparent 1px);
+    background-size: 44px 44px;
+    pointer-events: none;
+}
+
+// Centered content column
+.moreInner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 36px;
+    padding: 40px 32px;
+    text-align: center;
+}
+
+// Animated bounce wrapper
+.moreArrowWrap {
+    animation: moreFloat 2.6s ease-in-out infinite;
+
+    @include reduced-motion {
+        animation: none;
+    }
+}
+
+@keyframes moreFloat {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(14px);
+    }
+}
+
+// Arrow circle button
+.moreArrowCircle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(234, 253, 39, 0.1);
+    border: 1px solid rgba(234, 253, 39, 0.28);
+    box-shadow:
+        0 0 32px rgba(234, 253, 39, 0.15),
+        inset 0 0 20px rgba(234, 253, 39, 0.06);
+    transition:
+        background 0.3s ease,
+        border-color 0.3s ease,
+        box-shadow 0.3s ease,
+        transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    @include can-hover {
+        .moreCard:hover & {
+            background: rgba(234, 253, 39, 0.2);
+            border-color: rgba(234, 253, 39, 0.5);
+            box-shadow:
+                0 0 48px rgba(234, 253, 39, 0.3),
+                inset 0 0 24px rgba(234, 253, 39, 0.1);
+            transform: scale(1.1);
+        }
+    }
+
+    .moreCardActive & {
+        background: rgba(234, 253, 39, 0.2);
+        border-color: rgba(234, 253, 39, 0.5);
+        box-shadow:
+            0 0 48px rgba(234, 253, 39, 0.3),
+            inset 0 0 24px rgba(234, 253, 39, 0.1);
+    }
+}
+
+// Arrow pointing down
+.moreArrowIcon {
+    transform: rotate(90deg);
+    color: var(--color-primary);
+
+    path {
+        fill: var(--color-primary);
+    }
+}
+
+// Text block
+.moreTextWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.moreTitle {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+    line-height: 1.25;
+}
+
+.moreSubtitle {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+    margin: 0;
+
+    @include line-clamp(2);
+}
+
+// === Dots ================================================
+
+.dots {
+    @include flex-center;
+    gap: 0;
+    margin-top: 8px;
+}
+
+.dot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+
+    &::after {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-border);
+        transition:
+            width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+            background 0.3s ease,
+            border-radius 0.35s ease;
+    }
+
+    @include can-hover {
+        &:hover:not(.dotActive)::after {
+            background: var(--color-text-secondary);
+        }
+    }
+
+    @include focus-ring;
+
+    @include reduced-motion {
+        &::after {
+            transition: none;
+        }
+    }
+}
+
+.dotActive {
+    &::after {
+        width: 24px;
+        border-radius: 4px;
+        background: var(--color-text-primary);
+    }
+}

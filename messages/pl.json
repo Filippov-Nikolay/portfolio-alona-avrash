@@ -1,0 +1,62 @@
+{
+    "nav": {
+        "services": "Usługi",
+        "showcase": "Prezentacja",
+        "contact": "Kontakt"
+    },
+    "hero": {
+        "line1": "Twórz coś",
+        "line2": "<accent>wyjątkowego</accent>.",
+        "ctaLabel": "Odkryj",
+        "github": "GitHub",
+        "telegram": "Telegram",
+        "linkedin": "LinkedIn",
+        "instagram": "Instagram"
+    },
+    "contact": {
+        "headlineStart": "Porozmawiajmy",
+        "headlineEnd": "Razem",
+        "tagline": "Skontaktuj się z nami",
+        "github": "GitHub",
+        "telegram": "Telegram",
+        "gmail": "Gmail",
+        "linkedin": "LinkedIn",
+        "instagram": "Instagram"
+    },
+    "footer": {
+        "rights": "Wszelkie prawa zastrzeżone."
+    },
+    "categories": {
+        "ui-ux": "UI/UX",
+        "branding": "Branding",
+        "logo": "Projektowanie logo",
+        "packaging": "Opakowania",
+        "web-design": "Projektowanie stron"
+    },
+    "showcase": {
+        "viewSource": "Zobacz projekt",
+        "more": "Więcej",
+        "moreDesc": "Przeglądaj całą kolekcję."
+    },
+    "gallery": {
+        "subtitle": "Branding, logo i opakowania — cała kolekcja.",
+        "featured": "WYRÓŻNIONY",
+        "primaryAction": "Zobacz projekt",
+        "secondaryAction": "Zobacz projekt",
+        "more": "Więcej",
+        "moreDesc": "Przeglądaj całą kolekcję.",
+        "viewSource": "Zobacz projekt"
+    },
+    "stats": {
+        "subtitle": "Freelancerskie projekty brandingowe, głównie realizowane przez Behance."
+    },
+    "reviews": {
+        "subtitle": "Co mówią klienci."
+    },
+    "services": {
+        "subtitle": "Co oferuję."
+    },
+    "seo": {
+        "description": "Identyfikacja marki, opakowania i projektowanie logo dla rozwijających się marek."
+    }
+}

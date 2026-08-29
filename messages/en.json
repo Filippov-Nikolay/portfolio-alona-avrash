@@ -1,0 +1,62 @@
+{
+    "nav": {
+        "services": "Services",
+        "showcase": "Showcase",
+        "contact": "Contact"
+    },
+    "hero": {
+        "line1": "Build something",
+        "line2": "<accent>remarkable</accent>.",
+        "ctaLabel": "Explore",
+        "github": "GitHub",
+        "telegram": "Telegram",
+        "linkedin": "LinkedIn",
+        "instagram": "Instagram"
+    },
+    "contact": {
+        "headlineStart": "Let's",
+        "headlineEnd": "Talk",
+        "tagline": "Get in touch",
+        "github": "GitHub",
+        "telegram": "Telegram",
+        "gmail": "Gmail",
+        "linkedin": "LinkedIn",
+        "instagram": "Instagram"
+    },
+    "footer": {
+        "rights": "All rights reserved."
+    },
+    "categories": {
+        "ui-ux": "UI/UX",
+        "branding": "Branding",
+        "logo": "Logo Design",
+        "packaging": "Packaging",
+        "web-design": "Web Design"
+    },
+    "showcase": {
+        "viewSource": "View project",
+        "more": "More",
+        "moreDesc": "Browse the full collection."
+    },
+    "gallery": {
+        "subtitle": "Branding, logo and packaging work — the full collection.",
+        "featured": "FEATURED",
+        "primaryAction": "View project",
+        "secondaryAction": "View project",
+        "more": "More",
+        "moreDesc": "Browse the full collection.",
+        "viewSource": "View project"
+    },
+    "stats": {
+        "subtitle": "Freelance brand design work, mostly delivered through Behance."
+    },
+    "reviews": {
+        "subtitle": "What clients say."
+    },
+    "services": {
+        "subtitle": "What I offer."
+    },
+    "seo": {
+        "description": "Brand identity, packaging and logo design for growing brands."
+    }
+}

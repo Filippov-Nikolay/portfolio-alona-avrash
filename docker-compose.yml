@@ -1,0 +1,9 @@
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_OUTPUT=standalone
+      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+    restart: unless-stopped

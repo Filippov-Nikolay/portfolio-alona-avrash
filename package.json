@@ -1,0 +1,66 @@
+{
+    "name": "landing-page-template",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "type-check": "tsc --noEmit",
+        "format": "prettier . --write",
+        "format:check": "prettier . --check",
+        "build:check": "cross-env NEXT_OUTPUT=standalone next build",
+        "prepare": "husky"
+    },
+    "lint-staged": {
+        "*.{js,ts,tsx}": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.scss": [
+            "prettier --write"
+        ]
+    },
+    "dependencies": {
+        "@gsap/react": "^2.1.2",
+        "@swc/helpers": "^0.5.23",
+        "@vercel/analytics": "^2.0.1",
+        "@vercel/speed-insights": "^2.0.0",
+        "clsx": "^2.1.1",
+        "embla-carousel-react": "^8.6.0",
+        "embla-carousel-wheel-gestures": "^8.1.0",
+        "framer-motion": "^12.38.0",
+        "gsap": "^3.15.0",
+        "next": "16.2.6",
+        "next-intl": "^4.12.0",
+        "react": "19.2.4",
+        "react-dom": "19.2.4",
+        "sass": "^1.99.0"
+    },
+    "engines": {
+        "node": ">=22"
+    },
+    "browserslist": [
+        "chrome >= 93",
+        "edge >= 93",
+        "firefox >= 92",
+        "safari >= 15.4",
+        "ios_saf >= 15.4",
+        "not dead"
+    ],
+    "devDependencies": {
+        "@svgr/webpack": "^8.1.0",
+        "@types/node": "^20.19.41",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "cross-env": "^10.1.0",
+        "eslint": "^9",
+        "eslint-config-next": "16.2.6",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.4.0",
+        "prettier": "^3.8.3",
+        "typescript": "^5"
+    }
+}

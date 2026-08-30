@@ -2,7 +2,8 @@
     "nav": {
         "services": "Services",
         "showcase": "Showcase",
-        "contact": "Contact"
+        "contact": "Contact",
+        "downloadCv": "Download CV"
     },
     "hero": {
         "line1": "Build something",

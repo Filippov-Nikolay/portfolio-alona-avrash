@@ -2,7 +2,8 @@
     "nav": {
         "services": "Usługi",
         "showcase": "Prezentacja",
-        "contact": "Kontakt"
+        "contact": "Kontakt",
+        "downloadCv": "Pobierz CV"
     },
     "hero": {
         "line1": "Twórz coś",

@@ -16,6 +16,8 @@ export const siteConfig = {
         telegram: "https://t.me/your-username",
         instagram: "https://instagram.com/",
         email: "mailto:hello@example.com",
+        // TODO: drop the real CV/resume PDF at this path.
+        cv: "/cv/alona-avrash-cv.pdf",
     },
 };
 

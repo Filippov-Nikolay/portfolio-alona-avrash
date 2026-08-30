@@ -1,5 +1,7 @@
 @use "@/shared/styles/mixins" as *;
 
+$header-scale: 0.8;
+
 // =============================================
 // Wrapper — прозрачная полоса на всю ширину
 // =============================================
@@ -10,9 +12,9 @@
     left: 0;
     right: 0;
     z-index: 50;
-    padding: 20px 0px;
+    padding: $header-scale * 20px 0px;
     pointer-events: none;
-    // Hides scrolling content above the pill while keeping the page background visible
+    // Hides scrolling content above the pills while keeping the page background visible
     background: linear-gradient(to bottom, var(--color-bg) 0%, transparent 100%);
 
     @include respond-to("mobile") {
@@ -22,68 +24,273 @@
 
 .main {
     display: flex;
-    gap: 15px;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: $header-scale * 12px;
+    pointer-events: none;
+
+    > * {
+        opacity: 0;
+        transform: translateY(-18px) scale(0.94);
+        transition:
+            opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+            transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        transition-delay: var(--pill-delay, 0ms);
+
+        @include reduced-motion {
+            transition: none;
+        }
+    }
+
+    &.mainReady > * {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 // =============================================
-// Inner — «пилюля» (pill) с glass-эффектом
+// Shared pill look — every direct child of .main
+// is its own rounded, glowing "pill" segment.
 // =============================================
 
-.inner {
-    @include flex-between;
-    // @include glass;
-
-    margin: 0 auto;
-    padding: 10px 10px;
-
-    width: 100%;
-
-    border-radius: var(--radius-sm);
-    // Возвращаем pointer-events только пилюле
+@mixin pill {
     pointer-events: all;
-    background: var(--color-bg);
-
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-btn);
     box-shadow:
-        0px 0px 30px 0px rgba(168, 85, 247, 0.3),
+        0px 0px 30px 0px rgba(234, 253, 39, 0.18),
         inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
 }
 
-.inner:last-child {
-    padding: 5px;
+// =============================================
+// Logo pill
+// =============================================
 
-    max-width: 58px;
-    max-height: 60px;
+.logoPill {
+    @include pill;
+    @include flex-column;
 
-    & .btnThemeToggle {
-        width: 100%;
-        height: 100%;
+    justify-content: center;
+    gap: 2px;
+    padding-block: $header-scale * 16px;
+    padding-right: $header-scale * 32px;
 
-        @include can-hover {
-            &:hover {
-                border-radius: var(--radius-sm);
-            }
-        }
+    padding-left: max(
+        #{$header-scale * 20px},
+        calc((100vw - var(--container-width)) / 2 + #{$header-scale * 20px})
+    );
+
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    text-decoration: none;
+    flex-shrink: 0;
+
+    --stagger-reveal-color: var(--color-text-primary-reverse);
+
+    transition-property: opacity, transform, box-shadow;
+
+    transition-duration: 0.5s, 0.5s, 0.3s;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1), cubic-bezier(0.16, 1, 0.3, 1), ease;
+    transition-delay: var(--pill-delay, 0ms), var(--pill-delay, 0ms), 0ms;
+
+    @include reduced-motion {
+        transition: none;
     }
 
-    @include respond-to("mobile") {
-        width: 58px;
-        flex-shrink: 0;
-        padding: 0;
+    @include focus-ring;
 
-        & .btnThemeToggle {
-            display: none;
+    @include can-hover {
+        &:hover {
+            box-shadow:
+                0px 0px 40px 0px rgba(234, 253, 39, 0.35),
+                inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
+        }
+
+        &:hover .charTop {
+            transform: translateY(-100%);
+        }
+
+        &:hover .charBottom {
+            transform: translateY(0);
         }
     }
 }
 
-.langDesktop {
+.logoLine {
+    font-family: var(--font-title-accent);
+    font-weight: 700;
+    font-size: $header-scale * 20px;
+    line-height: 1.1;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+// =============================================
+// Navigation pill
+// =============================================
+
+.navPill {
+    @include pill;
+    @include flex-center;
+
+    flex: 1;
+    padding: ($header-scale * 4px) ($header-scale * 12px);
+
     @include respond-to("mobile") {
         display: none;
     }
 }
 
-.langDesktopTrigger {
+.nav {
+    display: flex;
+    align-items: center;
+    gap: $header-scale * 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.link {
+    display: block;
+    padding: ($header-scale * 8px) ($header-scale * 16px);
+    font-size: $header-scale * 16px;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-primary-reverse);
+    text-decoration: none;
     border-radius: var(--radius-v-sm);
+    @include focus-ring;
+    @include can-hover {
+        &:hover .charTop {
+            transform: translateY(-100%);
+        }
+
+        &:hover .charBottom {
+            transform: translateY(0);
+        }
+    }
+}
+
+.linkActive {
+    color: var(--color-primary);
+}
+
+.srOnly {
+    @include sr-only;
+}
+
+.linkText {
+    display: inline-flex;
+}
+
+.charCol {
+    position: relative;
+    display: inline-block;
+    height: 1em;
+    overflow: hidden;
+    vertical-align: top;
+    line-height: 1;
+}
+
+.charTop,
+.charBottom {
+    display: block;
+    white-space: pre;
+    transition: transform 0.22s cubic-bezier(0.65, 0, 0.35, 1);
+    transition-delay: var(--stagger-delay, 0ms);
+}
+
+.charTop {
+    position: relative;
+    color: inherit;
+}
+
+.charBottom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: var(--stagger-reveal-color, var(--color-primary));
+    transform: translateY(100%);
+}
+
+// =============================================
+// Lang + theme pill
+// =============================================
+
+.utilityPill {
+    @include pill;
+
+    position: relative;
+    flex-shrink: 0;
+    transition-property: opacity, transform, border-radius;
+    transition-duration: 0.5s, 0.5s, 0.45s;
+    transition-timing-function:
+        cubic-bezier(0.16, 1, 0.3, 1), cubic-bezier(0.16, 1, 0.3, 1), cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--pill-delay, 0ms), var(--pill-delay, 0ms), 0ms;
+
+    @include reduced-motion {
+        transition: none;
+    }
+
+    &:has(.langWrapperDesktop[data-open]) {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+}
+
+.langThemeDesktop {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 100%;
+
+    @include respond-to("mobile") {
+        display: none;
+    }
+}
+
+.langWrapperDesktop {
+    position: static !important;
+}
+
+.langTrigger {
+    padding: ($header-scale * 4px) ($header-scale * 20px);
+    border: none !important;
+    background: transparent;
+    font-family: var(--font-almarai);
+    font-weight: 700;
+    font-size: $header-scale * 16px;
+    letter-spacing: 0;
+    color: var(--color-text-primary-reverse) !important;
+
+    @include can-hover {
+        &:hover {
+            color: var(--color-primary) !important;
+            text-shadow: 0 0 12px rgba(234, 253, 39, 0.55);
+        }
+    }
+}
+
+.themeBtnDesktop {
+    width: auto !important;
+    height: $header-scale * 32px !important;
+    padding: 0 ($header-scale * 20px) !important;
+    border-left: 1px solid rgba(128, 128, 128, 0.35) !important;
+    border-radius: 0;
+    color: var(--color-text-primary-reverse) !important;
+
+    svg {
+        transform: scale(#{$header-scale * 32 / 18});
+    }
+
+    @include can-hover {
+        &:hover {
+            background: transparent;
+            color: var(--color-primary) !important;
+        }
+    }
 }
 
 .langMobile {
@@ -108,6 +315,7 @@
     background: transparent;
     justify-content: center;
     padding: 10px 8px;
+    color: var(--color-text-primary-reverse) !important;
 
     &:active {
         background: rgba(234, 253, 39, 0.08);
@@ -115,128 +323,146 @@
 }
 
 // =============================================
-// Logo
+// Download CV pill
 // =============================================
 
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-    flex-shrink: 0;
-
-    @include can-hover {
-        &:hover .avatar {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 12px rgba(234, 253, 39, 0.4);
-        }
-    }
-
-    @include focus-ring;
-}
-
-.avatar {
+.cvPill {
+    @include pill;
     @include flex-center;
 
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(234, 253, 39, 0.5);
-    background: rgba(234, 253, 39, 0.08);
-    color: var(--color-primary);
-    font-size: 14px;
-    font-weight: 700;
-    font-family: var(--font-mono);
-    letter-spacing: 0.05em;
-    flex-shrink: 0;
-    @include transition(border-color, box-shadow);
-}
-
-.name {
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.3;
-    color: var(--color-text-primary);
-    max-width: 65px;
-
-    @include respond-to("tablet") {
-        display: none;
-    }
-}
-
-// =============================================
-// Navigation
-// =============================================
-
-.nav {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-
-    @include respond-to("mobile") {
-        display: none;
-    }
-}
-
-.link {
-    position: relative;
-    isolation: isolate;
-    display: block;
-    padding: 6px 14px;
-    font-size: 16px;
-    font-weight: 400;
-    color: var(--color-text-secondary);
+    gap: $header-scale * 12px;
+    padding-block: $header-scale * 4px;
+    padding-left: $header-scale * 20px;
+    padding-right: max(
+        #{$header-scale * 4px},
+        calc((100vw - var(--container-width)) / 2 + #{$header-scale * 4px})
+    );
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
     text-decoration: none;
-    border-radius: var(--radius-v-sm);
-    @include transition(color);
+    flex-shrink: 0;
+    transition-property: opacity, transform, box-shadow;
+    transition-duration: 0.5s, 0.5s, 0.3s;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1), cubic-bezier(0.16, 1, 0.3, 1), ease;
+    transition-delay: var(--pill-delay, 0ms), var(--pill-delay, 0ms), 0ms;
+
+    @include reduced-motion {
+        transition: none;
+    }
+
     @include focus-ring;
 
     @include respond-to("tablet") {
-        padding: 5px 10px;
-        font-size: 14px;
+        display: none;
     }
 
     @include can-hover {
         &:hover {
-            color: var(--color-text-primary);
-            background: rgba(255, 255, 255, 0.05);
+            box-shadow:
+                0px 0px 40px 0px rgba(234, 253, 39, 0.35),
+                inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
         }
 
-        &:hover .activePill {
-            background: rgba(234, 253, 39, 0.16);
+        &:hover .cvIcon {
+            box-shadow: 0 0 16px rgba(234, 253, 39, 0.5);
+            animation: cvIconBounce 0.7s ease-in-out 2;
         }
     }
 
-    &:active {
-        background: rgba(255, 255, 255, 0.05);
+    &.cvPillClicked {
+        animation: cvPillFlash 0.55s ease-out;
     }
 }
 
-.activePill {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: var(--radius-v-sm);
-    background: rgba(234, 253, 39, 0.1);
-    pointer-events: none;
-    transition: background-color 0.15s ease;
+@keyframes cvIconBounce {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(3px);
+    }
 }
 
-.linkActive {
-    color: var(--color-primary);
+@keyframes cvPillFlash {
+    0% {
+        box-shadow:
+            0px 0px 30px 0px rgba(234, 253, 39, 0.18),
+            inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
+    }
+    35% {
+        box-shadow:
+            0px 0px 55px 0px rgba(234, 253, 39, 0.55),
+            inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
+    }
+    100% {
+        box-shadow:
+            0px 0px 30px 0px rgba(234, 253, 39, 0.18),
+            inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
+    }
+}
 
-    @include can-hover {
-        &:hover {
-            color: var(--color-primary);
-            background: transparent;
-        }
+.cvLabel {
+    font-family: var(--font-almarai);
+    font-weight: 300;
+    font-size: $header-scale * 16px;
+    text-transform: uppercase;
+    color: var(--color-text-primary-reverse);
+    white-space: nowrap;
+}
+
+.cvIcon {
+    @include flex-center;
+
+    position: relative;
+    width: $header-scale * 40px;
+    height: $header-scale * 40px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: var(--color-text-primary);
+    flex-shrink: 0;
+    @include transition(box-shadow);
+
+    svg {
+        transform: scale(0.8);
+        position: relative;
+        z-index: 1;
     }
 
-    &:active {
-        background: transparent;
+    .cvPillClicked & {
+        animation: cvIconPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+        &::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: var(--color-primary);
+            animation: cvIconRipple 0.55s ease-out;
+        }
+    }
+}
+
+@keyframes cvIconPop {
+    0% {
+        transform: scale(1);
+    }
+    35% {
+        transform: scale(0.82);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes cvIconRipple {
+    0% {
+        transform: scale(1);
+        opacity: 0.55;
+    }
+    100% {
+        transform: scale(1.9);
+        opacity: 0;
     }
 }
 
@@ -270,7 +496,7 @@
     border-radius: var(--radius-sm);
     background: var(--color-bg);
     box-shadow:
-        0px 0px 30px 0px rgba(168, 85, 247, 0.3),
+        0px 0px 30px 0px rgba(234, 253, 39, 0.18),
         inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
     pointer-events: all;
 }
@@ -290,7 +516,7 @@
         border-radius: var(--radius-sm);
         background: var(--color-bg);
         box-shadow:
-            0px 0px 30px 0px rgba(168, 85, 247, 0.3),
+            0px 0px 30px 0px rgba(234, 253, 39, 0.18),
             inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
         pointer-events: all;
     }

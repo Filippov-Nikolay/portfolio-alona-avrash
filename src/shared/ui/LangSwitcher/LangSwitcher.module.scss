@@ -28,8 +28,21 @@
     appearance: none;
     -webkit-appearance: none;
     -webkit-tap-highlight-color: transparent;
-    @include transition(border-color, background);
+    @include transition(border-color, background, color, text-shadow, transform);
     @include focus-ring;
+
+    @include can-hover {
+        &:hover {
+            color: var(--color-primary);
+            border-color: rgba(234, 253, 39, 0.4);
+            text-shadow: 0 0 12px rgba(234, 253, 39, 0.55);
+            transform: scale(1.06);
+        }
+    }
+
+    &:active {
+        transform: scale(0.96);
+    }
 }
 
 .triggerOpen {
@@ -44,11 +57,6 @@
     background: var(--color-primary);
     box-shadow: 0 0 6px rgba(234, 253, 39, 0.8);
     flex-shrink: 0;
-    transition: transform var(--transition-fast);
-}
-
-.dotOpen {
-    transform: scale(1.4);
 }
 
 // =============================================
@@ -57,17 +65,19 @@
 
 .dropdown {
     position: absolute;
-    top: calc(100% + 8px);
+    top: 100%;
     right: 0;
     z-index: 100;
     list-style: none;
     margin: 0;
-    padding: 4px;
-    min-width: 100%;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    padding: 6px;
+    width: 100%;
+    background: var(--color-bg-btn);
+    border: 1px solid rgba(234, 253, 39, 0.18);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.3),
+        0 0 24px rgba(234, 253, 39, 0.12);
 }
 
 // =============================================
@@ -75,9 +85,11 @@
 // =============================================
 
 .option {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
-    padding: 6px 14px;
+    padding: 7px 14px;
     border: none;
     border-radius: var(--radius-v-sm);
     background: transparent;
@@ -85,36 +97,39 @@
     font-weight: 600;
     font-family: var(--font-mono);
     letter-spacing: 0.08em;
-    color: var(--color-text-secondary);
+    color: var(--color-text-primary-reverse);
+    opacity: 0.65;
     text-align: left;
     cursor: pointer;
     white-space: nowrap;
-    @include transition(background, color);
+    @include transition(background, color, opacity, transform);
 
     @include can-hover {
         &:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--color-text-primary);
+            background: rgba(255, 255, 255, 0.08);
+            opacity: 1;
         }
     }
 
     &:active {
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--color-text-primary);
+        transform: scale(0.96);
+        background: rgba(255, 255, 255, 0.08);
+        opacity: 1;
     }
 }
 
 .optionActive {
     color: var(--color-primary);
+    opacity: 1;
 
     @include can-hover {
         &:hover {
-            background: rgba(234, 253, 39, 0.08);
+            background: rgba(234, 253, 39, 0.12);
             color: var(--color-primary);
         }
     }
 
     &:active {
-        background: rgba(234, 253, 39, 0.08);
+        background: rgba(234, 253, 39, 0.12);
     }
 }

@@ -163,7 +163,7 @@ h1.displayText {
 
 .ctaArrow {
     height: auto;
-    transform: rotate(45deg);
+    transform: rotate(-45deg);
 
     & path {
         fill: var(--color-bg-btn);

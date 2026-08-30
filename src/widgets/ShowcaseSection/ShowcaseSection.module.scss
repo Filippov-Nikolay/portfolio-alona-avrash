@@ -254,9 +254,8 @@
     }
 }
 
-// Arrow pointing down
+// Arrow pointing down — the icon already points down natively, no rotation needed.
 .moreArrowIcon {
-    transform: rotate(90deg);
     color: var(--color-primary);
 
     path {

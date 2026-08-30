@@ -14,3 +14,5 @@ export { default as StackIcon } from "./Stack.svg";
 export { default as ExternalLinkIcon } from "./externalLink.svg";
 export { default as FolderIcon } from "./Folders.svg";
 export { default as AiIDEIcon } from "./AiIDE.svg";
+export { default as MoonIcon } from "./moon.svg";
+export { default as SunIcon } from "./sun.svg";

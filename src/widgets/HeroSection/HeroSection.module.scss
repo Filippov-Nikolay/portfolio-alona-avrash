@@ -6,12 +6,17 @@
 
 .hero {
     position: relative;
-    overflow: hidden;
-    --_pad-top: 0px;
+    overflow-x: clip;
+    overflow-y: visible;
+    --_pad-top: 30px;
     --_pad-bottom: 0px;
 }
 
-// Ambient purple glow
+.heroMorphEnabled {
+    --hero-scroll-runway: clamp(420px, 62vh, 760px);
+    min-height: calc(100svh + var(--hero-scroll-runway));
+}
+
 .glow {
     position: absolute;
     top: -20%;
@@ -22,7 +27,6 @@
     background: radial-gradient(circle, rgba(234, 253, 39, 0.22) 0%, transparent 65%);
     pointer-events: none;
     filter: blur(var(--blur-lg));
-    // Radial mask: glow fades in all directions — no hard clip on any edge
     mask-image: radial-gradient(ellipse 80% 72% at 18% 20%, black 10%, transparent 62%);
     -webkit-mask-image: radial-gradient(ellipse 80% 72% at 18% 20%, black 10%, transparent 62%);
 
@@ -33,196 +37,373 @@
 }
 
 // =============================================
-// Content — heading top / socials bottom
+// Content
 // =============================================
 
 .content {
-    display: flex;
-    flex-direction: column;
-    gap: 35px;
-    padding: 140px 0 25px;
-}
-
-// =============================================
-// Heading
-// =============================================
-
-.headingArea {
     @include flex-column;
+
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: max(100svh, 820px);
+    padding: 160px 0 80px;
+
+    @include respond-to("tablet") {
+        height: auto;
+        min-height: 100svh;
+    }
 }
 
-.firstLine {
+.container {
+    position: relative;
+}
+
+.heroMorphEnabled .content {
+    position: sticky;
+    top: 0;
+    justify-content: flex-start;
+    height: 100svh;
+    min-height: 100svh;
+}
+
+.heroMorphEnabled .container {
+    min-height: calc(100svh + var(--hero-scroll-runway));
+}
+
+// =============================================
+// Top row — role label + social links
+// =============================================
+
+.topRow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.role {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+}
+
+.socials {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 24px;
-
-    @include respond-to("tablet") {
-        // Dissolve the wrapper: span + button become direct flex children of
-        // headingArea so we can reorder them with `order` relative to the h1
-        display: contents;
-    }
-}
-
-.displayText {
-    display: block;
-    font-family: var(--font-title-accent);
-    font-size: clamp(32px, 9.5vw, 96px);
-    font-weight: 700;
-    line-height: 0.92;
-    letter-spacing: 0.1em;
-    color: var(--color-text-primary);
-}
-
-h1.displayText {
-    margin-left: auto;
-    margin-top: 12px;
-
-    @include respond-to("tablet") {
-        order: 1;
-    }
-}
-
-.accent {
-    color: var(--color-primary);
-}
-
-// =============================================
-// Projects button
-// =============================================
-
-.ctaBtn {
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    padding: 8px 8px 8px 22px;
-    width: 100%;
-    max-width: 335px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-xxl);
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--color-text-primary-reverse);
-    background-color: var(--color-bg-btn);
-    text-decoration: none;
-    white-space: nowrap;
+    gap: 8px;
     flex-shrink: 0;
-    @include transition(border-color, background-color, box-shadow);
-    @include focus-ring;
-
-    @include can-hover {
-        &:hover {
-            box-shadow: 0 0 24px rgba(234, 253, 39, 0.35);
-
-            .ctaCircle {
-                background: var(--color-primary);
-            }
-
-            .ctaArrow path {
-                fill: #fff;
-            }
-        }
-    }
-
-    &:active {
-        transform: scale(0.97);
-        box-shadow: none;
-
-        .ctaCircle {
-            background: var(--color-primary);
-        }
-
-        .ctaArrow path {
-            fill: #fff;
-        }
-    }
-
-    @include respond-to("tablet") {
-        order: 2;
-        max-width: 100%;
-        margin-top: 24px;
-    }
 }
 
-.ctaText {
-    flex: 1;
-    text-align: center;
-}
-
-.ctaCircle {
+.socialLink {
     @include flex-center;
 
-    width: 38px;
-    height: 38px;
+    position: relative;
+    isolation: isolate;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: var(--color-bg-btn-element);
-    flex-shrink: 0;
-    color: var(--color-text-primary-reverse);
-    @include transition(background);
-}
-
-.ctaArrow {
-    height: auto;
-    transform: rotate(-45deg);
-
-    & path {
-        fill: var(--color-bg-btn);
-        transition: fill var(--transition-fast);
-    }
-}
-
-// =============================================
-// Social bar
-// =============================================
-
-.socialBar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-
-    @include respond-to("tablet") {
-        @include flex-column;
-        align-items: flex-start;
-    }
-}
-
-.socialGroup {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.socialLink {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-xxl);
-    font-size: 14px;
-    font-weight: 500;
     color: var(--color-text-primary);
-    text-decoration: none;
-    @include transition(border-color, background-color);
+    flex-shrink: 0;
+    @include transition(color);
     @include focus-ring;
+
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: 50%;
+        background: var(--color-primary);
+        transform: scale(0);
+        transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
 
     @include can-hover {
         &:hover {
-            border-color: rgba(234, 253, 39, 0.4);
-            background: rgba(234, 253, 39, 0.07);
+            color: #000;
+
+            &::before {
+                transform: scale(1.1);
+            }
         }
     }
 
     &:active {
-        border-color: rgba(234, 253, 39, 0.4);
-        background: rgba(234, 253, 39, 0.07);
+        color: #000;
+
+        &::before {
+            transform: scale(1);
+        }
+    }
+
+    [data-theme="light"] & {
+        &::before {
+            background: #000;
+        }
+
+        @include can-hover {
+            &:hover {
+                color: var(--color-primary);
+            }
+        }
+
+        &:active {
+            color: var(--color-primary);
+        }
+    }
+
+    @include respond-to("mobile") {
+        display: none;
     }
 }
 
-.socialLink {
-    & path {
-        fill: var(--color-text-primary);
+.socialIcon {
+    width: 18px;
+    height: 18px;
+    background-color: currentColor;
+    mask-image: var(--social-icon);
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-image: var(--social-icon);
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+}
+
+.name {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-title-accent);
+    @include fluid-type(48px, 140px);
+    font-weight: 700;
+    line-height: 0.92;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+    pointer-events: none;
+    margin: 0;
+    will-change: transform;
+}
+
+.nameLine {
+    display: inline-block;
+    align-self: flex-start;
+    backface-visibility: hidden;
+    will-change: transform, opacity, color;
+}
+
+.nameLineEnd {
+    align-self: flex-end;
+}
+
+// =============================================
+// Floating project thumbnails
+// =============================================
+
+.floaters {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+
+    @include respond-to("tablet") {
+        display: none;
+    }
+}
+
+.floater {
+    position: absolute;
+    overflow: hidden;
+    border-radius: 10px;
+    background: var(--color-visual-bg);
+
+    &:nth-child(1) {
+        top: 90px;
+        left: 38%;
+        width: 120px;
+        height: 125px;
+    }
+
+    &:nth-child(2) {
+        top: 160px;
+        right: 18%;
+        width: 160px;
+        height: 165px;
+    }
+
+    &:nth-child(3) {
+        top: 470px;
+        left: 53%;
+        width: 130px;
+        height: 135px;
+    }
+
+    &:nth-child(4) {
+        top: 400px;
+        left: 20%;
+        width: 170px;
+        height: 175px;
+    }
+}
+
+.floaterImage {
+    object-fit: contain;
+}
+
+// =============================================
+// Description + CTA glass card
+// =============================================
+
+.introRow {
+    position: relative;
+    z-index: 1;
+
+    @include respond-from("tablet") {
+        position: absolute;
+        top: 350px;
+        left: 0;
+        right: 0;
+        display: flex;
+
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+    }
+
+    @include respond-to("tablet") {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-top: 32px;
+    }
+}
+
+.introCardWrap {
+    position: relative;
+
+    @include respond-from("tablet") {
+        width: fit-content;
+    }
+
+    @include respond-to("tablet") {
+        width: min(100%, 92vw);
+    }
+}
+
+.introCard {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding: 20px 22px 18px;
+
+    @include respond-to("tablet") {
+        min-height: 0;
+        padding: 28px 22px 22px;
+    }
+}
+
+.introCardContent {
+    display: flex;
+    align-items: center;
+    min-height: 100%;
+}
+
+.introTextCol {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 35px;
+    max-width: 100%;
+
+    @include respond-to("tablet") {
+        gap: 20px;
+    }
+}
+
+.description {
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.92);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
+    margin: 0;
+
+    @include respond-from("tablet") {
+        max-width: 290px;
+    }
+
+    @include respond-to("tablet") {
+        font-size: 18px;
+        line-height: 1.5;
+    }
+}
+
+.cta {
+    font-family: var(--font-body);
+    height: 44px;
+    padding-inline: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    border-radius: 999px;
+    text-decoration: none;
+    box-shadow:
+        0 18px 40px rgba(234, 253, 39, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.32);
+
+    @include respond-to("tablet") {
+        width: 100%;
+        min-width: 0;
+        height: 52px;
+        font-size: 15px;
+    }
+}
+
+// =============================================
+// Availability
+// =============================================
+
+.availability {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--color-text-secondary);
+
+    @include respond-to("tablet") {
+        margin-top: 16px;
+    }
+
+    @include respond-from("tablet") {
+        align-self: flex-end;
+    }
+}
+
+.availabilityDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-success);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.7);
+    flex-shrink: 0;
+}
+
+.availabilityOff {
+    .availabilityDot {
+        background: var(--color-error);
+        box-shadow: none;
     }
 }

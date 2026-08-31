@@ -1,88 +1,77 @@
 "use client";
 
 import Image from "next/image";
-import { m, useMotionTemplate, useScroll, useSpring, useTransform } from "framer-motion";
+import { m, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { Container, Section, NoiseLayer, Button, GlassSurface } from "@/shared/ui";
 import { siteConfig } from "@/shared/config/site.config";
 import { cn } from "@/shared/lib/cn";
 import { useMotionVariants } from "@/shared/hooks/useMotionVariants";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { fadeIn } from "@/shared/lib/motion/fade-in";
+import { reveal } from "@/shared/lib/motion/reveal";
 import { scrollToElementId } from "@/shared/lib/scroll";
 import { usePreloader } from "@/shared/providers";
-import type { Social } from "@/entities/social/model/social";
 import type { HeroContent } from "@/entities/hero/model/hero";
+import type { Social } from "@/entities/social/model/social";
 import styles from "./HeroSection.module.scss";
 
 const [NAME_FIRST, ...nameRest] = siteConfig.name.split(" ");
 const NAME_LAST = nameRest.join(" ");
-const ENABLE_HERO_LOGO_MORPH = false;
+
+const TITLE_TRAVEL_END = 0.93;
+const IMAGE_TRAVEL_END = 0.95;
+const PARALLAX_BLEND_RATIO = 0.16;
+const PARALLAX_START_ASSIST_END = 0.05;
+const PARALLAX_END_ASSIST_START = 0.86;
+const TITLE_EXIT_SAFETY_MARGIN_MIN = 24;
+const TITLE_EXIT_SAFETY_MARGIN_RATIO = 0.04;
+
+const FLOATER_LAYER_CLASSES = [
+    styles.floaterBack,
+    styles.floaterBack,
+    styles.floaterFront,
+    styles.floaterFront,
+];
 
 function handleCtaClick(e: React.MouseEvent) {
     e.preventDefault();
     scrollToElementId("contact", { offset: 100 });
 }
 
-interface FlipState {
-    dx: number;
-    dy: number;
-    scale: number;
-}
-
-interface RgbColor {
-    r: number;
-    g: number;
-    b: number;
-}
-
-const FLIP_REST: FlipState = { dx: 0, dy: 0, scale: 1 };
-const ACCENT_RGB: RgbColor = { r: 234, g: 253, b: 39 };
-const TITLE_MORPH_START = 0.04;
-const TITLE_MORPH_END = 0.78;
-const TITLE_HANDOFF_START = 0.56;
-const TITLE_HANDOFF_END = 0.72;
-
 function clamp01(value: number) {
     return Math.max(0, Math.min(1, value));
 }
 
-function mix(from: number, to: number, progress: number) {
-    return from + (to - from) * progress;
+function blendProgress(
+    raw: number,
+    smoothed: number,
+    blendRatio: number,
+    startAssistEnd: number,
+    endAssistStart: number
+) {
+    const startAssist = 1 - clamp01(raw / startAssistEnd);
+    const endAssist = clamp01((raw - endAssistStart) / (1 - endAssistStart));
+    const assist = Math.max(startAssist, endAssist);
+    const damped = raw + (smoothed - raw) * blendRatio;
+
+    return damped + (raw - damped) * assist;
 }
 
-function easeInOutCubic(value: number) {
-    const t = clamp01(value);
-    if (t < 0.5) {
-        return 4 * t * t * t;
+function readTranslateX(node: HTMLElement) {
+    const { transform } = getComputedStyle(node);
+
+    if (!transform || transform === "none") {
+        return 0;
     }
 
-    return 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-function normalizeMorphProgress(value: number) {
-    return easeInOutCubic(
-        clamp01((value - TITLE_MORPH_START) / (TITLE_MORPH_END - TITLE_MORPH_START))
-    );
-}
-
-function easedTransform(value: number, target: number, power = 1) {
-    return mix(0, target, easeInOutCubic(Math.pow(clamp01(value), power)));
-}
-
-function parseRgbColor(value: string) {
-    const channels = value.match(/\d+(?:\.\d+)?/g);
-
-    if (!channels || channels.length < 3) {
-        return null;
+    if (typeof DOMMatrixReadOnly !== "undefined") {
+        return new DOMMatrixReadOnly(transform).m41;
     }
 
-    return {
-        r: Number(channels[0]),
-        g: Number(channels[1]),
-        b: Number(channels[2]),
-    } satisfies RgbColor;
+    const values = transform.match(/matrix(?:3d)?\((.+)\)/)?.[1]?.split(",") ?? [];
+    return Number(values[values.length === 16 ? 12 : 4] ?? 0);
 }
 
 interface HeroSectionClientProps {
@@ -94,61 +83,47 @@ export function HeroSectionClient({ hero, socials }: HeroSectionClientProps) {
     const t = useTranslations("hero");
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
+    const safeReveal = useMotionVariants(reveal);
     const { isReady } = usePreloader();
-
+    const reduced = useReducedMotion();
     const scrollTrackRef = useRef<HTMLElement>(null);
-    const line1Ref = useRef<HTMLSpanElement>(null);
-    const line2Ref = useRef<HTMLSpanElement>(null);
-    const [flip1, setFlip1] = useState<FlipState>(FLIP_REST);
-    const [flip2, setFlip2] = useState<FlipState>(FLIP_REST);
-    const [fromColor, setFromColor] = useState<RgbColor | null>(null);
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => {
-        const id = requestAnimationFrame(() => setMounted(true));
-        return () => cancelAnimationFrame(id);
-    }, []);
+    const titleTrackRef = useRef<HTMLDivElement>(null);
+    const titleRef = useRef<HTMLHeadingElement>(null);
+    const [titleExitX, setTitleExitX] = useState(-320);
 
     const { scrollYProgress } = useScroll({
         target: scrollTrackRef,
         offset: ["start start", "end end"],
     });
-    const morphProgress = useTransform(scrollYProgress, normalizeMorphProgress);
-    const smoothMorphProgress = useSpring(morphProgress, {
-        stiffness: 132,
-        damping: 28,
-        mass: 0.52,
-        restDelta: 0.0001,
-    });
 
-    useEffect(() => {
-        if (!ENABLE_HERO_LOGO_MORPH) {
+    useLayoutEffect(() => {
+        if (reduced) {
+            const rafId = requestAnimationFrame(() => setTitleExitX(0));
+            return () => cancelAnimationFrame(rafId);
+        }
+
+        const titleTrack = titleTrackRef.current;
+        const title = titleRef.current;
+
+        if (!titleTrack || !title) {
             return;
         }
 
-        function flipFor(lineEl: HTMLElement | null, targetEl: HTMLElement | null): FlipState {
-            if (!lineEl || !targetEl) return FLIP_REST;
-            const lineRect = lineEl.getBoundingClientRect();
-            const targetRect = targetEl.getBoundingClientRect();
-            if (!lineRect.height || !targetRect.height) return FLIP_REST;
-            return {
-                dx: targetRect.left - lineRect.left,
-                dy: targetRect.top - lineRect.top,
-                scale: targetRect.height / lineRect.height,
-            };
-        }
+        const measure = () => {
+            const currentX = readTranslateX(titleTrack);
+            const trackRect = titleTrack.getBoundingClientRect();
+            const titleRect = title.getBoundingClientRect();
+            const baseLeft = trackRect.left - currentX;
+            const safetyMargin = Math.max(
+                window.innerWidth * TITLE_EXIT_SAFETY_MARGIN_RATIO,
+                TITLE_EXIT_SAFETY_MARGIN_MIN
+            );
+            const nextExitX = -(baseLeft + titleRect.width + safetyMargin);
 
-        function measure() {
-            const target1 = document.querySelector<HTMLElement>('[data-hero-logo-line="0"]');
-            const target2 = document.querySelector<HTMLElement>('[data-hero-logo-line="1"]');
-            setFlip1(flipFor(line1Ref.current, target1));
-            setFlip2(flipFor(line2Ref.current, target2));
-            if (line1Ref.current) {
-                setFromColor(parseRgbColor(getComputedStyle(line1Ref.current).color));
-            }
-        }
+            setTitleExitX((prev) => (Math.abs(prev - nextExitX) < 0.5 ? prev : nextExitX));
+        };
 
-        measure();
-        const timeoutIds = [120, 320, 620, 920].map((delay) => window.setTimeout(measure, delay));
+        const rafId = requestAnimationFrame(measure);
         const resizeObserver =
             typeof ResizeObserver === "undefined"
                 ? null
@@ -156,70 +131,78 @@ export function HeroSectionClient({ hero, socials }: HeroSectionClientProps) {
                       measure();
                   });
 
-        [scrollTrackRef.current, line1Ref.current, line2Ref.current].forEach((node) => {
-            if (node) {
-                resizeObserver?.observe(node);
-            }
-        });
-
-        document
-            .querySelectorAll<HTMLElement>("[data-hero-logo-line]")
-            .forEach((node) => resizeObserver?.observe(node));
-
-        const handleResize = () => measure();
-
+        resizeObserver?.observe(titleTrack);
+        resizeObserver?.observe(title);
         void document.fonts?.ready.then(measure);
-        window.addEventListener("resize", handleResize);
+        window.addEventListener("resize", measure);
 
         return () => {
-            timeoutIds.forEach((id) => window.clearTimeout(id));
+            cancelAnimationFrame(rafId);
             resizeObserver?.disconnect();
-            window.removeEventListener("resize", handleResize);
+            window.removeEventListener("resize", measure);
         };
-    }, [isReady]);
+    }, [reduced]);
 
-    const line1X = useTransform(smoothMorphProgress, (value) =>
-        easedTransform(value, flip1.dx, 1.2)
-    );
-    const line1Y = useTransform(smoothMorphProgress, (value) => easedTransform(value, flip1.dy, 1));
-    const line1Scale = useTransform(smoothMorphProgress, (value) =>
-        mix(1, flip1.scale, easeInOutCubic(value))
-    );
-    const line2X = useTransform(smoothMorphProgress, (value) =>
-        easedTransform(value, flip2.dx, 1.85)
-    );
-    const line2Y = useTransform(smoothMorphProgress, (value) =>
-        easedTransform(value, flip2.dy, 1.08)
-    );
-    const line2Scale = useTransform(smoothMorphProgress, (value) =>
-        mix(1, flip2.scale, easeInOutCubic(value))
-    );
-    const colorProgress = useTransform(scrollYProgress, [0.18, TITLE_HANDOFF_START], [0, 1]);
-    const easedColorProgress = useTransform(colorProgress, (value) =>
-        easeInOutCubic(clamp01(value))
-    );
-    const nameOpacity = useTransform(
+    const parallaxSmoothProgress = useSpring(scrollYProgress, {
+        stiffness: reduced ? 1000 : 780,
+        damping: reduced ? 100 : 82,
+        mass: reduced ? 1 : 0.14,
+        restDelta: 0.00015,
+    });
+
+    const parallaxProgress = useTransform(() => {
+        const raw = scrollYProgress.get();
+        const smooth = parallaxSmoothProgress.get();
+
+        return blendProgress(
+            raw,
+            smooth,
+            PARALLAX_BLEND_RATIO,
+            PARALLAX_START_ASSIST_END,
+            PARALLAX_END_ASSIST_START
+        );
+    });
+
+    const titleX = useTransform(
         scrollYProgress,
-        [0, TITLE_HANDOFF_START, TITLE_HANDOFF_END, 1],
-        [1, 1, 0, 0]
+        [0, TITLE_TRAVEL_END, 1],
+        [0, titleExitX, titleExitX]
     );
-    const colorR = useTransform(easedColorProgress, (value) =>
-        Math.round(mix(fromColor?.r ?? ACCENT_RGB.r, ACCENT_RGB.r, value))
+    const floaterOneY = useTransform(
+        parallaxProgress,
+        [0, IMAGE_TRAVEL_END, 1],
+        reduced ? ["0vh", "0vh", "0vh"] : ["0vh", "-36vh", "-36vh"]
     );
-    const colorG = useTransform(easedColorProgress, (value) =>
-        Math.round(mix(fromColor?.g ?? ACCENT_RGB.g, ACCENT_RGB.g, value))
+    const floaterTwoY = useTransform(
+        parallaxProgress,
+        [0, IMAGE_TRAVEL_END, 1],
+        reduced ? ["0vh", "0vh", "0vh"] : ["2vh", "-48vh", "-48vh"]
     );
-    const colorB = useTransform(easedColorProgress, (value) =>
-        Math.round(mix(fromColor?.b ?? ACCENT_RGB.b, ACCENT_RGB.b, value))
+    const floaterThreeY = useTransform(
+        parallaxProgress,
+        [0, IMAGE_TRAVEL_END, 1],
+        reduced ? ["0vh", "0vh", "0vh"] : ["12vh", "-32vh", "-32vh"]
     );
-    const nameColor = useMotionTemplate`rgb(${colorR} ${colorG} ${colorB})`;
-    const shouldApplyMorph = ENABLE_HERO_LOGO_MORPH && mounted;
+    const floaterFourY = useTransform(
+        parallaxProgress,
+        [0, IMAGE_TRAVEL_END, 1],
+        reduced ? ["0vh", "0vh", "0vh"] : ["16vh", "-58vh", "-58vh"]
+    );
+    const introY = useTransform(
+        scrollYProgress,
+        [0, IMAGE_TRAVEL_END, 1],
+        reduced ? ["0vh", "0vh", "0vh"] : ["0vh", "-14vh", "-14vh"]
+    );
+    const availabilityY = useTransform(
+        scrollYProgress,
+        [0, IMAGE_TRAVEL_END, 1],
+        reduced ? ["0vh", "0vh", "0vh"] : ["0vh", "-10vh", "-10vh"]
+    );
+
+    const floaterYValues = [floaterOneY, floaterTwoY, floaterThreeY, floaterFourY];
 
     return (
-        <Section
-            ref={scrollTrackRef}
-            className={cn(styles.hero, ENABLE_HERO_LOGO_MORPH && styles.heroMorphEnabled)}
-        >
+        <Section ref={scrollTrackRef} className={styles.hero}>
             <NoiseLayer />
             <div className={styles.glow} aria-hidden="true" />
 
@@ -254,105 +237,89 @@ export function HeroSectionClient({ hero, socials }: HeroSectionClientProps) {
                         </div>
                     </m.div>
 
-                    <m.h1 className={styles.name} variants={safeFadeIn}>
-                        <m.span
-                            ref={line1Ref}
-                            className={styles.nameLine}
-                            style={{
-                                x: shouldApplyMorph ? line1X : undefined,
-                                y: shouldApplyMorph ? line1Y : undefined,
-                                scale: shouldApplyMorph ? line1Scale : undefined,
-                                opacity: shouldApplyMorph ? nameOpacity : undefined,
-                                color: shouldApplyMorph && fromColor ? nameColor : undefined,
-                                transformOrigin: "left top",
-                            }}
+                    <div className={styles.nameStage}>
+                        <m.div
+                            ref={titleTrackRef}
+                            className={styles.nameTrack}
+                            variants={safeFadeIn}
+                            style={{ x: titleX }}
                         >
-                            {NAME_FIRST}
-                        </m.span>
-                        <m.span
-                            ref={line2Ref}
-                            className={cn(styles.nameLine, styles.nameLineEnd)}
-                            style={{
-                                x: shouldApplyMorph ? line2X : undefined,
-                                y: shouldApplyMorph ? line2Y : undefined,
-                                scale: shouldApplyMorph ? line2Scale : undefined,
-                                opacity: shouldApplyMorph ? nameOpacity : undefined,
-                                color: shouldApplyMorph && fromColor ? nameColor : undefined,
-                                transformOrigin: "left top",
-                            }}
-                        >
-                            {NAME_LAST}
-                        </m.span>
-                    </m.h1>
-
-                    <div>
-                        {hero.floatingImages.length > 0 && (
-                            <div className={styles.floaters} aria-hidden="true">
-                                {hero.floatingImages.slice(0, 4).map((floater) => (
-                                    <m.div
-                                        key={floater.id}
-                                        className={styles.floater}
-                                        variants={safeFadeIn}
-                                    >
-                                        <Image
-                                            src={floater.image.src}
-                                            alt={floater.image.alt ?? ""}
-                                            fill
-                                            className={styles.floaterImage}
-                                            style={{
-                                                objectPosition: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
-                                                transform: `scale(${floater.image.scale ?? 1})`,
-                                                transformOrigin: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
-                                            }}
-                                            sizes="240px"
-                                            draggable={false}
-                                        />
-                                    </m.div>
-                                ))}
-                            </div>
-                        )}
-
-                        <div className={styles.introRow}>
-                            <div className={styles.introCardWrap}>
-                                <GlassSurface
-                                    as="article"
-                                    className={styles.introCard}
-                                    contentClassName={styles.introCardContent}
-                                    preset="hero"
-                                    interactive={false}
-                                    reveal="clip-up"
-                                    revealed={isReady}
-                                    revealDelayMs={700}
-                                >
-                                    <div className={styles.introTextCol}>
-                                        <p className={styles.description}>{hero.description}</p>
-
-                                        <Button
-                                            as="a"
-                                            href="#contact"
-                                            variant="primary"
-                                            size="lg"
-                                            className={styles.cta}
-                                            onClick={handleCtaClick}
-                                        >
-                                            {t("cta")}
-                                        </Button>
-                                    </div>
-                                </GlassSurface>
-                            </div>
-
-                            <m.span
-                                className={cn(
-                                    styles.availability,
-                                    !hero.availableForWork && styles.availabilityOff
-                                )}
-                                variants={safeFadeIn}
-                            >
-                                <span className={styles.availabilityDot} aria-hidden="true" />
-                                {hero.availableForWork ? t("availability") : t("unavailable")}
-                            </m.span>
-                        </div>
+                            <h1 ref={titleRef} className={styles.name}>
+                                <span className={styles.nameLine}>{NAME_FIRST}</span>
+                                <span className={cn(styles.nameLine, styles.nameLineEnd)}>
+                                    {NAME_LAST}
+                                </span>
+                            </h1>
+                        </m.div>
                     </div>
+
+                    {hero.floatingImages.length > 0 && (
+                        <m.div className={styles.floaters} aria-hidden="true">
+                            {hero.floatingImages.slice(0, 4).map((floater, index) => (
+                                <m.div
+                                    key={floater.id}
+                                    className={cn(
+                                        styles.floater,
+                                        FLOATER_LAYER_CLASSES[index] ?? styles.floaterFront
+                                    )}
+                                    variants={safeFadeIn}
+                                    style={{ y: floaterYValues[index] }}
+                                >
+                                    <Image
+                                        src={floater.image.src}
+                                        alt={floater.image.alt ?? ""}
+                                        fill
+                                        className={styles.floaterImage}
+                                        style={{
+                                            objectPosition: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
+                                            transform: `scale(${floater.image.scale ?? 1})`,
+                                            transformOrigin: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
+                                        }}
+                                        sizes="(max-width: 768px) 42vw, 240px"
+                                        draggable={false}
+                                    />
+                                </m.div>
+                            ))}
+                        </m.div>
+                    )}
+
+                    <m.div className={styles.introRow} variants={safeReveal}>
+                        <m.div className={styles.introCardWrap} style={{ y: introY }}>
+                            <GlassSurface
+                                as="article"
+                                className={styles.introCard}
+                                contentClassName={styles.introCardContent}
+                                preset="hero"
+                                interactive={false}
+                            >
+                                <div className={styles.introTextCol}>
+                                    <p className={styles.description}>{hero.description}</p>
+
+                                    <Button
+                                        as="a"
+                                        href="#contact"
+                                        variant="primary"
+                                        size="lg"
+                                        className={styles.cta}
+                                        onClick={handleCtaClick}
+                                    >
+                                        {t("cta")}
+                                    </Button>
+                                </div>
+                            </GlassSurface>
+                        </m.div>
+
+                        <m.span
+                            className={cn(
+                                styles.availability,
+                                !hero.availableForWork && styles.availabilityOff
+                            )}
+                            style={{ y: availabilityY }}
+                        >
+                            <span className={styles.availabilityDot} aria-hidden="true" />
+                            {hero.availableForWork ? t("availability") : t("unavailable")}
+                        </m.span>
+                    </m.div>
                 </m.div>
             </Container>
         </Section>

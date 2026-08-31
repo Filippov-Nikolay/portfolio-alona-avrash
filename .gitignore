@@ -52,3 +52,8 @@ pnpm-debug.log*
 # =========================
 .DS_Store
 Thumbs.db
+
+# =========================
+# Local scratch/debug artifacts
+# =========================
+.codex-artifacts/

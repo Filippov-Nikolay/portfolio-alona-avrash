@@ -3,6 +3,10 @@
     --container-width: 1105px;
     --content-width: 1280px;
     --section-spacing: 160px;
+    --hero-scroll-runway: clamp(1260px, 182vh, 2140px);
+    --hero-scroll-runway-compact: clamp(760px, 122vh, 1080px);
+    --hero-flat-handoff-overlap: clamp(160px, 24vh, 220px);
+    --hero-flat-handoff-overlap-compact: clamp(92px, 15vh, 132px);
 
     // === Spacing scale =================================
     // Generic scale for new sections/components. Existing sections keep

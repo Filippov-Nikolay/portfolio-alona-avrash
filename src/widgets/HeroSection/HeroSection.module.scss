@@ -1,25 +1,35 @@
 @use "@/shared/styles/mixins" as *;
 
-// =============================================
-// Section
-// =============================================
-
 .hero {
-    position: relative;
-    overflow-x: clip;
-    overflow-y: visible;
     --_pad-top: 30px;
     --_pad-bottom: 0px;
+    --hero-title-start-offset: 6vw;
+
+    position: relative;
+    isolation: isolate;
+    overflow-x: clip;
+    overflow-y: visible;
+    min-height: calc(100svh + var(--hero-scroll-runway));
+    z-index: 1;
+
+    @include respond-to("tablet") {
+        min-height: calc(100svh + var(--hero-scroll-runway-compact));
+    }
 }
 
-.heroMorphEnabled {
-    --hero-scroll-runway: clamp(420px, 62vh, 760px);
+.container {
+    position: relative;
     min-height: calc(100svh + var(--hero-scroll-runway));
+    overflow: visible;
+
+    @include respond-to("tablet") {
+        min-height: calc(100svh + var(--hero-scroll-runway-compact));
+    }
 }
 
 .glow {
     position: absolute;
-    top: -20%;
+    top: -18%;
     left: -8%;
     width: 700px;
     height: 700px;
@@ -27,60 +37,41 @@
     background: radial-gradient(circle, rgba(234, 253, 39, 0.22) 0%, transparent 65%);
     pointer-events: none;
     filter: blur(var(--blur-lg));
-    mask-image: radial-gradient(ellipse 80% 72% at 18% 20%, black 10%, transparent 62%);
-    -webkit-mask-image: radial-gradient(ellipse 80% 72% at 18% 20%, black 10%, transparent 62%);
+    mask-image: radial-gradient(ellipse 82% 74% at 18% 20%, black 10%, transparent 62%);
+    -webkit-mask-image: radial-gradient(ellipse 82% 74% at 18% 20%, black 10%, transparent 62%);
 
     @include respond-to("tablet") {
+        top: -10%;
+        left: -18%;
         width: 360px;
         height: 360px;
     }
 }
 
-// =============================================
-// Content
-// =============================================
-
 .content {
     @include flex-column;
 
-    position: relative;
+    position: sticky;
+    top: 0;
     width: 100%;
+    min-height: 100svh;
+    height: 100svh;
     box-sizing: border-box;
-    min-height: max(100svh, 820px);
-    padding: 160px 0 80px;
+    padding: 160px 0 72px;
+    overflow: visible;
 
     @include respond-to("tablet") {
-        height: auto;
-        min-height: 100svh;
+        padding: 118px 0 148px;
     }
 }
 
-.container {
-    position: relative;
-}
-
-.heroMorphEnabled .content {
-    position: sticky;
-    top: 0;
-    justify-content: flex-start;
-    height: 100svh;
-    min-height: 100svh;
-}
-
-.heroMorphEnabled .container {
-    min-height: calc(100svh + var(--hero-scroll-runway));
-}
-
-// =============================================
-// Top row — role label + social links
-// =============================================
-
 .topRow {
+    position: relative;
+    z-index: 6;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 12px;
 }
 
 .role {
@@ -177,45 +168,72 @@
     -webkit-mask-size: contain;
 }
 
-.name {
+.nameStage {
     position: relative;
     z-index: 2;
+    width: 100%;
+    margin-top: clamp(34px, 7vh, 88px);
+    margin-inline-start: var(--hero-title-start-offset);
+    overflow: visible;
+
+    @include respond-to("tablet") {
+        width: calc(100% + 12px);
+        margin-top: 30px;
+        margin-left: calc(var(--hero-title-start-offset) - 6px);
+    }
+}
+
+.nameTrack {
+    width: 100%;
+    will-change: transform;
+}
+
+.name {
+    position: relative;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    margin: 0;
     font-family: var(--font-title-accent);
-    @include fluid-type(48px, 140px);
+    @include fluid-type(56px, 140px);
     font-weight: 700;
     line-height: 0.92;
     text-transform: uppercase;
     color: var(--color-text-primary);
     pointer-events: none;
-    margin: 0;
-    will-change: transform;
+
+    @include respond-to("tablet") {
+        font-size: clamp(50px, 14.8vw, 72px);
+        line-height: 0.9;
+    }
+
+    @include respond-to("mobile") {
+        font-size: clamp(46px, 14.2vw, 62px);
+        line-height: 0.92;
+    }
 }
 
 .nameLine {
     display: inline-block;
     align-self: flex-start;
     backface-visibility: hidden;
-    will-change: transform, opacity, color;
 }
 
 .nameLineEnd {
     align-self: flex-end;
-}
 
-// =============================================
-// Floating project thumbnails
-// =============================================
+    @include respond-to("tablet") {
+        padding-right: 8px;
+    }
+}
 
 .floaters {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 0;
 
     @include respond-to("tablet") {
-        display: none;
+        inset: 0 -4px;
     }
 }
 
@@ -224,9 +242,11 @@
     overflow: hidden;
     border-radius: 10px;
     background: var(--color-visual-bg);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    will-change: transform;
 
     &:nth-child(1) {
-        top: 90px;
+        top: 92px;
         left: 38%;
         width: 120px;
         height: 125px;
@@ -240,61 +260,87 @@
     }
 
     &:nth-child(3) {
-        top: 470px;
-        left: 53%;
-        width: 130px;
-        height: 135px;
+        top: clamp(490px, 67vh, 620px);
+        left: 52%;
+        width: 136px;
+        height: 142px;
     }
 
     &:nth-child(4) {
-        top: 400px;
+        top: clamp(430px, 61vh, 560px);
         left: 20%;
         width: 170px;
-        height: 175px;
+        height: 176px;
     }
+
+    @include respond-to("tablet") {
+        &:nth-child(1) {
+            top: 104px;
+            right: 11%;
+            left: auto;
+            width: 92px;
+            height: 96px;
+        }
+
+        &:nth-child(2) {
+            top: 238px;
+            right: 7%;
+            width: 132px;
+            height: 138px;
+        }
+
+        &:nth-child(3) {
+            top: auto;
+            bottom: 188px;
+            left: 2%;
+            width: 112px;
+            height: 118px;
+        }
+
+        &:nth-child(4) {
+            display: none;
+        }
+    }
+}
+
+.floaterBack {
+    z-index: 1;
+}
+
+.floaterFront {
+    z-index: 3;
 }
 
 .floaterImage {
     object-fit: contain;
 }
 
-// =============================================
-// Description + CTA glass card
-// =============================================
-
 .introRow {
-    position: relative;
-    z-index: 1;
-
-    @include respond-from("tablet") {
-        position: absolute;
-        top: 350px;
-        left: 0;
-        right: 0;
-        display: flex;
-
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 24px;
-    }
+    position: absolute;
+    right: 0;
+    bottom: clamp(86px, 10vh, 124px);
+    left: 0;
+    z-index: 5;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
 
     @include respond-to("tablet") {
-        display: flex;
+        bottom: 140px;
         flex-direction: column;
         align-items: flex-start;
-        margin-top: 32px;
+        gap: 18px;
     }
 }
 
 .introCardWrap {
     position: relative;
-
-    @include respond-from("tablet") {
-        width: fit-content;
-    }
+    width: clamp(292px, 32vw, 340px);
+    will-change: transform;
 
     @include respond-to("tablet") {
-        width: min(100%, 92vw);
+        width: min(100%, 320px);
     }
 }
 
@@ -306,7 +352,7 @@
 
     @include respond-to("tablet") {
         min-height: 0;
-        padding: 28px 22px 22px;
+        padding: 24px 20px 20px;
     }
 }
 
@@ -329,13 +375,13 @@
 }
 
 .description {
+    margin: 0;
     font-family: var(--font-body);
     font-size: 16px;
     font-weight: 300;
     line-height: 1.5;
     color: rgba(255, 255, 255, 0.92);
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
-    margin: 0;
 
     @include respond-from("tablet") {
         max-width: 290px;
@@ -343,7 +389,6 @@
 
     @include respond-to("tablet") {
         font-size: 18px;
-        line-height: 1.5;
     }
 }
 
@@ -369,26 +414,19 @@
     }
 }
 
-// =============================================
-// Availability
-// =============================================
-
 .availability {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    flex-shrink: 0;
+    align-self: flex-end;
     font-family: var(--font-body);
     font-size: 16px;
     font-weight: 300;
     color: var(--color-text-secondary);
+    will-change: transform;
 
     @include respond-to("tablet") {
-        margin-top: 16px;
-    }
-
-    @include respond-from("tablet") {
-        align-self: flex-end;
+        align-self: flex-start;
     }
 }
 
@@ -405,5 +443,14 @@
     .availabilityDot {
         background: var(--color-error);
         box-shadow: none;
+    }
+}
+
+@include reduced-motion {
+    .nameTrack,
+    .floater,
+    .introCardWrap,
+    .availability {
+        will-change: auto;
     }
 }

@@ -1,11 +1,12 @@
 import type { ShowcaseItem } from "@/shared/types";
 import type { Project } from "../model/project";
-import projectsData from "../model/projects.json";
+import { getProjects } from "../api/getProjects";
 
 const COLOR_ROTATION = ["purple", "blue", "orange"] as const;
 
-export function getAllProjects(): Project[] {
-    return [...(projectsData as Project[])].sort(
+export async function getAllProjects(): Promise<Project[]> {
+    const projects = await getProjects();
+    return [...projects].sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 }

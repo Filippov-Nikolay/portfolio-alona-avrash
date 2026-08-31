@@ -1,6 +1,7 @@
 export { Button } from "./Button";
 export { LangSwitcher } from "./LangSwitcher";
 export { Container } from "./Container";
+export { GlassSurface } from "./GlassSurface";
 export { GlowCard } from "./GlowCard";
 export { GridOverlay } from "./GridOverlay";
 export { NoiseLayer } from "./NoiseLayer";

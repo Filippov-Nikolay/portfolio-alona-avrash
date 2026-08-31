@@ -1,0 +1,450 @@
+@use "@/shared/styles/mixins" as *;
+
+.root {
+    --glass-radius: var(--radius-md);
+    --glass-base-color: rgba(10, 24, 52, 0.18);
+    --glass-border: rgba(255, 255, 255, 0.28);
+    --glass-fill-top: rgba(118, 146, 194, 0.18);
+    --glass-fill-bottom: rgba(8, 18, 42, 0.26);
+    --glass-fill-core: rgba(255, 255, 255, 0.08);
+    --glass-blur: 24px;
+    --glass-lens-blur: 34px;
+    --glass-saturate: 176%;
+    --glass-brightness: 0.82;
+    --glass-contrast: 1.18;
+    --glass-surface-opacity: 0.34;
+    --glass-depth-opacity: 0.94;
+    --glass-lens-opacity: 0.9;
+    --glass-caustic-opacity: 0.66;
+    --glass-sheen-opacity: 0.62;
+    --glass-prism-opacity: 0.12;
+    --glass-noise-opacity: 0.018;
+    --glass-rim-opacity: 0.96;
+    --glass-entry-delay: 0ms;
+    --glass-shadow:
+        0 28px 68px rgba(4, 12, 30, 0.22), 0 10px 24px rgba(4, 12, 30, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--glass-radius);
+    border: 1px solid var(--glass-border);
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.08) 0%,
+            var(--glass-fill-top) 12%,
+            rgba(255, 255, 255, 0.025) 42%,
+            var(--glass-fill-bottom) 100%
+        ),
+        linear-gradient(
+            112deg,
+            rgba(255, 255, 255, 0.16) 0%,
+            rgba(255, 255, 255, 0.05) 10%,
+            transparent 22%,
+            transparent 74%,
+            rgba(88, 218, 255, 0.05) 100%
+        ),
+        radial-gradient(circle at 14% 8%, rgba(255, 255, 255, 0.16), transparent 28%),
+        radial-gradient(circle at 84% 82%, rgba(255, 224, 118, 0.08), transparent 24%),
+        radial-gradient(circle at 100% 100%, var(--glass-fill-core), transparent 38%);
+    background-color: var(--glass-base-color);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate))
+        brightness(var(--glass-brightness)) contrast(var(--glass-contrast));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate))
+        brightness(var(--glass-brightness)) contrast(var(--glass-contrast));
+    box-shadow: var(--glass-shadow);
+    transition:
+        border-color 0.35s ease,
+        background 0.45s ease,
+        box-shadow 0.45s ease,
+        opacity 0.36s cubic-bezier(0.25, 0.1, 0.25, 1),
+        transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+        clip-path 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &::before,
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+    }
+
+    &::before {
+        background:
+            linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.24),
+                rgba(255, 255, 255, 0.06) 10%,
+                transparent 22%
+            ),
+            radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.22), transparent 18%),
+            radial-gradient(circle at 22% 18%, rgba(184, 217, 255, 0.08), transparent 28%),
+            linear-gradient(
+                108deg,
+                rgba(255, 255, 255, 0.11) 0%,
+                rgba(255, 255, 255, 0.04) 10%,
+                transparent 20%,
+                transparent 74%,
+                rgba(255, 255, 255, 0.04) 100%
+            );
+        opacity: var(--glass-surface-opacity);
+        z-index: 0;
+    }
+
+    &::after {
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.48),
+            inset 1px 0 0 rgba(255, 255, 255, 0.16),
+            inset -1px 0 0 rgba(255, 255, 255, 0.08),
+            inset 0 -1px 0 rgba(255, 255, 255, 0.05),
+            inset 0 -24px 48px rgba(4, 10, 24, 0.18),
+            0 0 0 1px rgba(255, 255, 255, 0.04),
+            0 -1px 12px rgba(255, 255, 255, 0.06);
+        opacity: var(--glass-rim-opacity);
+        z-index: 1;
+    }
+
+    @include can-hover {
+        &[data-interactive="true"]:hover {
+            border-color: rgba(255, 255, 255, 0.34);
+            box-shadow:
+                0 32px 76px rgba(4, 12, 30, 0.26),
+                0 12px 28px rgba(4, 12, 30, 0.16),
+                inset 0 1px 0 rgba(255, 255, 255, 0.24);
+            transform: translateY(-2px);
+        }
+    }
+}
+
+.depth,
+.lens,
+.caustic,
+.sheen,
+.prism,
+.noise {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.depth {
+    z-index: 0;
+    opacity: var(--glass-depth-opacity);
+    background:
+        radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.06), transparent 22%),
+        radial-gradient(circle at 100% 100%, rgba(4, 12, 28, 0.38), transparent 34%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 26%, rgba(4, 12, 28, 0.24)),
+        linear-gradient(135deg, rgba(38, 110, 202, 0.08), transparent 44%);
+}
+
+.lens {
+    z-index: 0;
+    opacity: var(--glass-lens-opacity);
+    background:
+        linear-gradient(
+            130deg,
+            rgba(255, 255, 255, 0.08) 0%,
+            rgba(255, 255, 255, 0.03) 22%,
+            rgba(10, 24, 52, 0.08) 54%,
+            rgba(10, 24, 52, 0.14) 100%
+        ),
+        radial-gradient(circle at 16% 12%, rgba(255, 255, 255, 0.12), transparent 20%),
+        radial-gradient(circle at 84% 76%, rgba(255, 230, 122, 0.1), transparent 22%);
+    -webkit-backdrop-filter: blur(var(--glass-lens-blur)) saturate(210%) brightness(0.72)
+        contrast(1.2);
+    backdrop-filter: blur(var(--glass-lens-blur)) saturate(210%) brightness(0.72) contrast(1.2);
+}
+
+.caustic {
+    z-index: 0;
+    opacity: var(--glass-caustic-opacity);
+    mix-blend-mode: screen;
+    background:
+        radial-gradient(
+            circle at 12% 12%,
+            rgba(255, 255, 255, 0.52) 0,
+            rgba(255, 255, 255, 0.22) 12%,
+            transparent 22%
+        ),
+        radial-gradient(
+            circle at 78% 72%,
+            rgba(255, 237, 104, 0.34) 0,
+            rgba(255, 237, 104, 0.18) 12%,
+            transparent 26%
+        ),
+        radial-gradient(circle at 28% 84%, rgba(70, 226, 255, 0.18), transparent 22%),
+        linear-gradient(
+            96deg,
+            rgba(255, 255, 255, 0.18) 0%,
+            rgba(255, 255, 255, 0.08) 8%,
+            transparent 14%,
+            transparent 70%,
+            rgba(255, 255, 255, 0.04) 100%
+        );
+    filter: blur(18px);
+    transform: translate3d(0, 0, 0) scale(1);
+    transition:
+        opacity 0.45s ease,
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sheen {
+    z-index: 1;
+    opacity: var(--glass-sheen-opacity);
+    mix-blend-mode: screen;
+    background: linear-gradient(
+        108deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.1) 6%,
+        transparent 14%,
+        transparent 76%,
+        rgba(255, 255, 255, 0.05) 92%,
+        rgba(255, 255, 255, 0.16) 100%
+    );
+    transform: translate3d(0, 0, 0);
+    transition:
+        opacity 0.45s ease,
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.prism {
+    z-index: 1;
+    inset: 1px;
+    padding: 1px;
+    opacity: var(--glass-prism-opacity);
+    mix-blend-mode: screen;
+    background:
+        linear-gradient(
+            90deg,
+            rgba(96, 226, 255, 0.22),
+            transparent 18%,
+            transparent 82%,
+            rgba(255, 233, 122, 0.2)
+        ),
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.12),
+            transparent 28%,
+            transparent 72%,
+            rgba(0, 0, 0, 0.08)
+        );
+    transform: translate3d(0, 0, 0);
+    transition:
+        opacity 0.45s ease,
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    mask-composite: exclude;
+}
+
+.noise {
+    z-index: 1;
+    opacity: var(--glass-noise-opacity);
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+}
+
+.content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+}
+
+.root[data-reveal="clip-up"] {
+    will-change: transform, clip-path;
+    transition-delay:
+        0ms, 0ms, 0ms, var(--glass-entry-delay), var(--glass-entry-delay), var(--glass-entry-delay);
+}
+
+.root[data-reveal="clip-up"] .content {
+    will-change: transform, opacity;
+    transition:
+        opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) calc(var(--glass-entry-delay) + 110ms),
+        transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) calc(var(--glass-entry-delay) + 110ms);
+}
+
+.root[data-reveal="clip-up"][data-reveal-state="hidden"] {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0) scale(0.985);
+    clip-path: inset(0 0 100% 0 round var(--glass-radius));
+}
+
+.root[data-reveal="clip-up"][data-reveal-state="hidden"] .content {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+}
+
+.root[data-reveal="clip-up"][data-reveal-state="visible"] {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 round var(--glass-radius));
+}
+
+.root[data-reveal="clip-up"][data-reveal-state="visible"] .content {
+    opacity: 1;
+    transform: none;
+}
+
+.root[data-tone="accent"] {
+    --glass-base-color: rgba(34, 42, 20, 0.18);
+    --glass-fill-top: rgba(216, 234, 80, 0.16);
+    --glass-fill-bottom: rgba(28, 36, 18, 0.24);
+    --glass-fill-core: rgba(234, 253, 39, 0.08);
+    --glass-border: rgba(234, 253, 39, 0.24);
+    --glass-caustic-opacity: 0.72;
+    --glass-prism-opacity: 0.14;
+}
+
+.root[data-intensity="soft"] {
+    --glass-blur: 18px;
+    --glass-lens-blur: 26px;
+    --glass-saturate: 158%;
+    --glass-caustic-opacity: 0.48;
+    --glass-sheen-opacity: 0.42;
+}
+
+.root[data-intensity="medium"] {
+    --glass-blur: 24px;
+    --glass-lens-blur: 34px;
+    --glass-saturate: 176%;
+}
+
+.root[data-intensity="strong"] {
+    --glass-blur: 30px;
+    --glass-lens-blur: 42px;
+    --glass-saturate: 190%;
+    --glass-caustic-opacity: 0.82;
+    --glass-sheen-opacity: 0.7;
+    --glass-prism-opacity: 0.16;
+}
+
+[data-theme="light"] .root {
+    --glass-base-color: rgba(8, 24, 56, 0.18);
+    --glass-border: rgba(255, 255, 255, 0.28);
+    --glass-fill-top: rgba(106, 136, 188, 0.18);
+    --glass-fill-bottom: rgba(10, 22, 48, 0.24);
+    --glass-fill-core: rgba(255, 255, 255, 0.06);
+    --glass-shadow:
+        0 26px 60px rgba(4, 12, 30, 0.2), 0 8px 20px rgba(4, 12, 30, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="light"] .root[data-tone="accent"] {
+    --glass-base-color: rgba(34, 42, 20, 0.16);
+    --glass-fill-top: rgba(216, 234, 80, 0.16);
+    --glass-fill-bottom: rgba(28, 36, 18, 0.22);
+    --glass-fill-core: rgba(234, 253, 39, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.26);
+}
+
+.root[data-preset="hero"] {
+    --glass-radius: var(--radius-md);
+    --glass-base-color: rgba(6, 20, 48, 0.24);
+    --glass-blur: 28px;
+    --glass-lens-blur: 38px;
+    --glass-saturate: 190%;
+    --glass-brightness: 0.76;
+    --glass-contrast: 1.22;
+    --glass-fill-top: rgba(88, 124, 188, 0.2);
+    --glass-fill-bottom: rgba(6, 18, 44, 0.3);
+    --glass-fill-core: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.32);
+    --glass-surface-opacity: 0.3;
+    --glass-depth-opacity: 0.98;
+    --glass-lens-opacity: 0.94;
+    --glass-caustic-opacity: 0.78;
+    --glass-sheen-opacity: 0.68;
+    --glass-prism-opacity: 0.16;
+    --glass-shadow:
+        0 30px 70px rgba(2, 10, 26, 0.28), 0 12px 28px rgba(2, 10, 26, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="light"] .root[data-preset="hero"] {
+    --glass-base-color: rgba(6, 20, 48, 0.22);
+    --glass-fill-top: rgba(88, 124, 188, 0.2);
+    --glass-fill-bottom: rgba(6, 18, 44, 0.28);
+    --glass-fill-core: rgba(255, 255, 255, 0.08);
+}
+
+.root[data-preset="showcase"] {
+    --glass-radius: var(--radius-lg);
+    --glass-blur: 24px;
+    --glass-fill-top: rgba(255, 255, 255, 0.12);
+    --glass-fill-bottom: rgba(255, 255, 255, 0.03);
+    --glass-fill-core: rgba(234, 253, 39, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.18);
+    --glass-caustic-opacity: 0.78;
+    --glass-prism-opacity: 0.15;
+}
+
+.root[data-preset="showcase"][data-glass-state="active"] {
+    --glass-fill-top: rgba(234, 253, 39, 0.16);
+    --glass-fill-bottom: rgba(255, 255, 255, 0.05);
+    --glass-fill-core: rgba(234, 253, 39, 0.14);
+    --glass-border: rgba(234, 253, 39, 0.3);
+    --glass-caustic-opacity: 0.9;
+    --glass-sheen-opacity: 0.88;
+}
+
+@include can-hover {
+    .root[data-interactive="true"]:hover .caustic {
+        opacity: calc(var(--glass-caustic-opacity) + 0.08);
+        transform: translate3d(0, -3%, 0) scale(1.015);
+    }
+
+    .root[data-interactive="true"]:hover .sheen {
+        opacity: calc(var(--glass-sheen-opacity) + 0.06);
+        transform: translate3d(2%, -2%, 0);
+    }
+
+    .root[data-interactive="true"]:hover .prism {
+        opacity: calc(var(--glass-prism-opacity) + 0.05);
+        transform: translate3d(1%, 0, 0);
+    }
+
+    .root[data-preset="showcase"][data-interactive="true"]:hover {
+        --glass-fill-top: rgba(234, 253, 39, 0.16);
+        --glass-fill-bottom: rgba(255, 255, 255, 0.05);
+        --glass-fill-core: rgba(234, 253, 39, 0.12);
+        --glass-border: rgba(234, 253, 39, 0.28);
+    }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .root {
+        background:
+            linear-gradient(180deg, rgba(92, 122, 176, 0.38), rgba(8, 20, 44, 0.44)),
+            radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.18), transparent 42%);
+    }
+}
+
+@include reduced-motion {
+    .root[data-reveal="clip-up"] {
+        opacity: 1;
+        transform: none;
+        clip-path: inset(0 round var(--glass-radius));
+    }
+
+    .root[data-reveal="clip-up"] .content {
+        transition: none;
+        opacity: 1;
+        transform: none;
+    }
+
+    .caustic,
+    .sheen,
+    .prism {
+        transition: none;
+        transform: none;
+    }
+}

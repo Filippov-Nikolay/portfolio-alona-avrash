@@ -4,37 +4,20 @@ import { useRef } from "react";
 import { useReducedMotion } from "framer-motion";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
-import { revealHeader } from "@/shared/lib/animation";
+import { formatStatValue, type ParsedStatValue } from "./lib/parseStatValue";
 
-const isCompact = () => window.matchMedia("(max-width: 767px)").matches;
-
-export function useStatsSectionAnimations() {
+export function useStatsSectionAnimations(parsedValues: ParsedStatValue[]) {
     const reduced = useReducedMotion();
 
     useScrollTriggerAutoRefresh([reduced]);
 
     const sectionRef = useRef<HTMLDivElement>(null);
-    const headerRef = useRef<HTMLDivElement>(null);
-    const headerLeadRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<HTMLDivElement>(null);
+    const valueRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
-    // == Header: terminal wrap slides in from left ============
-    useGSAP(
-        () => {
-            if (!sectionRef.current) return;
-            const header = headerRef.current;
-            const wrap = headerLeadRef.current;
-            if (!header || !wrap) return;
-
-            revealHeader({
-                leading: wrap,
-                trigger: header,
-                start: isCompact() ? "top 92%" : "top 90%",
-                reduced,
-            });
-        },
-        { scope: sectionRef, dependencies: [reduced], revertOnUpdate: true }
-    );
+    const setValueRef = (index: number) => (el: HTMLSpanElement | null) => {
+        valueRefs.current[index] = el;
+    };
 
     // == Stat grid: fades up as a unit =========================
     useGSAP(
@@ -69,5 +52,51 @@ export function useStatsSectionAnimations() {
         { scope: sectionRef, dependencies: [reduced], revertOnUpdate: true }
     );
 
-    return { sectionRef, headerRef, headerLeadRef, gridRef };
+    useGSAP(
+        () => {
+            const grid = gridRef.current;
+            if (!grid || reduced) {
+                return;
+            }
+
+            const counters = parsedValues.map((parsed, index) => ({
+                el: valueRefs.current[index],
+                parsed,
+                state: { current: 0 },
+            }));
+
+            const play = () => {
+                counters.forEach(({ el, parsed, state }) => {
+                    if (!el || !parsed.isAnimatable) return;
+
+                    state.current = 0;
+                    gsap.to(state, {
+                        current: parsed.target,
+                        duration: 1.1,
+                        ease: "power1.out",
+                        overwrite: true,
+                        onUpdate: () => {
+                            el.textContent = formatStatValue(state.current, parsed);
+                        },
+                    });
+                });
+            };
+
+            const observer = new IntersectionObserver(
+                ([entry]) => {
+                    if (entry.isIntersecting) {
+                        play();
+                    }
+                },
+                { threshold: 0.4 }
+            );
+
+            observer.observe(grid);
+
+            return () => observer.disconnect();
+        },
+        { scope: sectionRef, dependencies: [reduced, parsedValues], revertOnUpdate: true }
+    );
+
+    return { sectionRef, gridRef, setValueRef };
 }

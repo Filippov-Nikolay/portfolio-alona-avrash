@@ -119,49 +119,11 @@
     width: 440px;
     height: 100%;
     flex-shrink: 0;
-    // Frosted glass
-    background: rgba(234, 253, 39, 0.05);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: 1px solid rgba(234, 253, 39, 0.15);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     user-select: none;
     cursor: pointer;
     transition:
-        background 0.35s ease,
-        border-color 0.35s ease,
+        transform 0.35s ease,
         box-shadow 0.35s ease;
-
-    // Radial purple ambient
-    &::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-            ellipse 80% 60% at 50% 50%,
-            rgba(234, 253, 39, 0.07) 0%,
-            transparent 70%
-        );
-        pointer-events: none;
-    }
-
-    &.moreCardActive {
-        background: rgba(234, 253, 39, 0.09);
-        border-color: rgba(234, 253, 39, 0.32);
-        // box-shadow: 0 0 60px -10px rgba(234, 253, 39, 0.25);
-    }
-
-    @include can-hover {
-        &:hover {
-            background: rgba(234, 253, 39, 0.09);
-            border-color: rgba(234, 253, 39, 0.32);
-            // box-shadow: 0 0 60px -10px rgba(234, 253, 39, 0.25);
-        }
-    }
 
     @include respond-to("tablet") {
         width: clamp(300px, 82vw, 400px);
@@ -172,24 +134,31 @@
     }
 }
 
-// Subtle grid behind glass
+.moreContent {
+    position: relative;
+    height: 100%;
+}
+
 .moreGrid {
     position: absolute;
     inset: 0;
+    z-index: 0;
     background-image:
         linear-gradient(rgba(234, 253, 39, 0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(234, 253, 39, 0.04) 1px, transparent 1px);
     background-size: 44px 44px;
     pointer-events: none;
+    mask-image: radial-gradient(circle at 50% 50%, black 0%, black 62%, transparent 100%);
 }
 
-// Centered content column
 .moreInner {
     position: relative;
     z-index: 1;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 36px;
     padding: 40px 32px;
     text-align: center;
@@ -245,7 +214,7 @@
         }
     }
 
-    .moreCardActive & {
+    .moreCard[data-glass-state="active"] & {
         background: rgba(234, 253, 39, 0.2);
         border-color: rgba(234, 253, 39, 0.5);
         box-shadow:

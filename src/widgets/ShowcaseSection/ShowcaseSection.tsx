@@ -8,7 +8,7 @@ import { cn } from "@/shared/lib/cn";
 import { scrollToElementId } from "@/shared/lib/scroll";
 import { usePreloader, useThemeContext } from "@/shared/providers";
 import type { ShowcaseItem, ShowcaseCarouselI18n } from "@/shared/types";
-import { Section, ArrowIcon, ShowcaseModal } from "@/shared/ui";
+import { Section, ArrowIcon, ShowcaseModal, GlassSurface } from "@/shared/ui";
 import { ShowcaseCard } from "./components/ShowcaseCard";
 import styles from "./ShowcaseSection.module.scss";
 
@@ -360,28 +360,26 @@ interface MoreCardProps {
 
 function MoreCard({ isActive, label, desc }: MoreCardProps) {
     return (
-        <article
-            className={cn(styles.moreCard, isActive && styles.moreCardActive)}
+        <GlassSurface
+            as="article"
+            className={styles.moreCard}
+            contentClassName={styles.moreContent}
+            preset="showcase"
+            state={isActive ? "active" : "default"}
             aria-label={label}
         >
-            {/* Subtle grid overlay */}
             <div className={styles.moreGrid} aria-hidden="true" />
-
-            {/* Center content */}
             <div className={styles.moreInner}>
-                {/* Bouncing arrow circle */}
                 <div className={styles.moreArrowWrap} aria-hidden="true">
                     <span className={styles.moreArrowCircle}>
                         <ArrowIcon className={styles.moreArrowIcon} />
                     </span>
                 </div>
-
-                {/* Text */}
                 <div className={styles.moreTextWrap}>
                     <h3 className={styles.moreTitle}>{label}</h3>
                     <p className={styles.moreSubtitle}>{desc}</p>
                 </div>
             </div>
-        </article>
+        </GlassSurface>
     );
 }

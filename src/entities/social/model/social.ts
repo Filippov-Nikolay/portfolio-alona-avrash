@@ -1,4 +1,4 @@
-import type { ProjectImage } from "./project-image";
+import type { ProjectImage } from "@/shared/types/project-image";
 
 export interface Social {
     id: string;

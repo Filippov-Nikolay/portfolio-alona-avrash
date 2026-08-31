@@ -11,6 +11,5 @@ export type { FeaturesData, FeatureGroup, FeatureGroupIcon, FeaturesI18n } from 
 export type { TimelineEntry, TimelineIcon, TimelineI18n, TimelineData } from "./timeline";
 export type { NavItem } from "./navigation";
 export type { CategoryKey, CategoryOption } from "./category";
-export type { ProjectImage } from "./project-image";
-export type { Social } from "./socials";
+export type { ProjectImage, ImageFocalPoint } from "./project-image";
 export type { Tool } from "./tools";

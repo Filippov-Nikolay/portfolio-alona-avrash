@@ -6,13 +6,10 @@
         "downloadCv": "Pobierz CV"
     },
     "hero": {
-        "line1": "Twórz coś",
-        "line2": "<accent>wyjątkowego</accent>.",
-        "ctaLabel": "Odkryj",
-        "github": "GitHub",
-        "telegram": "Telegram",
-        "linkedin": "LinkedIn",
-        "instagram": "Instagram"
+        "role": "Projektantka graficzna",
+        "cta": "Pracujmy razem",
+        "availability": "Dostępna do współpracy",
+        "unavailable": "Obecnie niedostępna"
     },
     "contact": {
         "headlineStart": "Porozmawiajmy",

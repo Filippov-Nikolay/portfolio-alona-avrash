@@ -1,0 +1,22 @@
+[
+    {
+        "id": "pinterest",
+        "logo": { "src": "/assets/socials/Icon-pinterest.svg", "alt": "Pinterest" },
+        "link": "https://pinterest.com/"
+    },
+    {
+        "id": "behance",
+        "logo": { "src": "/assets/socials/Icon-behance.svg", "alt": "Behance" },
+        "link": "https://behance.net/"
+    },
+    {
+        "id": "linkedin",
+        "logo": { "src": "/assets/socials/Icon-linkedin.svg", "alt": "LinkedIn" },
+        "link": "https://www.linkedin.com/in/your-profile"
+    },
+    {
+        "id": "instagram",
+        "logo": { "src": "/assets/socials/Icon-instagram.svg", "alt": "Instagram" },
+        "link": "https://instagram.com/"
+    }
+]

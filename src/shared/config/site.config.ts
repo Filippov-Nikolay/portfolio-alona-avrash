@@ -15,6 +15,8 @@ export const siteConfig = {
         linkedin: "https://www.linkedin.com/in/your-profile",
         telegram: "https://t.me/your-username",
         instagram: "https://instagram.com/",
+        pinterest: "https://pinterest.com/",
+        behance: "https://behance.net/",
         email: "mailto:hello@example.com",
         // TODO: drop the real CV/resume PDF at this path.
         cv: "/cv/alona-avrash-cv.pdf",

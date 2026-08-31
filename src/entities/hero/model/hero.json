@@ -1,0 +1,42 @@
+{
+    "description": "I create visual identities and design solutions that communicate meaning and build connection.",
+    "availableForWork": true,
+    "floatingImages": [
+        {
+            "id": "esencha",
+            "image": {
+                "src": "/projects/image-esencha.png",
+                "alt": "ESENCHA",
+                "focalPoint": { "x": 56, "y": 55 },
+                "scale": 1.33
+            }
+        },
+        {
+            "id": "crusty",
+            "image": {
+                "src": "/projects/image-crusty.png",
+                "alt": "CRUSTY",
+                "focalPoint": { "x": 70, "y": 62 },
+                "scale": 1.3
+            }
+        },
+        {
+            "id": "logofolio",
+            "image": {
+                "src": "/projects/image-logofolio.png",
+                "alt": "LOGOFOLIO VOL.03",
+                "focalPoint": { "x": 50, "y": 46 },
+                "scale": 1.3
+            }
+        },
+        {
+            "id": "olva",
+            "image": {
+                "src": "/projects/image-olva.png",
+                "alt": "OLVA",
+                "focalPoint": { "x": 58, "y": 60 },
+                "scale": 1.32
+            }
+        }
+    ]
+}

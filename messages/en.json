@@ -6,13 +6,10 @@
         "downloadCv": "Download CV"
     },
     "hero": {
-        "line1": "Build something",
-        "line2": "<accent>remarkable</accent>.",
-        "ctaLabel": "Explore",
-        "github": "GitHub",
-        "telegram": "Telegram",
-        "linkedin": "LinkedIn",
-        "instagram": "Instagram"
+        "role": "Graphic designer",
+        "cta": "Let's work together",
+        "availability": "Available for work",
+        "unavailable": "Not available right now"
     },
     "contact": {
         "headlineStart": "Let's",

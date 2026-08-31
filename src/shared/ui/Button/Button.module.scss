@@ -12,6 +12,8 @@
     cursor: pointer;
     transition:
         background var(--transition-fast),
+        color var(--transition-fast),
+        border-color var(--transition-fast),
         opacity var(--transition-fast),
         box-shadow var(--transition-fast);
     white-space: nowrap;
@@ -28,24 +30,27 @@
 
 // === Variants ==========================================
 
-.second {
-    background: var(--color-bg-btn);
-    color: var(--color-text-primary-reverse);
+.primary {
+    background: var(--color-primary);
+    color: #000;
 
     @include can-hover {
         &:hover:not(:disabled) {
-            box-shadow: 0 0 20px rgba(234, 253, 39, 0.4);
+            background: #000;
+            color: var(--color-primary);
         }
     }
 }
 
-.primary {
-    background: var(--color-primary);
-    color: var(--color-text-primary);
+.second {
+    background: #fff;
+    border: 1px solid #000;
+    color: #000;
 
     @include can-hover {
         &:hover:not(:disabled) {
-            box-shadow: 0 0 20px rgba(234, 253, 39, 0.4);
+            background: var(--color-primary);
+            color: #000;
         }
     }
 }

@@ -6,11 +6,9 @@
     --hero-title-start-offset: 6vw;
 
     position: relative;
-    isolation: isolate;
     overflow-x: clip;
     overflow-y: visible;
     min-height: calc(100svh + var(--hero-scroll-runway));
-    z-index: 1;
 
     @include respond-to("tablet") {
         min-height: calc(100svh + var(--hero-scroll-runway-compact));

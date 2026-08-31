@@ -9,18 +9,6 @@
 .section {
     --_pad-top: 0px;
     --_pad-bottom: 40px;
-
-    position: relative;
-    isolation: isolate;
-    z-index: 4;
-    margin-top: calc(var(--hero-flat-handoff-overlap) * -1);
-    padding-top: var(--hero-flat-handoff-overlap);
-    background: var(--color-bg);
-
-    @include respond-to("tablet") {
-        margin-top: calc(var(--hero-flat-handoff-overlap-compact) * -1);
-        padding-top: var(--hero-flat-handoff-overlap-compact);
-    }
 }
 
 // === Carousel viewport (Embla root) ======================

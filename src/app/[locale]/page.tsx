@@ -63,6 +63,7 @@ export default async function HomePage({ params }: HomePageProps) {
     return (
         <main>
             <HeroSection />
+            <StatsSection items={stats} />
             <ShowcaseSection
                 initialItems={showcaseItems}
                 initialFeaturedIndex={0}
@@ -74,7 +75,6 @@ export default async function HomePage({ params }: HomePageProps) {
                 initialLabels={galleryLabels}
                 collectionUrl="https://instagram.com/"
             />
-            <StatsSection items={stats} />
             <ReviewSection reviews={reviews} />
             <ContactSection />
         </main>

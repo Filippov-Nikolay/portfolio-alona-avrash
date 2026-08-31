@@ -16,3 +16,6 @@ export { default as FolderIcon } from "./Folders.svg";
 export { default as AiIDEIcon } from "./AiIDE.svg";
 export { default as MoonIcon } from "./moon.svg";
 export { default as SunIcon } from "./sun.svg";
+export { default as BehanceIcon } from "./behance-logo.svg";
+export { default as PinterestIcon } from "./pinterest-logo.svg";
+export { default as DownloadIcon } from "./download.svg";

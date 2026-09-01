@@ -107,6 +107,16 @@ export function SelectedWorkSection({
                                     role="button"
                                     tabIndex={0}
                                     aria-label={`${labels.viewLabel}: ${project.name}`}
+                                    style={
+                                        {
+                                            "--card-hover-background": project.hover.background,
+                                            "--card-hover-accent": project.hover.accentColor,
+                                            "--card-hover-button-background":
+                                                project.hover.buttonBackground,
+                                            "--card-hover-button-text":
+                                                project.hover.buttonTextColor,
+                                        } as React.CSSProperties
+                                    }
                                     onClick={() => setSelectedIndex(index)}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" || e.key === " ") {
@@ -120,14 +130,16 @@ export function SelectedWorkSection({
                                             {String(rank).padStart(2, "0")}
                                         </span>
                                         {heroImage?.src && (
-                                            <Image
-                                                src={heroImage.src}
-                                                alt={heroImage.alt ?? project.name}
-                                                fill
-                                                className={styles.image}
-                                                sizes="(max-width: 767px) 92vw, (max-width: 1100px) 45vw, 340px"
-                                                draggable={false}
-                                            />
+                                            <div className={styles.imageMotion}>
+                                                <Image
+                                                    src={heroImage.src}
+                                                    alt={heroImage.alt ?? project.name}
+                                                    fill
+                                                    className={styles.image}
+                                                    sizes="(max-width: 767px) 92vw, (max-width: 1100px) 45vw, 340px"
+                                                    draggable={false}
+                                                />
+                                            </div>
                                         )}
                                     </div>
 

@@ -5,12 +5,31 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const isDev = process.env.NODE_ENV === "development";
 
+// SVGO's default preset strips `viewBox` whenever it exactly matches the
+// SVG's `width`/`height` attributes (true for most icons in this project) —
+// without a viewBox, CSS-resizing an icon crops its canvas instead of
+// scaling the artwork. Keep it so icons can be freely resized via CSS.
+const svgrOptions = {
+    svgoConfig: {
+        plugins: [
+            {
+                name: "preset-default",
+                params: {
+                    overrides: {
+                        removeViewBox: false,
+                    },
+                },
+            },
+        ],
+    },
+};
+
 const nextConfig: NextConfig = {
     // Turbopack (next dev)
     turbopack: {
         rules: {
             "*.svg": {
-                loaders: ["@svgr/webpack"],
+                loaders: [{ loader: "@svgr/webpack", options: svgrOptions }],
                 as: "*.tsx",
             },
         },
@@ -30,7 +49,7 @@ const nextConfig: NextConfig = {
         config.module.rules.push({
             test: /\.svg$/i,
             issuer: /\.[jt]sx?$/,
-            use: ["@svgr/webpack"],
+            use: [{ loader: "@svgr/webpack", options: svgrOptions }],
         });
 
         return config;

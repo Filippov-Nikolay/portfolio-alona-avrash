@@ -36,6 +36,11 @@
         "more": "Więcej",
         "moreDesc": "Przeglądaj całą kolekcję."
     },
+    "selectedWork": {
+        "title": "Wybrane prace",
+        "viewAll": "Zobacz wszystkie prace",
+        "viewLabel": "Zobacz projekt"
+    },
     "gallery": {
         "subtitle": "Branding, logo i opakowania — cała kolekcja.",
         "featured": "WYRÓŻNIONY",

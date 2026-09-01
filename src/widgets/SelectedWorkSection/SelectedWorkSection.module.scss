@@ -1,0 +1,220 @@
+@use "@/shared/styles/mixins" as *;
+
+.section {
+    --_pad-top: 96px;
+    --_pad-bottom: 96px;
+
+    background: var(--color-surface);
+
+    @include respond-to("tablet") {
+        --_pad-top: 56px;
+        --_pad-bottom: 56px;
+    }
+}
+
+// === Header ==============================================
+
+.header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 40px;
+
+    @include respond-to("mobile") {
+        margin-bottom: 28px;
+    }
+}
+
+.title {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: clamp(16px, 2.4vw, 20px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+}
+
+.viewAll {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
+    font-family: var(--font-body);
+    font-size: 16px;
+    font-weight: 300;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+    text-decoration: none;
+
+    @include transition(opacity);
+
+    @include can-hover {
+        &:hover {
+            opacity: 0.6;
+        }
+    }
+
+    @include focus-ring;
+}
+
+.viewAllArrow {
+    width: 11px;
+    height: auto;
+    transform: rotate(-90deg);
+}
+
+// === Grid ==================================================
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+
+    @include respond-to("tablet") {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    @include respond-to("mobile") {
+        grid-template-columns: 1fr;
+    }
+}
+
+// === Card ==================================================
+
+.card {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+
+    @include transition(transform, box-shadow, border-color);
+    @include focus-ring;
+
+    @include can-hover {
+        &:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+
+            .image {
+                transform: scale(1.04);
+            }
+
+            .cardArrowBtn {
+                background: #000;
+                color: var(--color-primary);
+            }
+        }
+    }
+}
+
+.visual {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    width: 100%;
+    overflow: hidden;
+    background: var(--color-visual-bg);
+    border-radius: 10px;
+}
+
+.badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 1;
+    padding: 5px 6px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: #000;
+}
+
+.image {
+    object-fit: cover;
+
+    @include transition(transform);
+}
+
+.info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+    padding: 10px 15px;
+}
+
+.cardTitle {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+}
+
+.cardTags {
+    @include text-truncate;
+
+    margin: 0;
+    max-width: 100%;
+    font-size: 16px;
+    font-weight: 300;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+}
+
+.cardFooter {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.cardYear {
+    font-size: 16px;
+    color: var(--color-text-primary);
+}
+
+.cardArrowBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: #000;
+
+    @include transition(background, color);
+}
+
+.cardArrow {
+    width: 12px;
+    height: auto;
+    transform: rotate(-135deg);
+}
+
+@include reduced-motion {
+    .card {
+        &:hover {
+            transform: none;
+        }
+    }
+
+    .image {
+        &:hover {
+            transform: none;
+        }
+    }
+}

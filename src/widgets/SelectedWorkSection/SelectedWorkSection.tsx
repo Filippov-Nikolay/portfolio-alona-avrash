@@ -1,0 +1,143 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import { m } from "framer-motion";
+import type { ShowcaseItem } from "@/shared/types";
+import type { Project } from "@/entities/project/model/project";
+import { Container, Section, ShowcaseModal, ArrowIcon } from "@/shared/ui";
+import { useMotionVariants } from "@/shared/hooks";
+import { staggerContainer } from "@/shared/lib/motion/stagger";
+import { fadeIn } from "@/shared/lib/motion/fade-in";
+import { scrollToElementId } from "@/shared/lib/scroll";
+import styles from "./SelectedWorkSection.module.scss";
+
+interface SelectedWorkLabels {
+    title: string;
+    viewAll: string;
+    viewLabel: string;
+}
+
+interface SelectedWorkSectionProps {
+    projects: Project[];
+    modalItems: ShowcaseItem[];
+    categoryLabels: string[][];
+    labels: SelectedWorkLabels;
+    viewAllTargetId?: string;
+}
+
+function handleViewAllClick(targetId: string) {
+    return (e: React.MouseEvent) => {
+        e.preventDefault();
+        scrollToElementId(targetId, { offset: 80 });
+    };
+}
+
+export function SelectedWorkSection({
+    projects,
+    modalItems,
+    categoryLabels,
+    labels,
+    viewAllTargetId = "showcase",
+}: SelectedWorkSectionProps) {
+    const safeStagger = useMotionVariants(staggerContainer);
+    const safeFadeIn = useMotionVariants(fadeIn);
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+    if (projects.length === 0) {
+        return null;
+    }
+
+    const selectedItem = selectedIndex === null ? null : (modalItems[selectedIndex] ?? null);
+
+    return (
+        <Section id="selected-work" className={styles.section}>
+            <Container>
+                <m.div
+                    variants={safeStagger}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.2 }}
+                >
+                    <m.div className={styles.header} variants={safeFadeIn}>
+                        <h2 className={styles.title}>{labels.title}</h2>
+                        <a
+                            href={`#${viewAllTargetId}`}
+                            className={styles.viewAll}
+                            onClick={handleViewAllClick(viewAllTargetId)}
+                        >
+                            {labels.viewAll}
+                            <ArrowIcon className={styles.viewAllArrow} />
+                        </a>
+                    </m.div>
+
+                    <div className={styles.grid}>
+                        {projects.map((project, index) => {
+                            const heroImage =
+                                project.image.find((image) => image.isHero) ?? project.image[0];
+                            const rank = project.selectedWork?.rank ?? index + 1;
+                            const tags = categoryLabels[index] ?? [];
+                            const year = new Date(project.createdAt).getFullYear();
+
+                            return (
+                                <m.div
+                                    key={project.id}
+                                    className={styles.card}
+                                    variants={safeFadeIn}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`${labels.viewLabel}: ${project.name}`}
+                                    onClick={() => setSelectedIndex(index)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                            e.preventDefault();
+                                            setSelectedIndex(index);
+                                        }
+                                    }}
+                                >
+                                    <div className={styles.visual}>
+                                        <span className={styles.badge} aria-hidden="true">
+                                            {String(rank).padStart(2, "0")}
+                                        </span>
+                                        {heroImage?.src && (
+                                            <Image
+                                                src={heroImage.src}
+                                                alt={heroImage.alt ?? project.name}
+                                                fill
+                                                className={styles.image}
+                                                sizes="(max-width: 767px) 92vw, (max-width: 1100px) 45vw, 340px"
+                                                draggable={false}
+                                            />
+                                        )}
+                                    </div>
+
+                                    <div className={styles.info}>
+                                        <h3 className={styles.cardTitle}>{project.name}</h3>
+                                        {tags.length > 0 && (
+                                            <p className={styles.cardTags}>{tags.join(" | ")}</p>
+                                        )}
+                                        <div className={styles.cardFooter}>
+                                            <span className={styles.cardYear}>{year}</span>
+                                            <span
+                                                className={styles.cardArrowBtn}
+                                                aria-hidden="true"
+                                            >
+                                                <ArrowIcon className={styles.cardArrow} />
+                                            </span>
+                                        </div>
+                                    </div>
+                                </m.div>
+                            );
+                        })}
+                    </div>
+                </m.div>
+            </Container>
+
+            <ShowcaseModal
+                item={selectedItem}
+                onClose={() => setSelectedIndex(null)}
+                viewLabel={labels.viewLabel}
+            />
+        </Section>
+    );
+}

@@ -16,6 +16,9 @@
             "accentColor": "#3A1B16",
             "buttonBackground": "#012D14",
             "buttonTextColor": "#F7BAE3"
+        },
+        "selectedWork": {
+            "rank": 1
         }
     },
     {
@@ -70,6 +73,9 @@
             "accentColor": "#102208",
             "buttonBackground": "#243512",
             "buttonTextColor": "#B9C42A"
+        },
+        "selectedWork": {
+            "rank": 2
         }
     },
     {
@@ -89,6 +95,9 @@
             "accentColor": "#FFEDD7",
             "buttonBackground": "#000417",
             "buttonTextColor": "#FFEDD7"
+        },
+        "selectedWork": {
+            "rank": 3
         }
     },
     {

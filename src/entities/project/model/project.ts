@@ -8,6 +8,10 @@ export interface ProjectHover {
     buttonTextColor: string;
 }
 
+export interface SelectedWorkMeta {
+    rank: number;
+}
+
 export interface Project {
     id: number;
     image: ProjectImage[];
@@ -15,4 +19,5 @@ export interface Project {
     name: string;
     categories: CategoryKey[];
     hover: ProjectHover;
+    selectedWork?: SelectedWorkMeta;
 }

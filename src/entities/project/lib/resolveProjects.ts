@@ -11,6 +11,23 @@ export async function getAllProjects(): Promise<Project[]> {
     );
 }
 
+const DEFAULT_SELECTED_WORK_LIMIT = 3;
+
+export function getSelectedWork(
+    projects: Project[],
+    limit = DEFAULT_SELECTED_WORK_LIMIT
+): Project[] {
+    return projects
+        .filter(
+            (
+                project
+            ): project is Project & { selectedWork: NonNullable<Project["selectedWork"]> } =>
+                Boolean(project.selectedWork)
+        )
+        .sort((a, b) => a.selectedWork.rank - b.selectedWork.rank)
+        .slice(0, limit);
+}
+
 export function toShowcaseItem(
     project: Project,
     index: number,

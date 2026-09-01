@@ -4,3 +4,5 @@ export { useMotionVariants } from "./useMotionVariants";
 export { useMounted } from "./useMounted";
 export { useArrayRefs } from "./useArrayRefs";
 export { useScrollTriggerAutoRefresh } from "./useScrollTriggerAutoRefresh";
+export { useHeroDepthHandoffRange } from "./useHeroDepthHandoffRange";
+export { useHeroDepthHandoffProgress } from "./useHeroDepthHandoffProgress";

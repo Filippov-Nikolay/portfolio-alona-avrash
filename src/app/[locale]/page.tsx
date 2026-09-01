@@ -3,7 +3,6 @@ import { HeroSection } from "@/widgets/HeroSection";
 import { GallerySection } from "@/widgets/GallerySection";
 import { ShowcaseSection } from "@/widgets/ShowcaseSection";
 import { ServicesSection } from "@/widgets/ServicesSection";
-import { StatsSection } from "@/widgets/StatsSection";
 import { ReviewSection } from "@/widgets/ReviewSection";
 import { ContactSection } from "@/widgets/ContactSection";
 import type { CategoryKey } from "@/shared/types";
@@ -62,8 +61,7 @@ export default async function HomePage({ params }: HomePageProps) {
 
     return (
         <main>
-            <HeroSection />
-            <StatsSection items={stats} />
+            <HeroSection stats={stats} />
             <ShowcaseSection
                 initialItems={showcaseItems}
                 initialFeaturedIndex={0}

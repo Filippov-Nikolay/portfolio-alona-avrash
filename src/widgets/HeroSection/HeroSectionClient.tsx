@@ -3,18 +3,21 @@
 import Image from "next/image";
 import { m, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { Container, Section, NoiseLayer, Button, GlassSurface } from "@/shared/ui";
-import { siteConfig } from "@/shared/config/site.config";
-import { cn } from "@/shared/lib/cn";
-import { useMotionVariants } from "@/shared/hooks/useMotionVariants";
-import { staggerContainer } from "@/shared/lib/motion/stagger";
-import { fadeIn } from "@/shared/lib/motion/fade-in";
-import { reveal } from "@/shared/lib/motion/reveal";
-import { scrollToElementId } from "@/shared/lib/scroll";
-import { usePreloader } from "@/shared/providers";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { HeroContent } from "@/entities/hero/model/hero";
 import type { Social } from "@/entities/social/model/social";
+import type { StatItem } from "@/entities/stat/model/stat";
+import { STATS_CAMERA_MOTION_END } from "@/shared/config/heroDepthHandoff";
+import { siteConfig } from "@/shared/config/site.config";
+import { useHeroDepthHandoffProgress, useMotionVariants } from "@/shared/hooks";
+import { cn } from "@/shared/lib/cn";
+import { fadeIn } from "@/shared/lib/motion/fade-in";
+import { reveal } from "@/shared/lib/motion/reveal";
+import { staggerContainer } from "@/shared/lib/motion/stagger";
+import { scrollToElementId } from "@/shared/lib/scroll";
+import { usePreloader } from "@/shared/providers";
+import { Button, Container, GlassSurface, NoiseLayer, Section } from "@/shared/ui";
+import { StatsSection } from "@/widgets/StatsSection";
 import styles from "./HeroSection.module.scss";
 
 const [NAME_FIRST, ...nameRest] = siteConfig.name.split(" ");
@@ -27,6 +30,9 @@ const PARALLAX_START_ASSIST_END = 0.05;
 const PARALLAX_END_ASSIST_START = 0.86;
 const TITLE_EXIT_SAFETY_MARGIN_MIN = 24;
 const TITLE_EXIT_SAFETY_MARGIN_RATIO = 0.04;
+const CAMERA_SETTLE_END = 0.96;
+const CAMERA_PROGRESS_INPUT = [0, 0.32, 0.62, 0.86, 1];
+const CAMERA_PROGRESS_OUTPUT = [0, 0.24, 0.52, 0.8, 1];
 
 const FLOATER_LAYER_CLASSES = [
     styles.floaterBack,
@@ -74,22 +80,41 @@ function readTranslateX(node: HTMLElement) {
     return Number(values[values.length === 16 ? 12 : 4] ?? 0);
 }
 
+function useCompactViewport() {
+    const [isCompact, setIsCompact] = useState(false);
+
+    useEffect(() => {
+        const media = window.matchMedia("(max-width: 767px)");
+        const update = () => setIsCompact(media.matches);
+
+        update();
+        media.addEventListener("change", update);
+
+        return () => media.removeEventListener("change", update);
+    }, []);
+
+    return isCompact;
+}
+
 interface HeroSectionClientProps {
     hero: HeroContent;
     socials: Social[];
+    stats: StatItem[];
 }
 
-export function HeroSectionClient({ hero, socials }: HeroSectionClientProps) {
+export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientProps) {
     const t = useTranslations("hero");
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
     const safeReveal = useMotionVariants(reveal);
     const { isReady } = usePreloader();
     const reduced = useReducedMotion();
-    const scrollTrackRef = useRef<HTMLElement>(null);
+    const isCompact = useCompactViewport();
+    const scrollTrackRef = useRef<HTMLDivElement>(null);
     const titleTrackRef = useRef<HTMLDivElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null);
     const [titleExitX, setTitleExitX] = useState(-320);
+    const { progress: depthProgress } = useHeroDepthHandoffProgress();
 
     const { scrollYProgress } = useScroll({
         target: scrollTrackRef,
@@ -163,6 +188,57 @@ export function HeroSectionClient({ hero, socials }: HeroSectionClientProps) {
         );
     });
 
+    const heroOpacity = useTransform(
+        depthProgress,
+        reduced ? [0, 1] : [0, 0.14, 0.32, 0.5, 1],
+        reduced ? [1, 0] : [1, 0.82, 0.46, 0, 0]
+    );
+    const heroPointerEvents = useTransform(() =>
+        depthProgress.get() >= (reduced ? 0.995 : 0.5) ? "none" : "auto"
+    );
+    const statsCameraProgress = useTransform(
+        depthProgress,
+        [0, STATS_CAMERA_MOTION_END, 1],
+        [0, 1, 1]
+    );
+    const cameraProgress = useTransform(
+        statsCameraProgress,
+        CAMERA_PROGRESS_INPUT,
+        CAMERA_PROGRESS_OUTPUT
+    );
+
+    const depthStartZ = reduced ? 0 : isCompact ? 220 : 420;
+    const depthMidZ = reduced ? 0 : isCompact ? 92 : 172;
+    const depthStartScale = reduced ? 1 : isCompact ? 2.15 : 2.9;
+    const depthNearScale = reduced ? 1 : isCompact ? 1.72 : 2.08;
+    const depthMidScale = reduced ? 1 : isCompact ? 1.38 : 1.52;
+    const depthLateScale = reduced ? 1 : isCompact ? 1.12 : 1.16;
+    const depthStartY = reduced ? 0 : isCompact ? -240 : -430;
+    const depthMidY = reduced ? 0 : isCompact ? -96 : -170;
+    const statsOpacity = useTransform(
+        cameraProgress,
+        reduced ? [0, 1] : [0, 0.15, 0.3, 0.5, 0.92, 1],
+        reduced ? [0, 1] : [0, 0.2, 0.55, 0.92, 1, 1]
+    );
+    const statsZ = useTransform(
+        cameraProgress,
+        [0, 0.52, CAMERA_SETTLE_END, 1],
+        [depthStartZ, depthMidZ, 0, 0]
+    );
+    const statsScale = useTransform(
+        cameraProgress,
+        [0, 0.24, 0.52, 0.8, CAMERA_SETTLE_END, 1],
+        [depthStartScale, depthNearScale, depthMidScale, depthLateScale, 1, 1]
+    );
+    const statsY = useTransform(
+        cameraProgress,
+        [0, 0.55, CAMERA_SETTLE_END, 1],
+        [depthStartY, depthMidY, 0, 0]
+    );
+    const statsPointerEvents = useTransform(() =>
+        cameraProgress.get() <= (reduced ? 0.02 : 0.08) ? "none" : "auto"
+    );
+
     const titleX = useTransform(
         scrollYProgress,
         [0, TITLE_TRAVEL_END, 1],
@@ -202,126 +278,168 @@ export function HeroSectionClient({ hero, socials }: HeroSectionClientProps) {
     const floaterYValues = [floaterOneY, floaterTwoY, floaterThreeY, floaterFourY];
 
     return (
-        <Section ref={scrollTrackRef} className={styles.hero}>
-            <NoiseLayer />
-            <div className={styles.glow} aria-hidden="true" />
+        <Section id="hero" className={styles.hero}>
+            <div
+                id="hero-scroll-track"
+                ref={scrollTrackRef}
+                className={styles.scrollTrack}
+                aria-hidden="true"
+            />
 
-            <Container className={styles.container}>
+            <div className={styles.stage}>
                 <m.div
-                    className={styles.content}
-                    variants={safeStagger}
-                    initial="hidden"
-                    animate={isReady ? "visible" : "hidden"}
+                    className={styles.heroLayer}
+                    style={{ opacity: heroOpacity, pointerEvents: heroPointerEvents }}
                 >
-                    <m.div className={styles.topRow} variants={safeFadeIn}>
-                        <span className={styles.role}>{t("role")}</span>
+                    <NoiseLayer />
+                    <div className={styles.glow} aria-hidden="true" />
 
-                        <div className={styles.socials}>
-                            {socials.map((social) => (
-                                <a
-                                    key={social.id}
-                                    href={social.link}
-                                    className={styles.socialLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    aria-label={social.logo.alt ?? social.id}
-                                    style={
-                                        {
-                                            "--social-icon": `url(${social.logo.src})`,
-                                        } as CSSProperties
-                                    }
-                                >
-                                    <span className={styles.socialIcon} aria-hidden="true" />
-                                </a>
-                            ))}
-                        </div>
-                    </m.div>
-
-                    <div className={styles.nameStage}>
+                    <Container className={styles.container}>
                         <m.div
-                            ref={titleTrackRef}
-                            className={styles.nameTrack}
-                            variants={safeFadeIn}
-                            style={{ x: titleX }}
+                            className={styles.content}
+                            variants={safeStagger}
+                            initial="hidden"
+                            animate={isReady ? "visible" : "hidden"}
                         >
-                            <h1 ref={titleRef} className={styles.name}>
-                                <span className={styles.nameLine}>{NAME_FIRST}</span>
-                                <span className={cn(styles.nameLine, styles.nameLineEnd)}>
-                                    {NAME_LAST}
-                                </span>
-                            </h1>
-                        </m.div>
-                    </div>
+                            <m.div className={styles.topRow} variants={safeFadeIn}>
+                                <span className={styles.role}>{t("role")}</span>
 
-                    {hero.floatingImages.length > 0 && (
-                        <m.div className={styles.floaters} aria-hidden="true">
-                            {hero.floatingImages.slice(0, 4).map((floater, index) => (
-                                <m.div
-                                    key={floater.id}
-                                    className={cn(
-                                        styles.floater,
-                                        FLOATER_LAYER_CLASSES[index] ?? styles.floaterFront
-                                    )}
-                                    variants={safeFadeIn}
-                                    style={{ y: floaterYValues[index] }}
-                                >
-                                    <Image
-                                        src={floater.image.src}
-                                        alt={floater.image.alt ?? ""}
-                                        fill
-                                        className={styles.floaterImage}
-                                        style={{
-                                            objectPosition: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
-                                            transform: `scale(${floater.image.scale ?? 1})`,
-                                            transformOrigin: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
-                                        }}
-                                        sizes="(max-width: 768px) 42vw, 240px"
-                                        draggable={false}
-                                    />
-                                </m.div>
-                            ))}
-                        </m.div>
-                    )}
-
-                    <m.div className={styles.introRow} variants={safeReveal}>
-                        <m.div className={styles.introCardWrap} style={{ y: introY }}>
-                            <GlassSurface
-                                as="article"
-                                className={styles.introCard}
-                                contentClassName={styles.introCardContent}
-                                preset="hero"
-                                interactive={false}
-                            >
-                                <div className={styles.introTextCol}>
-                                    <p className={styles.description}>{hero.description}</p>
-
-                                    <Button
-                                        as="a"
-                                        href="#contact"
-                                        variant="primary"
-                                        size="lg"
-                                        className={styles.cta}
-                                        onClick={handleCtaClick}
-                                    >
-                                        {t("cta")}
-                                    </Button>
+                                <div className={styles.socials}>
+                                    {socials.map((social) => (
+                                        <a
+                                            key={social.id}
+                                            href={social.link}
+                                            className={styles.socialLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            aria-label={social.logo.alt ?? social.id}
+                                            style={
+                                                {
+                                                    "--social-icon": `url(${social.logo.src})`,
+                                                } as CSSProperties
+                                            }
+                                        >
+                                            <span
+                                                className={styles.socialIcon}
+                                                aria-hidden="true"
+                                            />
+                                        </a>
+                                    ))}
                                 </div>
-                            </GlassSurface>
-                        </m.div>
+                            </m.div>
 
-                        <m.span
-                            className={cn(
-                                styles.availability,
-                                !hero.availableForWork && styles.availabilityOff
+                            <div className={styles.nameStage}>
+                                <m.div
+                                    ref={titleTrackRef}
+                                    className={styles.nameTrack}
+                                    variants={safeFadeIn}
+                                    style={{ x: titleX }}
+                                >
+                                    <h1 ref={titleRef} className={styles.name}>
+                                        <span className={styles.nameLine}>{NAME_FIRST}</span>
+                                        <span className={cn(styles.nameLine, styles.nameLineEnd)}>
+                                            {NAME_LAST}
+                                        </span>
+                                    </h1>
+                                </m.div>
+                            </div>
+
+                            {hero.floatingImages.length > 0 && (
+                                <m.div className={styles.floaters} aria-hidden="true">
+                                    {hero.floatingImages.slice(0, 4).map((floater, index) => (
+                                        <m.div
+                                            key={floater.id}
+                                            className={cn(
+                                                styles.floater,
+                                                FLOATER_LAYER_CLASSES[index] ?? styles.floaterFront
+                                            )}
+                                            variants={safeFadeIn}
+                                            style={{ y: floaterYValues[index] }}
+                                        >
+                                            <Image
+                                                src={floater.image.src}
+                                                alt={floater.image.alt ?? ""}
+                                                fill
+                                                className={styles.floaterImage}
+                                                style={{
+                                                    objectPosition: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
+                                                    transform: `scale(${floater.image.scale ?? 1})`,
+                                                    transformOrigin: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
+                                                }}
+                                                sizes="(max-width: 768px) 42vw, 240px"
+                                                draggable={false}
+                                            />
+                                        </m.div>
+                                    ))}
+                                </m.div>
                             )}
-                            style={{ y: availabilityY }}
-                        >
-                            <span className={styles.availabilityDot} aria-hidden="true" />
-                            {hero.availableForWork ? t("availability") : t("unavailable")}
-                        </m.span>
-                    </m.div>
+
+                            <m.div className={styles.introRow} variants={safeReveal}>
+                                <m.div className={styles.introCardWrap} style={{ y: introY }}>
+                                    <GlassSurface
+                                        as="article"
+                                        className={styles.introCard}
+                                        contentClassName={styles.introCardContent}
+                                        preset="hero"
+                                        interactive={false}
+                                    >
+                                        <div className={styles.introTextCol}>
+                                            <p className={styles.description}>{hero.description}</p>
+
+                                            <Button
+                                                as="a"
+                                                href="#contact"
+                                                variant="primary"
+                                                size="lg"
+                                                className={styles.cta}
+                                                onClick={handleCtaClick}
+                                            >
+                                                {t("cta")}
+                                            </Button>
+                                        </div>
+                                    </GlassSurface>
+                                </m.div>
+
+                                <m.span
+                                    className={cn(
+                                        styles.availability,
+                                        !hero.availableForWork && styles.availabilityOff
+                                    )}
+                                    style={{ y: availabilityY }}
+                                >
+                                    <span className={styles.availabilityDot} aria-hidden="true" />
+                                    {hero.availableForWork ? t("availability") : t("unavailable")}
+                                </m.span>
+                            </m.div>
+                        </m.div>
+                    </Container>
                 </m.div>
-            </Container>
+
+                <div className={styles.statsViewport}>
+                    <m.div
+                        className={styles.statsDepthPlane}
+                        transformTemplate={(_, generatedTransform) =>
+                            generatedTransform === "none"
+                                ? "translate3d(0px, 0px, 0px) scale(1)"
+                                : generatedTransform
+                        }
+                        style={{
+                            opacity: statsOpacity,
+                            z: statsZ,
+                            scale: statsScale,
+                            y: statsY,
+                            pointerEvents: statsPointerEvents,
+                        }}
+                    >
+                        <StatsSection
+                            as="div"
+                            items={stats}
+                            depthProgress={cameraProgress}
+                            className={styles.statsSection}
+                        />
+                    </m.div>
+                </div>
+            </div>
         </Section>
     );
 }

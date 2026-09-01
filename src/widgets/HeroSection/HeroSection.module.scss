@@ -4,25 +4,83 @@
     --_pad-top: 30px;
     --_pad-bottom: 0px;
     --hero-title-start-offset: 6vw;
+    --stats-camera-runway: clamp(1120px, 148svh, 1540px);
+    --stats-handoff-runway: clamp(152px, 22svh, 250px);
 
     position: relative;
     overflow-x: clip;
     overflow-y: visible;
-    min-height: calc(100svh + var(--hero-scroll-runway));
+    min-height: calc(
+        100svh + var(--hero-scroll-runway) + var(--stats-camera-runway) +
+            var(--stats-handoff-runway)
+    );
 
     @include respond-to("tablet") {
-        min-height: calc(100svh + var(--hero-scroll-runway-compact));
+        min-height: calc(
+            100svh + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
+                var(--stats-handoff-runway)
+        );
+
+        --stats-camera-runway: clamp(720px, 108svh, 960px);
+        --stats-handoff-runway: clamp(112px, 18svh, 180px);
     }
+}
+
+.scrollTrack {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 1px;
+    height: calc(100svh + var(--hero-scroll-runway));
+    pointer-events: none;
+    opacity: 0;
+
+    @include respond-to("tablet") {
+        height: calc(100svh + var(--hero-scroll-runway-compact));
+    }
+}
+
+.stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: clip;
 }
 
 .container {
     position: relative;
-    min-height: calc(100svh + var(--hero-scroll-runway));
+    min-height: 100%;
     overflow: visible;
+}
 
-    @include respond-to("tablet") {
-        min-height: calc(100svh + var(--hero-scroll-runway-compact));
-    }
+.heroLayer {
+    position: absolute;
+    inset: 0;
+    will-change: opacity;
+}
+
+.statsViewport {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: clip;
+    perspective: 1320px;
+    perspective-origin: 50% 50%;
+}
+
+.statsDepthPlane {
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    transform-origin: 50% 50%;
+    transform-style: preserve-3d;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+}
+
+.statsSection {
+    width: 100%;
 }
 
 .glow {
@@ -49,8 +107,7 @@
 .content {
     @include flex-column;
 
-    position: sticky;
-    top: 0;
+    position: relative;
     width: 100%;
     min-height: 100svh;
     height: 100svh;
@@ -445,6 +502,9 @@
 }
 
 @include reduced-motion {
+    .stage,
+    .heroLayer,
+    .statsDepthPlane,
     .nameTrack,
     .floater,
     .introCardWrap,

@@ -6,3 +6,4 @@ export { useArrayRefs } from "./useArrayRefs";
 export { useScrollTriggerAutoRefresh } from "./useScrollTriggerAutoRefresh";
 export { useHeroDepthHandoffRange } from "./useHeroDepthHandoffRange";
 export { useHeroDepthHandoffProgress } from "./useHeroDepthHandoffProgress";
+export { useStatsSelectedProgress } from "./useStatsSelectedProgress";

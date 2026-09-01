@@ -6,23 +6,33 @@
     --hero-title-start-offset: 6vw;
     --stats-camera-runway: clamp(1120px, 148svh, 1540px);
     --stats-handoff-runway: clamp(152px, 22svh, 250px);
+    --stats-selected-runway: clamp(1120px, 150svh, 1560px);
+    --selected-final-offset: clamp(440px, 62svh, 840px);
 
     position: relative;
     overflow-x: clip;
     overflow-y: visible;
-    min-height: calc(
+
+    @include respond-to("tablet") {
+        --stats-camera-runway: clamp(720px, 108svh, 960px);
+        --stats-handoff-runway: clamp(112px, 18svh, 180px);
+        --stats-selected-runway: clamp(760px, 112svh, 980px);
+        --selected-final-offset: clamp(292px, 52svh, 460px);
+    }
+}
+
+.transitionTrack {
+    position: relative;
+    height: calc(
         100svh + var(--hero-scroll-runway) + var(--stats-camera-runway) +
-            var(--stats-handoff-runway)
+            var(--stats-handoff-runway) + var(--stats-selected-runway)
     );
 
     @include respond-to("tablet") {
-        min-height: calc(
+        height: calc(
             100svh + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
-                var(--stats-handoff-runway)
+                var(--stats-handoff-runway) + var(--stats-selected-runway)
         );
-
-        --stats-camera-runway: clamp(720px, 108svh, 960px);
-        --stats-handoff-runway: clamp(112px, 18svh, 180px);
     }
 }
 
@@ -39,11 +49,30 @@
     }
 }
 
+.statsCameraTrack {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 1px;
+    height: calc(
+        100svh + var(--hero-scroll-runway) + var(--stats-camera-runway) +
+            var(--stats-handoff-runway)
+    );
+    pointer-events: none;
+    opacity: 0;
+
+    @include respond-to("tablet") {
+        height: calc(
+            100svh + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
+                var(--stats-handoff-runway)
+        );
+    }
+}
+
 .stage {
     position: sticky;
     top: 0;
     height: 100svh;
-    overflow: clip;
+    overflow: visible;
 }
 
 .container {
@@ -55,6 +84,7 @@
 .heroLayer {
     position: absolute;
     inset: 0;
+    overflow: clip;
     will-change: opacity;
 }
 
@@ -66,6 +96,14 @@
     overflow: clip;
     perspective: 1320px;
     perspective-origin: 50% 50%;
+}
+
+.statsLiftLayer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    will-change: transform;
 }
 
 .statsDepthPlane {
@@ -81,6 +119,30 @@
 
 .statsSection {
     width: 100%;
+}
+
+.selectedGeometryProbe {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 1px;
+    height: 0;
+    margin-top: calc(-1 * var(--selected-final-offset));
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.selectedMotionLayer {
+    position: absolute;
+    inset: 0 auto auto 0;
+    z-index: 1;
+    width: 100%;
+    will-change: transform;
+}
+
+.selectedFlowReserve {
+    position: relative;
+    width: 100%;
+    pointer-events: none;
 }
 
 .glow {
@@ -504,7 +566,9 @@
 @include reduced-motion {
     .stage,
     .heroLayer,
+    .statsLiftLayer,
     .statsDepthPlane,
+    .selectedMotionLayer,
     .nameTrack,
     .floater,
     .introCardWrap,

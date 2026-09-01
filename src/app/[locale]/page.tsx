@@ -1,7 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { HeroSection } from "@/widgets/HeroSection";
 import { GallerySection } from "@/widgets/GallerySection";
-import { SelectedWorkSection } from "@/widgets/SelectedWorkSection";
 import { ShowcaseSection } from "@/widgets/ShowcaseSection";
 import { ServicesSection } from "@/widgets/ServicesSection";
 import { ReviewSection } from "@/widgets/ReviewSection";
@@ -79,12 +78,14 @@ export default async function HomePage({ params }: HomePageProps) {
 
     return (
         <main>
-            <HeroSection stats={stats} />
-            <SelectedWorkSection
-                projects={selectedWorkProjects}
-                modalItems={selectedWorkModalItems}
-                categoryLabels={selectedWorkCategoryLabels}
-                labels={selectedWorkLabels}
+            <HeroSection
+                stats={stats}
+                selectedWork={{
+                    projects: selectedWorkProjects,
+                    modalItems: selectedWorkModalItems,
+                    categoryLabels: selectedWorkCategoryLabels,
+                    labels: selectedWorkLabels,
+                }}
             />
             <ShowcaseSection
                 initialItems={showcaseItems}

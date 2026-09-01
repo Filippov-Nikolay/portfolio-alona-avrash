@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { m } from "framer-motion";
 import type { ShowcaseItem } from "@/shared/types";
@@ -9,6 +9,7 @@ import { Container, Section, ShowcaseModal, ArrowIcon } from "@/shared/ui";
 import { useMotionVariants } from "@/shared/hooks";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { fadeIn } from "@/shared/lib/motion/fade-in";
+import { useStatsSelectedChoreographyProgress } from "@/shared/lib/motion/StatsSelectedChoreographyContext";
 import { scrollToElementId } from "@/shared/lib/scroll";
 import styles from "./SelectedWorkSection.module.scss";
 
@@ -18,13 +19,15 @@ interface SelectedWorkLabels {
     viewLabel: string;
 }
 
-interface SelectedWorkSectionProps {
+export interface SelectedWorkSectionProps {
     projects: Project[];
     modalItems: ShowcaseItem[];
     categoryLabels: string[][];
     labels: SelectedWorkLabels;
     viewAllTargetId?: string;
 }
+
+const CONTENT_REVEAL_PROGRESS = 0.3;
 
 function handleViewAllClick(targetId: string) {
     return (e: React.MouseEvent) => {
@@ -43,6 +46,24 @@ export function SelectedWorkSection({
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+    const choreographyProgress = useStatsSelectedChoreographyProgress();
+    const [isContentRevealed, setIsContentRevealed] = useState(
+        () => !choreographyProgress || choreographyProgress.get() >= CONTENT_REVEAL_PROGRESS
+    );
+
+    useEffect(() => {
+        if (!choreographyProgress || isContentRevealed) {
+            return;
+        }
+
+        const unsubscribe = choreographyProgress.on("change", (latest) => {
+            if (latest >= CONTENT_REVEAL_PROGRESS) {
+                setIsContentRevealed(true);
+            }
+        });
+
+        return unsubscribe;
+    }, [choreographyProgress, isContentRevealed]);
 
     if (projects.length === 0) {
         return null;
@@ -56,8 +77,7 @@ export function SelectedWorkSection({
                 <m.div
                     variants={safeStagger}
                     initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, amount: 0.2 }}
+                    animate={isContentRevealed ? "visible" : "hidden"}
                 >
                     <m.div className={styles.header} variants={safeFadeIn}>
                         <h2 className={styles.title}>{labels.title}</h2>

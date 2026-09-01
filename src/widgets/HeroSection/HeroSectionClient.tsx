@@ -12,15 +12,24 @@ import {
     STATS_CAMERA_MOTION_END,
 } from "@/shared/config/heroDepthHandoff";
 import { siteConfig } from "@/shared/config/site.config";
-import { useHeroDepthHandoffProgress, useMotionVariants } from "@/shared/hooks";
+import {
+    useHeroDepthHandoffProgress,
+    useMotionVariants,
+    useStatsSelectedProgress,
+} from "@/shared/hooks";
 import { cn } from "@/shared/lib/cn";
 import { fadeIn } from "@/shared/lib/motion/fade-in";
 import { reveal } from "@/shared/lib/motion/reveal";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
+import { StatsSelectedChoreographyProvider } from "@/shared/lib/motion/StatsSelectedChoreographyContext";
 import { scrollToElementId } from "@/shared/lib/scroll";
 import { usePreloader } from "@/shared/providers";
 import { Button, Container, GlassSurface, NoiseLayer, Section } from "@/shared/ui";
 import { StatsSection } from "@/widgets/StatsSection";
+import {
+    SelectedWorkSection,
+    type SelectedWorkSectionProps,
+} from "@/widgets/SelectedWorkSection/SelectedWorkSection";
 import styles from "./HeroSection.module.scss";
 
 const [NAME_FIRST, ...nameRest] = siteConfig.name.split(" ");
@@ -36,6 +45,12 @@ const TITLE_EXIT_SAFETY_MARGIN_RATIO = 0.04;
 const CAMERA_SETTLE_END = 0.96;
 const CAMERA_PROGRESS_INPUT = [0, 0.32, 0.62, 0.86, 1];
 const CAMERA_PROGRESS_OUTPUT = [0, 0.24, 0.52, 0.8, 1];
+const SELECTED_PICKUP_PROGRESS = 0.4;
+const SELECTED_ENTRY_LEAD = 0.08;
+const SELECTED_MOTION_END = 1 - SELECTED_ENTRY_LEAD;
+const STATS_PICKUP_PROGRESS = SELECTED_PICKUP_PROGRESS - SELECTED_ENTRY_LEAD;
+const SELECTED_ENTRY_VIEWPORT_RATIO = 1.14;
+const SELECTED_PICKUP_VIEWPORT_RATIO = 0.66;
 
 const FLOATER_LAYER_CLASSES = [
     styles.floaterBack,
@@ -51,6 +66,11 @@ function handleCtaClick(e: React.MouseEvent) {
 
 function clamp01(value: number) {
     return Math.max(0, Math.min(1, value));
+}
+
+function smoothstep(value: number) {
+    const clamped = clamp01(value);
+    return clamped * clamped * (3 - 2 * clamped);
 }
 
 function blendProgress(
@@ -103,9 +123,10 @@ interface HeroSectionClientProps {
     hero: HeroContent;
     socials: Social[];
     stats: StatItem[];
+    selectedWork?: SelectedWorkSectionProps;
 }
 
-export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientProps) {
+export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSectionClientProps) {
     const t = useTranslations("hero");
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
@@ -116,8 +137,18 @@ export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientPro
     const scrollTrackRef = useRef<HTMLDivElement>(null);
     const nameFirstRef = useRef<HTMLSpanElement>(null);
     const nameLastRef = useRef<HTMLSpanElement>(null);
+    const selectedGeometryProbeRef = useRef<HTMLDivElement>(null);
+    const selectedMotionLayerRef = useRef<HTMLDivElement>(null);
     const [titleExitX, setTitleExitX] = useState({ first: -320, last: 320 });
+    const [choreographyMetrics, setChoreographyMetrics] = useState({
+        viewportHeight: 900,
+        headerClearance: 144,
+        selectedFinalOffset: 560,
+        selectedHeight: 624,
+    });
     const { progress: depthProgress } = useHeroDepthHandoffProgress();
+    const { progress: statsSelectedProgress, rawProgress: statsSelectedRawProgress } =
+        useStatsSelectedProgress();
 
     const { scrollYProgress } = useScroll({
         target: scrollTrackRef,
@@ -180,6 +211,52 @@ export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientPro
             window.removeEventListener("resize", measure);
         };
     }, [reduced]);
+
+    useLayoutEffect(() => {
+        const selectedGeometryProbe = selectedGeometryProbeRef.current;
+        const selectedMotionLayer = selectedMotionLayerRef.current;
+        const header = document.querySelector("header");
+
+        if (!selectedGeometryProbe || !selectedMotionLayer) {
+            return;
+        }
+
+        const measure = () => {
+            const viewportHeight = window.innerHeight;
+            const headerHeight = header?.getBoundingClientRect().height ?? 0;
+            const selectedFinalOffset = Math.abs(
+                Number.parseFloat(getComputedStyle(selectedGeometryProbe).marginTop) || 0
+            );
+            const selectedHeight = selectedMotionLayer.getBoundingClientRect().height;
+            const headerClearance = headerHeight + Math.max(viewportHeight * 0.04, 28) + 36;
+
+            setChoreographyMetrics((prev) =>
+                Math.abs(prev.viewportHeight - viewportHeight) < 0.5 &&
+                Math.abs(prev.headerClearance - headerClearance) < 0.5 &&
+                Math.abs(prev.selectedFinalOffset - selectedFinalOffset) < 0.5 &&
+                Math.abs(prev.selectedHeight - selectedHeight) < 0.5
+                    ? prev
+                    : { viewportHeight, headerClearance, selectedFinalOffset, selectedHeight }
+            );
+        };
+
+        const resizeObserver =
+            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+        const frame = requestAnimationFrame(measure);
+
+        resizeObserver?.observe(selectedGeometryProbe);
+        resizeObserver?.observe(selectedMotionLayer);
+        if (header instanceof HTMLElement) {
+            resizeObserver?.observe(header);
+        }
+        window.addEventListener("resize", measure);
+
+        return () => {
+            cancelAnimationFrame(frame);
+            resizeObserver?.disconnect();
+            window.removeEventListener("resize", measure);
+        };
+    }, [selectedWork]);
 
     const parallaxSmoothProgress = useSpring(scrollYProgress, {
         stiffness: reduced ? 1000 : 780,
@@ -251,6 +328,39 @@ export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientPro
     const statsPointerEvents = useTransform(() =>
         cameraProgress.get() <= (reduced ? 0.02 : 0.08) ? "none" : "auto"
     );
+    const selectedEntryProgress = useTransform(statsSelectedRawProgress, (latest) =>
+        clamp01(latest + SELECTED_ENTRY_LEAD)
+    );
+    const statsLiftY = useTransform(statsSelectedProgress, (latest) => {
+        const liftProgress = smoothstep(
+            (latest - STATS_PICKUP_PROGRESS) / (SELECTED_MOTION_END - STATS_PICKUP_PROGRESS)
+        );
+        const finalLift = Math.max(
+            choreographyMetrics.viewportHeight / 2 - choreographyMetrics.headerClearance,
+            0
+        );
+
+        return -finalLift * liftProgress;
+    });
+    const selectedMotionY = useTransform(selectedEntryProgress, (latest) => {
+        const viewportHeight = choreographyMetrics.viewportHeight;
+        const initialTop = viewportHeight * SELECTED_ENTRY_VIEWPORT_RATIO;
+        const pickupTop = viewportHeight * SELECTED_PICKUP_VIEWPORT_RATIO;
+        const finalTop = viewportHeight - choreographyMetrics.selectedFinalOffset;
+        const desiredTop =
+            latest <= SELECTED_PICKUP_PROGRESS
+                ? initialTop +
+                  (pickupTop - initialTop) * smoothstep(latest / SELECTED_PICKUP_PROGRESS)
+                : pickupTop +
+                  (finalTop - pickupTop) *
+                      smoothstep(
+                          (latest - SELECTED_PICKUP_PROGRESS) / (1 - SELECTED_PICKUP_PROGRESS)
+                      );
+
+        return desiredTop;
+    });
+    const selectedFlowAdjustment =
+        choreographyMetrics.selectedHeight - choreographyMetrics.selectedFinalOffset;
 
     const nameFirstX = useTransform(
         scrollYProgress,
@@ -297,172 +407,215 @@ export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientPro
 
     return (
         <Section id="hero" className={styles.hero}>
-            <div
-                id="hero-scroll-track"
-                ref={scrollTrackRef}
-                className={styles.scrollTrack}
-                aria-hidden="true"
-            />
+            <div id="hero-transition-track" className={styles.transitionTrack}>
+                <div
+                    id="hero-scroll-track"
+                    ref={scrollTrackRef}
+                    className={styles.scrollTrack}
+                    aria-hidden="true"
+                />
+                <div
+                    id="stats-camera-track"
+                    className={styles.statsCameraTrack}
+                    aria-hidden="true"
+                />
+                <div
+                    ref={selectedGeometryProbeRef}
+                    className={styles.selectedGeometryProbe}
+                    aria-hidden="true"
+                />
 
-            <div className={styles.stage}>
-                <m.div
-                    className={styles.heroLayer}
-                    style={{ opacity: heroOpacity, pointerEvents: heroPointerEvents }}
-                >
-                    <NoiseLayer />
-                    <div className={styles.glow} aria-hidden="true" />
+                <div className={styles.stage}>
+                    <m.div
+                        className={styles.heroLayer}
+                        style={{ opacity: heroOpacity, pointerEvents: heroPointerEvents }}
+                    >
+                        <NoiseLayer />
+                        <div className={styles.glow} aria-hidden="true" />
 
-                    <Container className={styles.container}>
-                        <m.div
-                            className={styles.content}
-                            variants={safeStagger}
-                            initial="hidden"
-                            animate={isReady ? "visible" : "hidden"}
-                        >
-                            <m.div className={styles.topRow} variants={safeFadeIn}>
-                                <span className={styles.role}>{t("role")}</span>
+                        <Container className={styles.container}>
+                            <m.div
+                                className={styles.content}
+                                variants={safeStagger}
+                                initial="hidden"
+                                animate={isReady ? "visible" : "hidden"}
+                            >
+                                <m.div className={styles.topRow} variants={safeFadeIn}>
+                                    <span className={styles.role}>{t("role")}</span>
 
-                                <div className={styles.socials}>
-                                    {socials.map((social) => (
-                                        <a
-                                            key={social.id}
-                                            href={social.link}
-                                            className={styles.socialLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            aria-label={social.logo.alt ?? social.id}
-                                            style={
-                                                {
-                                                    "--social-icon": `url(${social.logo.src})`,
-                                                } as CSSProperties
-                                            }
-                                        >
-                                            <span
-                                                className={styles.socialIcon}
-                                                aria-hidden="true"
-                                            />
-                                        </a>
-                                    ))}
-                                </div>
-                            </m.div>
-
-                            <div className={styles.nameStage}>
-                                <m.div className={styles.nameTrack} variants={safeFadeIn}>
-                                    <h1 className={styles.name}>
-                                        <m.span
-                                            ref={nameFirstRef}
-                                            className={styles.nameLine}
-                                            style={{ x: nameFirstX }}
-                                        >
-                                            {NAME_FIRST}
-                                        </m.span>
-                                        <m.span
-                                            ref={nameLastRef}
-                                            className={cn(styles.nameLine, styles.nameLineEnd)}
-                                            style={{ x: nameLastX }}
-                                        >
-                                            {NAME_LAST}
-                                        </m.span>
-                                    </h1>
-                                </m.div>
-                            </div>
-
-                            {hero.floatingImages.length > 0 && (
-                                <m.div className={styles.floaters} aria-hidden="true">
-                                    {hero.floatingImages.slice(0, 4).map((floater, index) => (
-                                        <m.div
-                                            key={floater.id}
-                                            className={cn(
-                                                styles.floater,
-                                                FLOATER_LAYER_CLASSES[index] ?? styles.floaterFront
-                                            )}
-                                            variants={safeFadeIn}
-                                            style={{ y: floaterYValues[index] }}
-                                        >
-                                            <Image
-                                                src={floater.image.src}
-                                                alt={floater.image.alt ?? ""}
-                                                fill
-                                                className={styles.floaterImage}
-                                                style={{
-                                                    objectPosition: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
-                                                    transform: `scale(${floater.image.scale ?? 1})`,
-                                                    transformOrigin: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
-                                                }}
-                                                sizes="(max-width: 768px) 42vw, 240px"
-                                                draggable={false}
-                                            />
-                                        </m.div>
-                                    ))}
-                                </m.div>
-                            )}
-
-                            <m.div className={styles.introRow} variants={safeReveal}>
-                                <m.div className={styles.introCardWrap} style={{ y: introY }}>
-                                    <GlassSurface
-                                        as="article"
-                                        className={styles.introCard}
-                                        contentClassName={styles.introCardContent}
-                                        preset="hero"
-                                        interactive={false}
-                                    >
-                                        <div className={styles.introTextCol}>
-                                            <p className={styles.description}>{hero.description}</p>
-
-                                            <Button
-                                                as="a"
-                                                href="#contact"
-                                                variant="primary"
-                                                size="lg"
-                                                className={styles.cta}
-                                                onClick={handleCtaClick}
+                                    <div className={styles.socials}>
+                                        {socials.map((social) => (
+                                            <a
+                                                key={social.id}
+                                                href={social.link}
+                                                className={styles.socialLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                aria-label={social.logo.alt ?? social.id}
+                                                style={
+                                                    {
+                                                        "--social-icon": `url(${social.logo.src})`,
+                                                    } as CSSProperties
+                                                }
                                             >
-                                                {t("cta")}
-                                            </Button>
-                                        </div>
-                                    </GlassSurface>
+                                                <span
+                                                    className={styles.socialIcon}
+                                                    aria-hidden="true"
+                                                />
+                                            </a>
+                                        ))}
+                                    </div>
                                 </m.div>
 
-                                <m.span
-                                    className={cn(
-                                        styles.availability,
-                                        !hero.availableForWork && styles.availabilityOff
-                                    )}
-                                    style={{ y: availabilityY }}
-                                >
-                                    <span className={styles.availabilityDot} aria-hidden="true" />
-                                    {hero.availableForWork ? t("availability") : t("unavailable")}
-                                </m.span>
+                                <div className={styles.nameStage}>
+                                    <m.div className={styles.nameTrack} variants={safeFadeIn}>
+                                        <h1 className={styles.name}>
+                                            <m.span
+                                                ref={nameFirstRef}
+                                                className={styles.nameLine}
+                                                style={{ x: nameFirstX }}
+                                            >
+                                                {NAME_FIRST}
+                                            </m.span>
+                                            <m.span
+                                                ref={nameLastRef}
+                                                className={cn(styles.nameLine, styles.nameLineEnd)}
+                                                style={{ x: nameLastX }}
+                                            >
+                                                {NAME_LAST}
+                                            </m.span>
+                                        </h1>
+                                    </m.div>
+                                </div>
+
+                                {hero.floatingImages.length > 0 && (
+                                    <m.div className={styles.floaters} aria-hidden="true">
+                                        {hero.floatingImages.slice(0, 4).map((floater, index) => (
+                                            <m.div
+                                                key={floater.id}
+                                                className={cn(
+                                                    styles.floater,
+                                                    FLOATER_LAYER_CLASSES[index] ??
+                                                        styles.floaterFront
+                                                )}
+                                                variants={safeFadeIn}
+                                                style={{ y: floaterYValues[index] }}
+                                            >
+                                                <Image
+                                                    src={floater.image.src}
+                                                    alt={floater.image.alt ?? ""}
+                                                    fill
+                                                    className={styles.floaterImage}
+                                                    style={{
+                                                        objectPosition: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
+                                                        transform: `scale(${floater.image.scale ?? 1})`,
+                                                        transformOrigin: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
+                                                    }}
+                                                    sizes="(max-width: 768px) 42vw, 240px"
+                                                    draggable={false}
+                                                />
+                                            </m.div>
+                                        ))}
+                                    </m.div>
+                                )}
+
+                                <m.div className={styles.introRow} variants={safeReveal}>
+                                    <m.div className={styles.introCardWrap} style={{ y: introY }}>
+                                        <GlassSurface
+                                            as="article"
+                                            className={styles.introCard}
+                                            contentClassName={styles.introCardContent}
+                                            preset="hero"
+                                            interactive={false}
+                                        >
+                                            <div className={styles.introTextCol}>
+                                                <p className={styles.description}>
+                                                    {hero.description}
+                                                </p>
+
+                                                <Button
+                                                    as="a"
+                                                    href="#contact"
+                                                    variant="primary"
+                                                    size="lg"
+                                                    className={styles.cta}
+                                                    onClick={handleCtaClick}
+                                                >
+                                                    {t("cta")}
+                                                </Button>
+                                            </div>
+                                        </GlassSurface>
+                                    </m.div>
+
+                                    <m.span
+                                        className={cn(
+                                            styles.availability,
+                                            !hero.availableForWork && styles.availabilityOff
+                                        )}
+                                        style={{ y: availabilityY }}
+                                    >
+                                        <span
+                                            className={styles.availabilityDot}
+                                            aria-hidden="true"
+                                        />
+                                        {hero.availableForWork
+                                            ? t("availability")
+                                            : t("unavailable")}
+                                    </m.span>
+                                </m.div>
+                            </m.div>
+                        </Container>
+                    </m.div>
+
+                    <div className={styles.statsViewport}>
+                        <m.div className={styles.statsLiftLayer} style={{ y: statsLiftY }}>
+                            <m.div
+                                className={styles.statsDepthPlane}
+                                transformTemplate={(_, generatedTransform) =>
+                                    generatedTransform === "none"
+                                        ? "translate3d(0px, 0px, 0px) scale(1)"
+                                        : generatedTransform
+                                }
+                                style={{
+                                    opacity: statsOpacity,
+                                    z: statsZ,
+                                    scale: statsScale,
+                                    y: statsY,
+                                    pointerEvents: statsPointerEvents,
+                                }}
+                            >
+                                <StatsSection
+                                    as="div"
+                                    items={stats}
+                                    depthProgress={cameraProgress}
+                                    className={styles.statsSection}
+                                />
                             </m.div>
                         </m.div>
-                    </Container>
-                </m.div>
-
-                <div className={styles.statsViewport}>
-                    <m.div
-                        className={styles.statsDepthPlane}
-                        transformTemplate={(_, generatedTransform) =>
-                            generatedTransform === "none"
-                                ? "translate3d(0px, 0px, 0px) scale(1)"
-                                : generatedTransform
-                        }
-                        style={{
-                            opacity: statsOpacity,
-                            z: statsZ,
-                            scale: statsScale,
-                            y: statsY,
-                            pointerEvents: statsPointerEvents,
-                        }}
-                    >
-                        <StatsSection
-                            as="div"
-                            items={stats}
-                            depthProgress={cameraProgress}
-                            className={styles.statsSection}
-                        />
-                    </m.div>
+                    </div>
+                    {selectedWork && (
+                        <m.div
+                            ref={selectedMotionLayerRef}
+                            className={styles.selectedMotionLayer}
+                            style={{ y: selectedMotionY }}
+                        >
+                            <StatsSelectedChoreographyProvider progress={selectedEntryProgress}>
+                                <SelectedWorkSection {...selectedWork} />
+                            </StatsSelectedChoreographyProvider>
+                        </m.div>
+                    )}
                 </div>
             </div>
+            {selectedWork && (
+                <div
+                    className={styles.selectedFlowReserve}
+                    style={{
+                        height: Math.max(selectedFlowAdjustment, 0),
+                        marginTop: Math.min(selectedFlowAdjustment, 0),
+                    }}
+                    aria-hidden="true"
+                ></div>
+            )}
         </Section>
     );
 }

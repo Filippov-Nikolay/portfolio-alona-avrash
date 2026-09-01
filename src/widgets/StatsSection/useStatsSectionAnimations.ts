@@ -30,6 +30,7 @@ export function useStatsSectionAnimations(
     const valueRefs = useRef<(HTMLSpanElement | null)[]>([]);
     const gridRevealTweenRef = useRef<gsap.core.Tween | null>(null);
     const playCountersRef = useRef<() => void>(() => {});
+    const completeCountersRef = useRef<() => void>(() => {});
     const revealTriggeredRef = useRef(false);
     const countersTriggeredRef = useRef(false);
 
@@ -154,6 +155,10 @@ export function useStatsSectionAnimations(
             };
 
             playCountersRef.current = play;
+            completeCountersRef.current = () => {
+                cleanupCounterTweens();
+                applyFinalValues();
+            };
 
             if (reduced) {
                 countersTriggeredRef.current = true;
@@ -162,6 +167,7 @@ export function useStatsSectionAnimations(
                 return () => {
                     cleanupCounterTweens();
                     playCountersRef.current = () => {};
+                    completeCountersRef.current = () => {};
                 };
             }
 
@@ -179,6 +185,7 @@ export function useStatsSectionAnimations(
                 return () => {
                     cleanupCounterTweens();
                     playCountersRef.current = () => {};
+                    completeCountersRef.current = () => {};
                 };
             }
 
@@ -198,6 +205,7 @@ export function useStatsSectionAnimations(
             return () => {
                 cleanupCounterTweens();
                 playCountersRef.current = () => {};
+                completeCountersRef.current = () => {};
                 observer.disconnect();
             };
         },
@@ -218,12 +226,23 @@ export function useStatsSectionAnimations(
             gridRevealTweenRef.current?.play();
         }
 
+        if (latest >= 0.98) {
+            gridRevealTweenRef.current?.progress(1).pause();
+        }
+
         if (countersTriggeredRef.current || latest < NEXT_SECTION_COUNTER_TRIGGER) {
+            if (latest >= 0.98) {
+                completeCountersRef.current();
+            }
             return;
         }
 
         countersTriggeredRef.current = true;
         playCountersRef.current();
+
+        if (latest >= 0.98) {
+            completeCountersRef.current();
+        }
     });
 
     return { sectionRef, gridRef, setValueRef };

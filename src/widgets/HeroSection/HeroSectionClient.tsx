@@ -7,7 +7,10 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import type { HeroContent } from "@/entities/hero/model/hero";
 import type { Social } from "@/entities/social/model/social";
 import type { StatItem } from "@/entities/stat/model/stat";
-import { STATS_CAMERA_MOTION_END } from "@/shared/config/heroDepthHandoff";
+import {
+    HERO_DEPTH_TRANSITION_START,
+    STATS_CAMERA_MOTION_END,
+} from "@/shared/config/heroDepthHandoff";
 import { siteConfig } from "@/shared/config/site.config";
 import { useHeroDepthHandoffProgress, useMotionVariants } from "@/shared/hooks";
 import { cn } from "@/shared/lib/cn";
@@ -23,8 +26,8 @@ import styles from "./HeroSection.module.scss";
 const [NAME_FIRST, ...nameRest] = siteConfig.name.split(" ");
 const NAME_LAST = nameRest.join(" ");
 
-const TITLE_TRAVEL_END = 0.93;
-const IMAGE_TRAVEL_END = 0.95;
+const TITLE_TRAVEL_END = 1;
+const IMAGE_TRAVEL_END = 1;
 const PARALLAX_BLEND_RATIO = 0.16;
 const PARALLAX_START_ASSIST_END = 0.05;
 const PARALLAX_END_ASSIST_START = 0.86;
@@ -111,9 +114,9 @@ export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientPro
     const reduced = useReducedMotion();
     const isCompact = useCompactViewport();
     const scrollTrackRef = useRef<HTMLDivElement>(null);
-    const titleTrackRef = useRef<HTMLDivElement>(null);
-    const titleRef = useRef<HTMLHeadingElement>(null);
-    const [titleExitX, setTitleExitX] = useState(-320);
+    const nameFirstRef = useRef<HTMLSpanElement>(null);
+    const nameLastRef = useRef<HTMLSpanElement>(null);
+    const [titleExitX, setTitleExitX] = useState({ first: -320, last: 320 });
     const { progress: depthProgress } = useHeroDepthHandoffProgress();
 
     const { scrollYProgress } = useScroll({
@@ -123,29 +126,39 @@ export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientPro
 
     useLayoutEffect(() => {
         if (reduced) {
-            const rafId = requestAnimationFrame(() => setTitleExitX(0));
+            const rafId = requestAnimationFrame(() => setTitleExitX({ first: 0, last: 0 }));
             return () => cancelAnimationFrame(rafId);
         }
 
-        const titleTrack = titleTrackRef.current;
-        const title = titleRef.current;
+        const nameFirst = nameFirstRef.current;
+        const nameLast = nameLastRef.current;
 
-        if (!titleTrack || !title) {
+        if (!nameFirst || !nameLast) {
             return;
         }
 
         const measure = () => {
-            const currentX = readTranslateX(titleTrack);
-            const trackRect = titleTrack.getBoundingClientRect();
-            const titleRect = title.getBoundingClientRect();
-            const baseLeft = trackRect.left - currentX;
+            const firstX = readTranslateX(nameFirst);
+            const lastX = readTranslateX(nameLast);
+            const firstRect = nameFirst.getBoundingClientRect();
+            const lastRect = nameLast.getBoundingClientRect();
+            const firstBaseLeft = firstRect.left - firstX;
+            const lastBaseLeft = lastRect.left - lastX;
             const safetyMargin = Math.max(
                 window.innerWidth * TITLE_EXIT_SAFETY_MARGIN_RATIO,
                 TITLE_EXIT_SAFETY_MARGIN_MIN
             );
-            const nextExitX = -(baseLeft + titleRect.width + safetyMargin);
+            const nextExitX = {
+                first: -(firstBaseLeft + firstRect.width + safetyMargin),
+                last: window.innerWidth - lastBaseLeft + safetyMargin,
+            };
 
-            setTitleExitX((prev) => (Math.abs(prev - nextExitX) < 0.5 ? prev : nextExitX));
+            setTitleExitX((prev) =>
+                Math.abs(prev.first - nextExitX.first) < 0.5 &&
+                Math.abs(prev.last - nextExitX.last) < 0.5
+                    ? prev
+                    : nextExitX
+            );
         };
 
         const rafId = requestAnimationFrame(measure);
@@ -156,8 +169,8 @@ export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientPro
                       measure();
                   });
 
-        resizeObserver?.observe(titleTrack);
-        resizeObserver?.observe(title);
+        resizeObserver?.observe(nameFirst);
+        resizeObserver?.observe(nameLast);
         void document.fonts?.ready.then(measure);
         window.addEventListener("resize", measure);
 
@@ -189,9 +202,9 @@ export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientPro
     });
 
     const heroOpacity = useTransform(
-        depthProgress,
-        reduced ? [0, 1] : [0, 0.14, 0.32, 0.5, 1],
-        reduced ? [1, 0] : [1, 0.82, 0.46, 0, 0]
+        scrollYProgress,
+        reduced ? [0, 1] : [0, HERO_DEPTH_TRANSITION_START, 1],
+        reduced ? [1, 0] : [1, 1, 0]
     );
     const heroPointerEvents = useTransform(() =>
         depthProgress.get() >= (reduced ? 0.995 : 0.5) ? "none" : "auto"
@@ -217,8 +230,8 @@ export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientPro
     const depthMidY = reduced ? 0 : isCompact ? -96 : -170;
     const statsOpacity = useTransform(
         cameraProgress,
-        reduced ? [0, 1] : [0, 0.15, 0.3, 0.5, 0.92, 1],
-        reduced ? [0, 1] : [0, 0.2, 0.55, 0.92, 1, 1]
+        reduced ? [0, 1] : [0, 0.04, 0.1, 0.22, 0.42, 1],
+        reduced ? [0, 1] : [0, 0.18, 0.52, 0.82, 1, 1]
     );
     const statsZ = useTransform(
         cameraProgress,
@@ -239,10 +252,15 @@ export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientPro
         cameraProgress.get() <= (reduced ? 0.02 : 0.08) ? "none" : "auto"
     );
 
-    const titleX = useTransform(
+    const nameFirstX = useTransform(
         scrollYProgress,
         [0, TITLE_TRAVEL_END, 1],
-        [0, titleExitX, titleExitX]
+        [0, titleExitX.first, titleExitX.first]
+    );
+    const nameLastX = useTransform(
+        scrollYProgress,
+        [0, TITLE_TRAVEL_END, 1],
+        [0, titleExitX.last, titleExitX.last]
     );
     const floaterOneY = useTransform(
         parallaxProgress,
@@ -329,17 +347,22 @@ export function HeroSectionClient({ hero, socials, stats }: HeroSectionClientPro
                             </m.div>
 
                             <div className={styles.nameStage}>
-                                <m.div
-                                    ref={titleTrackRef}
-                                    className={styles.nameTrack}
-                                    variants={safeFadeIn}
-                                    style={{ x: titleX }}
-                                >
-                                    <h1 ref={titleRef} className={styles.name}>
-                                        <span className={styles.nameLine}>{NAME_FIRST}</span>
-                                        <span className={cn(styles.nameLine, styles.nameLineEnd)}>
+                                <m.div className={styles.nameTrack} variants={safeFadeIn}>
+                                    <h1 className={styles.name}>
+                                        <m.span
+                                            ref={nameFirstRef}
+                                            className={styles.nameLine}
+                                            style={{ x: nameFirstX }}
+                                        >
+                                            {NAME_FIRST}
+                                        </m.span>
+                                        <m.span
+                                            ref={nameLastRef}
+                                            className={cn(styles.nameLine, styles.nameLineEnd)}
+                                            style={{ x: nameLastX }}
+                                        >
                                             {NAME_LAST}
-                                        </span>
+                                        </m.span>
                                     </h1>
                                 </m.div>
                             </div>

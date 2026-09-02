@@ -49,10 +49,6 @@ export function useServicesSectionAnimations() {
                     : SERVICES_CARD_REVEAL_DISTANCE;
             const firstCardStart = () =>
                 `top top+=${getContactOffset() - SERVICES_CARD_REVEAL_OVERLAP}`;
-            const followingCardStart = (card: HTMLElement) => {
-                const stickyTop = Number.parseFloat(getComputedStyle(card).top);
-                return `top top+=${stickyTop + getCardRevealDistance()}`;
-            };
 
             gsap.set(title, {
                 autoAlpha: 0,
@@ -102,26 +98,29 @@ export function useServicesSectionAnimations() {
                 );
             }
 
-            followingCards.forEach((card) => {
+            if (followingCards.length > 0) {
                 gsap.fromTo(
-                    card,
-                    { autoAlpha: 0, y: 28, filter: "blur(10px)" },
+                    followingCards,
+                    { autoAlpha: 0, y: 30, scale: 0.985, filter: "blur(6px)" },
                     {
                         autoAlpha: 1,
                         y: 0,
+                        scale: 1,
                         filter: "blur(0px)",
-                        ease: "sine.inOut",
+                        duration: 0.66,
+                        ease: "power3.out",
+                        stagger: 0.08,
                         force3D: true,
                         scrollTrigger: {
-                            trigger: card,
-                            start: () => followingCardStart(card),
+                            trigger: sectionRef.current,
+                            start: firstCardStart,
                             end: () => `+=${getCardRevealDistance()}`,
-                            scrub: true,
+                            scrub: 0.3,
                             invalidateOnRefresh: true,
                         },
                     }
                 );
-            });
+            }
         },
         { scope: sectionRef, dependencies: [reduced], revertOnUpdate: true }
     );

@@ -14,11 +14,20 @@ $header-scale: 0.8;
     z-index: 120;
     padding: $header-scale * 20px 0px;
     pointer-events: none;
-    background: linear-gradient(to bottom, var(--color-bg) 0 0%, transparent 100%);
 
     @include respond-to("mobile") {
         padding: 20px 0px;
     }
+}
+
+.sceneBackdrop {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 119;
+    height: var(--header-scene-height, 120px);
+    pointer-events: none;
+    background: #000;
+    will-change: transform;
 }
 
 .main {
@@ -160,6 +169,7 @@ $header-scale: 0.8;
     color: var(--color-text-primary-reverse);
     text-decoration: none;
     border-radius: var(--radius-v-sm);
+    transition: color 0.24s cubic-bezier(0.22, 1, 0.36, 1);
     @include focus-ring;
     @include can-hover {
         &:hover .charTop {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { m, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -13,6 +13,7 @@ import { scrollToElementId, scrollToTop } from "@/shared/lib/scroll";
 import { usePreloader } from "@/shared/providers";
 import { cn } from "@/shared/lib/cn";
 import styles from "./Header.module.scss";
+import { useServicesHeaderBandController } from "./useServicesHeaderBandController";
 import { LangSwitcher, ThemeToggle, DownloadIcon } from "@/shared/ui";
 import type { NavItem } from "@/shared/types";
 
@@ -65,6 +66,9 @@ export function Header() {
     const { isReady } = usePreloader();
     const activeSection = useActiveSection(SECTION_IDS, isReady);
     const [cvClicked, setCvClicked] = useState(false);
+    const headerRef = useRef<HTMLElement>(null);
+    const sceneBackdropRef = useRef<HTMLDivElement>(null);
+    const bandY = useServicesHeaderBandController(headerRef, sceneBackdropRef);
 
     // Keep the pills hidden for at least one committed frame after `isReady`
     // so the browser always sees a real "before" state. This is what makes
@@ -88,7 +92,17 @@ export function Header() {
 
     return (
         <>
+            <m.div
+                ref={sceneBackdropRef}
+                className={styles.sceneBackdrop}
+                style={{ y: bandY }}
+                data-services-header-band
+                data-services-header-controller
+                aria-hidden="true"
+            />
+
             <m.header
+                ref={headerRef}
                 className={styles.wrapper}
                 variants={safeSlideDown}
                 initial="hidden"

@@ -110,7 +110,7 @@ export function useServicesSectionAnimations() {
                         autoAlpha: 1,
                         y: 0,
                         filter: "blur(0px)",
-                        ease: "none",
+                        ease: "sine.inOut",
                         force3D: true,
                         scrollTrigger: {
                             trigger: card,

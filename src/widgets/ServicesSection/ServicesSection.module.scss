@@ -4,8 +4,10 @@ $stack-base-offset: clamp(168px, 15vw, 220px);
 $stack-step: 20px;
 $stack-base-offset-mobile: 148px;
 $stack-step-mobile: 14px;
-$stack-focus-runway: clamp(620px, 68svh, 720px);
-$stack-focus-runway-mobile: clamp(310px, 40svh, 360px);
+$stack-focus-runway: clamp(360px, 40svh, 440px);
+$stack-focus-runway-mobile: clamp(220px, 28svh, 280px);
+$stack-opening-runway: clamp(600px, 66svh, 680px);
+$stack-opening-runway-mobile: clamp(300px, 38svh, 360px);
 $stack-terminal-hold: clamp(88px, 12svh, 132px);
 $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
 
@@ -111,6 +113,14 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
 
     @include respond-to("mobile") {
         flex-basis: $stack-focus-runway-mobile;
+    }
+}
+
+.card:first-child + .stackRunway {
+    flex-basis: $stack-opening-runway;
+
+    @include respond-to("mobile") {
+        flex-basis: $stack-opening-runway-mobile;
     }
 }
 

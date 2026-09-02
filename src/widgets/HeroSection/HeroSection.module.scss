@@ -7,6 +7,8 @@
     --stats-camera-runway: clamp(1120px, 148svh, 1540px);
     --stats-handoff-runway: clamp(152px, 22svh, 250px);
     --stats-selected-runway: clamp(1120px, 150svh, 1560px);
+    --selected-focus-runway: clamp(360px, 48svh, 520px);
+    --selected-handoff-runway: clamp(220px, 28svh, 320px);
     --selected-final-offset: clamp(440px, 62svh, 840px);
 
     position: relative;
@@ -17,6 +19,8 @@
         --stats-camera-runway: clamp(720px, 108svh, 960px);
         --stats-handoff-runway: clamp(112px, 18svh, 180px);
         --stats-selected-runway: clamp(760px, 112svh, 980px);
+        --selected-focus-runway: clamp(220px, 32svh, 300px);
+        --selected-handoff-runway: clamp(156px, 22svh, 220px);
         --selected-final-offset: clamp(292px, 52svh, 460px);
     }
 }
@@ -25,13 +29,15 @@
     position: relative;
     height: calc(
         100svh + var(--hero-scroll-runway) + var(--stats-camera-runway) +
-            var(--stats-handoff-runway) + var(--stats-selected-runway)
+            var(--stats-handoff-runway) + var(--stats-selected-runway) +
+            var(--selected-focus-runway) + var(--selected-handoff-runway)
     );
 
     @include respond-to("tablet") {
         height: calc(
             100svh + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
-                var(--stats-handoff-runway) + var(--stats-selected-runway)
+                var(--stats-handoff-runway) + var(--stats-selected-runway) +
+                var(--selected-focus-runway) + var(--selected-handoff-runway)
         );
     }
 }
@@ -64,6 +70,46 @@
         height: calc(
             100svh + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
                 var(--stats-handoff-runway)
+        );
+    }
+}
+
+.selectedMotionTrack {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 1px;
+    height: calc(
+        100svh + var(--hero-scroll-runway) + var(--stats-camera-runway) +
+            var(--stats-handoff-runway) + var(--stats-selected-runway)
+    );
+    pointer-events: none;
+    opacity: 0;
+
+    @include respond-to("tablet") {
+        height: calc(
+            100svh + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
+                var(--stats-handoff-runway) + var(--stats-selected-runway)
+        );
+    }
+}
+
+.selectedFocusTrack {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 1px;
+    height: calc(
+        100svh + var(--hero-scroll-runway) + var(--stats-camera-runway) +
+            var(--stats-handoff-runway) + var(--stats-selected-runway) +
+            var(--selected-focus-runway)
+    );
+    pointer-events: none;
+    opacity: 0;
+
+    @include respond-to("tablet") {
+        height: calc(
+            100svh + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
+                var(--stats-handoff-runway) + var(--stats-selected-runway) +
+                var(--selected-focus-runway)
         );
     }
 }

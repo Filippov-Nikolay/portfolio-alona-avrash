@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { m, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
+import { m, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { HeroContent } from "@/entities/hero/model/hero";
@@ -37,9 +37,6 @@ const NAME_LAST = nameRest.join(" ");
 
 const TITLE_TRAVEL_END = 1;
 const IMAGE_TRAVEL_END = 1;
-const PARALLAX_BLEND_RATIO = 0.16;
-const PARALLAX_START_ASSIST_END = 0.05;
-const PARALLAX_END_ASSIST_START = 0.86;
 const TITLE_EXIT_SAFETY_MARGIN_MIN = 24;
 const TITLE_EXIT_SAFETY_MARGIN_RATIO = 0.04;
 const CAMERA_SETTLE_END = 0.96;
@@ -51,6 +48,7 @@ const SELECTED_MOTION_END = 1 - SELECTED_ENTRY_LEAD;
 const STATS_PICKUP_PROGRESS = SELECTED_PICKUP_PROGRESS - SELECTED_ENTRY_LEAD;
 const SELECTED_ENTRY_VIEWPORT_RATIO = 1.14;
 const SELECTED_PICKUP_VIEWPORT_RATIO = 0.66;
+const SELECTED_FOCUS_DRIFT = 20;
 
 const FLOATER_LAYER_CLASSES = [
     styles.floaterBack,
@@ -71,21 +69,6 @@ function clamp01(value: number) {
 function smoothstep(value: number) {
     const clamped = clamp01(value);
     return clamped * clamped * (3 - 2 * clamped);
-}
-
-function blendProgress(
-    raw: number,
-    smoothed: number,
-    blendRatio: number,
-    startAssistEnd: number,
-    endAssistStart: number
-) {
-    const startAssist = 1 - clamp01(raw / startAssistEnd);
-    const endAssist = clamp01((raw - endAssistStart) / (1 - endAssistStart));
-    const assist = Math.max(startAssist, endAssist);
-    const damped = raw + (smoothed - raw) * blendRatio;
-
-    return damped + (raw - damped) * assist;
 }
 
 function readTranslateX(node: HTMLElement) {
@@ -147,8 +130,13 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         selectedHeight: 624,
     });
     const { progress: depthProgress } = useHeroDepthHandoffProgress();
-    const { progress: statsSelectedProgress, rawProgress: statsSelectedRawProgress } =
-        useStatsSelectedProgress();
+    const {
+        progress: statsSelectedProgress,
+        rawProgress: statsSelectedRawProgress,
+        focusProgress: selectedFocusProgress,
+        handoffProgress: selectedHandoffProgress,
+        handoffRunway: selectedHandoffRunway,
+    } = useStatsSelectedProgress();
 
     const { scrollYProgress } = useScroll({
         target: scrollTrackRef,
@@ -258,25 +246,9 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         };
     }, [selectedWork]);
 
-    const parallaxSmoothProgress = useSpring(scrollYProgress, {
-        stiffness: reduced ? 1000 : 780,
-        damping: reduced ? 100 : 82,
-        mass: reduced ? 1 : 0.14,
-        restDelta: 0.00015,
-    });
-
-    const parallaxProgress = useTransform(() => {
-        const raw = scrollYProgress.get();
-        const smooth = parallaxSmoothProgress.get();
-
-        return blendProgress(
-            raw,
-            smooth,
-            PARALLAX_BLEND_RATIO,
-            PARALLAX_START_ASSIST_END,
-            PARALLAX_END_ASSIST_START
-        );
-    });
+    // Structural parallax is tied directly to document progress. A spring here
+    // made the scene continue moving after input stopped, then catch up abruptly.
+    const parallaxProgress = scrollYProgress;
 
     const heroOpacity = useTransform(
         scrollYProgress,
@@ -331,11 +303,9 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const selectedEntryProgress = useTransform(statsSelectedRawProgress, (latest) => {
         // Keep the approved pre-entry lead, then distribute it across the
         // full runway so the final pose is reached exactly at stage release.
-        if (latest <= 0) {
-            return clamp01(latest + SELECTED_ENTRY_LEAD);
-        }
+        const entryProgress = clamp01(latest);
 
-        return latest + SELECTED_ENTRY_LEAD * (1 - latest);
+        return entryProgress + SELECTED_ENTRY_LEAD * (1 - entryProgress);
     });
     const statsLiftY = useTransform(statsSelectedProgress, (latest) => {
         const liftProgress = smoothstep(
@@ -367,6 +337,18 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     });
     const selectedFlowAdjustment =
         choreographyMetrics.selectedHeight - choreographyMetrics.selectedFinalOffset;
+    const selectedFocusDriftY = useTransform(
+        selectedFocusProgress,
+        (latest) =>
+            -(isCompact ? SELECTED_FOCUS_DRIFT * 0.66 : SELECTED_FOCUS_DRIFT) * smoothstep(latest)
+    );
+    const selectedHandoffY = useTransform(
+        selectedHandoffProgress,
+        (latest) => -(selectedHandoffRunway / 2) * latest * latest
+    );
+    const selectedLayerY = useTransform(
+        () => selectedMotionY.get() + selectedFocusDriftY.get() + selectedHandoffY.get()
+    );
 
     const nameFirstX = useTransform(
         scrollYProgress,
@@ -423,6 +405,16 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                 <div
                     id="stats-camera-track"
                     className={styles.statsCameraTrack}
+                    aria-hidden="true"
+                />
+                <div
+                    id="selected-motion-track"
+                    className={styles.selectedMotionTrack}
+                    aria-hidden="true"
+                />
+                <div
+                    id="selected-focus-track"
+                    className={styles.selectedFocusTrack}
                     aria-hidden="true"
                 />
                 <div
@@ -603,7 +595,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                         <m.div
                             ref={selectedMotionLayerRef}
                             className={styles.selectedMotionLayer}
-                            style={{ y: selectedMotionY }}
+                            style={{ y: selectedLayerY }}
                         >
                             <StatsSelectedChoreographyProvider progress={selectedEntryProgress}>
                                 <SelectedWorkSection {...selectedWork} />

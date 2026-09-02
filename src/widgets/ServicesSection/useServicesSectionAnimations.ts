@@ -4,10 +4,13 @@ import { useRef } from "react";
 import { useReducedMotion } from "framer-motion";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
+import {
+    SERVICES_CARD_REVEAL_DISTANCE,
+    SERVICES_CARD_REVEAL_DISTANCE_COMPACT,
+    SERVICES_CARD_REVEAL_OVERLAP,
+    SERVICES_TITLE_REVEAL_DISTANCE,
+} from "@/shared/config/scrollChoreography";
 import { getTopBandContactOffset } from "@/shared/lib/motion/servicesSceneGeometry";
-
-const TITLE_REVEAL_DISTANCE = 104;
-const CARD_REVEAL_OVERLAP = 42;
 
 export function useServicesSectionAnimations() {
     const reduced = useReducedMotion();
@@ -40,7 +43,16 @@ export function useServicesSectionAnimations() {
             };
 
             const titleStart = () => `top top+=${getContactOffset()}`;
-            const cardStart = () => `top top+=${getContactOffset() - CARD_REVEAL_OVERLAP}`;
+            const getCardRevealDistance = () =>
+                window.matchMedia("(max-width: 767px)").matches
+                    ? SERVICES_CARD_REVEAL_DISTANCE_COMPACT
+                    : SERVICES_CARD_REVEAL_DISTANCE;
+            const firstCardStart = () =>
+                `top top+=${getContactOffset() - SERVICES_CARD_REVEAL_OVERLAP}`;
+            const followingCardStart = (card: HTMLElement) => {
+                const stickyTop = Number.parseFloat(getComputedStyle(card).top);
+                return `top top+=${stickyTop + getCardRevealDistance()}`;
+            };
 
             gsap.set(title, {
                 autoAlpha: 0,
@@ -59,29 +71,56 @@ export function useServicesSectionAnimations() {
                 scrollTrigger: {
                     trigger: sectionRef.current,
                     start: titleStart,
-                    end: `+=${TITLE_REVEAL_DISTANCE}`,
-                    scrub: 0.16,
+                    end: `+=${SERVICES_TITLE_REVEAL_DISTANCE}`,
+                    scrub: true,
                     invalidateOnRefresh: true,
                 },
             });
 
-            gsap.set(cards, { autoAlpha: 0, y: 30, scale: 0.985, filter: "blur(6px)" });
+            const [firstCard, ...followingCards] = cards;
 
-            gsap.to(cards, {
-                autoAlpha: 1,
-                y: 0,
-                scale: 1,
-                filter: "blur(0px)",
-                duration: 0.66,
-                ease: "power3.out",
-                stagger: 0.08,
-                force3D: true,
-                scrollTrigger: {
-                    trigger: sectionRef.current,
-                    start: cardStart,
-                    toggleActions: "play none none reverse",
-                    invalidateOnRefresh: true,
-                },
+            if (firstCard) {
+                // Keep the approved scroll-controlled entry for the first card.
+                gsap.fromTo(
+                    firstCard,
+                    { autoAlpha: 0, y: 30, scale: 0.985, filter: "blur(6px)" },
+                    {
+                        autoAlpha: 1,
+                        y: 0,
+                        scale: 1,
+                        filter: "blur(0px)",
+                        ease: "none",
+                        force3D: true,
+                        scrollTrigger: {
+                            trigger: firstCard,
+                            start: firstCardStart,
+                            end: () => `+=${getCardRevealDistance()}`,
+                            scrub: true,
+                            invalidateOnRefresh: true,
+                        },
+                    }
+                );
+            }
+
+            followingCards.forEach((card) => {
+                gsap.fromTo(
+                    card,
+                    { autoAlpha: 0, y: 28, filter: "blur(10px)" },
+                    {
+                        autoAlpha: 1,
+                        y: 0,
+                        filter: "blur(0px)",
+                        ease: "none",
+                        force3D: true,
+                        scrollTrigger: {
+                            trigger: card,
+                            start: () => followingCardStart(card),
+                            end: () => `+=${getCardRevealDistance()}`,
+                            scrub: true,
+                            invalidateOnRefresh: true,
+                        },
+                    }
+                );
             });
         },
         { scope: sectionRef, dependencies: [reduced], revertOnUpdate: true }

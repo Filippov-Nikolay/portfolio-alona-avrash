@@ -42,13 +42,9 @@ const TITLE_EXIT_SAFETY_MARGIN_RATIO = 0.04;
 const CAMERA_SETTLE_END = 0.96;
 const CAMERA_PROGRESS_INPUT = [0, 0.32, 0.62, 0.86, 1];
 const CAMERA_PROGRESS_OUTPUT = [0, 0.24, 0.52, 0.8, 1];
-const SELECTED_PICKUP_PROGRESS = 0.4;
-const SELECTED_ENTRY_LEAD = 0.08;
-const SELECTED_MOTION_END = 1 - SELECTED_ENTRY_LEAD;
-const STATS_PICKUP_PROGRESS = SELECTED_PICKUP_PROGRESS - SELECTED_ENTRY_LEAD;
+const STATS_PICKUP_PROGRESS = 0;
 const SELECTED_ENTRY_VIEWPORT_RATIO = 1.14;
-const SELECTED_PICKUP_VIEWPORT_RATIO = 0.66;
-const SELECTED_FOCUS_DRIFT = 20;
+const SELECTED_FOCUS_DRIFT = 0;
 
 const FLOATER_LAYER_CLASSES = [
     styles.floaterBack,
@@ -301,15 +297,11 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         cameraProgress.get() <= (reduced ? 0.02 : 0.08) ? "none" : "auto"
     );
     const selectedEntryProgress = useTransform(statsSelectedRawProgress, (latest) => {
-        // Keep the approved pre-entry lead, then distribute it across the
-        // full runway so the final pose is reached exactly at stage release.
-        const entryProgress = clamp01(latest);
-
-        return entryProgress + SELECTED_ENTRY_LEAD * (1 - entryProgress);
+        return clamp01(latest);
     });
     const statsLiftY = useTransform(statsSelectedProgress, (latest) => {
-        const liftProgress = smoothstep(
-            (latest - STATS_PICKUP_PROGRESS) / (SELECTED_MOTION_END - STATS_PICKUP_PROGRESS)
+        const liftProgress = clamp01(
+            (latest - STATS_PICKUP_PROGRESS) / (1 - STATS_PICKUP_PROGRESS)
         );
         const finalLift = Math.max(
             choreographyMetrics.viewportHeight / 2 - choreographyMetrics.headerClearance,
@@ -321,19 +313,9 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const selectedMotionY = useTransform(selectedEntryProgress, (latest) => {
         const viewportHeight = choreographyMetrics.viewportHeight;
         const initialTop = viewportHeight * SELECTED_ENTRY_VIEWPORT_RATIO;
-        const pickupTop = viewportHeight * SELECTED_PICKUP_VIEWPORT_RATIO;
         const finalTop = viewportHeight - choreographyMetrics.selectedFinalOffset;
-        const desiredTop =
-            latest <= SELECTED_PICKUP_PROGRESS
-                ? initialTop +
-                  (pickupTop - initialTop) * smoothstep(latest / SELECTED_PICKUP_PROGRESS)
-                : pickupTop +
-                  (finalTop - pickupTop) *
-                      smoothstep(
-                          (latest - SELECTED_PICKUP_PROGRESS) / (1 - SELECTED_PICKUP_PROGRESS)
-                      );
 
-        return desiredTop;
+        return initialTop + (finalTop - initialTop) * clamp01(latest);
     });
     const selectedFlowAdjustment =
         choreographyMetrics.selectedHeight - choreographyMetrics.selectedFinalOffset;

@@ -7,8 +7,8 @@
     --stats-camera-runway: clamp(1120px, 148svh, 1540px);
     --stats-handoff-runway: clamp(152px, 22svh, 250px);
     --stats-selected-runway: clamp(1120px, 150svh, 1560px);
-    --selected-focus-runway: clamp(360px, 48svh, 520px);
-    --selected-handoff-runway: clamp(220px, 28svh, 320px);
+    --selected-focus-runway: 0px;
+    --selected-handoff-runway: 0px;
     --selected-final-offset: clamp(440px, 62svh, 840px);
 
     position: relative;
@@ -19,8 +19,8 @@
         --stats-camera-runway: clamp(720px, 108svh, 960px);
         --stats-handoff-runway: clamp(112px, 18svh, 180px);
         --stats-selected-runway: clamp(760px, 112svh, 980px);
-        --selected-focus-runway: clamp(220px, 32svh, 300px);
-        --selected-handoff-runway: clamp(156px, 22svh, 220px);
+        --selected-focus-runway: 0px;
+        --selected-handoff-runway: 0px;
         --selected-final-offset: clamp(292px, 52svh, 460px);
     }
 }

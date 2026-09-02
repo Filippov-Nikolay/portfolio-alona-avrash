@@ -328,9 +328,15 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const statsPointerEvents = useTransform(() =>
         cameraProgress.get() <= (reduced ? 0.02 : 0.08) ? "none" : "auto"
     );
-    const selectedEntryProgress = useTransform(statsSelectedRawProgress, (latest) =>
-        clamp01(latest + SELECTED_ENTRY_LEAD)
-    );
+    const selectedEntryProgress = useTransform(statsSelectedRawProgress, (latest) => {
+        // Keep the approved pre-entry lead, then distribute it across the
+        // full runway so the final pose is reached exactly at stage release.
+        if (latest <= 0) {
+            return clamp01(latest + SELECTED_ENTRY_LEAD);
+        }
+
+        return latest + SELECTED_ENTRY_LEAD * (1 - latest);
+    });
     const statsLiftY = useTransform(statsSelectedProgress, (latest) => {
         const liftProgress = smoothstep(
             (latest - STATS_PICKUP_PROGRESS) / (SELECTED_MOTION_END - STATS_PICKUP_PROGRESS)

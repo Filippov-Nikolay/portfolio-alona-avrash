@@ -3,6 +3,35 @@
         "id": 0,
         "title": "ui-ux",
         "description": "I design intuitive digital experiences where visual identity and usability work as one. From user flows to responsive interfaces, every detail is shaped for clarity, function and character.",
-        "image": { "src": "" }
+        "approachLabel": "Digital Design Approach",
+        "image": { "src": "/projects/image-rosso.png", "alt": "Mobile UI screens from the Rosso app design" }
+    },
+    {
+        "id": 1,
+        "title": "branding",
+        "description": "I build brand identities that hold together across every surface — strategy, tone and visuals as one system. From naming to full guideline documentation, each brand is shaped to be instantly recognizable and built to last.",
+        "approachLabel": "Brand Identity Approach",
+        "image": { "src": "/projects/image-florelle.png", "alt": "Florelle branding stationery and packaging mockup" }
+    },
+    {
+        "id": 2,
+        "title": "logo",
+        "description": "I craft logo marks that carry meaning at any size, from favicon to storefront. Every symbol starts with the brand's story and is refined until it reads clean, memorable and true to the concept.",
+        "approachLabel": "Logo Design Approach",
+        "image": { "src": "/projects/image-logofolio.png", "alt": "Logofolio Vol.03 logo mark showcase" }
+    },
+    {
+        "id": 3,
+        "title": "packaging",
+        "description": "I design packaging that turns a shelf moment into a brand moment — structure, material and print working together. Every box, label and bottle is built to protect the product and sell the story at first glance.",
+        "approachLabel": "Packaging Design Approach",
+        "image": { "src": "/projects/image-gasimi.png", "alt": "GASIMI wine bottle label design" }
+    },
+    {
+        "id": 4,
+        "title": "web-design",
+        "description": "I design and build marketing sites and landing pages that convert as well as they look. From layout and typography to responsive behaviour, every page is crafted to load fast and guide visitors with intent.",
+        "approachLabel": "Web Design Approach",
+        "image": { "src": "/projects/image-logolove.png", "alt": "LogoLove website shown on a laptop mockup" }
     }
 ]

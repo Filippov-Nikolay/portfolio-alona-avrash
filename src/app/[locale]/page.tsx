@@ -87,12 +87,14 @@ export default async function HomePage({ params }: HomePageProps) {
                     labels: selectedWorkLabels,
                 }}
             />
+            <div id="services-header-band-entry" aria-hidden="true" />
+            <ServicesSection services={services} />
+            <div id="services-header-band-exit" aria-hidden="true" />
             <ShowcaseSection
                 initialItems={showcaseItems}
                 initialFeaturedIndex={0}
                 initialLabels={showcaseLabels}
             />
-            <ServicesSection services={services} />
             <GallerySection
                 initialItems={galleryItems}
                 initialLabels={galleryLabels}

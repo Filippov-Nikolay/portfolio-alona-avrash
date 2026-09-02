@@ -1,52 +1,202 @@
 @use "@/shared/styles/mixins" as *;
 
+$stack-base-offset: clamp(168px, 15vw, 220px);
+$stack-step: 20px;
+$stack-base-offset-mobile: 148px;
+$stack-step-mobile: 14px;
+$stack-focus-runway: clamp(248px, 30svh, 340px);
+$stack-focus-runway-mobile: clamp(88px, 14svh, 128px);
+$stack-terminal-hold: clamp(88px, 12svh, 132px);
+$stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
+
 .section {
-    --_pad-top: 40px;
-    --_pad-bottom: 40px;
-    padding-block-start: 40px;
-    padding-block-end: 40px;
+    --_pad-top: 30px;
+    --_pad-bottom: 60px;
+
+    position: relative;
+    overflow: clip;
+    background: #000;
+
+    @include respond-to("mobile") {
+        --_pad-top: 48px;
+    }
 }
 
-.header {
-    margin-bottom: 32px;
+// === Ghost background heading =============================
+
+.ghostTitle {
+    position: sticky;
+    top: clamp(96px, 8vw, 124px);
+    z-index: 0;
+    width: 100%;
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: clamp(56px, 12vw, 190px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-align: center;
+    text-transform: uppercase;
+    background: linear-gradient(
+        90deg,
+        rgba(234, 253, 39, 0.12) 0%,
+        rgba(234, 253, 39, 0.4) 26%,
+        var(--color-primary) 50%,
+        rgba(234, 253, 39, 0.4) 74%,
+        rgba(234, 253, 39, 0.12) 100%
+    );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 18px rgba(234, 253, 39, 0.12));
+    pointer-events: none;
+    user-select: none;
+
+    @include respond-to("mobile") {
+        top: 88px;
+    }
 }
 
-.subtitle {
-    margin-top: 14px;
-    max-width: 46ch;
-    font-size: clamp(14px, 1.4vw, 16px);
-    line-height: 1.5;
-    color: var(--color-text-secondary);
-}
+// === Card stack =============================================
 
 .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 16px;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    margin-top: clamp(24px, 3vw, 48px);
     will-change: transform, filter;
     backface-visibility: hidden;
+
+    &::after {
+        content: "";
+        flex: 0 0 $stack-terminal-hold;
+        pointer-events: none;
+
+        @include respond-to("mobile") {
+            flex-basis: $stack-terminal-hold-mobile;
+        }
+    }
 }
 
 .card {
-    padding: 28px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-card);
+    position: sticky;
+    top: calc(#{$stack-base-offset} + var(--index) * #{$stack-step});
+    z-index: calc(var(--index) + 1);
+    display: grid;
+    grid-template-columns: 1fr minmax(280px, 380px);
+    gap: 32px;
+    padding: 40px;
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+
+    @include respond-to("tablet") {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        padding: 28px;
+    }
 
     @include respond-to("mobile") {
-        padding: 20px;
+        top: calc(#{$stack-base-offset-mobile} + var(--index) * #{$stack-step-mobile});
+        padding: 22px;
+    }
+}
+
+.stackRunway {
+    flex: 0 0 $stack-focus-runway;
+    pointer-events: none;
+
+    @include respond-to("mobile") {
+        flex-basis: $stack-focus-runway-mobile;
+    }
+}
+
+.textCol {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    @include respond-to("tablet") {
+        order: 2;
     }
 }
 
 .title {
-    font-size: var(--text-lg);
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: clamp(28px, 3.4vw, 40px);
     font-weight: 700;
-    color: var(--color-text-primary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-primary);
 }
 
 .description {
-    margin-top: 10px;
-    font-size: var(--text-sm);
-    line-height: 1.5;
-    color: var(--color-text-secondary);
+    margin: 16px 0 0;
+    max-width: 46ch;
+    font-size: var(--text-base);
+    line-height: 1.6;
+    color: #a1a1aa;
+}
+
+.approachLink {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 8px;
+    margin-top: 28px;
+    padding-top: 4px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-primary);
+
+    @include transition(opacity);
+    @include focus-ring;
+
+    @include can-hover {
+        &:hover {
+            opacity: 0.7;
+        }
+    }
+}
+
+.approachArrow {
+    width: 11px;
+    height: auto;
+    transform: rotate(-135deg);
+}
+
+.visual {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    width: 100%;
+    overflow: hidden;
+    background: #080810;
+    border-radius: var(--radius-md);
+
+    @include respond-to("tablet") {
+        order: 1;
+        aspect-ratio: 16 / 9;
+    }
+}
+
+.image {
+    object-fit: cover;
+}
+
+@include reduced-motion {
+    .grid {
+        will-change: auto;
+    }
+
+    .ghostTitle {
+        filter: none;
+    }
 }

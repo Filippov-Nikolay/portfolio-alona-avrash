@@ -96,6 +96,7 @@
     overflow: clip;
     perspective: 1320px;
     perspective-origin: 50% 50%;
+    pointer-events: none;
 }
 
 .statsLiftLayer {
@@ -103,6 +104,7 @@
     inset: 0;
     display: flex;
     align-items: center;
+    pointer-events: none;
     will-change: transform;
 }
 

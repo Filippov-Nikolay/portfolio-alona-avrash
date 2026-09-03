@@ -1,0 +1,20 @@
+{
+    "visibleCardCount": 5,
+    "cards": [
+        { "image": { "src": "/projects/image-esencha.png", "alt": "ESENCHA" } },
+        { "image": { "src": "/projects/image-crusty.png", "alt": "CRUSTY" } },
+        { "image": { "src": "/projects/image-logofolio.png", "alt": "LOGOFOLIO VOL.03" } },
+        { "image": { "src": "/projects/image-olva.png", "alt": "OLVA" } },
+        { "image": { "src": "/projects/image-bitebox.png", "alt": "BiteBox" } },
+        { "image": { "src": "/projects/image-brunzo.png", "alt": "Brunzo" } },
+        { "image": { "src": "/projects/image-glowmed.png", "alt": "GlowMed" } },
+        { "image": { "src": "/projects/image-florelle.png", "alt": "Florelle" } },
+        { "image": { "src": "/projects/image-rosso.png", "alt": "Rosso" } },
+        { "image": { "src": "/projects/image-gasimi.png", "alt": "Gasimi Wine" } },
+        { "image": { "src": "/projects/image-mirage.png", "alt": "Mirage" } },
+        { "image": { "src": "/projects/image-patelscience.png", "alt": "Patel Science" } },
+        { "image": { "src": "/projects/image-mara.png", "alt": "Mara Pasta" } },
+        { "image": { "src": "/projects/image-logolove.png", "alt": "LogoLove" } },
+        { "image": { "src": "/projects/image-RASH.png", "alt": "RASH sport" } }
+    ]
+}

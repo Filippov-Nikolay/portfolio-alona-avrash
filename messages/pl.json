@@ -41,6 +41,11 @@
         "viewAll": "Zobacz wszystkie prace",
         "viewLabel": "Zobacz projekt"
     },
+    "projects": {
+        "title": "Projekty",
+        "viewAll": "Zobacz wszystkie projekty",
+        "viewLabel": "Zobacz projekt"
+    },
     "gallery": {
         "subtitle": "Branding, logo i opakowania — cała kolekcja.",
         "featured": "WYRÓŻNIONY",

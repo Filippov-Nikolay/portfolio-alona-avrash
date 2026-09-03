@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { HeroSection } from "@/widgets/HeroSection";
 import { GallerySection } from "@/widgets/GallerySection";
+import { ProjectsSection } from "@/widgets/ProjectsSection";
 import { ShowcaseSection } from "@/widgets/ShowcaseSection";
 import { ServicesSection } from "@/widgets/ServicesSection";
 import { ReviewSection } from "@/widgets/ReviewSection";
@@ -11,6 +12,8 @@ import {
     getSelectedWork,
     toShowcaseItem,
 } from "@/entities/project/lib/resolveProjects";
+import { getHomeProjectGalleryCards } from "@/entities/home-project-gallery/lib/resolveHomeProjectGallery";
+import { getHomeProjectGallery } from "@/entities/home-project-gallery/api/getHomeProjectGallery";
 import { getServices } from "@/entities/service/api/getServices";
 import { getReviews } from "@/entities/review/api/getReviews";
 import { getStats } from "@/entities/stat/api/getStats";
@@ -26,20 +29,33 @@ interface HomePageProps {
 export default async function HomePage({ params }: HomePageProps) {
     const { locale } = await params;
 
-    const [tCategories, tShowcase, tGallery, tSelectedWork, allProjects, services, reviews, stats] =
-        await Promise.all([
-            getTranslations({ locale, namespace: "categories" }),
-            getTranslations({ locale, namespace: "showcase" }),
-            getTranslations({ locale, namespace: "gallery" }),
-            getTranslations({ locale, namespace: "selectedWork" }),
-            getAllProjects(),
-            getServices(),
-            getReviews(),
-            getStats(),
-        ]);
+    const [
+        tCategories,
+        tShowcase,
+        tGallery,
+        tSelectedWork,
+        tProjects,
+        allProjects,
+        homeProjectGallery,
+        services,
+        reviews,
+        stats,
+    ] = await Promise.all([
+        getTranslations({ locale, namespace: "categories" }),
+        getTranslations({ locale, namespace: "showcase" }),
+        getTranslations({ locale, namespace: "gallery" }),
+        getTranslations({ locale, namespace: "selectedWork" }),
+        getTranslations({ locale, namespace: "projects" }),
+        getAllProjects(),
+        getHomeProjectGallery(),
+        getServices(),
+        getReviews(),
+        getStats(),
+    ]);
     const translateCategory = (key: CategoryKey) => tCategories(key);
 
     const selectedWorkProjects = getSelectedWork(allProjects);
+    const projectsSectionCards = getHomeProjectGalleryCards(homeProjectGallery);
     const showcaseProjects = allProjects.slice(0, SHOWCASE_COUNT);
     const galleryProjects = allProjects.slice(SHOWCASE_COUNT);
 
@@ -48,6 +64,9 @@ export default async function HomePage({ params }: HomePageProps) {
     );
     const selectedWorkCategoryLabels = selectedWorkProjects.map((project) =>
         project.categories.map(translateCategory)
+    );
+    const projectsModalItems = allProjects.map((project, i) =>
+        toShowcaseItem(project, i, translateCategory, false)
     );
     const showcaseItems = showcaseProjects.map((project, i) =>
         toShowcaseItem(project, i, translateCategory, true)
@@ -75,6 +94,11 @@ export default async function HomePage({ params }: HomePageProps) {
         viewAll: tSelectedWork("viewAll"),
         viewLabel: tSelectedWork("viewLabel"),
     };
+    const projectsLabels = {
+        title: tProjects("title"),
+        viewAll: tProjects("viewAll"),
+        viewLabel: tProjects("viewLabel"),
+    };
 
     return (
         <main>
@@ -90,6 +114,13 @@ export default async function HomePage({ params }: HomePageProps) {
             <div id="services-header-band-entry" aria-hidden="true" />
             <ServicesSection services={services} />
             <div id="services-header-band-exit" aria-hidden="true" />
+            <ProjectsSection
+                projects={allProjects}
+                cards={projectsSectionCards}
+                visibleCardCount={homeProjectGallery.visibleCardCount}
+                modalItems={projectsModalItems}
+                labels={projectsLabels}
+            />
             <ShowcaseSection
                 initialItems={showcaseItems}
                 initialFeaturedIndex={0}

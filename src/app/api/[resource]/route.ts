@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import heroData from "@/entities/hero/model/hero.json";
 import socialData from "@/entities/social/model/social.json";
 import projectsData from "@/entities/project/model/projects.json";
+import homeProjectGalleryData from "@/entities/home-project-gallery/model/home-project-gallery.json";
 import servicesData from "@/entities/service/model/services.json";
 import reviewsData from "@/entities/review/model/reviews.json";
 import statsData from "@/entities/stat/model/stats.json";
@@ -10,6 +11,7 @@ const CONTENT: Record<string, unknown> = {
     hero: heroData,
     socials: socialData,
     projects: projectsData,
+    "home-project-gallery": homeProjectGalleryData,
     services: servicesData,
     reviews: reviewsData,
     stats: statsData,

@@ -41,6 +41,11 @@
         "viewAll": "View all work",
         "viewLabel": "View project"
     },
+    "projects": {
+        "title": "Projects",
+        "viewAll": "View all projects",
+        "viewLabel": "View project"
+    },
     "gallery": {
         "subtitle": "Branding, logo and packaging work — the full collection.",
         "featured": "FEATURED",

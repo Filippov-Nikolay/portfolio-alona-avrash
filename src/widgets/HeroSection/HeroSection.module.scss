@@ -11,9 +11,19 @@
     --selected-handoff-runway: 0px;
     --selected-final-offset: clamp(440px, 62svh, 840px);
 
+    --_floater-bg: var(--color-visual-bg);
+    --_floater-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    --_floater-ring: transparent;
+
     position: relative;
     overflow-x: clip;
     overflow-y: visible;
+
+    [data-theme="dark"] & {
+        --_floater-bg: #14141f;
+        --_floater-shadow: 0 28px 60px rgba(0, 0, 0, 0.6), 0 10px 24px rgba(0, 0, 0, 0.45);
+        --_floater-ring: rgba(255, 255, 255, 0.08);
+    }
 
     @include respond-to("tablet") {
         --stats-camera-runway: clamp(720px, 108svh, 960px);
@@ -206,11 +216,41 @@
     mask-image: radial-gradient(ellipse 82% 74% at 18% 20%, black 10%, transparent 62%);
     -webkit-mask-image: radial-gradient(ellipse 82% 74% at 18% 20%, black 10%, transparent 62%);
 
+    [data-theme="dark"] & {
+        background: radial-gradient(circle, rgba(234, 253, 39, 0.46) 0%, transparent 65%);
+    }
+
     @include respond-to("tablet") {
         top: -10%;
         left: -18%;
         width: 360px;
         height: 360px;
+    }
+}
+
+.glowSecondary {
+    position: absolute;
+    top: 8%;
+    right: -12%;
+    width: 620px;
+    height: 620px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(120, 150, 255, 0.16) 0%, transparent 68%);
+    pointer-events: none;
+    filter: blur(var(--blur-lg));
+    mask-image: radial-gradient(ellipse 76% 70% at 70% 35%, black 10%, transparent 62%);
+    -webkit-mask-image: radial-gradient(ellipse 76% 70% at 70% 35%, black 10%, transparent 62%);
+    opacity: 0;
+
+    [data-theme="dark"] & {
+        opacity: 1;
+    }
+
+    @include respond-to("tablet") {
+        top: 2%;
+        right: -24%;
+        width: 320px;
+        height: 320px;
     }
 }
 
@@ -406,8 +446,10 @@
     position: absolute;
     overflow: hidden;
     border-radius: 10px;
-    background: var(--color-visual-bg);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    background: var(--_floater-bg);
+    box-shadow:
+        var(--_floater-shadow),
+        0 0 0 1px var(--_floater-ring);
     will-change: transform;
 
     &:nth-child(1) {

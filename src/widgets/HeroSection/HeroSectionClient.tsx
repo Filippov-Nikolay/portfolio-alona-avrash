@@ -412,6 +412,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                     >
                         <NoiseLayer />
                         <div className={styles.glow} aria-hidden="true" />
+                        <div className={styles.glowSecondary} aria-hidden="true" />
 
                         <Container className={styles.container}>
                             <m.div

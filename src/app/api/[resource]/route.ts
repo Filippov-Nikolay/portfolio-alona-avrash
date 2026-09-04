@@ -6,6 +6,7 @@ import homeProjectGalleryData from "@/entities/home-project-gallery/model/home-p
 import servicesData from "@/entities/service/model/services.json";
 import reviewsData from "@/entities/review/model/reviews.json";
 import statsData from "@/entities/stat/model/stats.json";
+import clientsData from "@/entities/client/model/clients.json";
 
 const CONTENT: Record<string, unknown> = {
     hero: heroData,
@@ -15,6 +16,7 @@ const CONTENT: Record<string, unknown> = {
     services: servicesData,
     reviews: reviewsData,
     stats: statsData,
+    clients: clientsData,
 };
 
 interface RouteParams {

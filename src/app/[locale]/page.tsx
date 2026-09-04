@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { HeroSection } from "@/widgets/HeroSection";
 import { GallerySection } from "@/widgets/GallerySection";
 import { ProjectsSection } from "@/widgets/ProjectsSection";
+import { ClientsSection } from "@/widgets/ClientsSection";
 import { ShowcaseSection } from "@/widgets/ShowcaseSection";
 import { ServicesSection } from "@/widgets/ServicesSection";
 import { ReviewSection } from "@/widgets/ReviewSection";
@@ -17,6 +18,7 @@ import { getHomeProjectGallery } from "@/entities/home-project-gallery/api/getHo
 import { getServices } from "@/entities/service/api/getServices";
 import { getReviews } from "@/entities/review/api/getReviews";
 import { getStats } from "@/entities/stat/api/getStats";
+import { getClients } from "@/entities/client/api/getClients";
 
 // Showcase (primary carousel, under the Hero) gets the most recent
 // projects; Gallery (secondary, browsable) gets the rest.
@@ -35,22 +37,26 @@ export default async function HomePage({ params }: HomePageProps) {
         tGallery,
         tSelectedWork,
         tProjects,
+        tClients,
         allProjects,
         homeProjectGallery,
         services,
         reviews,
         stats,
+        clients,
     ] = await Promise.all([
         getTranslations({ locale, namespace: "categories" }),
         getTranslations({ locale, namespace: "showcase" }),
         getTranslations({ locale, namespace: "gallery" }),
         getTranslations({ locale, namespace: "selectedWork" }),
         getTranslations({ locale, namespace: "projects" }),
+        getTranslations({ locale, namespace: "clients" }),
         getAllProjects(),
         getHomeProjectGallery(),
         getServices(),
         getReviews(),
         getStats(),
+        getClients(),
     ]);
     const translateCategory = (key: CategoryKey) => tCategories(key);
 
@@ -99,6 +105,9 @@ export default async function HomePage({ params }: HomePageProps) {
         viewAll: tProjects("viewAll"),
         viewLabel: tProjects("viewLabel"),
     };
+    const clientsLabels = {
+        label: tClients("label"),
+    };
 
     return (
         <main>
@@ -121,6 +130,7 @@ export default async function HomePage({ params }: HomePageProps) {
                 modalItems={projectsModalItems}
                 labels={projectsLabels}
             />
+            <ClientsSection rows={clients.rows} labels={clientsLabels} />
             <ShowcaseSection
                 initialItems={showcaseItems}
                 initialFeaturedIndex={0}

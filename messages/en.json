@@ -46,6 +46,9 @@
         "viewAll": "View all projects",
         "viewLabel": "View project"
     },
+    "clients": {
+        "label": "Client / Collaborations"
+    },
     "gallery": {
         "subtitle": "Branding, logo and packaging work — the full collection.",
         "featured": "FEATURED",

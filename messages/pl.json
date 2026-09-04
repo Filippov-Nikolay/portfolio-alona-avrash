@@ -46,6 +46,9 @@
         "viewAll": "Zobacz wszystkie projekty",
         "viewLabel": "Zobacz projekt"
     },
+    "clients": {
+        "label": "Klient / Współprace"
+    },
     "gallery": {
         "subtitle": "Branding, logo i opakowania — cała kolekcja.",
         "featured": "WYRÓŻNIONY",

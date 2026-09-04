@@ -10,11 +10,6 @@
         { "image": { "src": "/projects/image-glowmed.png", "alt": "GlowMed" } },
         { "image": { "src": "/projects/image-florelle.png", "alt": "Florelle" } },
         { "image": { "src": "/projects/image-rosso.png", "alt": "Rosso" } },
-        { "image": { "src": "/projects/image-gasimi.png", "alt": "Gasimi Wine" } },
-        { "image": { "src": "/projects/image-mirage.png", "alt": "Mirage" } },
-        { "image": { "src": "/projects/image-patelscience.png", "alt": "Patel Science" } },
-        { "image": { "src": "/projects/image-mara.png", "alt": "Mara Pasta" } },
-        { "image": { "src": "/projects/image-logolove.png", "alt": "LogoLove" } },
-        { "image": { "src": "/projects/image-RASH.png", "alt": "RASH sport" } }
+        { "image": { "src": "/projects/image-gasimi.png", "alt": "Gasimi Wine" } }
     ]
 }

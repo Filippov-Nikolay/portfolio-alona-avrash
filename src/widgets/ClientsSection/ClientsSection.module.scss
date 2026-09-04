@@ -1,0 +1,183 @@
+@use "@/shared/styles/mixins" as *;
+
+.section {
+    background: var(--color-primary);
+    padding-block: 28px 25px;
+    overflow: hidden;
+}
+
+.label {
+    display: block;
+    margin-inline-start: clamp(0px, 10vw, 112px);
+    margin-bottom: 36px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #000;
+}
+
+.rows {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.row {
+    width: 100%;
+    padding-block: 2px;
+    overflow: hidden;
+}
+
+.track {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+    animation: clients-marquee-left var(--marquee-duration) linear infinite;
+}
+
+.sequence {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 14px;
+    padding-right: 14px;
+}
+
+.row[data-direction="left"] .track {
+    margin-left: 10px;
+}
+
+.row[data-direction="right"] .track {
+    margin-left: -58px;
+    animation-name: clients-marquee-right;
+}
+
+.pill {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    min-width: 160px;
+    height: 54px;
+    padding: 0 28px;
+    border: 1.5px solid #000;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: #000;
+    background: transparent;
+    white-space: nowrap;
+
+    @include respond-to("mobile") {
+        min-width: 124px;
+        height: 44px;
+        padding: 0 20px;
+        font-size: 18px;
+    }
+}
+
+.filled {
+    background: #000;
+    border-color: #000;
+    color: var(--color-primary);
+}
+
+.light {
+    border-color: transparent;
+    background: #fff;
+    color: #000;
+}
+
+.pillEmpty {
+    min-width: 0;
+    width: 132px;
+    padding: 0;
+}
+
+.sm {
+    width: 88px;
+}
+
+.md {
+    width: 132px;
+}
+
+.lg {
+    width: 196px;
+
+    @include respond-to("mobile") {
+        width: 132px;
+    }
+}
+
+@include respond-to("mobile") {
+    .section {
+        padding-block: 24px 22px;
+    }
+
+    .label {
+        margin-inline-start: 0;
+        margin-bottom: 28px;
+        font-size: 12px;
+    }
+
+    .rows {
+        gap: 12px;
+    }
+
+    .row {
+        --marquee-duration: 25s;
+    }
+
+    .sequence {
+        gap: 10px;
+        padding-right: 10px;
+    }
+
+    .row[data-direction="left"] .track {
+        margin-left: -24px;
+    }
+
+    .row[data-direction="right"] .track {
+        margin-left: -44px;
+    }
+
+    .pillEmpty {
+        width: 102px;
+    }
+
+    .sm {
+        width: 70px;
+    }
+
+    .md {
+        width: 102px;
+    }
+}
+
+@keyframes clients-marquee-left {
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+@keyframes clients-marquee-right {
+    from {
+        transform: translateX(-50%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+@include reduced-motion {
+    .track {
+        animation: none;
+    }
+}

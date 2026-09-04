@@ -6,6 +6,21 @@ $header-scale: 0.8;
 // Wrapper — прозрачная полоса на всю ширину
 // =============================================
 
+.wrapper,
+.mobileNav {
+    --_pill-bg: var(--color-bg-btn);
+    --_pill-text: var(--color-text-primary-reverse);
+    --_pill-border: transparent;
+    --_pill-blur: none;
+
+    [data-theme="dark"] & {
+        --_pill-bg: rgba(13, 13, 16, 0.94);
+        --_pill-text: #ffffff;
+        --_pill-border: rgba(255, 255, 255, 0.1);
+        --_pill-blur: blur(16px) saturate(140%);
+    }
+}
+
 .wrapper {
     position: fixed;
     top: 0;
@@ -64,7 +79,10 @@ $header-scale: 0.8;
 @mixin pill {
     pointer-events: all;
     border-radius: var(--radius-sm);
-    background: var(--color-bg-btn);
+    background: var(--_pill-bg);
+    border: 1px solid var(--_pill-border);
+    backdrop-filter: var(--_pill-blur);
+    -webkit-backdrop-filter: var(--_pill-blur);
     box-shadow:
         0px 0px 30px 0px rgba(234, 253, 39, 0.18),
         inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
@@ -93,7 +111,7 @@ $header-scale: 0.8;
     text-decoration: none;
     flex-shrink: 0;
 
-    --stagger-reveal-color: var(--color-text-primary-reverse);
+    --stagger-reveal-color: var(--_pill-text);
 
     transition-property: opacity, transform, box-shadow;
 
@@ -166,7 +184,7 @@ $header-scale: 0.8;
     font-weight: 300;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--color-text-primary-reverse);
+    color: var(--_pill-text);
     text-decoration: none;
     border-radius: var(--radius-v-sm);
     transition: color 0.24s cubic-bezier(0.22, 1, 0.36, 1);
@@ -233,6 +251,8 @@ $header-scale: 0.8;
 
     position: relative;
     flex-shrink: 0;
+    --lang-dropdown-bg: var(--_pill-bg);
+    --lang-dropdown-border: var(--_pill-border);
     transition-property: opacity, transform, border-radius;
     transition-duration: 0.5s, 0.5s, 0.45s;
     transition-timing-function:
@@ -243,9 +263,14 @@ $header-scale: 0.8;
         transition: none;
     }
 
-    &:has(.langWrapperDesktop[data-open]) {
+    &:has(.langWrapperDesktop[data-open]),
+    &:has(.langMobileWrapper[data-open]) {
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
+        border-bottom-color: transparent;
+        // The dropdown overlaps this edge. Removing the inset glow here keeps
+        // the two surfaces visually continuous instead of drawing a seam.
+        box-shadow: 0 0 30px rgba(234, 253, 39, 0.18);
     }
 }
 
@@ -272,7 +297,7 @@ $header-scale: 0.8;
     font-weight: 700;
     font-size: $header-scale * 16px;
     letter-spacing: 0;
-    color: var(--color-text-primary-reverse) !important;
+    color: var(--_pill-text) !important;
 
     @include can-hover {
         &:hover {
@@ -288,7 +313,7 @@ $header-scale: 0.8;
     padding: 0 ($header-scale * 20px) !important;
     border-left: 1px solid rgba(128, 128, 128, 0.35) !important;
     border-radius: 0;
-    color: var(--color-text-primary-reverse) !important;
+    color: var(--_pill-text) !important;
 
     svg {
         transform: scale(#{$header-scale * 32 / 18});
@@ -313,6 +338,8 @@ $header-scale: 0.8;
 }
 
 .langMobileWrapper {
+    position: relative;
+
     width: 100%;
     height: 100%;
 }
@@ -320,14 +347,20 @@ $header-scale: 0.8;
 .langMobileTrigger {
     width: 100%;
     height: 100%;
+    border: none;
     border-radius: var(--radius-sm);
     background: transparent;
     justify-content: center;
     padding: 10px 8px;
-    color: var(--color-text-primary-reverse) !important;
+    color: var(--_pill-text) !important;
 
     &:active {
         background: rgba(234, 253, 39, 0.08);
+    }
+
+    .utilityPill:has(.langMobileWrapper[data-open]) & {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
     }
 }
 
@@ -416,7 +449,7 @@ $header-scale: 0.8;
     font-weight: 300;
     font-size: $header-scale * 16px;
     text-transform: uppercase;
-    color: var(--color-text-primary-reverse);
+    color: var(--_pill-text);
     white-space: nowrap;
 }
 
@@ -508,6 +541,13 @@ $header-scale: 0.8;
         0px 0px 30px 0px rgba(234, 253, 39, 0.18),
         inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
     pointer-events: all;
+
+    [data-theme="dark"] & {
+        background: var(--_pill-bg);
+        border: 1px solid var(--_pill-border);
+        backdrop-filter: var(--_pill-blur);
+        -webkit-backdrop-filter: var(--_pill-blur);
+    }
 }
 
 .mobileNavThemePill {
@@ -525,6 +565,13 @@ $header-scale: 0.8;
         border-radius: var(--radius-sm);
         background: var(--color-bg);
         pointer-events: all;
+
+        [data-theme="dark"] & {
+            background: var(--_pill-bg);
+            border: 1px solid var(--_pill-border);
+            backdrop-filter: var(--_pill-blur);
+            -webkit-backdrop-filter: var(--_pill-blur);
+        }
     }
 }
 

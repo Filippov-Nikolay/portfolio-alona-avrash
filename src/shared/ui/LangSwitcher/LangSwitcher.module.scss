@@ -65,19 +65,27 @@
 
 .dropdown {
     position: absolute;
-    top: 100%;
-    right: 0;
+    top: calc(100% - 1px);
+    right: -1px;
+    left: -1px;
     z-index: 100;
     list-style: none;
     margin: 0;
     padding: 6px;
-    width: 100%;
-    background: var(--color-bg-btn);
-    border: 1px solid rgba(234, 253, 39, 0.18);
+    width: auto;
+    box-sizing: border-box;
+    background: var(--lang-dropdown-bg, var(--color-bg-btn));
+    border: 1px solid var(--lang-dropdown-border, rgba(234, 253, 39, 0.18));
+    border-top: none;
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-    box-shadow:
-        0 8px 24px rgba(0, 0, 0, 0.3),
-        0 0 24px rgba(234, 253, 39, 0.12);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+
+    [data-theme="dark"] & {
+        background: var(--lang-dropdown-bg, rgba(20, 20, 24, 0.92));
+        backdrop-filter: blur(20px) saturate(160%);
+        -webkit-backdrop-filter: blur(20px) saturate(160%);
+        border-color: var(--lang-dropdown-border, rgba(255, 255, 255, 0.12));
+    }
 }
 
 // =============================================
@@ -103,6 +111,10 @@
     cursor: pointer;
     white-space: nowrap;
     @include transition(background, color, opacity, transform);
+
+    [data-theme="dark"] & {
+        color: #ffffff;
+    }
 
     @include can-hover {
         &:hover {

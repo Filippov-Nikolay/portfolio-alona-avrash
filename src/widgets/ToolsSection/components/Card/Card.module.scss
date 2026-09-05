@@ -1,0 +1,181 @@
+@use "@/shared/styles/mixins" as *;
+
+.card {
+    position: relative;
+    isolation: isolate;
+
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+
+    width: 323px;
+    height: 292px;
+    padding: 15px;
+    border: 0;
+    background: transparent;
+    appearance: none;
+    cursor: pointer;
+    scroll-snap-align: center;
+
+    @include focus-ring;
+
+    @include can-hover {
+        &:hover {
+            .cardFolder {
+                background-color: var(--color-accent);
+                opacity: 0.55;
+
+                &::before {
+                    opacity: 1;
+                }
+            }
+
+            .cardIconTool {
+                border: 1px solid #000;
+                background-color: #000;
+            }
+
+            .cardLabelTool {
+                color: #000;
+            }
+        }
+    }
+}
+
+.cardActive {
+    .cardFolder {
+        background-color: var(--color-accent);
+        opacity: 0.55;
+
+        &::before {
+            opacity: 1;
+        }
+    }
+
+    .cardIconTool {
+        border: 1px solid #000;
+        background-color: #000;
+    }
+
+    .cardLabelTool {
+        color: #000;
+    }
+}
+
+.cardItems {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.cardFolder {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    background-color: #242424;
+
+    mask-image: url("/assets/tools/v2/Rectangle-tool.svg");
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-image: url("/assets/tools/v2/Rectangle-tool.svg");
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+
+    pointer-events: none;
+    transition:
+        background-color 0.35s ease,
+        opacity 0.35s ease;
+
+    // Glass sheen — a diagonal light streak clipped to the same folder
+    // shape via its own copy of the mask (a pseudo-element doesn't inherit
+    // its parent's mask). Opacity-only so it fades in smoothly instead of
+    // popping in the way a toggled background-image would (gradients
+    // don't interpolate between each other under a CSS transition).
+    &::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+
+        background: linear-gradient(
+            115deg,
+            rgba(255, 255, 255, 0.45) 0%,
+            rgba(255, 255, 255, 0.12) 20%,
+            transparent 42%,
+            transparent 100%
+        );
+
+        mask-image: url("/assets/tools/v2/Rectangle-tool.svg");
+        mask-repeat: no-repeat;
+        mask-position: center;
+        mask-size: contain;
+        -webkit-mask-image: url("/assets/tools/v2/Rectangle-tool.svg");
+        -webkit-mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        -webkit-mask-size: contain;
+
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s ease;
+    }
+}
+
+.cardBody {
+    position: relative;
+    z-index: 1;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    margin-top: 35px;
+}
+
+.cardIconTool {
+    margin-bottom: 20px;
+
+    width: 150px;
+    height: 150px;
+
+    border: 1px solid #fff;
+    border-radius: var(--radius-lg);
+}
+
+.cardLabelTool {
+    font-weight: 700;
+    font-size: 24px;
+
+    color: #fff;
+}
+
+.cardItem {
+    position: absolute;
+
+    width: 264px;
+    height: 264px;
+
+    border-radius: var(--radius-lg);
+
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.cardItemImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@include reduced-motion {
+    .cardFolder,
+    .cardFolder::before,
+    .cardItems {
+        transition: none;
+    }
+}

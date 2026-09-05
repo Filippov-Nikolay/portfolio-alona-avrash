@@ -4,5 +4,17 @@
         "nameProject": "Olva",
         "comment": "Working with Alona was a fantastic experience. She's creative, detail-oriented, and truly understands how to bring brands' visions to life.",
         "name": "maria pinto"
+    },
+    {
+        "id": 1,
+        "nameProject": "Esencha",
+        "comment": "Alona took our packaging from an idea on a napkin to something that actually stops people on the shelf. Fast, sharp, and easy to work with.",
+        "name": "daniel cruz"
+    },
+    {
+        "id": 2,
+        "nameProject": "Crusty",
+        "comment": "Every round of feedback came back better than we imagined. Our new identity feels exactly like us, just sharper and more confident.",
+        "name": "sophie laurent"
     }
 ]

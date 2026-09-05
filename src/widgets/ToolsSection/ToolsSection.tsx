@@ -1,10 +1,21 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import {
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+    type CSSProperties,
+    type PointerEvent,
+} from "react";
+import { createPortal } from "react-dom";
 import type { Tool } from "@/entities/tool/model/tool";
 import { Container, Section } from "@/shared/ui";
+import { useMounted } from "@/shared/hooks/useMounted";
+import { cn } from "@/shared/lib/cn";
 import styles from "./ToolsSection.module.scss";
 import { Card } from "./components/Card/Card";
+import { peekBlendSrc, peekStyle } from "./lib/peek";
 
 interface ToolsSectionLabels {
     title: string;
@@ -16,24 +27,184 @@ interface ToolsSectionProps {
     labels: ToolsSectionLabels;
 }
 
+interface OverlayRect {
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+}
+
+const AUTO_SCROLL_SPEED = 150;
+const AUTO_SCROLL_RESUME_DELAY = 1_500;
+const MARQUEE_CYCLES = 4;
+
 export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     const [hoveredId, setHoveredId] = useState<number | null>(null);
     const [pinnedId, setPinnedId] = useState<number | null>(null);
+    const [overlayTool, setOverlayTool] = useState<Tool | null>(null);
+    const [overlayRect, setOverlayRect] = useState<OverlayRect | null>(null);
+    const [isOverlayActive, setIsOverlayActive] = useState(false);
     const pointerTypeRef = useRef<string>("mouse");
     const trackRef = useRef<HTMLDivElement>(null);
-    const featuredCardRef = useRef<HTMLButtonElement>(null);
+    const sequenceRef = useRef<HTMLDivElement>(null);
+    const activeCardElRef = useRef<HTMLButtonElement | null>(null);
     const dragRef = useRef({ active: false, startX: 0, scrollLeft: 0, didDrag: false });
-    const featuredId = tools[Math.floor(tools.length / 2)]?.id ?? null;
+    const isTrackHoveredRef = useRef(false);
+    const pauseAutoScrollRef = useRef<() => void>(() => undefined);
+    const mounted = useMounted();
     const activeId = hoveredId ?? pinnedId;
+    const isPeeking = activeId !== null;
 
     useLayoutEffect(() => {
         const track = trackRef.current;
-        const featuredCard = featuredCardRef.current;
-        if (!track || !featuredCard) return;
+        const sequence = sequenceRef.current;
+        if (!track || !sequence) return;
 
-        track.scrollLeft =
-            featuredCard.offsetLeft + featuredCard.offsetWidth / 2 - track.clientWidth / 2;
-    }, [featuredId]);
+        track.scrollLeft = sequence.offsetWidth;
+    }, [tools.length]);
+
+    useEffect(() => {
+        const track = trackRef.current;
+        const sequence = sequenceRef.current;
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+        if (!track || !sequence || reduceMotion.matches) return;
+
+        let animationFrameId = 0;
+        let resumeTimeoutId: ReturnType<typeof setTimeout> | undefined;
+        let isPaused = false;
+        let previousTimestamp = 0;
+        let autoScrollPosition = track.scrollLeft;
+
+        const pauseAutoScroll = () => {
+            isPaused = true;
+            previousTimestamp = 0;
+
+            if (resumeTimeoutId) {
+                clearTimeout(resumeTimeoutId);
+            }
+
+            resumeTimeoutId = setTimeout(() => {
+                autoScrollPosition = track.scrollLeft;
+                isPaused = false;
+            }, AUTO_SCROLL_RESUME_DELAY);
+        };
+
+        const resetAnimationTimestamp = () => {
+            previousTimestamp = 0;
+        };
+
+        const animate = (timestamp: number) => {
+            if (
+                !isPaused &&
+                !dragRef.current.active &&
+                !isTrackHoveredRef.current &&
+                document.visibilityState === "visible"
+            ) {
+                const elapsed = previousTimestamp ? timestamp - previousTimestamp : 0;
+                const loopWidth = sequence.offsetWidth;
+
+                if (loopWidth > 0 && elapsed > 0) {
+                    if (track.scrollLeft >= loopWidth * 2) {
+                        track.scrollLeft -= loopWidth;
+                        autoScrollPosition = track.scrollLeft;
+                    }
+
+                    const nextScrollLeft =
+                        autoScrollPosition + (AUTO_SCROLL_SPEED * elapsed) / 1000;
+
+                    autoScrollPosition =
+                        nextScrollLeft >= loopWidth * 2
+                            ? nextScrollLeft - loopWidth
+                            : nextScrollLeft;
+                    track.scrollLeft = autoScrollPosition;
+                }
+            }
+
+            previousTimestamp = timestamp;
+            animationFrameId = requestAnimationFrame(animate);
+        };
+
+        pauseAutoScrollRef.current = pauseAutoScroll;
+        document.addEventListener("visibilitychange", resetAnimationTimestamp);
+        animationFrameId = requestAnimationFrame(animate);
+
+        return () => {
+            pauseAutoScrollRef.current = () => undefined;
+            document.removeEventListener("visibilitychange", resetAnimationTimestamp);
+            cancelAnimationFrame(animationFrameId);
+
+            if (resumeTimeoutId) {
+                clearTimeout(resumeTimeoutId);
+            }
+        };
+    }, [tools.length]);
+
+    useEffect(() => {
+        const track = trackRef.current;
+        if (!track) return;
+
+        const handleWheel = (event: globalThis.WheelEvent) => {
+            if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+                pauseAutoScrollRef.current();
+                return;
+            }
+
+            event.preventDefault();
+
+            const pixelsPerLine = 16;
+            const delta =
+                event.deltaMode === 1
+                    ? event.deltaY * pixelsPerLine
+                    : event.deltaMode === 2
+                      ? event.deltaY * window.innerHeight
+                      : event.deltaY;
+            window.scrollBy(0, delta);
+        };
+
+        track.addEventListener("wheel", handleWheel, { passive: false });
+        return () => track.removeEventListener("wheel", handleWheel);
+    }, []);
+
+    const [lastActiveId, setLastActiveId] = useState<number | null>(null);
+    if (activeId !== lastActiveId) {
+        setLastActiveId(activeId);
+        setIsOverlayActive(false);
+        if (activeId !== null) {
+            setOverlayTool(tools.find((tool) => tool.id === activeId) ?? null);
+        }
+    }
+
+    useLayoutEffect(() => {
+        if (!isPeeking) return;
+
+        const frameId = requestAnimationFrame(() => {
+            setIsOverlayActive(true);
+        });
+
+        return () => cancelAnimationFrame(frameId);
+    }, [activeId, isPeeking]);
+
+    useEffect(() => {
+        if (!isPeeking) return;
+
+        let frameId = 0;
+        const syncRect = () => {
+            const el = activeCardElRef.current;
+            if (el) {
+                const rect = el.getBoundingClientRect();
+                setOverlayRect({
+                    left: rect.left,
+                    top: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                });
+            }
+            frameId = requestAnimationFrame(syncRect);
+        };
+        frameId = requestAnimationFrame(syncRect);
+
+        return () => cancelAnimationFrame(frameId);
+    }, [isPeeking]);
 
     function startDrag(event: PointerEvent<HTMLDivElement>) {
         if (event.pointerType === "mouse" && event.button !== 0) return;
@@ -55,6 +226,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         const deltaX = event.clientX - state.startX;
         if (Math.abs(deltaX) > 3) {
             state.didDrag = true;
+            pauseAutoScrollRef.current();
         }
         event.currentTarget.scrollLeft = state.scrollLeft - deltaX;
     }
@@ -66,23 +238,28 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         event.currentTarget.releasePointerCapture(event.pointerId);
     }
 
-    function scrollWithWheel(event: WheelEvent<HTMLDivElement>) {
-        const track = event.currentTarget;
-        const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-        const nextScrollLeft = Math.min(
-            Math.max(track.scrollLeft + delta, 0),
-            track.scrollWidth - track.clientWidth
-        );
+    function pauseOnTrackHover() {
+        isTrackHoveredRef.current = true;
+        pauseAutoScrollRef.current();
+    }
 
-        if (nextScrollLeft === track.scrollLeft) return;
-
-        event.preventDefault();
-        track.scrollLeft = nextScrollLeft;
+    function resumeAfterTrackHover() {
+        isTrackHoveredRef.current = false;
+        pauseAutoScrollRef.current();
     }
 
     if (tools.length === 0) {
         return null;
     }
+
+    const overlayStyle = overlayRect
+        ? ({
+              "--overlay-left": `${overlayRect.left}px`,
+              "--overlay-top": `${overlayRect.top}px`,
+              "--overlay-width": `${overlayRect.width}px`,
+              "--overlay-height": `${overlayRect.height}px`,
+          } as CSSProperties)
+        : undefined;
 
     return (
         <Section id="tools" className={styles.section}>
@@ -98,42 +275,82 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                 onPointerMove={drag}
                 onPointerUp={endDrag}
                 onPointerCancel={endDrag}
-                onWheel={scrollWithWheel}
+                onPointerEnter={pauseOnTrackHover}
+                onPointerLeave={resumeAfterTrackHover}
             >
-                {tools.map((tool) => {
-                    const isFeatured = featuredId === tool.id;
+                <div className={styles.marquee}>
+                    {Array.from({ length: MARQUEE_CYCLES }, (_, cycle) => (
+                        <div
+                            key={cycle}
+                            ref={cycle === 0 ? sequenceRef : undefined}
+                            className={styles.sequence}
+                            aria-hidden={cycle !== 1}
+                        >
+                            {tools.map((tool) => (
+                                <Card
+                                    key={`${cycle}-${tool.id}`}
+                                    tool={tool}
+                                    isActive={activeId === tool.id}
+                                    tabIndex={cycle !== 1 ? -1 : undefined}
+                                    onPointerEnter={(event) => {
+                                        if (event.pointerType !== "mouse") return;
+                                        activeCardElRef.current = event.currentTarget;
+                                        setHoveredId(tool.id);
+                                    }}
+                                    onPointerLeave={(event) => {
+                                        if (event.pointerType === "mouse") setHoveredId(null);
+                                    }}
+                                    onPointerDown={(event) => {
+                                        pointerTypeRef.current = event.pointerType;
+                                    }}
+                                    onClick={(event) => {
+                                        if (dragRef.current.didDrag) {
+                                            dragRef.current.didDrag = false;
+                                            return;
+                                        }
 
-                    return (
-                        <Card
-                            key={tool.id}
-                            ref={isFeatured ? featuredCardRef : undefined}
-                            tool={tool}
-                            isActive={activeId === tool.id}
-                            onPointerEnter={(event) => {
-                                if (event.pointerType === "mouse") setHoveredId(tool.id);
-                            }}
-                            onPointerLeave={(event) => {
-                                if (event.pointerType === "mouse") setHoveredId(null);
-                            }}
-                            onPointerDown={(event) => {
-                                pointerTypeRef.current = event.pointerType;
-                            }}
-                            onClick={() => {
-                                if (dragRef.current.didDrag) {
-                                    dragRef.current.didDrag = false;
-                                    return;
-                                }
-
-                                if (pointerTypeRef.current !== "mouse") {
-                                    setPinnedId((current) =>
-                                        current === tool.id ? null : tool.id
-                                    );
-                                }
-                            }}
-                        />
-                    );
-                })}
+                                        if (pointerTypeRef.current !== "mouse") {
+                                            activeCardElRef.current = event.currentTarget;
+                                            setPinnedId((current) =>
+                                                current === tool.id ? null : tool.id
+                                            );
+                                        }
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    ))}
+                </div>
             </div>
+
+            {mounted &&
+                overlayTool &&
+                createPortal(
+                    <div
+                        className={cn(
+                            styles.peekOverlay,
+                            isOverlayActive && styles.peekOverlayActive
+                        )}
+                        style={overlayStyle}
+                        aria-hidden="true"
+                    >
+                        {overlayTool.images.map((image, index) => (
+                            <span
+                                key={image.src}
+                                className={styles.cardItem}
+                                style={peekStyle(index)}
+                            >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={peekBlendSrc(image.src)}
+                                    alt=""
+                                    className={styles.cardItemImg}
+                                />
+                            </span>
+                        ))}
+                    </div>,
+                    document.body
+                )}
         </Section>
     );
 }

@@ -19,39 +19,33 @@
 .header {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 20px;
-    max-width: 760px;
-    margin-bottom: clamp(36px, 4.2vw, 56px);
+    margin-bottom: 65px;
 }
 
 .title {
     margin: 0;
     font-family: var(--font-title-accent);
-    font-size: clamp(56px, 8.4vw, 92px);
+    font-size: clamp(56px, 8.4vw, 128px);
     font-weight: 700;
     line-height: 0.9;
     color: #000;
 }
 
 .description {
-    max-width: 260px;
-    margin: 9px 0 0;
+    max-width: 360px;
     font-family: var(--font-body);
-    font-size: 14px;
+    font-size: 20px;
     font-weight: 300;
     line-height: 1.5;
-    color: rgba(0, 0, 0, 0.65);
+    color: #000;
 }
 
 .track {
-    display: flex;
-    align-items: flex-start;
-    gap: 24px;
-    padding: 200px clamp(20px, 8vw, 112px) 12px;
+    margin: 50px 0 12px;
     overflow-x: auto;
-    scroll-snap-type: x proximity;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
     touch-action: pan-y;
@@ -67,183 +61,61 @@
     }
 }
 
-.card {
-    position: relative;
-    isolation: isolate;
-    flex-shrink: 0;
-    width: 323px;
-    height: 292px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    appearance: none;
-    cursor: pointer;
-    scroll-snap-align: center;
-
-    @include focus-ring;
-
-    &::before {
-        content: "";
-        position: absolute;
-        inset: -14px;
-        z-index: 0;
-        border-radius: 24px;
-        background: var(--color-primary);
-        filter: blur(24px);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.35s ease;
-    }
+.marquee,
+.sequence {
+    display: flex;
+    width: max-content;
 }
 
-.folder {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    z-index: 2;
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+.sequence {
+    flex: none;
+    gap: 24px;
+    padding-right: 24px;
 }
 
-.folderShape {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #242424;
-    mask-image: url("/assets/tools/v2/Rectangle-tool.svg");
-    mask-repeat: no-repeat;
-    mask-position: center;
-    mask-size: contain;
-    -webkit-mask-image: url("/assets/tools/v2/Rectangle-tool.svg");
-    -webkit-mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    -webkit-mask-size: contain;
+.peekOverlay {
+    position: fixed;
+    left: var(--overlay-left);
+    top: var(--overlay-top);
+    width: var(--overlay-width);
+    height: var(--overlay-height);
+    z-index: 5;
     pointer-events: none;
-    transition: background-color 0.35s ease;
 }
 
-.folderTab {
-    display: none;
-}
-
-.folderBody {
-    position: absolute;
-    inset: 15px 0 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    z-index: 1;
-    padding: 16px 18px 18px;
-    background: transparent;
-}
-
-.iconBadge {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 150px;
-    height: 150px;
-    margin-bottom: 20px;
-    border: 1px solid #fff;
-    border-radius: 25px;
-    flex-shrink: 0;
-}
-
-.iconImage {
-    width: 100px;
-    height: 100px;
-}
-
-.footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    margin-top: 12px;
-}
-
-.label {
-    font-family: var(--font-body);
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #fff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.arrow {
-    width: 15px;
-    height: auto;
-    flex-shrink: 0;
-    color: #fff;
-    transform: rotate(-90deg);
-    transition: transform 0.35s ease;
-}
-
-.peekStack {
-    position: absolute;
-    top: -72px;
-    left: 50%;
-    width: 100%;
-    height: 120px;
-    z-index: 1;
-    pointer-events: none;
-    transform: translateX(-50%);
-}
-
-.peekImage {
+.cardItem {
     position: absolute;
     top: 0;
-    left: 50%;
+    left: 0;
+
+    width: 264px;
+    height: 264px;
+
+    border-radius: var(--radius-lg);
+
     overflow: hidden;
-    width: 156px;
-    height: 96px;
-    border-radius: 12px;
     opacity: 0;
-    z-index: var(--peek-layer);
-    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.2);
-    transform: translate(-50%, 22px) rotate(calc(var(--peek-offset) * 14deg))
-        translateX(calc(var(--peek-offset) * 58px));
+    pointer-events: none;
+    transform: translate(0, 0) rotate(0deg);
+
     transition:
-        opacity 0.4s ease,
-        transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        opacity 0.45s ease,
+        transform 0.45s ease;
 }
 
-.peekImg {
+.cardItemImg {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
 }
 
-.cardActive {
-    &::before {
-        opacity: 0.42;
-    }
-
-    .folder {
-        transform: none;
-    }
-
-    .folderShape {
-        background-color: var(--color-primary);
-    }
-
-    .label {
-        color: #000;
-    }
-
-    .arrow {
-        color: #000;
-        transform: rotate(-135deg);
-    }
-
-    .peekImage {
+.peekOverlayActive {
+    .cardItem {
         opacity: 1;
-        transform: translate(-50%, 0) rotate(calc(var(--peek-offset) * 14deg))
-            translateX(calc(var(--peek-offset) * 58px));
+        transform: translate(var(--peek-x), var(--peek-y)) rotate(var(--peek-rotate));
+        transition:
+            opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 }
 
@@ -268,59 +140,17 @@
     }
 
     .track {
+        padding-bottom: 12px;
+    }
+
+    .sequence {
         gap: 16px;
-        padding: 0 20px 12px;
-    }
-
-    .card {
-        width: 168px;
-        height: 164px;
-    }
-
-    .folderTab {
-        height: 19px;
-    }
-
-    .folderBody {
-        inset: 13px 0 0;
-        padding: 13px 14px 15px;
-        border-radius: 4px 14px 14px 14px;
-    }
-
-    .iconBadge {
-        width: 76px;
-        height: 76px;
-        border-radius: 13px;
-    }
-
-    .iconImage {
-        width: 38px;
-        height: 38px;
-    }
-
-    .label {
-        font-size: 12px;
-    }
-
-    .arrow {
-        width: 13px;
-    }
-
-    .peekStack {
-        top: -60px;
-        height: 100px;
-    }
-
-    .peekImage {
-        width: 124px;
-        height: 78px;
+        padding-right: 16px;
     }
 }
 
 @include reduced-motion {
-    .folder,
-    .arrow,
-    .peekImage {
+    .cardItem {
         transition: none;
     }
 }

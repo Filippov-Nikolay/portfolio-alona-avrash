@@ -4,7 +4,7 @@
     position: relative;
     background: #fff;
     padding-block: clamp(56px, 7.6vw, 96px) clamp(56px, 7vw, 88px);
-    overflow: hidden;
+    overflow: visible;
     color: #000;
 
     &::before {
@@ -74,7 +74,7 @@
 }
 
 .peekOverlay {
-    position: fixed;
+    position: absolute;
     left: var(--overlay-left);
     top: var(--overlay-top);
     width: var(--overlay-width);

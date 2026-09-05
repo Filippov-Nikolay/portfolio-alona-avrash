@@ -8,10 +8,8 @@ import {
     type CSSProperties,
     type PointerEvent,
 } from "react";
-import { createPortal } from "react-dom";
 import type { Tool } from "@/entities/tool/model/tool";
 import { Container, Section } from "@/shared/ui";
-import { useMounted } from "@/shared/hooks/useMounted";
 import { cn } from "@/shared/lib/cn";
 import styles from "./ToolsSection.module.scss";
 import { Card } from "./components/Card/Card";
@@ -45,13 +43,13 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     const [overlayRect, setOverlayRect] = useState<OverlayRect | null>(null);
     const [isOverlayActive, setIsOverlayActive] = useState(false);
     const pointerTypeRef = useRef<string>("mouse");
+    const sectionRef = useRef<HTMLElement>(null);
     const trackRef = useRef<HTMLDivElement>(null);
     const sequenceRef = useRef<HTMLDivElement>(null);
     const activeCardElRef = useRef<HTMLButtonElement | null>(null);
     const dragRef = useRef({ active: false, startX: 0, scrollLeft: 0, didDrag: false });
     const isTrackHoveredRef = useRef(false);
     const pauseAutoScrollRef = useRef<() => void>(() => undefined);
-    const mounted = useMounted();
     const activeId = hoveredId ?? pinnedId;
     const isPeeking = activeId !== null;
 
@@ -189,14 +187,16 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
         let frameId = 0;
         const syncRect = () => {
-            const el = activeCardElRef.current;
-            if (el) {
-                const rect = el.getBoundingClientRect();
+            const card = activeCardElRef.current;
+            const section = sectionRef.current;
+            if (card && section) {
+                const cardRect = card.getBoundingClientRect();
+                const sectionRect = section.getBoundingClientRect();
                 setOverlayRect({
-                    left: rect.left,
-                    top: rect.top,
-                    width: rect.width,
-                    height: rect.height,
+                    left: cardRect.left - sectionRect.left,
+                    top: cardRect.top - sectionRect.top,
+                    width: cardRect.width,
+                    height: cardRect.height,
                 });
             }
             frameId = requestAnimationFrame(syncRect);
@@ -262,7 +262,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         : undefined;
 
     return (
-        <Section id="tools" className={styles.section}>
+        <Section id="tools" ref={sectionRef} className={styles.section}>
             <Container className={styles.header}>
                 <h2 className={styles.title}>{labels.title}</h2>
                 <p className={styles.description}>{labels.description}</p>
@@ -323,34 +323,24 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                 </div>
             </div>
 
-            {mounted &&
-                overlayTool &&
-                createPortal(
-                    <div
-                        className={cn(
-                            styles.peekOverlay,
-                            isOverlayActive && styles.peekOverlayActive
-                        )}
-                        style={overlayStyle}
-                        aria-hidden="true"
-                    >
-                        {overlayTool.images.map((image, index) => (
-                            <span
-                                key={image.src}
-                                className={styles.cardItem}
-                                style={peekStyle(index)}
-                            >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={peekBlendSrc(image.src)}
-                                    alt=""
-                                    className={styles.cardItemImg}
-                                />
-                            </span>
-                        ))}
-                    </div>,
-                    document.body
-                )}
+            {overlayTool && (
+                <div
+                    className={cn(styles.peekOverlay, isOverlayActive && styles.peekOverlayActive)}
+                    style={overlayStyle}
+                    aria-hidden="true"
+                >
+                    {overlayTool.images.map((image, index) => (
+                        <span key={image.src} className={styles.cardItem} style={peekStyle(index)}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src={peekBlendSrc(image.src)}
+                                alt=""
+                                className={styles.cardItemImg}
+                            />
+                        </span>
+                    ))}
+                </div>
+            )}
         </Section>
     );
 }

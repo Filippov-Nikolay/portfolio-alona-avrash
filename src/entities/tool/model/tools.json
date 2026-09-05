@@ -1,0 +1,36 @@
+[
+    {
+        "id": 0,
+        "name": "Illustrator",
+        "icon": "/assets/tools/v2/Icon-illustrator.svg",
+        "images": [{ "src": "/projects/image-brunzo.png", "alt": "BRUNZO" }]
+    },
+    {
+        "id": 1,
+        "name": "Photoshop",
+        "icon": "/assets/tools/v2/Icon-photoshop.svg",
+        "images": [{ "src": "/projects/image-esencha.png", "alt": "ESENCHA" }]
+    },
+    {
+        "id": 2,
+        "name": "Figma",
+        "icon": "/assets/tools/v2/Icon-figma.svg",
+        "images": [
+            { "src": "/projects/image-crusty.png", "alt": "CRUSTY" },
+            { "src": "/projects/image-olva.png", "alt": "OLVA" },
+            { "src": "/projects/image-logofolio.png", "alt": "LOGOFOLIO" }
+        ]
+    },
+    {
+        "id": 3,
+        "name": "After Effects",
+        "icon": "/assets/tools/v2/Icon-aftereffects.svg",
+        "images": [{ "src": "/projects/image-patelscience.png", "alt": "Patel Science" }]
+    },
+    {
+        "id": 4,
+        "name": "InDesign",
+        "icon": "/assets/tools/v2/Icon-indesign.svg",
+        "images": [{ "src": "/projects/image-bitebox.png", "alt": "BiteBox" }]
+    }
+]

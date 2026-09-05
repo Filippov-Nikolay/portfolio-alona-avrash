@@ -1,57 +1,260 @@
 @use "@/shared/styles/mixins" as *;
 
 .section {
-    --_pad-top: 40px;
-    --_pad-bottom: 40px;
-    padding-block-start: 40px;
-    padding-block-end: 40px;
+    position: relative;
+    background: #fff;
+    color: #000;
+    padding-block: clamp(56px, 7.6vw, 96px) clamp(56px, 7vw, 88px);
+    overflow-x: clip;
+    overflow-y: visible;
 }
 
 .header {
-    margin-bottom: 32px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: clamp(40px, 6vw, 72px);
 }
 
-.subtitle {
-    margin-top: 14px;
-    max-width: 46ch;
-    font-size: clamp(14px, 1.4vw, 16px);
-    line-height: 1.5;
-    color: var(--color-text-secondary);
+.title {
+    margin: 0;
+    font-family: var(--font-title-accent);
+    font-weight: 700;
+    line-height: 0.9;
+    font-size: clamp(56px, 8.4vw, 128px);
+    color: #000;
 }
 
-.list {
+.aside {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    will-change: transform, filter;
-    backface-visibility: hidden;
+    align-items: flex-end;
+    flex-shrink: 0;
+    gap: 24px;
+    padding-top: 8px;
 }
 
-.quote {
-    margin: 0;
-    padding: 28px 32px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-card);
+.decor {
+    position: relative;
+    width: 130px;
+    height: 110px;
+}
 
-    @include respond-to("mobile") {
-        padding: 20px;
+.decorShape {
+    position: absolute;
+    border-radius: 24px;
+    background: #e4e4e4;
+}
+
+.decorShapeBack {
+    top: -15px;
+    right: 245px;
+    width: 135px;
+    height: 135px;
+}
+
+.decorShapeFront {
+    right: 0;
+    top: -135px;
+    width: 165px;
+    height: 165px;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.navButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 50%;
+    appearance: none;
+    cursor: pointer;
+    @include transition(background-color, color, border-color);
+
+    &:active {
+        opacity: 0.8;
     }
 }
 
-.text {
-    font-size: clamp(15px, 1.6vw, 19px);
-    line-height: 1.5;
-    color: var(--color-text-primary);
+.navButtonPrev {
+    background: #fff;
+    border: 1.5px solid #000;
+    color: #000;
+
+    @include can-hover {
+        &:hover {
+            background: var(--color-accent);
+        }
+    }
 }
 
-.author {
-    display: block;
-    margin-top: 14px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    font-style: normal;
+.navButtonNext {
+    border: none;
+    background: var(--color-accent);
+    color: #000;
+
+    @include can-hover {
+        &:hover {
+            background: #000;
+            color: var(--color-accent);
+        }
+    }
+}
+
+.navIcon {
+    width: 14px;
+    height: auto;
+}
+
+.navButtonPrev .navIcon {
+    transform: rotate(90deg);
+}
+
+.navButtonNext .navIcon {
+    transform: rotate(-90deg);
+}
+
+.navDivider {
+    font-size: 20px;
+    color: #000;
+}
+
+.carouselWrap {
+    width: 100%;
+}
+
+.viewport {
+    width: 100%;
+    overflow: hidden;
+    touch-action: pan-y pinch-zoom;
+    outline: none;
+    cursor: grab;
+
+    &:active {
+        cursor: grabbing;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 4px;
+    }
+}
+
+.wheelDragging {
+    cursor: grabbing;
+}
+
+.track {
+    display: flex;
+    align-items: stretch;
+    gap: 20px;
+    padding-block: 4px;
+    padding-inline: clamp(20px, 8vw, 112px);
+}
+
+.slot {
+    flex: 0 0 auto;
+    cursor: pointer;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 450px;
+    height: 290px;
+    margin: 0;
+    padding: 32px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 28px;
+    background: #fff;
+    color: #000;
+
+    @include respond-to("mobile") {
+        width: 320px;
+        height: 260px;
+        padding: 24px;
+    }
+}
+
+.cardActive {
+    border-color: #000;
+    background: #000;
+    color: #fff;
+}
+
+.cardTop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.quoteIcon {
+    width: 36px;
+    height: auto;
+    color: inherit;
+}
+
+.projectName {
+    font-size: 16px;
+    font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--color-text-secondary);
+    color: inherit;
+}
+
+.cardActive .projectName {
+    color: var(--color-accent);
+}
+
+.cardActive .quoteIcon {
+    fill: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.comment {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: inherit;
+}
+
+.personName {
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: inherit;
+    opacity: 0.5;
+}
+
+@include respond-to("mobile") {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 24px;
+    }
+
+    .aside {
+        align-items: flex-start;
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
+@include reduced-motion {
+    .navButton {
+        transition: none;
+    }
 }

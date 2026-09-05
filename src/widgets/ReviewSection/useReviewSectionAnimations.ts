@@ -4,68 +4,50 @@ import { useRef } from "react";
 import { useReducedMotion } from "framer-motion";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
-import { revealHeader } from "@/shared/lib/animation";
 
 const isCompact = () => window.matchMedia("(max-width: 767px)").matches;
+const getStart = () => (isCompact() ? "top 90%" : "top 76%");
+const getEnd = () => (isCompact() ? "top 64%" : "top 44%");
 
 export function useReviewSectionAnimations() {
     const reduced = useReducedMotion();
 
     useScrollTriggerAutoRefresh([reduced]);
 
-    const sectionRef = useRef<HTMLDivElement>(null);
-    const headerRef = useRef<HTMLDivElement>(null);
-    const headerLeadRef = useRef<HTMLDivElement>(null);
-    const listRef = useRef<HTMLDivElement>(null);
+    const sectionRef = useRef<HTMLElement>(null);
+    const titleRef = useRef<HTMLHeadingElement>(null);
+    const asideRef = useRef<HTMLDivElement>(null);
+    const trackRef = useRef<HTMLDivElement>(null);
 
     useGSAP(
         () => {
-            if (!sectionRef.current) return;
-            const header = headerRef.current;
-            const wrap = headerLeadRef.current;
-            if (!header || !wrap) return;
-
-            revealHeader({
-                leading: wrap,
-                trigger: header,
-                start: isCompact() ? "top 92%" : "top 90%",
-                reduced,
-            });
-        },
-        { scope: sectionRef, dependencies: [reduced], revertOnUpdate: true }
-    );
-
-    useGSAP(
-        () => {
-            if (!sectionRef.current) return;
-            const list = listRef.current;
-            if (!list) return;
+            const section = sectionRef.current;
+            const title = titleRef.current;
+            const aside = asideRef.current;
+            const track = trackRef.current;
+            if (!section || !title || !aside || !track) return;
 
             if (reduced) {
-                gsap.set(list, { clearProps: "all" });
+                gsap.set([title, aside, track], { clearProps: "all" });
                 return;
             }
 
-            gsap.fromTo(
-                list,
-                { y: 28, filter: "blur(10px)" },
-                {
-                    y: 0,
-                    filter: "blur(0px)",
-                    duration: 0.65,
-                    ease: "power2.out",
-                    force3D: true,
-                    scrollTrigger: {
-                        trigger: list,
-                        start: "top 88%",
-                        toggleActions: "play none none reverse",
-                        invalidateOnRefresh: true,
-                    },
-                }
-            );
+            gsap.timeline({
+                defaults: { ease: "none", force3D: true },
+                scrollTrigger: {
+                    trigger: section,
+                    start: getStart,
+                    end: getEnd,
+                    scrub: 0.9,
+                    invalidateOnRefresh: true,
+                },
+            })
+                .fromTo(title, { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 1 }, 0)
+                .fromTo(aside, { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 1 }, 0.1)
+                .fromTo(track, { autoAlpha: 0, y: 32 }, { autoAlpha: 1, y: 0, duration: 1 }, 0.2);
         },
         { scope: sectionRef, dependencies: [reduced], revertOnUpdate: true }
     );
 
-    return { sectionRef, headerRef, headerLeadRef, listRef };
+    return { sectionRef, titleRef, asideRef, trackRef };
 }

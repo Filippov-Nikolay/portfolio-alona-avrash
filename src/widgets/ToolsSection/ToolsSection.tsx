@@ -8,6 +8,7 @@ import {
     type CSSProperties,
     type PointerEvent,
 } from "react";
+import { useInView } from "framer-motion";
 import type { Tool } from "@/entities/tool/model/tool";
 import { Container, Section } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
@@ -52,6 +53,11 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     const pauseAutoScrollRef = useRef<() => void>(() => undefined);
     const activeId = hoveredId ?? pinnedId;
     const isPeeking = activeId !== null;
+    const isInView = useInView(sectionRef, {
+        once: true,
+        amount: 0.3,
+        margin: "0px 0px -45% 0px",
+    });
 
     useLayoutEffect(() => {
         const track = trackRef.current;
@@ -263,14 +269,14 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
     return (
         <Section id="tools" ref={sectionRef} className={styles.section}>
-            <Container className={styles.header}>
+            <Container className={cn(styles.header, isInView && styles.headerVisible)}>
                 <h2 className={styles.title}>{labels.title}</h2>
                 <p className={styles.description}>{labels.description}</p>
             </Container>
 
             <div
                 ref={trackRef}
-                className={styles.track}
+                className={cn(styles.track, isInView && styles.trackVisible)}
                 onPointerDown={startDrag}
                 onPointerMove={drag}
                 onPointerUp={endDrag}

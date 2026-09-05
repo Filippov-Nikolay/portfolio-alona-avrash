@@ -1,0 +1,8 @@
+{
+    "tagline": "Let's work together",
+    "brandMark": "Avrash",
+    "legalLinks": [
+        { "id": "terms", "label": "Terms of use", "href": "/terms-of-use" },
+        { "id": "privacy", "label": "Privacy policy", "href": "/privacy-policy" }
+    ]
+}

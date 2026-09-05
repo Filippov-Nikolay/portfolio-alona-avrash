@@ -152,19 +152,8 @@ export default async function HomePage({ params }: HomePageProps) {
             />
             <ClientsSection rows={clients.rows} labels={clientsLabels} />
             <ToolsSection tools={tools} labels={toolsLabels} />
-            <ShowcaseSection
-                initialItems={showcaseItems}
-                initialFeaturedIndex={0}
-                initialLabels={showcaseLabels}
-            />
-            <GallerySection
-                initialItems={galleryItems}
-                initialLabels={galleryLabels}
-                collectionUrl="https://instagram.com/"
-            />
             <ReviewSection reviews={reviews} labels={reviewsLabels} />
             <CtaSection content={cta} />
-            <ContactSection />
         </main>
     );
 }

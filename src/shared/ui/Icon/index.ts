@@ -19,3 +19,4 @@ export { default as SunIcon } from "./sun.svg";
 export { default as BehanceIcon } from "./behance-logo.svg";
 export { default as PinterestIcon } from "./pinterest-logo.svg";
 export { default as DownloadIcon } from "./download.svg";
+export { default as QuoteIcon } from "./quote.svg";

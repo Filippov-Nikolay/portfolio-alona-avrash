@@ -81,8 +81,8 @@ $header-scale: 0.8;
     border-radius: var(--radius-sm);
     background: var(--_pill-bg);
     border: 1px solid var(--_pill-border);
-    backdrop-filter: var(--_pill-blur);
     -webkit-backdrop-filter: var(--_pill-blur);
+    backdrop-filter: var(--_pill-blur);
     box-shadow:
         0px 0px 30px 0px rgba(234, 253, 39, 0.18),
         inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
@@ -545,8 +545,8 @@ $header-scale: 0.8;
     [data-theme="dark"] & {
         background: var(--_pill-bg);
         border: 1px solid var(--_pill-border);
-        backdrop-filter: var(--_pill-blur);
         -webkit-backdrop-filter: var(--_pill-blur);
+        backdrop-filter: var(--_pill-blur);
     }
 }
 
@@ -569,8 +569,8 @@ $header-scale: 0.8;
         [data-theme="dark"] & {
             background: var(--_pill-bg);
             border: 1px solid var(--_pill-border);
-            backdrop-filter: var(--_pill-blur);
             -webkit-backdrop-filter: var(--_pill-blur);
+            backdrop-filter: var(--_pill-blur);
         }
     }
 }

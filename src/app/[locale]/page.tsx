@@ -42,6 +42,7 @@ export default async function HomePage({ params }: HomePageProps) {
         tProjects,
         tClients,
         tTools,
+        tReviews,
         allProjects,
         homeProjectGallery,
         services,
@@ -57,6 +58,7 @@ export default async function HomePage({ params }: HomePageProps) {
         getTranslations({ locale, namespace: "projects" }),
         getTranslations({ locale, namespace: "clients" }),
         getTranslations({ locale, namespace: "tools" }),
+        getTranslations({ locale, namespace: "reviews" }),
         getAllProjects(),
         getHomeProjectGallery(),
         getServices(),
@@ -119,6 +121,9 @@ export default async function HomePage({ params }: HomePageProps) {
         title: tTools("title"),
         description: tTools("description"),
     };
+    const reviewsLabels = {
+        title: tReviews("title"),
+    };
 
     return (
         <main>
@@ -153,7 +158,7 @@ export default async function HomePage({ params }: HomePageProps) {
                 initialLabels={galleryLabels}
                 collectionUrl="https://instagram.com/"
             />
-            <ReviewSection reviews={reviews} />
+            <ReviewSection reviews={reviews} labels={reviewsLabels} />
             <ContactSection />
         </main>
     );

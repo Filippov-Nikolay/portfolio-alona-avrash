@@ -49,6 +49,10 @@
     "clients": {
         "label": "Klient / Współprace"
     },
+    "tools": {
+        "title": "Tools",
+        "description": "Wyselekcjonowany zestaw narzędzi do budowania identyfikacji, interfejsów i systemów wizualnych."
+    },
     "gallery": {
         "subtitle": "Branding, logo i opakowania — cała kolekcja.",
         "featured": "WYRÓŻNIONY",

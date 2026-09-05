@@ -49,6 +49,10 @@
     "clients": {
         "label": "Client / Collaborations"
     },
+    "tools": {
+        "title": "Tools",
+        "description": "A focused toolkit for building identities, interfaces and visual systems."
+    },
     "gallery": {
         "subtitle": "Branding, logo and packaging work — the full collection.",
         "featured": "FEATURED",

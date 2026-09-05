@@ -3,6 +3,7 @@ import { HeroSection } from "@/widgets/HeroSection";
 import { GallerySection } from "@/widgets/GallerySection";
 import { ProjectsSection } from "@/widgets/ProjectsSection";
 import { ClientsSection } from "@/widgets/ClientsSection";
+import { ToolsSection } from "@/widgets/ToolsSection";
 import { ShowcaseSection } from "@/widgets/ShowcaseSection";
 import { ServicesSection } from "@/widgets/ServicesSection";
 import { ReviewSection } from "@/widgets/ReviewSection";
@@ -19,6 +20,8 @@ import { getServices } from "@/entities/service/api/getServices";
 import { getReviews } from "@/entities/review/api/getReviews";
 import { getStats } from "@/entities/stat/api/getStats";
 import { getClients } from "@/entities/client/api/getClients";
+import { getTools } from "@/entities/tool/api/getTools";
+import { Card } from "@/widgets/ToolsSection/components/Card/Card";
 
 // Showcase (primary carousel, under the Hero) gets the most recent
 // projects; Gallery (secondary, browsable) gets the rest.
@@ -38,12 +41,14 @@ export default async function HomePage({ params }: HomePageProps) {
         tSelectedWork,
         tProjects,
         tClients,
+        tTools,
         allProjects,
         homeProjectGallery,
         services,
         reviews,
         stats,
         clients,
+        tools,
     ] = await Promise.all([
         getTranslations({ locale, namespace: "categories" }),
         getTranslations({ locale, namespace: "showcase" }),
@@ -51,12 +56,14 @@ export default async function HomePage({ params }: HomePageProps) {
         getTranslations({ locale, namespace: "selectedWork" }),
         getTranslations({ locale, namespace: "projects" }),
         getTranslations({ locale, namespace: "clients" }),
+        getTranslations({ locale, namespace: "tools" }),
         getAllProjects(),
         getHomeProjectGallery(),
         getServices(),
         getReviews(),
         getStats(),
         getClients(),
+        getTools(),
     ]);
     const translateCategory = (key: CategoryKey) => tCategories(key);
 
@@ -108,6 +115,10 @@ export default async function HomePage({ params }: HomePageProps) {
     const clientsLabels = {
         label: tClients("label"),
     };
+    const toolsLabels = {
+        title: tTools("title"),
+        description: tTools("description"),
+    };
 
     return (
         <main>
@@ -131,6 +142,7 @@ export default async function HomePage({ params }: HomePageProps) {
                 labels={projectsLabels}
             />
             <ClientsSection rows={clients.rows} labels={clientsLabels} />
+            <ToolsSection tools={tools} labels={toolsLabels} />
             <ShowcaseSection
                 initialItems={showcaseItems}
                 initialFeaturedIndex={0}

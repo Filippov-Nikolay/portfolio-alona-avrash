@@ -7,6 +7,7 @@ import servicesData from "@/entities/service/model/services.json";
 import reviewsData from "@/entities/review/model/reviews.json";
 import statsData from "@/entities/stat/model/stats.json";
 import clientsData from "@/entities/client/model/clients.json";
+import toolsData from "@/entities/tool/model/tools.json";
 
 const CONTENT: Record<string, unknown> = {
     hero: heroData,
@@ -17,6 +18,7 @@ const CONTENT: Record<string, unknown> = {
     reviews: reviewsData,
     stats: statsData,
     clients: clientsData,
+    tools: toolsData,
 };
 
 interface RouteParams {

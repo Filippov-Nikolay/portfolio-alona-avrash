@@ -1,0 +1,82 @@
+@use "@/shared/styles/mixins" as *;
+
+.section {
+    background: #fff;
+    color: #000;
+    padding-block: clamp(16px, 2vw, 24px) clamp(56px, 7.6vw, 96px);
+}
+
+.inner {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 32px;
+
+    @include respond-to("mobile") {
+        flex-direction: column;
+        gap: 40px;
+    }
+}
+
+.heading {
+    margin: 0;
+    max-width: 480px;
+    font-weight: 700;
+    font-size: 64px;
+    line-height: 1.05;
+    letter-spacing: 0.1em;
+    color: #000;
+
+    @include respond-to("tablet") {
+        font-size: clamp(36px, 6.4vw, 64px);
+    }
+}
+
+.aside {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 28px;
+    max-width: 340px;
+    padding-top: 4px;
+
+    @include respond-to("mobile") {
+        max-width: none;
+    }
+}
+
+.availability {
+    margin: 0;
+    font-weight: 300;
+    font-size: 20px;
+    line-height: 1.4;
+    text-transform: uppercase;
+    color: #000;
+}
+
+.button {
+    border-radius: 15px;
+    height: 52px;
+    padding: 0 15px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    gap: 20px;
+}
+
+.buttonArrowWrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+}
+
+.buttonArrow {
+    width: 11px;
+    height: auto;
+    transform: rotate(-135deg);
+}

@@ -1,7 +1,10 @@
-import type { CSSProperties } from "react";
+"use client";
+
+import type { Ref } from "react";
 import { Container, Section } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import type { Client, ClientsRow, MarqueeDirection } from "@/entities/client/model/client";
+import { useClientsSectionAnimations } from "./useClientsSectionAnimations";
 import styles from "./ClientsSection.module.scss";
 
 type PillSlot =
@@ -37,19 +40,17 @@ function buildRow(clients: Client[], leadingGap: boolean): PillSlot[] {
 function ClientsRow({
     slots,
     direction,
-    speed,
+    rowRef,
+    trackRef,
 }: {
     slots: PillSlot[];
     direction: MarqueeDirection;
-    speed: number;
+    rowRef: Ref<HTMLDivElement>;
+    trackRef: Ref<HTMLDivElement>;
 }) {
     return (
-        <div
-            className={styles.row}
-            data-direction={direction}
-            style={{ "--marquee-duration": `${speed}s` } as CSSProperties}
-        >
-            <div className={styles.track}>
+        <div ref={rowRef} className={styles.row} data-direction={direction}>
+            <div ref={trackRef} className={styles.track}>
                 {Array.from({ length: 6 }, (_, cycle) => (
                     <div key={cycle} className={styles.sequence} aria-hidden={cycle > 0}>
                         {slots.map((slot) =>
@@ -89,23 +90,28 @@ interface ClientsSectionProps {
 }
 
 export function ClientsSection({ rows, labels }: ClientsSectionProps) {
+    const { sectionRef, labelRef, setRowRef, setTrackRef } = useClientsSectionAnimations(rows);
+
     if (rows.length === 0) {
         return null;
     }
 
     return (
-        <Section id="clients" className={styles.section}>
+        <Section id="clients" ref={sectionRef} className={styles.section}>
             <Container>
-                <span className={styles.label}>{labels.label}</span>
+                <span ref={labelRef} className={styles.label}>
+                    {labels.label}
+                </span>
             </Container>
 
             <div className={styles.rows}>
                 {rows.map((row, index) => (
                     <ClientsRow
                         key={`${row.direction}-${index}`}
+                        rowRef={setRowRef(index)}
+                        trackRef={setTrackRef(index)}
                         slots={buildRow(row.clients, row.leadingGap)}
                         direction={row.direction}
-                        speed={row.speed}
                     />
                 ))}
             </div>

@@ -34,7 +34,6 @@
     display: flex;
     width: max-content;
     will-change: transform;
-    animation: clients-marquee-left var(--marquee-duration) linear infinite;
 }
 
 .sequence {
@@ -51,7 +50,6 @@
 
 .row[data-direction="right"] .track {
     margin-left: -58px;
-    animation-name: clients-marquee-right;
 }
 
 .pill {
@@ -130,10 +128,6 @@
         gap: 12px;
     }
 
-    .row {
-        --marquee-duration: 25s;
-    }
-
     .sequence {
         gap: 10px;
         padding-right: 10px;
@@ -157,27 +151,5 @@
 
     .md {
         width: 102px;
-    }
-}
-
-@keyframes clients-marquee-left {
-    to {
-        transform: translateX(-50%);
-    }
-}
-
-@keyframes clients-marquee-right {
-    from {
-        transform: translateX(-50%);
-    }
-
-    to {
-        transform: translateX(0);
-    }
-}
-
-@include reduced-motion {
-    .track {
-        animation: none;
     }
 }

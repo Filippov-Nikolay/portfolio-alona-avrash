@@ -8,13 +8,13 @@ import {
     type CSSProperties,
     type PointerEvent,
 } from "react";
-import { useInView } from "framer-motion";
 import type { Tool } from "@/entities/tool/model/tool";
 import { Container, Section } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import styles from "./ToolsSection.module.scss";
 import { Card } from "./components/Card/Card";
 import { peekBlendSrc, peekStyle } from "./lib/peek";
+import { useToolsSectionAnimations } from "./useToolsSectionAnimations";
 
 interface ToolsSectionLabels {
     title: string;
@@ -33,7 +33,7 @@ interface OverlayRect {
     height: number;
 }
 
-const AUTO_SCROLL_SPEED = 150;
+const AUTO_SCROLL_SPEED = 100;
 const AUTO_SCROLL_RESUME_DELAY = 1_500;
 const MARQUEE_CYCLES = 4;
 
@@ -44,8 +44,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     const [overlayRect, setOverlayRect] = useState<OverlayRect | null>(null);
     const [isOverlayActive, setIsOverlayActive] = useState(false);
     const pointerTypeRef = useRef<string>("mouse");
-    const sectionRef = useRef<HTMLElement>(null);
-    const trackRef = useRef<HTMLDivElement>(null);
+    const { sectionRef, titleRef, descriptionRef, trackRef } = useToolsSectionAnimations();
     const sequenceRef = useRef<HTMLDivElement>(null);
     const activeCardElRef = useRef<HTMLButtonElement | null>(null);
     const dragRef = useRef({ active: false, startX: 0, scrollLeft: 0, didDrag: false });
@@ -53,11 +52,6 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     const pauseAutoScrollRef = useRef<() => void>(() => undefined);
     const activeId = hoveredId ?? pinnedId;
     const isPeeking = activeId !== null;
-    const isInView = useInView(sectionRef, {
-        once: true,
-        amount: 0.3,
-        margin: "0px 0px -45% 0px",
-    });
 
     useLayoutEffect(() => {
         const track = trackRef.current;
@@ -65,7 +59,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         if (!track || !sequence) return;
 
         track.scrollLeft = sequence.offsetWidth;
-    }, [tools.length]);
+    }, [tools.length, trackRef]);
 
     useEffect(() => {
         const track = trackRef.current;
@@ -141,7 +135,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                 clearTimeout(resumeTimeoutId);
             }
         };
-    }, [tools.length]);
+    }, [tools.length, trackRef]);
 
     useEffect(() => {
         const track = trackRef.current;
@@ -167,7 +161,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
         track.addEventListener("wheel", handleWheel, { passive: false });
         return () => track.removeEventListener("wheel", handleWheel);
-    }, []);
+    }, [trackRef]);
 
     const [lastActiveId, setLastActiveId] = useState<number | null>(null);
     if (activeId !== lastActiveId) {
@@ -210,7 +204,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         frameId = requestAnimationFrame(syncRect);
 
         return () => cancelAnimationFrame(frameId);
-    }, [isPeeking]);
+    }, [isPeeking, sectionRef]);
 
     function startDrag(event: PointerEvent<HTMLDivElement>) {
         if (event.pointerType === "mouse" && event.button !== 0) return;
@@ -269,14 +263,18 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
     return (
         <Section id="tools" ref={sectionRef} className={styles.section}>
-            <Container className={cn(styles.header, isInView && styles.headerVisible)}>
-                <h2 className={styles.title}>{labels.title}</h2>
-                <p className={styles.description}>{labels.description}</p>
+            <Container className={styles.header}>
+                <h2 ref={titleRef} className={styles.title}>
+                    {labels.title}
+                </h2>
+                <p ref={descriptionRef} className={styles.description}>
+                    {labels.description}
+                </p>
             </Container>
 
             <div
                 ref={trackRef}
-                className={cn(styles.track, isInView && styles.trackVisible)}
+                className={styles.track}
                 onPointerDown={startDrag}
                 onPointerMove={drag}
                 onPointerUp={endDrag}

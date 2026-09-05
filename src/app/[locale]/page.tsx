@@ -7,6 +7,7 @@ import { ToolsSection } from "@/widgets/ToolsSection";
 import { ShowcaseSection } from "@/widgets/ShowcaseSection";
 import { ServicesSection } from "@/widgets/ServicesSection";
 import { ReviewSection } from "@/widgets/ReviewSection";
+import { CtaSection } from "@/widgets/CtaSection";
 import { ContactSection } from "@/widgets/ContactSection";
 import type { CategoryKey } from "@/shared/types";
 import {
@@ -21,6 +22,7 @@ import { getReviews } from "@/entities/review/api/getReviews";
 import { getStats } from "@/entities/stat/api/getStats";
 import { getClients } from "@/entities/client/api/getClients";
 import { getTools } from "@/entities/tool/api/getTools";
+import { getCta } from "@/entities/cta/api/getCta";
 import { Card } from "@/widgets/ToolsSection/components/Card/Card";
 
 // Showcase (primary carousel, under the Hero) gets the most recent
@@ -50,6 +52,7 @@ export default async function HomePage({ params }: HomePageProps) {
         stats,
         clients,
         tools,
+        cta,
     ] = await Promise.all([
         getTranslations({ locale, namespace: "categories" }),
         getTranslations({ locale, namespace: "showcase" }),
@@ -66,6 +69,7 @@ export default async function HomePage({ params }: HomePageProps) {
         getStats(),
         getClients(),
         getTools(),
+        getCta(),
     ]);
     const translateCategory = (key: CategoryKey) => tCategories(key);
 
@@ -159,6 +163,7 @@ export default async function HomePage({ params }: HomePageProps) {
                 collectionUrl="https://instagram.com/"
             />
             <ReviewSection reviews={reviews} labels={reviewsLabels} />
+            <CtaSection content={cta} />
             <ContactSection />
         </main>
     );

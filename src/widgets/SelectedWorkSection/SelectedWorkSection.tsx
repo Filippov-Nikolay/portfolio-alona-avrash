@@ -107,16 +107,6 @@ export function SelectedWorkSection({
                                     role="button"
                                     tabIndex={0}
                                     aria-label={`${labels.viewLabel}: ${project.name}`}
-                                    style={
-                                        {
-                                            "--card-hover-background": project.hover.background,
-                                            "--card-hover-accent": project.hover.accentColor,
-                                            "--card-hover-button-background":
-                                                project.hover.buttonBackground,
-                                            "--card-hover-button-text":
-                                                project.hover.buttonTextColor,
-                                        } as React.CSSProperties
-                                    }
                                     onClick={() => setSelectedIndex(index)}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" || e.key === " ") {

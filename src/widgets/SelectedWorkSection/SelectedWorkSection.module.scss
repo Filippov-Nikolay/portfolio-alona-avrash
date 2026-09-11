@@ -90,40 +90,23 @@
         transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
         box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
         border-color 0.26s cubic-bezier(0.22, 1, 0.36, 1);
-    transform: translate3d(0, -6px, 0) scale(1.012);
-    border-color: var(--card-hover-accent);
+    transform: translate3d(0, -6px, 0);
+    border-color: var(--color-primary);
     box-shadow:
-        0 20px 36px rgba(0, 0, 0, 0.14),
-        0 4px 12px color-mix(in srgb, var(--card-hover-background) 22%, transparent);
+        0 20px 36px rgba(0, 0, 0, 0.16),
+        0 4px 12px rgba(0, 0, 0, 0.08);
 
     .imageMotion {
-        transition: transform 0.62s cubic-bezier(0.25, 0.1, 0.25, 1) 0.03s;
-        transform: scale(1.042) translate3d(-0.65%, -0.4%, 0);
-    }
-
-    .visual::before {
-        transition: transform 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.03s;
-        transform: translate3d(20%, 0, 0);
-    }
-
-    .visual::after {
-        transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.07s;
-        opacity: 0.14;
+        transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        transform: scale(1.06);
     }
 
     .badge {
         transition:
             color 0.22s cubic-bezier(0.22, 1, 0.36, 1) 0.08s,
-            background-color 0.26s cubic-bezier(0.22, 1, 0.36, 1) 0.08s,
-            transform 0.26s cubic-bezier(0.22, 1, 0.36, 1) 0.08s;
-        color: var(--card-hover-accent);
-        background: var(--card-hover-background);
-        transform: translate3d(0, -2px, 0);
-    }
-
-    .info {
-        transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1) 0.1s;
-        transform: translate3d(0, -2px, 0);
+            background-color 0.26s cubic-bezier(0.22, 1, 0.36, 1) 0.08s;
+        color: var(--color-primary);
+        background: #000;
     }
 
     .cardTags {
@@ -139,11 +122,9 @@
     .cardArrowBtn {
         transition:
             background-color 0.26s cubic-bezier(0.22, 1, 0.36, 1) 0.1s,
-            color 0.26s cubic-bezier(0.22, 1, 0.36, 1) 0.1s,
-            transform 0.26s cubic-bezier(0.22, 1, 0.36, 1) 0.1s;
-        background: var(--card-hover-button-background);
-        color: var(--card-hover-button-text);
-        transform: translate3d(2px, 0, 0);
+            color 0.26s cubic-bezier(0.22, 1, 0.36, 1) 0.1s;
+        background: #000;
+        color: var(--color-primary);
     }
 
     .cardArrow {
@@ -188,40 +169,6 @@
     overflow: hidden;
     background: var(--color-visual-bg);
     border-radius: 10px;
-
-    &::before,
-    &::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        pointer-events: none;
-    }
-
-    &::before {
-        background: linear-gradient(
-            112deg,
-            transparent 28%,
-            rgba(255, 255, 255, 0.3) 48%,
-            transparent 66%
-        );
-        opacity: 0.42;
-        transform: translate3d(-72%, 0, 0);
-        transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-        mix-blend-mode: soft-light;
-    }
-
-    &::after {
-        background: linear-gradient(
-            135deg,
-            var(--card-hover-background) 0%,
-            color-mix(in srgb, var(--card-hover-background) 42%, transparent) 46%,
-            transparent 78%
-        );
-        opacity: 0;
-        transition: opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-        mix-blend-mode: multiply;
-    }
 }
 
 .badge {
@@ -238,15 +185,14 @@
     color: #000;
     transition:
         color 0.18s cubic-bezier(0.22, 1, 0.36, 1),
-        background-color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+        background-color 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .imageMotion {
     position: absolute;
     inset: 0;
     transform: scale(1);
-    transition: transform 0.36s cubic-bezier(0.25, 0.1, 0.25, 1);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform;
 }
 
@@ -260,7 +206,6 @@
     gap: 5px;
     min-width: 0;
     padding: 10px 15px;
-    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cardTitle {
@@ -313,8 +258,7 @@
 
     transition:
         background-color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-        color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+        color 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cardArrow {
@@ -334,24 +278,14 @@
             transform: none;
             box-shadow: var(--shadow-sm);
 
-            .badge,
-            .info,
-            .cardArrowBtn,
-            .cardArrow,
-            .visual::before {
+            .imageMotion {
                 transform: none;
             }
         }
     }
 
-    .imageMotion {
-        transition: none;
-    }
-
-    .visual::before,
-    .visual::after,
+    .imageMotion,
     .badge,
-    .info,
     .cardTags,
     .cardYear,
     .cardArrowBtn,

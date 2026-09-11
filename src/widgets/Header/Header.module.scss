@@ -316,7 +316,7 @@ $header-scale: 0.8;
     color: var(--_pill-text) !important;
 
     svg {
-        transform: scale(#{$header-scale * 32 / 18});
+        transform: scale(calc(#{$header-scale} * 32 / 18));
     }
 
     @include can-hover {

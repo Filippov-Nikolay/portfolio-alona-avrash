@@ -10,7 +10,7 @@ interface CtaSectionProps {
 }
 
 export function CtaSection({ content }: CtaSectionProps) {
-    const { sectionRef, headingRef, asideRef } = useCtaSectionAnimations();
+    const { sectionRef, headingRef, availabilityRef, buttonRef } = useCtaSectionAnimations();
 
     return (
         <Section id="cta" ref={sectionRef} className={styles.section}>
@@ -19,16 +19,19 @@ export function CtaSection({ content }: CtaSectionProps) {
                     {content.heading}
                 </h2>
 
-                <div ref={asideRef} className={styles.aside}>
-                    <p className={styles.availability}>{content.availability}</p>
+                <div className={styles.aside}>
+                    <p ref={availabilityRef} className={styles.availability}>
+                        {content.availability}
+                    </p>
                     <Button
                         as="a"
+                        ref={buttonRef}
                         href="#contact"
                         variant="second"
                         className={styles.button}
                         rightIcon={
                             <span className={styles.buttonArrowWrap}>
-                                <ArrowIcon className={styles.buttonArrow} />
+                                <ArrowIcon className={styles.buttonArrow} data-cta-arrow />
                             </span>
                         }
                     >

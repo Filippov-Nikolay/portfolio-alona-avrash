@@ -13,6 +13,25 @@ interface FooterClientProps {
     socials: Social[];
 }
 
+const LEGAL_STAGGER_STEP_MS = 20;
+
+function LegalLinkText({ text }: { text: string }) {
+    return (
+        <span className={styles.legalText} aria-hidden="true">
+            {Array.from(text).map((char, i) => (
+                <span
+                    key={i}
+                    className={styles.legalCharCol}
+                    style={{ "--stagger-delay": `${i * LEGAL_STAGGER_STEP_MS}ms` } as CSSProperties}
+                >
+                    <span className={styles.legalCharTop}>{char}</span>
+                    <span className={styles.legalCharBottom}>{char}</span>
+                </span>
+            ))}
+        </span>
+    );
+}
+
 export function FooterClient({ footer, socials }: FooterClientProps) {
     const { sectionRef, leftRef, rightRef, brandRef } = useFooterAnimations();
     const year = new Date().getFullYear();
@@ -68,7 +87,10 @@ export function FooterClient({ footer, socials }: FooterClientProps) {
                                     className={styles.legalItem}
                                     data-footer-legal-item
                                 >
-                                    <a href={link.href}>{link.label}</a>
+                                    <a href={link.href}>
+                                        <span className={styles.legalSrOnly}>{link.label}</span>
+                                        <LegalLinkText text={link.label} />
+                                    </a>
                                 </li>
                             ))}
                         </ul>

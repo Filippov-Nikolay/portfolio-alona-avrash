@@ -29,9 +29,14 @@
 
 .tagline {
     margin: 0;
+    overflow: hidden;
     font-size: 20px;
     font-weight: 700;
     color: #000;
+}
+
+.maskLineInner {
+    display: inline-block;
 }
 
 .socials {
@@ -86,8 +91,9 @@
 
 .copyright {
     margin: 0;
+    overflow: hidden;
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 300;
     text-transform: uppercase;
     color: #000;
 }
@@ -146,6 +152,10 @@
     @include respond-to("mobile") {
         font-size: clamp(72px, 32vw, 108px);
     }
+}
+
+.brandChar {
+    display: inline-block;
 }
 
 @include reduced-motion {

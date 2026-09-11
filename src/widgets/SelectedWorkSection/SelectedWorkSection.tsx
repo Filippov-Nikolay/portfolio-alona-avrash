@@ -5,12 +5,12 @@ import Image from "next/image";
 import { m } from "framer-motion";
 import type { ShowcaseItem } from "@/shared/types";
 import type { Project } from "@/entities/project/model/project";
+import { Link } from "@/i18n/navigation";
 import { Container, Section, ShowcaseModal, ArrowIcon } from "@/shared/ui";
 import { useMotionVariants } from "@/shared/hooks";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { fadeIn } from "@/shared/lib/motion/fade-in";
 import { useStatsSelectedChoreographyProgress } from "@/shared/lib/motion/StatsSelectedChoreographyContext";
-import { scrollToElementId } from "@/shared/lib/scroll";
 import styles from "./SelectedWorkSection.module.scss";
 
 interface SelectedWorkLabels {
@@ -24,24 +24,15 @@ export interface SelectedWorkSectionProps {
     modalItems: ShowcaseItem[];
     categoryLabels: string[][];
     labels: SelectedWorkLabels;
-    viewAllTargetId?: string;
 }
 
 const CONTENT_REVEAL_PROGRESS = 0.3;
-
-function handleViewAllClick(targetId: string) {
-    return (e: React.MouseEvent) => {
-        e.preventDefault();
-        scrollToElementId(targetId, { offset: 80 });
-    };
-}
 
 export function SelectedWorkSection({
     projects,
     modalItems,
     categoryLabels,
     labels,
-    viewAllTargetId = "showcase",
 }: SelectedWorkSectionProps) {
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
@@ -81,14 +72,10 @@ export function SelectedWorkSection({
                 >
                     <m.div className={styles.header} variants={safeFadeIn}>
                         <h2 className={styles.title}>{labels.title}</h2>
-                        <a
-                            href={`#${viewAllTargetId}`}
-                            className={styles.viewAll}
-                            onClick={handleViewAllClick(viewAllTargetId)}
-                        >
+                        <Link href="/works" className={styles.viewAll}>
                             {labels.viewAll}
                             <ArrowIcon className={styles.viewAllArrow} />
-                        </a>
+                        </Link>
                     </m.div>
 
                     <div className={styles.grid}>

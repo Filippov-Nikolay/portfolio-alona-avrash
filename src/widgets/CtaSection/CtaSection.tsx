@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import type { CtaContent } from "@/entities/cta/model/cta";
 import { ArrowIcon, Button, Container, Section } from "@/shared/ui";
 import { useCtaSectionAnimations } from "./useCtaSectionAnimations";
@@ -10,6 +11,7 @@ interface CtaSectionProps {
 }
 
 export function CtaSection({ content }: CtaSectionProps) {
+    const locale = useLocale();
     const { sectionRef, headingRef, availabilityRef, buttonRef } = useCtaSectionAnimations();
 
     return (
@@ -26,7 +28,7 @@ export function CtaSection({ content }: CtaSectionProps) {
                     <Button
                         as="a"
                         ref={buttonRef}
-                        href="#contact"
+                        href={`/${locale}/contact`}
                         variant="second"
                         className={styles.button}
                         rightIcon={

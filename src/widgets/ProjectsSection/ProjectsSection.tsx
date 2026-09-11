@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useLocale } from "next-intl";
 import type { ShowcaseItem } from "@/shared/types";
 import type { Project } from "@/entities/project/model/project";
 import type { HomeProjectGalleryCard } from "@/entities/home-project-gallery/model/homeProjectGallery";
 import { ArrowIcon, Button, Container, Section, ShowcaseModal } from "@/shared/ui";
-import { scrollToElementId } from "@/shared/lib/scroll";
 import { cn } from "@/shared/lib/cn";
 import { useProjectsSectionAnimations } from "./useProjectsSectionAnimations";
 import styles from "./ProjectsSection.module.scss";
@@ -23,14 +23,6 @@ interface ProjectsSectionProps {
     visibleCardCount: number;
     modalItems: ShowcaseItem[];
     labels: ProjectsSectionLabels;
-    viewAllTargetId?: string;
-}
-
-function handleViewAllClick(targetId: string) {
-    return (e: React.MouseEvent) => {
-        e.preventDefault();
-        scrollToElementId(targetId, { offset: 80 });
-    };
 }
 
 export function ProjectsSection({
@@ -39,8 +31,8 @@ export function ProjectsSection({
     visibleCardCount,
     modalItems,
     labels,
-    viewAllTargetId = "showcase",
 }: ProjectsSectionProps) {
+    const locale = useLocale();
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [pinnedIndex, setPinnedIndex] = useState<number | null>(null);
@@ -157,11 +149,10 @@ export function ProjectsSection({
                     <Button
                         as="a"
                         ref={viewAllRef}
-                        href={`#${viewAllTargetId}`}
+                        href={`/${locale}/works`}
                         variant="primary"
                         size="lg"
                         className={styles.viewAll}
-                        onClick={handleViewAllClick(viewAllTargetId)}
                         rightIcon={<ArrowIcon className={styles.viewAllArrow} />}
                     >
                         {labels.viewAll}

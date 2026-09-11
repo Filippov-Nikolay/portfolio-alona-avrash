@@ -21,8 +21,8 @@ interface ReviewSectionProps {
 }
 
 export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
-    const { sectionRef, titleRef, asideRef, trackRef } = useReviewSectionAnimations();
     const totalItems = reviews.length;
+    const { sectionRef, titleRef, asideRef, trackRef } = useReviewSectionAnimations(totalItems);
 
     const slideDeck = useMemo(
         () => Array.from({ length: COPIES }, () => reviews).flat(),
@@ -82,8 +82,14 @@ export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
 
                 <div ref={asideRef} className={styles.aside}>
                     <div className={styles.decor} aria-hidden="true">
-                        <span className={cn(styles.decorShape, styles.decorShapeBack)} />
-                        <span className={cn(styles.decorShape, styles.decorShapeFront)} />
+                        <span
+                            className={cn(styles.decorShape, styles.decorShapeBack)}
+                            data-review-decor-back
+                        />
+                        <span
+                            className={cn(styles.decorShape, styles.decorShapeFront)}
+                            data-review-decor-front
+                        />
                     </div>
 
                     <div className={styles.nav}>
@@ -92,10 +98,11 @@ export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
                             className={cn(styles.navButton, styles.navButtonPrev)}
                             onClick={() => emblaApi?.scrollPrev()}
                             aria-label="Previous review"
+                            data-review-nav-item
                         >
                             <ArrowIcon className={styles.navIcon} />
                         </button>
-                        <span className={styles.navDivider} aria-hidden="true">
+                        <span className={styles.navDivider} aria-hidden="true" data-review-nav-item>
                             /
                         </span>
                         <button
@@ -103,6 +110,7 @@ export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
                             className={cn(styles.navButton, styles.navButtonNext)}
                             onClick={() => emblaApi?.scrollNext()}
                             aria-label="Next review"
+                            data-review-nav-item
                         >
                             <ArrowIcon className={styles.navIcon} />
                         </button>
@@ -153,6 +161,7 @@ export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
                                 >
                                     <blockquote
                                         className={cn(styles.card, isActive && styles.cardActive)}
+                                        data-review-card
                                     >
                                         <div className={styles.cardTop}>
                                             <QuoteIcon className={styles.quoteIcon} />

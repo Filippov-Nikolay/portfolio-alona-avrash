@@ -155,13 +155,12 @@
 .track {
     display: flex;
     align-items: stretch;
-    gap: 20px;
     padding-block: 4px;
-    padding-inline: clamp(20px, 8vw, 112px);
 }
 
 .slot {
     flex: 0 0 auto;
+    margin-right: 20px;
     cursor: pointer;
 }
 

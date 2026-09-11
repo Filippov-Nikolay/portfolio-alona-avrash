@@ -7,8 +7,7 @@ import { useArrayRefs, useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
 const isCompact = () => window.matchMedia("(max-width: 767px)").matches;
-const getStart = () => (isCompact() ? "top 94%" : "top 84%");
-const getEnd = () => (isCompact() ? "top 60%" : "top 42%");
+const getStart = () => (isCompact() ? "top 92%" : "top 82%");
 
 interface RowRefPair {
     row: HTMLDivElement;
@@ -31,7 +30,7 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
         () => {
             const section = sectionRef.current;
             const label = labelRef.current;
-            if (!section || !label) return;
+            if (!section) return;
 
             const pairs = rows
                 .map((row, index): RowRefPair | null =>
@@ -48,8 +47,10 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
 
             if (pairs.length === 0) return;
 
+            const rowTargets = pairs.map((pair) => pair.row);
+
             if (reduced) {
-                gsap.set([label, ...pairs.map((pair) => pair.row)], { clearProps: "all" });
+                gsap.set(label ? [label, ...rowTargets] : rowTargets, { clearProps: "all" });
                 return;
             }
 
@@ -80,34 +81,40 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                           }
                       )
             );
+            gsap.set(rowTargets, {
+                x: (i) => (pairs[i].direction === "left" ? "100%" : "-100%"),
+            });
+            if (label) {
+                gsap.set(label, { autoAlpha: 0, y: 18 });
+            }
 
-            const timeline = gsap
-                .timeline({
-                    defaults: { ease: "none", force3D: true },
-                    scrollTrigger: {
-                        trigger: section,
-                        start: getStart,
-                        end: getEnd,
-                        scrub: 0.9,
-                        invalidateOnRefresh: true,
-                    },
-                })
-                .fromTo(label, { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 1 }, 0);
+            const timeline = gsap.timeline({
+                defaults: { force3D: true },
+                scrollTrigger: {
+                    trigger: section,
+                    start: getStart,
+                    toggleActions: "play none none reverse",
+                    invalidateOnRefresh: true,
+                },
+                onReverseComplete: () => marqueeTweens.forEach((marquee) => marquee.pause(0)),
+            });
+
+            if (label) {
+                timeline.to(label, { autoAlpha: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0);
+            }
 
             pairs.forEach((pair, index) => {
-                const fromX = pair.direction === "left" ? "100%" : "-100%";
                 const marquee = marqueeTweens[index];
 
-                timeline.fromTo(
+                timeline.to(
                     pair.row,
-                    { x: fromX },
                     {
                         x: 0,
-                        duration: 1,
-                        onComplete: () => marquee.play(0),
-                        onReverseComplete: () => marquee.pause(0),
+                        duration: 0.7,
+                        ease: "power3.out",
+                        onStart: () => marquee.play(0),
                     },
-                    0.16 + index * 0.16
+                    0.08 + index * 0.1
                 );
             });
         },

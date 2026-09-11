@@ -98,12 +98,6 @@ export function ClientsSection({ rows, labels }: ClientsSectionProps) {
 
     return (
         <Section id="clients" ref={sectionRef} className={styles.section}>
-            <Container>
-                <span ref={labelRef} className={styles.label}>
-                    {labels.label}
-                </span>
-            </Container>
-
             <div className={styles.rows}>
                 {rows.map((row, index) => (
                     <ClientsRow

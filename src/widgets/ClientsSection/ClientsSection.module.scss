@@ -2,7 +2,7 @@
 
 .section {
     background: var(--color-primary);
-    padding-block: 28px 25px;
+    padding-block: 50px;
     overflow: hidden;
 }
 
@@ -58,8 +58,8 @@
     align-items: center;
     justify-content: center;
     min-width: 160px;
-    height: 54px;
-    padding: 0 28px;
+    height: 62px;
+    padding: 0 34px;
     border: 1.5px solid #000;
     border-radius: 999px;
     font-family: var(--font-body);

@@ -1,7 +1,7 @@
 {
     "nav": {
-        "services": "Services",
-        "showcase": "Showcase",
+        "home": "Home",
+        "works": "Works",
         "contact": "Contact",
         "downloadCv": "Download CV"
     },

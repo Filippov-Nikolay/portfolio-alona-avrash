@@ -1,14 +1,11 @@
 import { getTranslations } from "next-intl/server";
 import { HeroSection } from "@/widgets/HeroSection";
-import { GallerySection } from "@/widgets/GallerySection";
 import { ProjectsSection } from "@/widgets/ProjectsSection";
 import { ClientsSection } from "@/widgets/ClientsSection";
 import { ToolsSection } from "@/widgets/ToolsSection";
-import { ShowcaseSection } from "@/widgets/ShowcaseSection";
 import { ServicesSection } from "@/widgets/ServicesSection";
 import { ReviewSection } from "@/widgets/ReviewSection";
 import { CtaSection } from "@/widgets/CtaSection";
-import { ContactSection } from "@/widgets/ContactSection";
 import type { CategoryKey } from "@/shared/types";
 import {
     getAllProjects,
@@ -25,10 +22,6 @@ import { getTools } from "@/entities/tool/api/getTools";
 import { getCta } from "@/entities/cta/api/getCta";
 import { Card } from "@/widgets/ToolsSection/components/Card/Card";
 
-// Showcase (primary carousel, under the Hero) gets the most recent
-// projects; Gallery (secondary, browsable) gets the rest.
-const SHOWCASE_COUNT = 4;
-
 interface HomePageProps {
     params: Promise<{ locale: string }>;
 }
@@ -38,8 +31,6 @@ export default async function HomePage({ params }: HomePageProps) {
 
     const [
         tCategories,
-        tShowcase,
-        tGallery,
         tSelectedWork,
         tProjects,
         tClients,
@@ -55,8 +46,6 @@ export default async function HomePage({ params }: HomePageProps) {
         cta,
     ] = await Promise.all([
         getTranslations({ locale, namespace: "categories" }),
-        getTranslations({ locale, namespace: "showcase" }),
-        getTranslations({ locale, namespace: "gallery" }),
         getTranslations({ locale, namespace: "selectedWork" }),
         getTranslations({ locale, namespace: "projects" }),
         getTranslations({ locale, namespace: "clients" }),
@@ -75,8 +64,6 @@ export default async function HomePage({ params }: HomePageProps) {
 
     const selectedWorkProjects = getSelectedWork(allProjects);
     const projectsSectionCards = getHomeProjectGalleryCards(homeProjectGallery);
-    const showcaseProjects = allProjects.slice(0, SHOWCASE_COUNT);
-    const galleryProjects = allProjects.slice(SHOWCASE_COUNT);
 
     const selectedWorkModalItems = selectedWorkProjects.map((project, i) =>
         toShowcaseItem(project, i, translateCategory, false)
@@ -87,27 +74,7 @@ export default async function HomePage({ params }: HomePageProps) {
     const projectsModalItems = allProjects.map((project, i) =>
         toShowcaseItem(project, i, translateCategory, false)
     );
-    const showcaseItems = showcaseProjects.map((project, i) =>
-        toShowcaseItem(project, i, translateCategory, true)
-    );
-    const galleryItems = galleryProjects.map((project, i) =>
-        toShowcaseItem(project, i, translateCategory, i === 0)
-    );
 
-    const showcaseLabels = {
-        viewSource: tShowcase("viewSource"),
-        more: tShowcase("more"),
-        moreDesc: tShowcase("moreDesc"),
-    };
-    const galleryLabels = {
-        subtitle: tGallery("subtitle"),
-        featured: tGallery("featured"),
-        primaryAction: tGallery("primaryAction"),
-        secondaryAction: tGallery("secondaryAction"),
-        more: tGallery("more"),
-        moreDesc: tGallery("moreDesc"),
-        viewSource: tGallery("viewSource"),
-    };
     const selectedWorkLabels = {
         title: tSelectedWork("title"),
         viewAll: tSelectedWork("viewAll"),

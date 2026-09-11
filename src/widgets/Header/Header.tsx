@@ -3,13 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { m, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { siteConfig } from "@/shared/config/site.config";
 import { navigation } from "@/shared/config/navigation.config";
 import { useMotionVariants } from "@/shared/hooks/useMotionVariants";
-import { useActiveSection } from "@/shared/hooks";
 import { slideDown } from "@/shared/lib/motion/slide-down";
-import { scrollToElementId, scrollToTop } from "@/shared/lib/scroll";
+import { scrollToTop } from "@/shared/lib/scroll";
 import { usePreloader } from "@/shared/providers";
 import { cn } from "@/shared/lib/cn";
 import styles from "./Header.module.scss";
@@ -21,15 +20,8 @@ import type { NavItem } from "@/shared/types";
 const [LOGO_LINE_1, ...logoRest] = siteConfig.name.split(" ");
 const LOGO_LINE_2 = logoRest.join(" ");
 
-// Derived from `navigation` — never hardcoded separately, so adding or
-// removing a nav entry can't leave the scroll-spy out of sync.
-const SECTION_IDS = navigation.map((item) => item.key);
-
-const SCROLL_OFFSET = 100;
-
-function scrollToSection(e: React.MouseEvent<HTMLAnchorElement>, item: NavItem) {
-    e.preventDefault();
-    scrollToElementId(item.key, { offset: SCROLL_OFFSET + (item.scrollOffset ?? 0) });
+function isHomeLink(item: NavItem) {
+    return item.href === "/";
 }
 
 // One-after-another entrance for the 4 pills (see .main > * in
@@ -64,7 +56,7 @@ export function Header() {
     const safeSlideDown = useMotionVariants(slideDown);
     const t = useTranslations("nav");
     const { isReady } = usePreloader();
-    const activeSection = useActiveSection(SECTION_IDS, isReady);
+    const pathname = usePathname();
     const [cvClicked, setCvClicked] = useState(false);
     const headerRef = useRef<HTMLElement>(null);
     const sceneBackdropRef = useRef<HTMLDivElement>(null);
@@ -116,6 +108,7 @@ export function Header() {
                         style={pillDelay(0)}
                         data-hero-logo-target
                         onClick={(e) => {
+                            if (pathname !== "/") return;
                             e.preventDefault();
                             scrollToTop();
                         }}
@@ -136,17 +129,21 @@ export function Header() {
                         <ul className={styles.nav}>
                             {navigation.map((item) => (
                                 <li key={item.href}>
-                                    <a
+                                    <Link
                                         href={item.href}
-                                        onClick={(e) => scrollToSection(e, item)}
+                                        onClick={(e) => {
+                                            if (!isHomeLink(item) || pathname !== "/") return;
+                                            e.preventDefault();
+                                            scrollToTop();
+                                        }}
                                         className={cn(
                                             styles.link,
-                                            activeSection === item.key && styles.linkActive
+                                            pathname === item.href && styles.linkActive
                                         )}
                                     >
                                         <span className={styles.srOnly}>{t(item.key)}</span>
                                         <StaggerText text={t(item.key)} />
-                                    </a>
+                                    </Link>
                                 </li>
                             ))}
                         </ul>
@@ -187,46 +184,54 @@ export function Header() {
             {/* Mobile bottom nav — outside animated wrapper to avoid transform containment issues */}
             <nav className={styles.mobileNav} aria-label="Mobile navigation">
                 <div className={styles.mobileNavInner}>
-                    {navigation.map((item) => (
-                        <a
-                            key={item.href}
-                            href={item.href}
-                            onClick={(e) => scrollToSection(e, item)}
-                            aria-label={t(item.key)}
-                            className={cn(
-                                styles.mobileNavLink,
-                                activeSection === item.key && styles.mobileNavLinkActive
-                            )}
-                        >
-                            <AnimatePresence>
-                                {activeSection === item.key && (
-                                    <m.span
-                                        key="pill"
-                                        layoutId="mobile-nav-pill"
-                                        className={styles.mobileActivePill}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{
-                                            opacity: { duration: 0.2, ease: "easeInOut" },
-                                            layout: { type: "spring", stiffness: 380, damping: 32 },
-                                        }}
-                                    />
+                    {navigation.map((item) => {
+                        const isActive = pathname === item.href;
+
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={(e) => {
+                                    if (!isHomeLink(item) || pathname !== "/") return;
+                                    e.preventDefault();
+                                    scrollToTop();
+                                }}
+                                aria-label={t(item.key)}
+                                className={cn(
+                                    styles.mobileNavLink,
+                                    isActive && styles.mobileNavLinkActive
                                 )}
-                            </AnimatePresence>
-                            <m.span
-                                className={styles.mobileNavIcon}
-                                animate={
-                                    activeSection === item.key
-                                        ? { scale: 1.18, y: -2 }
-                                        : { scale: 1, y: 0 }
-                                }
-                                transition={{ type: "spring", stiffness: 400, damping: 22 }}
                             >
-                                {item.icon && <item.icon aria-hidden="true" />}
-                            </m.span>
-                        </a>
-                    ))}
+                                <AnimatePresence>
+                                    {isActive && (
+                                        <m.span
+                                            key="pill"
+                                            layoutId="mobile-nav-pill"
+                                            className={styles.mobileActivePill}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{
+                                                opacity: { duration: 0.2, ease: "easeInOut" },
+                                                layout: {
+                                                    type: "spring",
+                                                    stiffness: 380,
+                                                    damping: 32,
+                                                },
+                                            }}
+                                        />
+                                    )}
+                                </AnimatePresence>
+                                <m.span
+                                    className={styles.mobileNavIcon}
+                                    animate={isActive ? { scale: 1.18, y: -2 } : { scale: 1, y: 0 }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                                >
+                                    {item.icon && <item.icon aria-hidden="true" />}
+                                </m.span>
+                            </Link>
+                        );
+                    })}
                 </div>
                 <div className={styles.mobileNavThemePill}>
                     <ThemeToggle className={styles.mobileNavThemeBtn} />

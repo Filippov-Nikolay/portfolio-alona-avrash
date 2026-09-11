@@ -1,7 +1,7 @@
 {
     "nav": {
-        "services": "Usługi",
-        "showcase": "Prezentacja",
+        "home": "Strona główna",
+        "works": "Prace",
         "contact": "Kontakt",
         "downloadCv": "Pobierz CV"
     },

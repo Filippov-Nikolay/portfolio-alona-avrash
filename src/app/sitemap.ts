@@ -5,11 +5,19 @@ import { LOCALES, DEFAULT_LOCALE } from "@/i18n/locales";
 const BASE = siteConfig.url;
 const LAST_MODIFIED = new Date();
 
+const ROUTES: Array<{ path: string; priority: number }> = [
+    { path: "", priority: 1 },
+    { path: "/works", priority: 0.8 },
+    { path: "/contact", priority: 0.8 },
+];
+
 export default function sitemap(): MetadataRoute.Sitemap {
-    return LOCALES.map(({ code }) => ({
-        url: `${BASE}/${code}`,
-        lastModified: LAST_MODIFIED,
-        changeFrequency: "monthly",
-        priority: code === DEFAULT_LOCALE ? 1 : 0.9,
-    }));
+    return LOCALES.flatMap(({ code }) =>
+        ROUTES.map(({ path, priority }) => ({
+            url: `${BASE}/${code}${path}`,
+            lastModified: LAST_MODIFIED,
+            changeFrequency: "monthly" as const,
+            priority: code === DEFAULT_LOCALE ? priority : priority * 0.9,
+        }))
+    );
 }

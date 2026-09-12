@@ -6,8 +6,7 @@ $header-scale: 0.8;
 // Wrapper — прозрачная полоса на всю ширину
 // =============================================
 
-.wrapper,
-.mobileNav {
+.wrapper {
     --_pill-bg: var(--color-bg-btn);
     --_pill-text: var(--color-text-primary-reverse);
     --_pill-border: transparent;
@@ -30,8 +29,8 @@ $header-scale: 0.8;
     padding: $header-scale * 20px 0px;
     pointer-events: none;
 
-    @include respond-to("mobile") {
-        padding: 20px 0px;
+    @media (max-width: 767px) {
+        padding: 16px 0px;
     }
 }
 
@@ -43,6 +42,22 @@ $header-scale: 0.8;
     pointer-events: none;
     background: #000;
     will-change: transform;
+}
+
+.menuOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 115;
+    background: rgba(255, 255, 255, 0.1);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    pointer-events: all;
+}
+
+[data-theme="dark"] .menuOverlay {
+    background: rgba(0, 0, 0, 0.2);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
 }
 
 .main {
@@ -163,7 +178,7 @@ $header-scale: 0.8;
     flex: 1;
     padding: ($header-scale * 4px) ($header-scale * 12px);
 
-    @include respond-to("mobile") {
+    @media (max-width: 767px) {
         display: none;
     }
 }
@@ -189,6 +204,7 @@ $header-scale: 0.8;
     border-radius: var(--radius-v-sm);
     transition: color 0.24s cubic-bezier(0.22, 1, 0.36, 1);
     @include focus-ring;
+
     @include can-hover {
         &:hover .charTop {
             transform: translateY(-100%);
@@ -263,8 +279,7 @@ $header-scale: 0.8;
         transition: none;
     }
 
-    &:has(.langWrapperDesktop[data-open]),
-    &:has(.langMobileWrapper[data-open]) {
+    &:has(.langWrapperDesktop[data-open]) {
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
         border-bottom-color: transparent;
@@ -279,10 +294,6 @@ $header-scale: 0.8;
     align-items: center;
     gap: 0;
     height: 100%;
-
-    @include respond-to("mobile") {
-        display: none;
-    }
 }
 
 .langWrapperDesktop {
@@ -327,43 +338,6 @@ $header-scale: 0.8;
     }
 }
 
-.langMobile {
-    display: none;
-
-    @include respond-to("mobile") {
-        display: flex;
-        width: 100%;
-        height: 100%;
-    }
-}
-
-.langMobileWrapper {
-    position: relative;
-
-    width: 100%;
-    height: 100%;
-}
-
-.langMobileTrigger {
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    justify-content: center;
-    padding: 10px 8px;
-    color: var(--_pill-text) !important;
-
-    &:active {
-        background: rgba(234, 253, 39, 0.08);
-    }
-
-    .utilityPill:has(.langMobileWrapper[data-open]) & {
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-    }
-}
-
 // =============================================
 // Download CV pill
 // =============================================
@@ -394,7 +368,7 @@ $header-scale: 0.8;
 
     @include focus-ring;
 
-    @include respond-to("tablet") {
+    @media (max-width: 767px) {
         display: none;
     }
 
@@ -421,6 +395,7 @@ $header-scale: 0.8;
     100% {
         transform: translateY(0);
     }
+
     50% {
         transform: translateY(3px);
     }
@@ -432,11 +407,13 @@ $header-scale: 0.8;
             0px 0px 30px 0px rgba(234, 253, 39, 0.18),
             inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
     }
+
     35% {
         box-shadow:
             0px 0px 55px 0px rgba(234, 253, 39, 0.55),
             inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
     }
+
     100% {
         box-shadow:
             0px 0px 30px 0px rgba(234, 253, 39, 0.18),
@@ -489,9 +466,11 @@ $header-scale: 0.8;
     0% {
         transform: scale(1);
     }
+
     35% {
         transform: scale(0.82);
     }
+
     100% {
         transform: scale(1);
     }
@@ -502,6 +481,7 @@ $header-scale: 0.8;
         transform: scale(1);
         opacity: 0.55;
     }
+
     100% {
         transform: scale(1.9);
         opacity: 0;
@@ -509,143 +489,186 @@ $header-scale: 0.8;
 }
 
 // =============================================
-// Mobile bottom navigation
+// Mobile menu trigger + panel
 // =============================================
 
-.mobileNav {
+.menuTrigger {
+    @include pill;
+    @include flex-center;
+
     display: none;
-
-    @include respond-to("mobile") {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 120;
-        padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-        pointer-events: none;
-    }
-}
-
-.mobileNavInner {
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    flex: 1;
-    padding: 6px;
-    border-radius: var(--radius-sm);
-    background: var(--color-bg);
-    box-shadow:
-        0px 0px 30px 0px rgba(234, 253, 39, 0.18),
-        inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
-    pointer-events: all;
-
-    [data-theme="dark"] & {
-        background: var(--_pill-bg);
-        border: 1px solid var(--_pill-border);
-        -webkit-backdrop-filter: var(--_pill-blur);
-        backdrop-filter: var(--_pill-blur);
-    }
-}
-
-.mobileNavThemePill {
-    display: none;
-
-    @include respond-to("mobile") {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        align-self: stretch;
-        width: 58px;
-        padding: 0;
-        overflow: hidden;
-        border-radius: var(--radius-sm);
-        background: var(--color-bg);
-        pointer-events: all;
-
-        [data-theme="dark"] & {
-            background: var(--_pill-bg);
-            border: 1px solid var(--_pill-border);
-            -webkit-backdrop-filter: var(--_pill-blur);
-            backdrop-filter: var(--_pill-blur);
-        }
-    }
-}
-
-// ThemeToggle button fills the pill — higher specificity beats .toggle's fixed 30px
-.mobileNavThemePill .mobileNavThemeBtn {
-    @include respond-to("mobile") {
-        width: 100%;
-        height: 100%;
-        border-radius: var(--radius-sm);
-    }
-}
-
-.mobileNavLink {
-    position: relative;
-    isolation: isolate;
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    text-decoration: none;
-    border-radius: var(--radius-v-sm);
-    @include transition(color);
+    width: $header-scale * 80px;
+    flex-shrink: 0;
+    color: var(--_pill-text);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
     @include focus-ring;
 
-    @include can-hover {
-        &:hover {
-            color: var(--color-text-primary);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        &:hover .mobileActivePill {
-            background: rgba(234, 253, 39, 0.18);
-        }
-    }
-
-    &:active {
-        background: transparent;
-        color: var(--color-text-primary);
+    @media (max-width: 767px) {
+        display: flex;
     }
 }
 
-.mobileActivePill {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: var(--radius-v-sm);
-    background: rgba(234, 253, 39, 0.12);
-    pointer-events: none;
-    transition: background-color 0.15s ease;
-}
-
-.mobileNavIcon {
+.menuIcon {
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
+    width: 18px;
+    height: 14px;
+    flex-shrink: 0;
 }
 
-.mobileNavLinkActive {
+.menuBar {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transition:
+        transform 0.3s cubic-bezier(0.65, 0, 0.35, 1),
+        opacity 0.2s ease;
+
+    &:nth-child(1) {
+        top: 0;
+    }
+
+    &:nth-child(2) {
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    &:nth-child(3) {
+        bottom: 0;
+    }
+}
+
+.menuTriggerOpen {
     color: var(--color-primary);
 
-    @include can-hover {
-        &:hover {
-            color: var(--color-primary);
-            background: transparent;
-        }
+    .menuBar:nth-child(1) {
+        transform: translateY(6px) rotate(45deg);
+    }
+
+    .menuBar:nth-child(2) {
+        opacity: 0;
+        transform: translateY(-50%) scaleX(0);
+    }
+
+    .menuBar:nth-child(3) {
+        transform: translateY(-6px) rotate(-45deg);
+    }
+}
+
+.menuPanel {
+    position: absolute;
+    top: calc(100% + 0px);
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 8px;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    background: var(--_pill-bg);
+    border: 1px solid var(--_pill-border);
+    -webkit-backdrop-filter: var(--_pill-blur);
+    backdrop-filter: var(--_pill-blur);
+    box-shadow:
+        0 20px 45px rgba(0, 0, 0, 0.25),
+        inset 0 0 2px rgba(255, 255, 255, 0.15);
+    pointer-events: all;
+}
+
+.menuNavList {
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menuNavLink {
+    display: flex;
+    align-items: center;
+    padding: 16px 10px;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--_pill-text);
+    text-decoration: none;
+    @include transition(background, color);
+
+    li:last-child > & {
+        border-bottom: none;
     }
 
     &:active {
-        background: transparent;
+        background: rgba(234, 253, 39, 0.1);
+    }
+}
+
+.menuNavLinkActive {
+    color: var(--color-primary);
+}
+
+.menuCv {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    padding: 6px 6px 6px 18px;
+    border-radius: 999px;
+    background: var(--color-primary);
+    text-decoration: none;
+
+    &.cvPillClicked {
+        .menuCvIcon {
+            animation: cvIconPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+    }
+}
+
+.menuCvLabel {
+    font-family: var(--font-almarai);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #000;
+}
+
+.menuCvIcon {
+    @include flex-center;
+
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #000;
+    color: var(--color-primary);
+    flex-shrink: 0;
+
+    svg {
+        position: relative;
+        z-index: 1;
+        transform: scale(0.8);
+    }
+
+    .cvPillClicked &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: var(--color-primary);
+        animation: cvIconRipple 0.55s ease-out;
+    }
+}
+
+@include reduced-motion {
+    .menuBar {
+        transition: none;
     }
 }

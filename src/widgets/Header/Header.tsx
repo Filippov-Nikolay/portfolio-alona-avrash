@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type MouseEvent } from "react";
 import { m, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -61,14 +61,46 @@ function StaggerText({ text }: { text: string }) {
     );
 }
 
+const MENU_CLOSE_EASE = [0.22, 1, 0.36, 1] as const;
+const MENU_OPEN_EASE = [0.25, 0.1, 0.25, 1] as const;
+
+const menuPanelVariants = {
+    hidden: {
+        opacity: 0,
+        y: -8,
+        scale: 0.97,
+        transition: { duration: 0.2, ease: MENU_CLOSE_EASE },
+    },
+    visible: {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        transition: {
+            duration: 0.22,
+            ease: MENU_OPEN_EASE,
+            staggerChildren: 0.04,
+            delayChildren: 0.03,
+        },
+    },
+};
+
+const menuItemVariants = {
+    hidden: { opacity: 0, y: -6 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.18 } },
+};
+
 export function Header() {
     const safeSlideDown = useMotionVariants(slideDown);
     const t = useTranslations("nav");
     const { isReady } = usePreloader();
     const pathname = usePathname();
     const [cvClicked, setCvClicked] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [menuPathname, setMenuPathname] = useState(pathname);
     const headerRef = useRef<HTMLElement>(null);
     const sceneBackdropRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+    const menuTriggerRef = useRef<HTMLButtonElement>(null);
     const bandY = useServicesHeaderBandController(headerRef, sceneBackdropRef);
 
     // Keep the pills hidden for at least one committed frame after `isReady`
@@ -91,6 +123,49 @@ export function Header() {
         };
     }, [isReady]);
 
+    if (pathname !== menuPathname) {
+        setMenuPathname(pathname);
+        setMenuOpen(false);
+    }
+
+    useEffect(() => {
+        if (!menuOpen) return;
+
+        function onOutsideClick(e: PointerEvent) {
+            const target = e.target as Node;
+            if (menuRef.current?.contains(target)) return;
+            if (menuTriggerRef.current?.contains(target)) return;
+            setMenuOpen(false);
+        }
+        function onEscape(e: KeyboardEvent) {
+            if (e.key === "Escape") setMenuOpen(false);
+        }
+        function preventScroll(e: Event) {
+            e.preventDefault();
+        }
+        document.addEventListener("pointerdown", onOutsideClick);
+        document.addEventListener("keydown", onEscape);
+        document.addEventListener("wheel", preventScroll, { passive: false });
+        document.addEventListener("touchmove", preventScroll, { passive: false });
+
+        return () => {
+            document.removeEventListener("pointerdown", onOutsideClick);
+            document.removeEventListener("keydown", onEscape);
+            document.removeEventListener("wheel", preventScroll);
+            document.removeEventListener("touchmove", preventScroll);
+        };
+    }, [menuOpen]);
+
+    function handleCvClick(e: MouseEvent<HTMLAnchorElement>, { closeMenu = false } = {}) {
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+            return;
+        }
+        e.preventDefault();
+        setCvClicked(true);
+        if (closeMenu) setMenuOpen(false);
+        setTimeout(() => triggerCvDownload(siteConfig.links.cv), CV_DOWNLOAD_DELAY_MS);
+    }
+
     return (
         <>
             <m.div
@@ -101,6 +176,19 @@ export function Header() {
                 data-services-header-controller
                 aria-hidden="true"
             />
+
+            <AnimatePresence>
+                {menuOpen && (
+                    <m.div
+                        className={styles.menuOverlay}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        aria-hidden="true"
+                    />
+                )}
+            </AnimatePresence>
 
             <m.header
                 ref={headerRef}
@@ -166,12 +254,6 @@ export function Header() {
                             />
                             <ThemeToggle className={styles.themeBtnDesktop} />
                         </div>
-                        <div className={styles.langMobile}>
-                            <LangSwitcher
-                                className={styles.langMobileWrapper}
-                                triggerClassName={styles.langMobileTrigger}
-                            />
-                        </div>
                     </div>
 
                     <a
@@ -179,23 +261,7 @@ export function Header() {
                         download
                         className={cn(styles.cvPill, cvClicked && styles.cvPillClicked)}
                         style={pillDelay(3)}
-                        onClick={(e) => {
-                            if (
-                                e.button !== 0 ||
-                                e.metaKey ||
-                                e.ctrlKey ||
-                                e.shiftKey ||
-                                e.altKey
-                            ) {
-                                return;
-                            }
-                            e.preventDefault();
-                            setCvClicked(true);
-                            setTimeout(
-                                () => triggerCvDownload(siteConfig.links.cv),
-                                CV_DOWNLOAD_DELAY_MS
-                            );
-                        }}
+                        onClick={handleCvClick}
                         onAnimationEnd={() => setCvClicked(false)}
                     >
                         <span className={styles.cvLabel}>{t("downloadCv")}</span>
@@ -203,65 +269,86 @@ export function Header() {
                             <DownloadIcon />
                         </span>
                     </a>
+
+                    <button
+                        ref={menuTriggerRef}
+                        type="button"
+                        className={cn(styles.menuTrigger, menuOpen && styles.menuTriggerOpen)}
+                        style={pillDelay(2)}
+                        onClick={() => setMenuOpen((open) => !open)}
+                        aria-haspopup="true"
+                        aria-expanded={menuOpen}
+                        aria-label={menuOpen ? "Close menu" : "Open menu"}
+                    >
+                        <span className={styles.menuIcon} aria-hidden="true">
+                            <span className={styles.menuBar} />
+                            <span className={styles.menuBar} />
+                            <span className={styles.menuBar} />
+                        </span>
+                    </button>
+
+                    <AnimatePresence>
+                        {menuOpen && (
+                            <m.div
+                                ref={menuRef}
+                                className={styles.menuPanel}
+                                variants={menuPanelVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="hidden"
+                                style={{ transformOrigin: "top" }}
+                            >
+                                <nav aria-label="Mobile navigation">
+                                    <ul className={styles.menuNavList}>
+                                        {navigation.map((item) => {
+                                            const isActive = pathname === item.href;
+
+                                            return (
+                                                <m.li key={item.href} variants={menuItemVariants}>
+                                                    <Link
+                                                        href={item.href}
+                                                        onClick={(e) => {
+                                                            setMenuOpen(false);
+                                                            if (
+                                                                !isHomeLink(item) ||
+                                                                pathname !== "/"
+                                                            ) {
+                                                                return;
+                                                            }
+                                                            e.preventDefault();
+                                                            scrollToTop();
+                                                        }}
+                                                        className={cn(
+                                                            styles.menuNavLink,
+                                                            isActive && styles.menuNavLinkActive
+                                                        )}
+                                                    >
+                                                        <span>{t(item.key)}</span>
+                                                    </Link>
+                                                </m.li>
+                                            );
+                                        })}
+                                    </ul>
+                                </nav>
+
+                                <m.a
+                                    href={siteConfig.links.cv}
+                                    download
+                                    className={cn(styles.menuCv, cvClicked && styles.cvPillClicked)}
+                                    variants={menuItemVariants}
+                                    onClick={(e) => handleCvClick(e, { closeMenu: true })}
+                                    onAnimationEnd={() => setCvClicked(false)}
+                                >
+                                    <span className={styles.menuCvLabel}>{t("downloadCv")}</span>
+                                    <span className={styles.menuCvIcon} aria-hidden="true">
+                                        <DownloadIcon />
+                                    </span>
+                                </m.a>
+                            </m.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </m.header>
-
-            {/* Mobile bottom nav — outside animated wrapper to avoid transform containment issues */}
-            <nav className={styles.mobileNav} aria-label="Mobile navigation">
-                <div className={styles.mobileNavInner}>
-                    {navigation.map((item) => {
-                        const isActive = pathname === item.href;
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={(e) => {
-                                    if (!isHomeLink(item) || pathname !== "/") return;
-                                    e.preventDefault();
-                                    scrollToTop();
-                                }}
-                                aria-label={t(item.key)}
-                                className={cn(
-                                    styles.mobileNavLink,
-                                    isActive && styles.mobileNavLinkActive
-                                )}
-                            >
-                                <AnimatePresence>
-                                    {isActive && (
-                                        <m.span
-                                            key="pill"
-                                            layoutId="mobile-nav-pill"
-                                            className={styles.mobileActivePill}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{
-                                                opacity: { duration: 0.2, ease: "easeInOut" },
-                                                layout: {
-                                                    type: "spring",
-                                                    stiffness: 380,
-                                                    damping: 32,
-                                                },
-                                            }}
-                                        />
-                                    )}
-                                </AnimatePresence>
-                                <m.span
-                                    className={styles.mobileNavIcon}
-                                    animate={isActive ? { scale: 1.18, y: -2 } : { scale: 1, y: 0 }}
-                                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                                >
-                                    {item.icon && <item.icon aria-hidden="true" />}
-                                </m.span>
-                            </Link>
-                        );
-                    })}
-                </div>
-                <div className={styles.mobileNavThemePill}>
-                    <ThemeToggle className={styles.mobileNavThemeBtn} />
-                </div>
-            </nav>
         </>
     );
 }

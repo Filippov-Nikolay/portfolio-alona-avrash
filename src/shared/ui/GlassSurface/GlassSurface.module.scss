@@ -369,6 +369,25 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+[data-theme="dark"] .root[data-preset="hero"] {
+    --glass-base-color: rgba(3, 6, 12, 0.76);
+    --glass-fill-top: rgba(25, 34, 50, 0.42);
+    --glass-fill-bottom: rgba(2, 4, 9, 0.84);
+    --glass-fill-core: rgba(120, 145, 180, 0.045);
+    --glass-border: rgba(255, 255, 255, 0.22);
+    --glass-brightness: 0.56;
+    --glass-contrast: 1.12;
+    --glass-surface-opacity: 0.18;
+    --glass-depth-opacity: 0.72;
+    --glass-lens-opacity: 0.58;
+    --glass-caustic-opacity: 0.3;
+    --glass-sheen-opacity: 0.26;
+    --glass-prism-opacity: 0.05;
+    --glass-shadow:
+        0 30px 70px rgba(0, 0, 0, 0.58), 0 12px 28px rgba(0, 0, 0, 0.36),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
 [data-theme="light"] .root[data-preset="hero"] {
     --glass-base-color: rgba(6, 20, 48, 0.22);
     --glass-fill-top: rgba(88, 124, 188, 0.2);

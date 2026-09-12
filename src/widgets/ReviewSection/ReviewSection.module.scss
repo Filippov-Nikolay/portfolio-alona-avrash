@@ -2,8 +2,8 @@
 
 .section {
     position: relative;
-    background: #fff;
-    color: #000;
+    background: var(--color-bg);
+    color: var(--color-text-primary);
     padding-block: clamp(56px, 7.6vw, 96px) clamp(56px, 7vw, 88px);
     overflow-x: clip;
     overflow-y: visible;
@@ -23,7 +23,7 @@
     font-weight: 700;
     line-height: 0.9;
     font-size: clamp(56px, 8.4vw, 128px);
-    color: #000;
+    color: var(--color-text-primary);
 }
 
 .aside {
@@ -44,7 +44,7 @@
 .decorShape {
     position: absolute;
     border-radius: 24px;
-    background: #e4e4e4;
+    background: var(--color-surface-light);
 }
 
 .decorShapeBack {
@@ -172,10 +172,10 @@
     height: 290px;
     margin: 0;
     padding: 32px;
-    border: 1px solid rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--color-border);
     border-radius: 28px;
-    background: #fff;
-    color: #000;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
 
     @include respond-to("mobile") {
         width: 320px;

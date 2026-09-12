@@ -2,10 +2,10 @@
 
 .section {
     position: relative;
-    background: #fff;
+    background: var(--color-bg);
     padding-block: clamp(56px, 7.6vw, 96px) clamp(56px, 7vw, 88px);
     overflow: visible;
-    color: #000;
+    color: var(--color-text-primary);
 
     &::before {
         content: "";
@@ -31,7 +31,7 @@
     font-size: clamp(56px, 8.4vw, 128px);
     font-weight: 700;
     line-height: 0.9;
-    color: #000;
+    color: var(--color-text-primary);
 }
 
 .description {
@@ -40,7 +40,7 @@
     font-size: 20px;
     font-weight: 300;
     line-height: 1.5;
-    color: #000;
+    color: var(--color-text-primary);
 }
 
 .track {

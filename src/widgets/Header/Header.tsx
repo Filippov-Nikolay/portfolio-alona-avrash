@@ -24,8 +24,17 @@ function isHomeLink(item: NavItem) {
     return item.href === "/";
 }
 
-// One-after-another entrance for the 4 pills (see .main > * in
-// Header.module.scss) — index order matches their left-to-right layout.
+const CV_DOWNLOAD_DELAY_MS = 250;
+
+function triggerCvDownload(href: string) {
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = "";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+}
+
 const PILL_ENTRANCE_STEP_MS = 90;
 function pillDelay(index: number): React.CSSProperties {
     return { "--pill-delay": `${index * PILL_ENTRANCE_STEP_MS}ms` } as React.CSSProperties;
@@ -170,7 +179,23 @@ export function Header() {
                         download
                         className={cn(styles.cvPill, cvClicked && styles.cvPillClicked)}
                         style={pillDelay(3)}
-                        onClick={() => setCvClicked(true)}
+                        onClick={(e) => {
+                            if (
+                                e.button !== 0 ||
+                                e.metaKey ||
+                                e.ctrlKey ||
+                                e.shiftKey ||
+                                e.altKey
+                            ) {
+                                return;
+                            }
+                            e.preventDefault();
+                            setCvClicked(true);
+                            setTimeout(
+                                () => triggerCvDownload(siteConfig.links.cv),
+                                CV_DOWNLOAD_DELAY_MS
+                            );
+                        }}
                         onAnimationEnd={() => setCvClicked(false)}
                     >
                         <span className={styles.cvLabel}>{t("downloadCv")}</span>

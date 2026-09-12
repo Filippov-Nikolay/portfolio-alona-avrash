@@ -1,8 +1,8 @@
 @use "@/shared/styles/mixins" as *;
 
 .section {
-    background: #fff;
-    color: #000;
+    background: var(--color-bg);
+    color: var(--color-text-primary);
     padding-block: clamp(16px, 2vw, 24px) clamp(56px, 7.6vw, 96px);
 }
 
@@ -25,7 +25,7 @@
     font-size: 64px;
     line-height: 1.05;
     letter-spacing: 0.1em;
-    color: #000;
+    color: var(--color-text-primary);
 
     @include respond-to("tablet") {
         font-size: clamp(36px, 6.4vw, 64px);
@@ -53,7 +53,7 @@
     font-size: 20px;
     line-height: 1.4;
     text-transform: uppercase;
-    color: #000;
+    color: var(--color-text-primary);
 }
 
 .button {
@@ -65,6 +65,67 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     gap: 8px;
+    transition:
+        background var(--bg-fill-duration, 0.1s) cubic-bezier(0.65, 0, 0.35, 1),
+        color var(--transition-fast),
+        border-color var(--transition-fast),
+        opacity var(--transition-fast),
+        box-shadow var(--transition-fast);
+
+    @include can-hover {
+        &:hover {
+            .charTop {
+                transform: translateY(-100%);
+            }
+
+            .charBottom {
+                transform: translateY(0);
+            }
+
+            .buttonArrow {
+                transform: rotate(-135deg) scale(1.3);
+                transition-delay: var(--arrow-pop-delay, 0.55s);
+            }
+        }
+    }
+}
+
+.srOnly {
+    @include sr-only;
+}
+
+.buttonText {
+    display: inline-flex;
+}
+
+.charCol {
+    position: relative;
+    display: inline-block;
+    height: 1em;
+    overflow: hidden;
+    vertical-align: top;
+    line-height: 1;
+}
+
+.charTop,
+.charBottom {
+    display: block;
+    white-space: pre;
+    transition: transform 0.22s cubic-bezier(0.65, 0, 0.35, 1);
+    transition-delay: var(--stagger-delay, 0ms);
+}
+
+.charTop {
+    position: relative;
+    color: inherit;
+}
+
+.charBottom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: inherit;
+    transform: translateY(100%);
 }
 
 .buttonArrowWrap {
@@ -79,4 +140,17 @@
     width: 11px;
     height: auto;
     transform: rotate(-135deg);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@include reduced-motion {
+    .button {
+        transition: none;
+    }
+
+    .charTop,
+    .charBottom,
+    .buttonArrow {
+        transition: none;
+    }
 }

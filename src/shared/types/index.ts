@@ -12,4 +12,3 @@ export type { TimelineEntry, TimelineIcon, TimelineI18n, TimelineData } from "./
 export type { NavItem } from "./navigation";
 export type { CategoryKey, CategoryOption } from "./category";
 export type { ProjectImage, ImageFocalPoint } from "./project-image";
-export type { Tool } from "./tools";

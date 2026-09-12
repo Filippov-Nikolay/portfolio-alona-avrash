@@ -57,3 +57,14 @@ Thumbs.db
 # Local scratch/debug artifacts
 # =========================
 .codex-artifacts/
+
+# =========================
+# Project gallery images (temporary local placeholders)
+# Each project's full image set lives in public/projects/<slug>/ for now,
+# scraped from Behance ahead of the real CMS/Cloudflare-backed asset API.
+# They're heavy (hundreds of MB) and disposable, so they stay untracked -
+# every dev who needs them locally re-runs the import rather than everyone
+# carrying them in git history forever. The single curated hero image per
+# project (public/projects/image-<slug>.png) is unaffected and stays tracked.
+# =========================
+public/projects/*/

@@ -66,8 +66,8 @@
 .dropdown {
     position: absolute;
     top: calc(100% - 1px);
-    right: -1px;
-    left: -1px;
+    left: -0.8px;
+    right: -0.8px;
     z-index: 100;
     list-style: none;
     margin: 0;
@@ -78,7 +78,7 @@
     border: 1px solid var(--lang-dropdown-border, rgba(234, 253, 39, 0.18));
     border-top: none;
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 16px 24px -16px rgba(0, 0, 0, 0.45);
 
     [data-theme="dark"] & {
         background: var(--lang-dropdown-bg, rgba(20, 20, 24, 0.92));

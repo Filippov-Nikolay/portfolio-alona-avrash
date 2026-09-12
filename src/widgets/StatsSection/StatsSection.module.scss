@@ -46,7 +46,9 @@
 }
 
 .value {
-    display: inline-block;
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
     font-family: var(--font-body);
     font-size: clamp(30px, 3.4vw, 44px);
     font-weight: 300;
@@ -55,6 +57,41 @@
     letter-spacing: -0.01em;
     text-align: center;
     color: var(--color-text-primary);
+}
+
+.digits {
+    display: inline-flex;
+    align-items: baseline;
+}
+
+.reel {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    height: 1em;
+    line-height: 1;
+}
+
+.reelTrack {
+    display: flex;
+    flex-direction: column;
+    will-change: transform;
+}
+
+.reelTrackDiscrete {
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reelDigit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 1em;
+    line-height: 1;
+}
+
+.srOnly {
+    @include sr-only;
 }
 
 .label {
@@ -70,7 +107,12 @@
 }
 
 @include reduced-motion {
-    .grid {
+    .grid,
+    .reelTrack {
         will-change: auto;
+    }
+
+    .reelTrackDiscrete {
+        transition: none;
     }
 }

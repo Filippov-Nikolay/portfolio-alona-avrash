@@ -39,11 +39,42 @@ export function parseStatValue(raw: string): ParsedStatValue {
     };
 }
 
-export function formatStatValue(current: number, parsed: ParsedStatValue): string {
-    const [intPart, decPart] = current.toFixed(parsed.decimals).split(".");
-    const formattedInt = parsed.useThousandsSeparator
-        ? Number(intPart).toLocaleString("en-US")
-        : intPart;
+export type DigitToken =
+    | { type: "digit"; place: number; continuous: boolean }
+    | { type: "char"; value: string };
 
-    return `${parsed.prefix}${formattedInt}${decPart ? `.${decPart}` : ""}${parsed.suffix}`;
+export function buildDigitPlan(parsed: ParsedStatValue): DigitToken[] {
+    const intDigitCount = Math.max(1, Math.trunc(Math.abs(parsed.target)).toString().length);
+    const tokens: DigitToken[] = [];
+
+    for (let i = 0; i < intDigitCount; i++) {
+        const place = intDigitCount - 1 - i;
+        if (parsed.useThousandsSeparator && i > 0 && place % 3 === 2) {
+            tokens.push({ type: "char", value: "," });
+        }
+        tokens.push({ type: "digit", place, continuous: false });
+    }
+
+    if (parsed.decimals > 0) {
+        tokens.push({ type: "char", value: "." });
+        for (let d = 1; d <= parsed.decimals; d++) {
+            tokens.push({ type: "digit", place: -d, continuous: false });
+        }
+    }
+
+    for (let i = tokens.length - 1; i >= 0; i--) {
+        const token = tokens[i];
+        if (token.type === "digit") {
+            token.continuous = true;
+            break;
+        }
+    }
+
+    return tokens;
+}
+
+export function digitWheelPosition(value: number, place: number, continuous: boolean): number {
+    const scaled = place >= 0 ? value / 10 ** place : value * 10 ** -place;
+    const wrapped = ((scaled % 10) + 10) % 10;
+    return continuous ? wrapped : Math.floor(wrapped);
 }

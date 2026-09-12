@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import {
     useMotionValue,
     useMotionValueEvent,
@@ -13,7 +13,30 @@ import {
 } from "@/shared/config/heroDepthHandoff";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
-import { formatStatValue, type ParsedStatValue } from "./lib/parseStatValue";
+import { digitWheelPosition, type ParsedStatValue } from "./lib/parseStatValue";
+
+const GRID_REVEAL_START = NEXT_SECTION_INTERNAL_ANIMATION_TRIGGER;
+const GRID_REVEAL_END = NEXT_SECTION_COUNTER_TRIGGER;
+const COUNTER_START = NEXT_SECTION_COUNTER_TRIGGER;
+const COUNTER_END = 0.98;
+
+const revealEase = gsap.parseEase("power2.out");
+const counterEase = gsap.parseEase("power1.out");
+
+function windowProgress(value: number, start: number, end: number, ease: (t: number) => number) {
+    if (end <= start) return value >= end ? 1 : 0;
+    const t = gsap.utils.clamp(0, 1, (value - start) / (end - start));
+    return ease(t);
+}
+
+function updateReels(container: HTMLElement, value: number) {
+    const reels = container.querySelectorAll<HTMLElement>("[data-reel-place]");
+    reels.forEach((reel) => {
+        const place = Number(reel.dataset.reelPlace);
+        const continuous = reel.dataset.reelContinuous === "true";
+        reel.style.transform = `translateY(${-digitWheelPosition(value, place, continuous)}em)`;
+    });
+}
 
 export function useStatsSectionAnimations(
     parsedValues: ParsedStatValue[],
@@ -28,11 +51,7 @@ export function useStatsSectionAnimations(
     const sectionRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<HTMLDivElement>(null);
     const valueRefs = useRef<(HTMLSpanElement | null)[]>([]);
-    const gridRevealTweenRef = useRef<gsap.core.Tween | null>(null);
-    const playCountersRef = useRef<() => void>(() => {});
-    const completeCountersRef = useRef<() => void>(() => {});
-    const revealTriggeredRef = useRef(false);
-    const countersTriggeredRef = useRef(false);
+    const countersRef = useRef<{ el: HTMLSpanElement | null; parsed: ParsedStatValue }[]>([]);
 
     const setValueRef = (index: number) => (el: HTMLSpanElement | null) => {
         valueRefs.current[index] = el;
@@ -40,39 +59,13 @@ export function useStatsSectionAnimations(
 
     useGSAP(
         () => {
-            if (!sectionRef.current) return;
+            if (!sectionRef.current || depthProgress) return;
             const grid = gridRef.current;
             if (!grid) return;
 
             if (reduced) {
                 gsap.set(grid, { clearProps: "all" });
-                gridRevealTweenRef.current = null;
                 return;
-            }
-
-            if (depthProgress) {
-                const tween = gsap.fromTo(
-                    grid,
-                    { y: 28, filter: "blur(10px)" },
-                    {
-                        y: 0,
-                        filter: "blur(0px)",
-                        duration: 0.65,
-                        ease: "power2.out",
-                        force3D: true,
-                        paused: true,
-                    }
-                );
-                const isTriggered = depthProgress.get() >= NEXT_SECTION_INTERNAL_ANIMATION_TRIGGER;
-
-                revealTriggeredRef.current = isTriggered;
-                tween.progress(isTriggered ? 1 : 0).pause();
-                gridRevealTweenRef.current = tween;
-
-                return () => {
-                    gridRevealTweenRef.current = null;
-                    tween.kill();
-                };
             }
 
             const tween = gsap.fromTo(
@@ -92,122 +85,59 @@ export function useStatsSectionAnimations(
                     },
                 }
             );
-            gridRevealTweenRef.current = tween;
 
-            return () => {
-                gridRevealTweenRef.current = null;
-                tween.kill();
-            };
+            return () => tween.kill();
         },
         { scope: sectionRef, dependencies: [depthProgress, reduced], revertOnUpdate: true }
     );
 
     useGSAP(
         () => {
+            if (!sectionRef.current || depthProgress) return;
             const grid = gridRef.current;
-            if (!grid) {
-                return;
-            }
+            if (!grid) return;
 
             const counters = parsedValues.map((parsed, index) => ({
                 el: valueRefs.current[index],
                 parsed,
-                state: { current: 0 },
             }));
 
-            const applyInitialValues = () => {
-                counters.forEach(({ el, parsed }) => {
-                    if (!el || !parsed.isAnimatable) return;
-
-                    el.textContent = formatStatValue(0, parsed);
-                });
-            };
-
-            const applyFinalValues = () => {
-                counters.forEach(({ el, parsed }) => {
-                    if (!el || !parsed.isAnimatable) return;
-
-                    el.textContent = formatStatValue(parsed.target, parsed);
-                });
-            };
-
-            const play = () => {
-                counters.forEach(({ el, parsed, state }) => {
-                    if (!el || !parsed.isAnimatable) return;
-
-                    state.current = 0;
-                    el.textContent = formatStatValue(0, parsed);
-                    gsap.to(state, {
-                        current: parsed.target,
-                        duration: 1.1,
-                        ease: "power1.out",
-                        overwrite: true,
-                        onUpdate: () => {
-                            el.textContent = formatStatValue(state.current, parsed);
-                        },
-                    });
-                });
-            };
-            const cleanupCounterTweens = () => {
-                counters.forEach(({ state }) => {
-                    gsap.killTweensOf(state);
-                });
-            };
-
-            playCountersRef.current = play;
-            completeCountersRef.current = () => {
-                cleanupCounterTweens();
-                applyFinalValues();
-            };
-
             if (reduced) {
-                countersTriggeredRef.current = true;
-                applyFinalValues();
-
-                return () => {
-                    cleanupCounterTweens();
-                    playCountersRef.current = () => {};
-                    completeCountersRef.current = () => {};
-                };
+                counters.forEach(({ el, parsed }) => {
+                    if (el && parsed.isAnimatable) updateReels(el, parsed.target);
+                });
+                return;
             }
 
-            if (depthProgress) {
-                revealTriggeredRef.current =
-                    depthProgress.get() >= NEXT_SECTION_INTERNAL_ANIMATION_TRIGGER;
-                countersTriggeredRef.current = depthProgress.get() >= NEXT_SECTION_COUNTER_TRIGGER;
+            counters.forEach(({ el, parsed }) => {
+                if (el && parsed.isAnimatable) updateReels(el, 0);
+            });
 
-                if (countersTriggeredRef.current) {
-                    applyFinalValues();
-                } else {
-                    applyInitialValues();
-                }
-
-                return () => {
-                    cleanupCounterTweens();
-                    playCountersRef.current = () => {};
-                    completeCountersRef.current = () => {};
-                };
-            }
-
+            const state = { current: 0 };
             const observer = new IntersectionObserver(
                 ([entry]) => {
-                    if (entry.isIntersecting && !countersTriggeredRef.current) {
-                        countersTriggeredRef.current = true;
-                        play();
-                        observer.disconnect();
-                    }
+                    if (!entry.isIntersecting) return;
+                    observer.disconnect();
+
+                    counters.forEach(({ el, parsed }) => {
+                        if (!el || !parsed.isAnimatable) return;
+                        gsap.fromTo(
+                            state,
+                            { current: 0 },
+                            {
+                                current: parsed.target,
+                                duration: 1.1,
+                                ease: "power1.out",
+                                onUpdate: () => updateReels(el, state.current),
+                            }
+                        );
+                    });
                 },
                 { threshold: 0.4 }
             );
 
             observer.observe(grid);
-
-            return () => {
-                cleanupCounterTweens();
-                playCountersRef.current = () => {};
-                completeCountersRef.current = () => {};
-                observer.disconnect();
-            };
+            return () => observer.disconnect();
         },
         {
             scope: sectionRef,
@@ -216,34 +146,61 @@ export function useStatsSectionAnimations(
         }
     );
 
-    useMotionValueEvent(effectiveDepthProgress, "change", (latest) => {
-        if (!depthProgress || reduced) {
-            return;
-        }
+    useGSAP(
+        () => {
+            if (!sectionRef.current || !depthProgress) return;
+            const grid = gridRef.current;
+            if (!grid) return;
 
-        if (!revealTriggeredRef.current && latest >= NEXT_SECTION_INTERNAL_ANIMATION_TRIGGER) {
-            revealTriggeredRef.current = true;
-            gridRevealTweenRef.current?.play();
-        }
+            countersRef.current = parsedValues.map((parsed, index) => ({
+                el: valueRefs.current[index],
+                parsed,
+            }));
 
-        if (latest >= 0.98) {
-            gridRevealTweenRef.current?.progress(1).pause();
-        }
-
-        if (countersTriggeredRef.current || latest < NEXT_SECTION_COUNTER_TRIGGER) {
-            if (latest >= 0.98) {
-                completeCountersRef.current();
+            if (reduced) {
+                gsap.set(grid, { clearProps: "all" });
+                countersRef.current.forEach(({ el, parsed }) => {
+                    if (el && parsed.isAnimatable) updateReels(el, parsed.target);
+                });
             }
-            return;
+        },
+        {
+            scope: sectionRef,
+            dependencies: [depthProgress, reduced, parsedValues],
+            revertOnUpdate: true,
         }
+    );
 
-        countersTriggeredRef.current = true;
-        playCountersRef.current();
+    const applyProgress = useCallback(
+        (latest: number) => {
+            if (!depthProgress || reduced) return;
+            const grid = gridRef.current;
+            if (!grid) return;
 
-        if (latest >= 0.98) {
-            completeCountersRef.current();
-        }
-    });
+            const revealT = windowProgress(latest, GRID_REVEAL_START, GRID_REVEAL_END, revealEase);
+            gsap.set(grid, {
+                y: gsap.utils.interpolate(28, 0, revealT),
+                filter: `blur(${gsap.utils.interpolate(10, 0, revealT)}px)`,
+            });
+
+            const counterT = windowProgress(latest, COUNTER_START, COUNTER_END, counterEase);
+            countersRef.current.forEach(({ el, parsed }) => {
+                if (!el || !parsed.isAnimatable) return;
+                updateReels(el, gsap.utils.interpolate(0, parsed.target, counterT));
+            });
+        },
+        [depthProgress, reduced]
+    );
+
+    useGSAP(
+        () => {
+            if (!depthProgress || reduced) return;
+            applyProgress(depthProgress.get());
+        },
+        { dependencies: [depthProgress, reduced, parsedValues] }
+    );
+
+    useMotionValueEvent(effectiveDepthProgress, "change", applyProgress);
 
     return { sectionRef, gridRef, setValueRef };
 }

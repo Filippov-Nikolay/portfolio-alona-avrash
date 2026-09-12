@@ -6,8 +6,28 @@ import type { StatItem } from "@/entities/stat/model/stat";
 import { Container, Section } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import { useStatsSectionAnimations } from "./useStatsSectionAnimations";
-import { formatStatValue, parseStatValue } from "./lib/parseStatValue";
+import { buildDigitPlan, parseStatValue } from "./lib/parseStatValue";
 import styles from "./StatsSection.module.scss";
+
+const REEL_DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+
+function DigitReel({ place, continuous }: { place: number; continuous: boolean }) {
+    return (
+        <span className={styles.reel}>
+            <span
+                className={cn(styles.reelTrack, !continuous && styles.reelTrackDiscrete)}
+                data-reel-place={place}
+                data-reel-continuous={continuous}
+            >
+                {REEL_DIGITS.map((digit, i) => (
+                    <span key={i} className={styles.reelDigit}>
+                        {digit}
+                    </span>
+                ))}
+            </span>
+        </span>
+    );
+}
 
 interface StatsSectionProps {
     items: StatItem[];
@@ -25,18 +45,9 @@ export function StatsSection({
     depthProgress,
 }: StatsSectionProps) {
     const parsedValues = useMemo(() => items.map((item) => parseStatValue(item.value)), [items]);
-    const initialValues = useMemo(
-        () =>
-            items.map((item, index) => {
-                const parsed = parsedValues[index];
-
-                if (!depthProgress || !parsed?.isAnimatable) {
-                    return item.value;
-                }
-
-                return formatStatValue(0, parsed);
-            }),
-        [depthProgress, items, parsedValues]
+    const digitPlans = useMemo(
+        () => parsedValues.map((parsed) => (parsed.isAnimatable ? buildDigitPlan(parsed) : [])),
+        [parsedValues]
     );
     const { sectionRef, gridRef, setValueRef } = useStatsSectionAnimations(
         parsedValues,
@@ -48,18 +59,44 @@ export function StatsSection({
             <Container>
                 <div ref={sectionRef} className={styles.content}>
                     <div ref={gridRef} className={styles.grid}>
-                        {items.map(({ id: itemId, value, label }, index) => (
-                            <div key={itemId} className={styles.stat}>
-                                <span
-                                    ref={setValueRef(index)}
-                                    className={styles.value}
-                                    style={{ minWidth: `${value.length}ch` }}
-                                >
-                                    {initialValues[index]}
-                                </span>
-                                <span className={styles.label}>{label}</span>
-                            </div>
-                        ))}
+                        {items.map(({ id: itemId, value, label }, index) => {
+                            const parsed = parsedValues[index];
+
+                            return (
+                                <div key={itemId} className={styles.stat}>
+                                    <span
+                                        className={styles.value}
+                                        style={{ minWidth: `${value.length}ch` }}
+                                    >
+                                        <span className={styles.srOnly}>{value}</span>
+                                        {parsed.isAnimatable ? (
+                                            <span
+                                                ref={setValueRef(index)}
+                                                className={styles.digits}
+                                                aria-hidden="true"
+                                            >
+                                                {parsed.prefix}
+                                                {digitPlans[index].map((token, i) =>
+                                                    token.type === "digit" ? (
+                                                        <DigitReel
+                                                            key={i}
+                                                            place={token.place}
+                                                            continuous={token.continuous}
+                                                        />
+                                                    ) : (
+                                                        <span key={i}>{token.value}</span>
+                                                    )
+                                                )}
+                                                {parsed.suffix}
+                                            </span>
+                                        ) : (
+                                            <span aria-hidden="true">{value}</span>
+                                        )}
+                                    </span>
+                                    <span className={styles.label}>{label}</span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </Container>

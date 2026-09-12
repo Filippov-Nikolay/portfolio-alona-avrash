@@ -474,10 +474,7 @@
     }
 
     &:nth-child(4) {
-        top: clamp(430px, 61vh, 560px);
-        left: 20%;
-        width: 170px;
-        height: 176px;
+        display: none;
     }
 
     @include respond-to("tablet") {
@@ -497,14 +494,6 @@
         }
 
         &:nth-child(3) {
-            top: auto;
-            bottom: 188px;
-            left: 2%;
-            width: 112px;
-            height: 118px;
-        }
-
-        &:nth-child(4) {
             display: none;
         }
     }

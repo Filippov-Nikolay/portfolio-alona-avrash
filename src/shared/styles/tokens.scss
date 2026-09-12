@@ -75,6 +75,9 @@
 
     --color-border: rgba(255, 255, 255, 0.08);
     --color-card: rgba(255, 255, 255, 0.03);
+    --color-scrollbar-track: #000000;
+    --color-scrollbar-thumb: #343434;
+    --color-scrollbar-thumb-hover: var(--color-accent);
 
     // === Button =======================================
     --color-bg-btn: #ffffff;
@@ -100,6 +103,9 @@
 
     --color-border: rgba(0, 0, 0, 0.08);
     --color-card: rgba(0, 0, 0, 0.03);
+    --color-scrollbar-track: #ffffff;
+    --color-scrollbar-thumb: #c7c7cc;
+    --color-scrollbar-thumb-hover: #000000;
 
     // === Button =======================================
     --color-bg-btn: #000000;

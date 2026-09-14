@@ -12,6 +12,7 @@ import {
 const BAND_OVERLAP = 20;
 const ENTRY_SENTINEL_ID = "services-header-band-entry";
 const EXIT_SENTINEL_ID = "services-header-band-exit";
+const HEADER_SCENE_HEIGHT_VAR = "--header-scene-height";
 
 export function useServicesHeaderBandController(
     headerRef: RefObject<HTMLElement | null>,
@@ -25,6 +26,8 @@ export function useServicesHeaderBandController(
         let measureFrame = 0;
         let settleFrame = 0;
         let measureGeneration = 0;
+        const root = document.documentElement;
+        const previousSceneHeight = root.style.getPropertyValue(HEADER_SCENE_HEIGHT_VAR);
 
         const syncBand = () => {
             const nextY = calculateServicesHeaderBandY(window.scrollY, geometryRef.current);
@@ -80,7 +83,9 @@ export function useServicesHeaderBandController(
             }
 
             geometryRef.current = nextGeometry;
-            band.style.setProperty("--header-scene-height", `${nextGeometry.bandHeight}px`);
+            const sceneHeight = `${nextGeometry.bandHeight}px`;
+            band.style.setProperty(HEADER_SCENE_HEIGHT_VAR, sceneHeight);
+            root.style.setProperty(HEADER_SCENE_HEIGHT_VAR, sceneHeight);
             syncBand();
         };
 
@@ -144,6 +149,11 @@ export function useServicesHeaderBandController(
             window.removeEventListener("resize", scheduleMeasure);
             window.removeEventListener("load", scheduleSettledMeasure);
             window.removeEventListener("pageshow", scheduleSettledMeasure);
+            if (previousSceneHeight) {
+                root.style.setProperty(HEADER_SCENE_HEIGHT_VAR, previousSceneHeight);
+            } else {
+                root.style.removeProperty(HEADER_SCENE_HEIGHT_VAR);
+            }
         };
     }, [bandRef, bandY, headerRef]);
 

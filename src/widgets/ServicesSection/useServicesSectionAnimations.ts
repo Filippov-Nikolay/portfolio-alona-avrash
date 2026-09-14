@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef } from "react";
-import { useReducedMotion } from "framer-motion";
+import type { Service } from "@/entities/service/model/service";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
-import { useGSAP, gsap } from "@/shared/lib/gsap";
+import { useGSAP, gsap, ScrollTrigger } from "@/shared/lib/gsap";
 import {
     SERVICES_CARD_REVEAL_DISTANCE,
     SERVICES_CARD_REVEAL_DISTANCE_COMPACT,
@@ -12,10 +12,10 @@ import {
 } from "@/shared/config/scrollChoreography";
 import { getTopBandContactOffset } from "@/shared/lib/motion/servicesSceneGeometry";
 
-export function useServicesSectionAnimations() {
-    const reduced = useReducedMotion();
+const FALLBACK_STACK_OFFSET = 20;
 
-    useScrollTriggerAutoRefresh([reduced]);
+export function useServicesSectionAnimations(services: Service[]) {
+    useScrollTriggerAutoRefresh([services]);
 
     const sectionRef = useRef<HTMLElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null);
@@ -23,106 +23,139 @@ export function useServicesSectionAnimations() {
 
     useGSAP(
         () => {
-            if (!sectionRef.current) return;
-            const title = titleRef.current;
-            const grid = gridRef.current;
-            if (!title || !grid) return;
+            const media = gsap.matchMedia();
 
-            const cards = gsap.utils.toArray<HTMLElement>(":scope > article", grid);
+            media.add("(prefers-reduced-motion: no-preference)", () => {
+                if (!sectionRef.current) return;
+                const title = titleRef.current;
+                const grid = gridRef.current;
+                if (!title || !grid) return;
 
-            if (reduced) {
-                gsap.set([title, ...cards], { clearProps: "all" });
-                return;
-            }
+                const cards = gsap.utils.toArray<HTMLElement>(":scope > article", grid);
 
-            const getContactOffset = () => {
-                const headerHeight =
-                    document.querySelector("header")?.getBoundingClientRect().height ?? 96;
+                const getContactOffset = () => {
+                    const headerHeight =
+                        document.querySelector("header")?.getBoundingClientRect().height ?? 96;
 
-                return getTopBandContactOffset(window.innerHeight, headerHeight);
-            };
+                    return getTopBandContactOffset(window.innerHeight, headerHeight);
+                };
 
-            const titleStart = () => `top top+=${getContactOffset()}`;
-            const getCardRevealDistance = () =>
-                window.matchMedia("(max-width: 767px)").matches
-                    ? SERVICES_CARD_REVEAL_DISTANCE_COMPACT
-                    : SERVICES_CARD_REVEAL_DISTANCE;
-            const firstCardStart = () =>
-                `top top+=${getContactOffset() - SERVICES_CARD_REVEAL_OVERLAP}`;
+                const titleStart = () => `top top+=${getContactOffset()}`;
+                const getCardRevealDistance = () =>
+                    window.matchMedia("(max-width: 767px)").matches
+                        ? SERVICES_CARD_REVEAL_DISTANCE_COMPACT
+                        : SERVICES_CARD_REVEAL_DISTANCE;
 
-            gsap.set(title, {
-                autoAlpha: 0,
-                y: 44,
-                filter: "blur(5px)",
-                clipPath: "inset(100% 0 0)",
+                gsap.set(title, {
+                    autoAlpha: 0,
+                    y: 44,
+                    filter: "blur(5px)",
+                    clipPath: "inset(100% 0 0)",
+                });
+
+                gsap.to(title, {
+                    autoAlpha: 1,
+                    y: 0,
+                    filter: "blur(0px)",
+                    clipPath: "inset(0% 0 0)",
+                    ease: "none",
+                    force3D: true,
+                    scrollTrigger: {
+                        trigger: sectionRef.current,
+                        start: titleStart,
+                        end: `+=${SERVICES_TITLE_REVEAL_DISTANCE}`,
+                        scrub: true,
+                        invalidateOnRefresh: true,
+                    },
+                });
+
+                if (cards.length === 0) return;
+
+                gsap.set(cards, {
+                    autoAlpha: 0,
+                    y: 0,
+                    scale: 1,
+                    filter: "blur(0px)",
+                    transformOrigin: "center top",
+                });
+
+                const setters = cards.map((card) => gsap.quickSetter(card, "css"));
+                let revealDistance = 0;
+                let stackOffset = 0;
+                let revealStarts: number[] = [];
+
+                const measureCards = () => {
+                    const scrollY = window.scrollY;
+                    revealDistance = getCardRevealDistance();
+                    stackOffset =
+                        Number.parseFloat(
+                            getComputedStyle(grid).getPropertyValue("--_stack-offset")
+                        ) || FALLBACK_STACK_OFFSET;
+                    const firstCardContact = getContactOffset() - SERVICES_CARD_REVEAL_OVERLAP;
+                    revealStarts = cards.map((card, index) => {
+                        const runway = card.previousElementSibling;
+                        const flowTop = runway
+                            ? runway.getBoundingClientRect().bottom + scrollY
+                            : grid.getBoundingClientRect().top + scrollY;
+                        const stickyTop = Number.parseFloat(getComputedStyle(card).top);
+
+                        if (index === 0) return flowTop - firstCardContact;
+
+                        return flowTop - stickyTop - revealDistance;
+                    });
+                };
+
+                const renderCards = (scrollY: number) => {
+                    const progresses = revealStarts.map((start, index) => {
+                        const progress = gsap.utils.clamp(0, 1, (scrollY - start) / revealDistance);
+                        return index === 0 ? progress : progress * progress * (3 - 2 * progress);
+                    });
+
+                    cards.forEach((card, index) => {
+                        const entry = progresses[index];
+                        const promotion = progresses[index + 1] ?? 0;
+                        const exit = progresses[index + 2] ?? 0;
+                        const slotOffset = index === 0 ? 0 : stackOffset * (1 - promotion);
+
+                        setters[index]({
+                            autoAlpha: entry > 0 ? 1 - exit : 0,
+                            y:
+                                (1 - entry) * (index === 0 ? 30 : stackOffset * 4) +
+                                slotOffset -
+                                exit * stackOffset,
+                            scale: 1 - (1 - entry) * 0.015 - (promotion + exit) * 0.02,
+                            filter: `blur(${(1 - entry) * 6 + exit * 4}px)`,
+                        });
+                        card.inert = entry < 1 || promotion > 0;
+                    });
+                };
+
+                measureCards();
+
+                const cardTrigger = ScrollTrigger.create({
+                    trigger: grid,
+                    start: "top bottom",
+                    end: "bottom top",
+                    onRefresh: (self) => {
+                        measureCards();
+                        renderCards(self.scroll());
+                    },
+                    onUpdate: (self) => renderCards(self.scroll()),
+                });
+
+                renderCards(cardTrigger.scroll());
+
+                return () => {
+                    cardTrigger.kill();
+                    cards.forEach((card) => {
+                        card.inert = false;
+                    });
+                };
             });
 
-            gsap.to(title, {
-                autoAlpha: 1,
-                y: 0,
-                filter: "blur(0px)",
-                clipPath: "inset(0% 0 0)",
-                ease: "none",
-                force3D: true,
-                scrollTrigger: {
-                    trigger: sectionRef.current,
-                    start: titleStart,
-                    end: `+=${SERVICES_TITLE_REVEAL_DISTANCE}`,
-                    scrub: true,
-                    invalidateOnRefresh: true,
-                },
-            });
-
-            const [firstCard, ...followingCards] = cards;
-
-            if (firstCard) {
-                // Keep the approved scroll-controlled entry for the first card.
-                gsap.fromTo(
-                    firstCard,
-                    { autoAlpha: 0, y: 30, scale: 0.985, filter: "blur(6px)" },
-                    {
-                        autoAlpha: 1,
-                        y: 0,
-                        scale: 1,
-                        filter: "blur(0px)",
-                        ease: "none",
-                        force3D: true,
-                        scrollTrigger: {
-                            trigger: firstCard,
-                            start: firstCardStart,
-                            end: () => `+=${getCardRevealDistance()}`,
-                            scrub: true,
-                            invalidateOnRefresh: true,
-                        },
-                    }
-                );
-            }
-
-            if (followingCards.length > 0) {
-                gsap.fromTo(
-                    followingCards,
-                    { autoAlpha: 0, y: 30, scale: 0.985, filter: "blur(6px)" },
-                    {
-                        autoAlpha: 1,
-                        y: 0,
-                        scale: 1,
-                        filter: "blur(0px)",
-                        duration: 0.66,
-                        ease: "power3.out",
-                        stagger: 0.08,
-                        force3D: true,
-                        scrollTrigger: {
-                            trigger: sectionRef.current,
-                            start: firstCardStart,
-                            end: () => `+=${getCardRevealDistance()}`,
-                            scrub: 0.3,
-                            invalidateOnRefresh: true,
-                        },
-                    }
-                );
-            }
+            return () => media.revert();
         },
-        { scope: sectionRef, dependencies: [reduced], revertOnUpdate: true }
+        { scope: sectionRef, dependencies: [services], revertOnUpdate: true }
     );
 
     return { sectionRef, titleRef, gridRef };

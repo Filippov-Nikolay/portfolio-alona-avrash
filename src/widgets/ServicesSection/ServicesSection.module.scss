@@ -1,19 +1,17 @@
 @use "@/shared/styles/mixins" as *;
 
 $stack-base-offset: clamp(168px, 15vw, 220px);
-$stack-step: 20px;
-$stack-base-offset-mobile: 148px;
-$stack-step-mobile: 14px;
 $stack-focus-runway: clamp(360px, 40svh, 440px);
 $stack-focus-runway-mobile: clamp(220px, 28svh, 280px);
 $stack-opening-runway: clamp(600px, 66svh, 680px);
-$stack-opening-runway-mobile: clamp(300px, 38svh, 360px);
+$stack-opening-runway-mobile: clamp(460px, 54svh, 540px);
 $stack-terminal-hold: clamp(88px, 12svh, 132px);
 $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
 
 .section {
     --_pad-top: 30px;
     --_pad-bottom: 60px;
+    --_stack-offset: 20px;
 
     position: relative;
     overflow: clip;
@@ -21,6 +19,9 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
 
     @include respond-to("mobile") {
         --_pad-top: 48px;
+        --_header-clearance: calc(var(--header-scene-height, 120px) + 12px);
+        --_title-stack-offset: 28px;
+        --_stack-offset: 14px;
     }
 }
 
@@ -56,7 +57,7 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
     user-select: none;
 
     @include respond-to("mobile") {
-        top: 88px;
+        top: var(--_header-clearance);
     }
 }
 
@@ -73,18 +74,18 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
 
     &::after {
         content: "";
-        flex: 0 0 $stack-terminal-hold;
+        flex: 0 0 calc(#{$stack-focus-runway} + #{$stack-terminal-hold});
         pointer-events: none;
 
         @include respond-to("mobile") {
-            flex-basis: $stack-terminal-hold-mobile;
+            flex-basis: calc(#{$stack-focus-runway-mobile} + #{$stack-terminal-hold-mobile});
         }
     }
 }
 
 .card {
     position: sticky;
-    top: calc(#{$stack-base-offset} + var(--index) * #{$stack-step});
+    top: $stack-base-offset;
     z-index: calc(var(--index) + 1);
     display: grid;
     grid-template-columns: 1fr minmax(280px, 380px);
@@ -102,7 +103,7 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
     }
 
     @include respond-to("mobile") {
-        top: calc(#{$stack-base-offset-mobile} + var(--index) * #{$stack-step-mobile});
+        top: calc(var(--_header-clearance) + var(--_title-stack-offset));
         padding: 22px;
     }
 }
@@ -203,7 +204,21 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
 
 @include reduced-motion {
     .grid {
+        gap: 24px;
         will-change: auto;
+
+        &::after {
+            display: none;
+        }
+    }
+
+    .card {
+        position: relative;
+        top: auto;
+    }
+
+    .stackRunway {
+        display: none;
     }
 
     .ghostTitle {

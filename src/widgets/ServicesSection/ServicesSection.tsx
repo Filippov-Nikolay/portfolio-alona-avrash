@@ -20,7 +20,7 @@ function handleApproachClick(e: React.MouseEvent) {
 
 export function ServicesSection({ services }: ServicesSectionProps) {
     const t = useTranslations("categories");
-    const { sectionRef, titleRef, gridRef } = useServicesSectionAnimations();
+    const { sectionRef, titleRef, gridRef } = useServicesSectionAnimations(services);
 
     return (
         <Section id="services" ref={sectionRef} className={styles.section}>

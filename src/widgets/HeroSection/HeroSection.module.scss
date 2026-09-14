@@ -33,6 +33,21 @@
         --selected-handoff-runway: 0px;
         --selected-final-offset: clamp(292px, 52svh, 460px);
     }
+
+    @media (max-width: 767px) {
+        --hero-mobile-gutter: clamp(16px, 5vw, 24px);
+        --hero-top-gap: 96px;
+        --hero-label-gap: 5px;
+        --hero-title-gap: 15px;
+        --hero-project-gap: 16px;
+        --hero-cta-gap: 24px;
+        --hero-meta-gap: 22px;
+    }
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+        --hero-lower-gap: clamp(44px, 5vh, 60px);
+        --hero-meta-gap: 28px;
+    }
 }
 
 .transitionTrack {
@@ -135,6 +150,10 @@
     position: relative;
     min-height: 100%;
     overflow: visible;
+
+    @media (max-width: 767px) {
+        padding-inline: var(--hero-mobile-gutter);
+    }
 }
 
 .heroLayer {
@@ -220,7 +239,7 @@
         background: radial-gradient(circle, rgba(234, 253, 39, 0.46) 0%, transparent 65%);
     }
 
-    @include respond-to("tablet") {
+    @media (max-width: 767px) {
         top: -10%;
         left: -18%;
         width: 360px;
@@ -246,7 +265,7 @@
         opacity: 1;
     }
 
-    @include respond-to("tablet") {
+    @media (max-width: 767px) {
         top: 2%;
         right: -24%;
         width: 320px;
@@ -265,8 +284,8 @@
     padding: 160px 0 72px;
     overflow: visible;
 
-    @include respond-to("tablet") {
-        padding: 118px 0 148px;
+    @media (min-width: 768px) and (max-width: 1023px) {
+        padding: 130px 0 64px;
     }
 }
 
@@ -354,8 +373,9 @@
         }
     }
 
-    @include respond-to("mobile") {
-        display: none;
+    @media (max-width: 767px) {
+        width: 32px;
+        height: 32px;
     }
 }
 
@@ -376,16 +396,14 @@
 .nameStage {
     position: relative;
     z-index: 2;
-    width: 100%;
+    width: calc(100% - var(--hero-title-start-offset));
     margin-top: clamp(34px, 7vh, 88px);
     margin-inline-start: var(--hero-title-start-offset);
     overflow: visible;
+}
 
-    @include respond-to("tablet") {
-        width: calc(100% + 12px);
-        margin-top: 30px;
-        margin-left: calc(var(--hero-title-start-offset) - 6px);
-    }
+.titleArea {
+    display: contents;
 }
 
 .nameTrack {
@@ -406,16 +424,6 @@
     text-transform: uppercase;
     color: var(--color-text-primary);
     pointer-events: none;
-
-    @include respond-to("tablet") {
-        font-size: clamp(50px, 14.8vw, 72px);
-        line-height: 0.9;
-    }
-
-    @include respond-to("mobile") {
-        font-size: clamp(46px, 14.2vw, 62px);
-        line-height: 0.92;
-    }
 }
 
 .nameLine {
@@ -426,20 +434,12 @@
 
 .nameLineEnd {
     align-self: flex-end;
-
-    @include respond-to("tablet") {
-        padding-right: 8px;
-    }
 }
 
-.floaters {
+.titleFloaters {
     position: absolute;
     inset: 0;
     pointer-events: none;
-
-    @include respond-to("tablet") {
-        inset: 0 -4px;
-    }
 }
 
 .floater {
@@ -451,51 +451,43 @@
         var(--_floater-shadow),
         0 0 0 1px var(--_floater-ring);
     will-change: transform;
+}
 
-    &:nth-child(1) {
-        top: 92px;
-        left: 38%;
-        width: 120px;
-        height: 125px;
-    }
+.floaterVariantA {
+    top: 92px;
+    left: 38%;
+    width: 120px;
+    height: 125px;
+}
 
-    &:nth-child(2) {
-        top: 160px;
-        right: 18%;
-        width: 160px;
-        height: 165px;
-    }
+.floaterVariantB {
+    top: 160px;
+    right: 18%;
+    width: 160px;
+    height: 165px;
+}
 
-    &:nth-child(3) {
-        top: clamp(490px, 67vh, 620px);
-        left: 52%;
-        width: 136px;
-        height: 142px;
-    }
+.lowerFloater {
+    position: absolute;
+    top: clamp(490px, 67vh, 620px);
+    left: 52%;
+    width: 136px;
+    height: 142px;
 
-    &:nth-child(4) {
+    @media (min-width: 1024px) and (min-height: 1000px) {
         display: none;
     }
+}
 
-    @include respond-to("tablet") {
-        &:nth-child(1) {
-            top: 104px;
-            right: 11%;
-            left: auto;
-            width: 92px;
-            height: 96px;
-        }
+.lowerFloaterSecondary {
+    position: absolute;
+    top: clamp(430px, 61vh, 560px);
+    left: 20%;
+    width: 170px;
+    height: 176px;
 
-        &:nth-child(2) {
-            top: 238px;
-            right: 7%;
-            width: 132px;
-            height: 138px;
-        }
-
-        &:nth-child(3) {
-            display: none;
-        }
+    @media (max-width: 1023px) {
+        display: none;
     }
 }
 
@@ -511,33 +503,25 @@
     object-fit: contain;
 }
 
-.introRow {
-    position: absolute;
-    right: 0;
-    bottom: clamp(86px, 10vh, 124px);
-    left: 0;
-    z-index: 5;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 24px;
-
-    @include respond-to("tablet") {
-        bottom: 140px;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 18px;
-    }
+.lowerArea {
+    display: contents;
 }
 
 .introCardWrap {
-    position: relative;
+    position: absolute;
+    z-index: 5;
+    bottom: clamp(86px, 10vh, 124px);
+    left: 0;
     width: clamp(292px, 32vw, 340px);
     will-change: transform;
 
-    @include respond-to("tablet") {
-        width: min(100%, 320px);
+    @media (min-width: 1024px) and (min-height: 1000px) {
+        bottom: 30vh;
     }
+}
+
+.metaRow {
+    display: contents;
 }
 
 .introCard {
@@ -545,11 +529,6 @@
     z-index: 1;
     width: 100%;
     padding: 20px 22px 18px;
-
-    @include respond-to("tablet") {
-        min-height: 0;
-        padding: 24px 20px 20px;
-    }
 }
 
 .introCardContent {
@@ -564,10 +543,6 @@
     align-items: flex-start;
     gap: 35px;
     max-width: 100%;
-
-    @include respond-to("tablet") {
-        gap: 20px;
-    }
 }
 
 .description {
@@ -581,10 +556,6 @@
 
     @include respond-from("tablet") {
         max-width: 290px;
-    }
-
-    @include respond-to("tablet") {
-        font-size: 18px;
     }
 }
 
@@ -601,16 +572,12 @@
     box-shadow:
         0 18px 40px rgba(234, 253, 39, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.32);
-
-    @include respond-to("tablet") {
-        width: 100%;
-        min-width: 0;
-        height: 52px;
-        font-size: 15px;
-    }
 }
 
 .availability {
+    position: absolute;
+    right: 0;
+    bottom: clamp(86px, 10vh, 124px);
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -621,8 +588,8 @@
     color: var(--color-text-secondary);
     will-change: transform;
 
-    @include respond-to("tablet") {
-        align-self: flex-start;
+    @media (min-width: 1024px) and (min-height: 1000px) {
+        bottom: 30vh;
     }
 }
 
@@ -639,6 +606,215 @@
     .availabilityDot {
         background: var(--color-error);
         box-shadow: none;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .titleArea {
+        position: relative;
+        display: block;
+        width: 100%;
+        margin-top: 42px;
+    }
+
+    .nameStage {
+        width: calc(94% - clamp(28px, 4vw, 48px));
+        margin: 0 0 0 clamp(28px, 4vw, 48px);
+    }
+
+    .name {
+        font-size: clamp(84px, 13vw, 120px);
+        line-height: 0.82;
+        letter-spacing: -0.04em;
+    }
+
+    .nameLineEnd {
+        padding-right: 0;
+    }
+
+    .titleFloaters {
+        inset: 0;
+    }
+
+    .floaterVariantA {
+        top: -122px;
+        left: 48%;
+        width: clamp(100px, 13vw, 116px);
+        height: clamp(104px, 13.5vw, 120px);
+    }
+
+    .floaterVariantB {
+        top: calc(100% + 20px);
+        right: 3%;
+        left: auto;
+        width: clamp(140px, 18vw, 160px);
+        height: clamp(144px, 18.5vw, 164px);
+    }
+
+    .lowerArea {
+        position: relative;
+        z-index: 4;
+        display: grid;
+        grid-template-columns: minmax(390px, 420px) minmax(112px, 1fr);
+        align-items: start;
+        justify-content: space-between;
+        gap: clamp(28px, 6vw, 56px);
+        margin-top: var(--hero-lower-gap);
+    }
+
+    .introCardWrap {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        width: clamp(390px, 52vw, 420px);
+    }
+
+    .lowerFloater {
+        position: relative;
+        top: 0;
+        right: auto;
+        left: -35px;
+        width: clamp(112px, 14vw, 132px);
+        height: clamp(116px, 14.5vw, 136px);
+        margin-top: 92px;
+        justify-self: start;
+        align-self: start;
+    }
+
+    .metaRow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 17px;
+        margin-top: var(--hero-meta-gap);
+        padding-bottom: 32px;
+    }
+
+    .availability {
+        position: static;
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 767px) {
+    .content {
+        min-height: 100svh;
+        height: auto;
+        padding-top: var(--hero-top-gap);
+        padding-bottom: 24px;
+    }
+
+    .topRow {
+        flex-direction: column;
+        gap: var(--hero-label-gap);
+    }
+
+    .role {
+        font-size: clamp(16px, 4.8vw, 19px);
+    }
+
+    .titleArea {
+        display: block;
+        width: 100%;
+    }
+
+    .nameStage {
+        width: 100%;
+        margin-top: var(--hero-title-gap);
+        margin-inline-start: 0;
+    }
+
+    .name {
+        font-size: clamp(62px, 17.5vw, 84px);
+        line-height: 0.82;
+        letter-spacing: -0.045em;
+    }
+
+    .nameLineEnd {
+        align-self: flex-start;
+    }
+
+    .titleFloaters {
+        position: relative;
+        inset: auto;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end;
+        gap: 12px;
+        min-height: clamp(100px, 27vw, 112px);
+        margin-top: calc(var(--hero-project-gap) + 16px);
+    }
+
+    .floaterVariantA,
+    .floaterVariantB {
+        position: relative;
+        right: auto;
+        left: auto;
+        width: clamp(120px, 26vw, 115px);
+        height: auto;
+        aspect-ratio: 1;
+    }
+
+    .floaterVariantA {
+        top: -10px;
+        left: -15px;
+    }
+
+    .floaterVariantB {
+        top: -15px;
+    }
+
+    .lowerArea {
+        position: relative;
+        display: block;
+        width: 100%;
+    }
+
+    .introCardWrap {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        width: 100%;
+    }
+
+    .lowerFloater {
+        display: none;
+    }
+
+    .introCard {
+        padding: 18px 24px;
+    }
+
+    .introTextCol {
+        gap: 16px;
+    }
+
+    .description {
+        font-size: clamp(14px, 4.2vw, 18px);
+        line-height: 1.45;
+        max-width: 100%;
+    }
+
+    .cta {
+        width: max-content;
+        min-width: 0;
+        max-width: 100%;
+        height: 54px;
+        padding-inline: 28px;
+    }
+
+    .metaRow {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 17px;
+        margin-top: var(--hero-meta-gap);
+        padding-bottom: 24px;
+    }
+
+    .availability {
+        position: static;
+        margin: 0;
     }
 }
 

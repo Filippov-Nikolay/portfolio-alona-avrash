@@ -19,7 +19,6 @@ import {
 } from "@/shared/hooks";
 import { cn } from "@/shared/lib/cn";
 import { fadeIn } from "@/shared/lib/motion/fade-in";
-import { reveal } from "@/shared/lib/motion/reveal";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { StatsSelectedChoreographyProvider } from "@/shared/lib/motion/StatsSelectedChoreographyContext";
 import { scrollToElementId } from "@/shared/lib/scroll";
@@ -98,6 +97,22 @@ function useCompactViewport() {
     return isCompact;
 }
 
+function useNarrowViewport() {
+    const [isNarrow, setIsNarrow] = useState(false);
+
+    useEffect(() => {
+        const media = window.matchMedia("(max-width: 1023px)");
+        const update = () => setIsNarrow(media.matches);
+
+        update();
+        media.addEventListener("change", update);
+
+        return () => media.removeEventListener("change", update);
+    }, []);
+
+    return isNarrow;
+}
+
 interface HeroSectionClientProps {
     hero: HeroContent;
     socials: Social[];
@@ -109,10 +124,10 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const t = useTranslations("hero");
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
-    const safeReveal = useMotionVariants(reveal);
     const { isReady } = usePreloader();
     const reduced = useReducedMotion();
     const isCompact = useCompactViewport();
+    const isNarrow = useNarrowViewport();
     const scrollTrackRef = useRef<HTMLDivElement>(null);
     const nameFirstRef = useRef<HTMLSpanElement>(null);
     const nameLastRef = useRef<HTMLSpanElement>(null);
@@ -350,12 +365,20 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const floaterTwoY = useTransform(
         parallaxProgress,
         [0, IMAGE_TRAVEL_END, 1],
-        reduced ? ["0vh", "0vh", "0vh"] : ["2vh", "-48vh", "-48vh"]
+        reduced
+            ? ["0vh", "0vh", "0vh"]
+            : isNarrow
+              ? ["0vh", "-22vh", "-22vh"]
+              : ["2vh", "-48vh", "-48vh"]
     );
     const floaterThreeY = useTransform(
         parallaxProgress,
         [0, IMAGE_TRAVEL_END, 1],
-        reduced ? ["0vh", "0vh", "0vh"] : ["12vh", "-32vh", "-32vh"]
+        reduced
+            ? ["0vh", "0vh", "0vh"]
+            : isNarrow
+              ? ["0vh", "-24vh", "-24vh"]
+              : ["12vh", "-32vh", "-32vh"]
     );
     const floaterFourY = useTransform(
         parallaxProgress,
@@ -374,6 +397,10 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     );
 
     const floaterYValues = [floaterOneY, floaterTwoY, floaterThreeY, floaterFourY];
+    const [pinkFloater, crustyFloater, ogofoliFloater, olvaFloater] = hero.floatingImages;
+    const titleFloaters = [pinkFloater, crustyFloater].filter(
+        (floater): floater is (typeof hero.floatingImages)[number] => Boolean(floater)
+    );
 
     return (
         <Section id="hero" className={styles.hero}>
@@ -448,60 +475,72 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                     </div>
                                 </m.div>
 
-                                <div className={styles.nameStage}>
-                                    <m.div className={styles.nameTrack} variants={safeFadeIn}>
-                                        <h1 className={styles.name}>
-                                            <m.span
-                                                ref={nameFirstRef}
-                                                className={styles.nameLine}
-                                                style={{ x: nameFirstX }}
-                                            >
-                                                {NAME_FIRST}
-                                            </m.span>
-                                            <m.span
-                                                ref={nameLastRef}
-                                                className={cn(styles.nameLine, styles.nameLineEnd)}
-                                                style={{ x: nameLastX }}
-                                            >
-                                                {NAME_LAST}
-                                            </m.span>
-                                        </h1>
-                                    </m.div>
+                                <div className={styles.titleArea}>
+                                    <div className={styles.nameStage}>
+                                        <m.div className={styles.nameTrack} variants={safeFadeIn}>
+                                            <h1 className={styles.name}>
+                                                <m.span
+                                                    ref={nameFirstRef}
+                                                    className={styles.nameLine}
+                                                    style={{ x: nameFirstX }}
+                                                >
+                                                    {NAME_FIRST}
+                                                </m.span>
+                                                <m.span
+                                                    ref={nameLastRef}
+                                                    className={cn(
+                                                        styles.nameLine,
+                                                        styles.nameLineEnd
+                                                    )}
+                                                    style={{ x: nameLastX }}
+                                                >
+                                                    {NAME_LAST}
+                                                </m.span>
+                                            </h1>
+                                        </m.div>
+                                    </div>
+
+                                    {(pinkFloater || crustyFloater) && (
+                                        <m.div className={styles.titleFloaters} aria-hidden="true">
+                                            {titleFloaters.map((floater, index) => (
+                                                <m.div
+                                                    key={floater.id}
+                                                    className={cn(
+                                                        styles.floater,
+                                                        index === 0
+                                                            ? styles.floaterVariantA
+                                                            : styles.floaterVariantB,
+                                                        FLOATER_LAYER_CLASSES[index] ??
+                                                            styles.floaterFront
+                                                    )}
+                                                    variants={safeFadeIn}
+                                                    style={{ y: floaterYValues[index] }}
+                                                >
+                                                    <Image
+                                                        src={floater.image.src}
+                                                        alt={floater.image.alt ?? ""}
+                                                        fill
+                                                        className={styles.floaterImage}
+                                                        style={{
+                                                            objectPosition: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
+                                                            transform: `scale(${floater.image.scale ?? 1})`,
+                                                            transformOrigin: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
+                                                        }}
+                                                        sizes="(max-width: 768px) 42vw, 240px"
+                                                        draggable={false}
+                                                    />
+                                                </m.div>
+                                            ))}
+                                        </m.div>
+                                    )}
                                 </div>
 
-                                {hero.floatingImages.length > 0 && (
-                                    <m.div className={styles.floaters} aria-hidden="true">
-                                        {hero.floatingImages.slice(0, 4).map((floater, index) => (
-                                            <m.div
-                                                key={floater.id}
-                                                className={cn(
-                                                    styles.floater,
-                                                    FLOATER_LAYER_CLASSES[index] ??
-                                                        styles.floaterFront
-                                                )}
-                                                variants={safeFadeIn}
-                                                style={{ y: floaterYValues[index] }}
-                                            >
-                                                <Image
-                                                    src={floater.image.src}
-                                                    alt={floater.image.alt ?? ""}
-                                                    fill
-                                                    className={styles.floaterImage}
-                                                    style={{
-                                                        objectPosition: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
-                                                        transform: `scale(${floater.image.scale ?? 1})`,
-                                                        transformOrigin: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
-                                                    }}
-                                                    sizes="(max-width: 768px) 42vw, 240px"
-                                                    draggable={false}
-                                                />
-                                            </m.div>
-                                        ))}
-                                    </m.div>
-                                )}
-
-                                <m.div className={styles.introRow} variants={safeReveal}>
-                                    <m.div className={styles.introCardWrap} style={{ y: introY }}>
+                                <div className={styles.lowerArea}>
+                                    <m.div
+                                        className={styles.introCardWrap}
+                                        variants={safeFadeIn}
+                                        style={{ y: introY }}
+                                    >
                                         <GlassSurface
                                             as="article"
                                             className={styles.introCard}
@@ -528,11 +567,68 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                         </GlassSurface>
                                     </m.div>
 
+                                    {ogofoliFloater && (
+                                        <m.div
+                                            className={cn(
+                                                styles.floater,
+                                                styles.lowerFloater,
+                                                FLOATER_LAYER_CLASSES[2]
+                                            )}
+                                            variants={safeFadeIn}
+                                            style={{ y: floaterThreeY }}
+                                            aria-hidden="true"
+                                        >
+                                            <Image
+                                                src={ogofoliFloater.image.src}
+                                                alt=""
+                                                fill
+                                                className={styles.floaterImage}
+                                                style={{
+                                                    objectPosition: `${ogofoliFloater.image.focalPoint?.x ?? 50}% ${ogofoliFloater.image.focalPoint?.y ?? 50}%`,
+                                                    transform: `scale(${ogofoliFloater.image.scale ?? 1})`,
+                                                    transformOrigin: `${ogofoliFloater.image.focalPoint?.x ?? 50}% ${ogofoliFloater.image.focalPoint?.y ?? 50}%`,
+                                                }}
+                                                sizes="(max-width: 1023px) 160px, 240px"
+                                                draggable={false}
+                                            />
+                                        </m.div>
+                                    )}
+
+                                    {olvaFloater && (
+                                        <m.div
+                                            className={cn(
+                                                styles.floater,
+                                                styles.lowerFloaterSecondary,
+                                                FLOATER_LAYER_CLASSES[3]
+                                            )}
+                                            variants={safeFadeIn}
+                                            style={{ y: floaterFourY }}
+                                            aria-hidden="true"
+                                        >
+                                            <Image
+                                                src={olvaFloater.image.src}
+                                                alt=""
+                                                fill
+                                                className={styles.floaterImage}
+                                                style={{
+                                                    objectPosition: `${olvaFloater.image.focalPoint?.x ?? 50}% ${olvaFloater.image.focalPoint?.y ?? 50}%`,
+                                                    transform: `scale(${olvaFloater.image.scale ?? 1})`,
+                                                    transformOrigin: `${olvaFloater.image.focalPoint?.x ?? 50}% ${olvaFloater.image.focalPoint?.y ?? 50}%`,
+                                                }}
+                                                sizes="(max-width: 1023px) 160px, 240px"
+                                                draggable={false}
+                                            />
+                                        </m.div>
+                                    )}
+                                </div>
+
+                                <div className={styles.metaRow}>
                                     <m.span
                                         className={cn(
                                             styles.availability,
                                             !hero.availableForWork && styles.availabilityOff
                                         )}
+                                        variants={safeFadeIn}
                                         style={{ y: availabilityY }}
                                     >
                                         <span
@@ -543,7 +639,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                             ? t("availability")
                                             : t("unavailable")}
                                     </m.span>
-                                </m.div>
+                                </div>
                             </m.div>
                         </Container>
                     </m.div>

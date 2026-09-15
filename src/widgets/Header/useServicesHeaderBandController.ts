@@ -45,18 +45,25 @@ export function useServicesHeaderBandController(
         };
 
         const measureGeometry = (generation: number) => {
+            if (generation !== measureGeneration) return;
+
             const header = headerRef.current;
             const band = bandRef.current;
             const entrySentinel = document.getElementById(ENTRY_SENTINEL_ID);
             const exitSentinel = document.getElementById(EXIT_SENTINEL_ID);
 
-            if (
-                !header ||
-                !band ||
-                !entrySentinel ||
-                !exitSentinel ||
-                generation !== measureGeneration
-            ) {
+            if (!header || !band) return;
+
+            if (!entrySentinel || !exitSentinel) {
+                // Not on a page with the Services scene - e.g. navigated
+                // away from it client-side, so the Header (and this effect)
+                // never remounted. Drop any geometry measured on the
+                // previous page so the band stays hidden instead of
+                // reacting to scroll offsets that belonged to that page.
+                if (geometryRef.current !== null) {
+                    geometryRef.current = null;
+                    syncBand();
+                }
                 return;
             }
 

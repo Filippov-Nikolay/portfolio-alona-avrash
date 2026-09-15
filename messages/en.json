@@ -59,6 +59,13 @@
         "moreDesc": "Browse the full collection.",
         "viewSource": "View project"
     },
+    "modal": {
+        "overviewTab": "Overview",
+        "galleryTab": "Gallery",
+        "galleryPreview": "Gallery preview",
+        "tools": "Tools",
+        "viewWebsite": "View website"
+    },
     "stats": {
         "subtitle": "Freelance brand design work, mostly delivered through Behance."
     },

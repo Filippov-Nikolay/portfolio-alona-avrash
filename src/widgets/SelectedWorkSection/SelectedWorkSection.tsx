@@ -142,11 +142,7 @@ export function SelectedWorkSection({
                 </m.div>
             </Container>
 
-            <ShowcaseModal
-                item={selectedItem}
-                onClose={() => setSelectedIndex(null)}
-                viewLabel={labels.viewLabel}
-            />
+            <ShowcaseModal item={selectedItem} onClose={() => setSelectedIndex(null)} />
         </Section>
     );
 }

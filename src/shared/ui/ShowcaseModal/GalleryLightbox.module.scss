@@ -1,0 +1,86 @@
+@use "@/shared/styles/mixins" as *;
+
+.lightbox {
+    position: absolute;
+    z-index: 30;
+    overflow: hidden;
+    background: #000;
+    will-change: top, left, width, height;
+}
+
+.close {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255 255 255 / 0.7);
+    background: rgba(0 0 0 / 0.32);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    cursor: pointer;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+
+    @include can-hover {
+        &:hover {
+            background: rgba(255 255 255 / 0.16);
+            border-color: #fff;
+        }
+    }
+
+    @include focus-ring;
+
+    @include respond-to("mobile") {
+        top: 14px;
+        right: 14px;
+        width: 32px;
+        height: 32px;
+    }
+}
+
+.closeIcon {
+    width: 16px;
+    height: 16px;
+}
+
+.imageForeground {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.scrollArea {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+.slot {
+    height: 100%;
+}
+
+.sticky {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    will-change: transform, opacity;
+}

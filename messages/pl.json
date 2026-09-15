@@ -59,6 +59,13 @@
         "moreDesc": "Przeglądaj całą kolekcję.",
         "viewSource": "Zobacz projekt"
     },
+    "modal": {
+        "overviewTab": "Przegląd",
+        "galleryTab": "Galeria",
+        "galleryPreview": "Podgląd galerii",
+        "tools": "Narzędzia",
+        "viewWebsite": "Zobacz stronę"
+    },
     "stats": {
         "subtitle": "Freelancerskie projekty brandingowe, głównie realizowane przez Behance."
     },

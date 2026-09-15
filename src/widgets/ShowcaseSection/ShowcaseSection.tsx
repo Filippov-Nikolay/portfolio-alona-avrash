@@ -95,11 +95,7 @@ export function ShowcaseSection({
                 initialIndex={featuredIndex}
                 onOpen={setSelectedItem}
             />
-            <ShowcaseModal
-                item={selectedItem}
-                onClose={() => setSelectedItem(null)}
-                viewLabel={viewLabel}
-            />
+            <ShowcaseModal item={selectedItem} onClose={() => setSelectedItem(null)} />
         </Section>
     );
 }

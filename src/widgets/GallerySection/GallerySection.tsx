@@ -258,12 +258,7 @@ export function GallerySection({
                 </Container>
             </div>
 
-            {/* == Modal (portal → <body>) == */}
-            <ShowcaseModal
-                item={selectedItem}
-                onClose={() => setSelectedItem(null)}
-                viewLabel={initialLabels.viewSource}
-            />
+            <ShowcaseModal item={selectedItem} onClose={() => setSelectedItem(null)} />
         </Section>
     );
 }

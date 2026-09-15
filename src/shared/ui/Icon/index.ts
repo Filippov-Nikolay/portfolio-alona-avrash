@@ -20,3 +20,4 @@ export { default as BehanceIcon } from "./behance-logo.svg";
 export { default as PinterestIcon } from "./pinterest-logo.svg";
 export { default as DownloadIcon } from "./download.svg";
 export { default as QuoteIcon } from "./quote.svg";
+export { default as CloseIcon } from "./Close.svg";

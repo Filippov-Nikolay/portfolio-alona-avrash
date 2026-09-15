@@ -61,6 +61,11 @@ const nextConfig: NextConfig = {
 
     images: {
         remotePatterns: [],
+        // Next only serves qualities explicitly allow-listed here (else 400s).
+        // 75 stays the project-wide default; 95 is opted into per-Image where
+        // the default's visible softening actually matters (e.g. the
+        // full-bleed ShowcaseModal banner).
+        qualities: [75, 95],
     },
 
     async headers() {

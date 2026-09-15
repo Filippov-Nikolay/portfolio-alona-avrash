@@ -56,6 +56,57 @@
     color: var(--color-text-primary);
 }
 
+// === Banner variant (compact accent card, e.g. inline in Works list) ====
+
+.banner {
+    background: var(--color-primary);
+    color: #000;
+    border-radius: var(--radius-lg);
+    padding: clamp(28px, 3.5vw, 30px) clamp(24px, 3.5vw, 44px);
+}
+
+.bannerInner {
+    align-items: center;
+
+    @include respond-to("tablet") {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 24px;
+    }
+}
+
+.bannerHeading {
+    max-width: 420px;
+    font-size: clamp(26px, 3vw, 48px);
+    letter-spacing: 0.1em;
+    color: #000;
+}
+
+.bannerAside {
+    @include respond-to("tablet") {
+        max-width: none;
+    }
+}
+
+.bannerAvailability {
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--color-text-primary);
+}
+
+.button.bannerButton {
+    background: #000;
+    border: none;
+    color: var(--color-primary);
+
+    @include can-hover {
+        &:hover {
+            background: #1a1a1a;
+            color: var(--color-primary);
+        }
+    }
+}
+
 .button {
     border-radius: 30px;
     height: 52px;

@@ -319,6 +319,7 @@
 .previewGrid {
     display: flex;
     gap: 25px;
+    contain: layout;
 
     @include respond-to("mobile") {
         display: grid;
@@ -353,6 +354,11 @@
     }
 }
 
+.tileImages {
+    position: absolute;
+    inset: 0;
+}
+
 .previewImageBackdrop {
     position: absolute;
     inset: 0;
@@ -384,6 +390,35 @@
         .previewItem:hover & {
             transform: scale(1.04);
         }
+    }
+}
+
+.previewImagePoster {
+    display: none;
+}
+
+.body[data-scrolling] {
+    .previewItem {
+        flex-grow: 1;
+        transition: none;
+    }
+
+    .previewImageBackdrop {
+        transform: scale(1.2);
+        transition: none;
+    }
+
+    .previewImage {
+        transform: none;
+        transition: none;
+    }
+
+    .previewImageAnimated {
+        visibility: hidden;
+    }
+
+    .previewImagePoster {
+        display: block;
     }
 }
 

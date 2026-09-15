@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
-import { m, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence, useInView } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { ShowcaseItem } from "@/shared/types";
 import { useMounted } from "@/shared/hooks/useMounted";
@@ -11,6 +11,7 @@ import { Button, ArrowIcon, ToolBadge, getToolBadge, CloseIcon } from "@/shared/
 import { ACCENT_COLORS } from "@/shared/constants/colors";
 import { cn } from "@/shared/lib/cn";
 import { GalleryLightbox, type LightboxRect } from "./GalleryLightbox";
+import { createImageBackdrop, getImageBackdrop } from "./imageBackdrop";
 import styles from "./ShowcaseModal.module.scss";
 
 const GALLERY_PREVIEW_COUNT = 3;
@@ -31,20 +32,83 @@ function chunk<T>(items: T[], size: number): T[][] {
     return rows;
 }
 
-function TileImage({ src, alt }: { src: string; alt: string }) {
+function TileImage({
+    src,
+    alt,
+    scrollRoot,
+    enabled,
+}: {
+    src: string;
+    alt: string;
+    scrollRoot: RefObject<HTMLDivElement | null>;
+    enabled: boolean;
+}) {
+    const imageRef = useRef<HTMLDivElement>(null);
+    const [backdrop, setBackdrop] = useState(() => getImageBackdrop(src));
+    const [poster, setPoster] = useState<string>();
+    const inView = useInView(imageRef, { root: scrollRoot, margin: "200px 0px" });
+    const animated = /\.gif(?:[?#]|$)/i.test(src);
+
+    const drawBackdrop = (image: HTMLImageElement) => {
+        if (!image.naturalWidth || !image.naturalHeight) return;
+        setBackdrop(createImageBackdrop(src, image));
+
+        if (animated && !poster) {
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            if (!context) return;
+
+            const posterScale = Math.min(
+                1,
+                750 / Math.max(image.naturalWidth, image.naturalHeight)
+            );
+            canvas.width = Math.max(1, Math.round(image.naturalWidth * posterScale));
+            canvas.height = Math.max(1, Math.round(image.naturalHeight * posterScale));
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            setPoster(canvas.toDataURL("image/webp", 0.85));
+        }
+    };
+
     return (
-        <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-                src={src}
-                alt=""
-                aria-hidden="true"
-                className={styles.previewImageBackdrop}
-                draggable={false}
-            />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={alt} className={styles.previewImage} draggable={false} />
-        </>
+        <div ref={imageRef} className={styles.tileImages}>
+            {enabled && inView && (
+                <>
+                    {backdrop && (
+                        <Image
+                            src={backdrop}
+                            alt=""
+                            aria-hidden="true"
+                            fill
+                            unoptimized
+                            className={styles.previewImageBackdrop}
+                            draggable={false}
+                        />
+                    )}
+                    {poster && (
+                        <Image
+                            src={poster}
+                            alt=""
+                            aria-hidden="true"
+                            fill
+                            unoptimized
+                            className={cn(styles.previewImage, styles.previewImagePoster)}
+                            draggable={false}
+                        />
+                    )}
+                    <Image
+                        src={src}
+                        alt={alt}
+                        fill
+                        sizes="50vw"
+                        loading="eager"
+                        unoptimized={animated}
+                        className={cn(styles.previewImage, animated && styles.previewImageAnimated)}
+                        onLoad={(event) => drawBackdrop(event.currentTarget)}
+                        draggable={false}
+                    />
+                </>
+            )}
+        </div>
     );
 }
 
@@ -67,8 +131,33 @@ function ModalContent({ item, onClose }: ModalContentProps) {
         GALLERY_PREVIEW_COUNT
     );
     const modalRef = useRef<HTMLDivElement>(null);
+    const bodyRef = useRef<HTMLDivElement>(null);
     const galleryElRefs = useRef<Map<number, HTMLElement>>(new Map());
     const [lightbox, setLightbox] = useState<LightboxState | null>(null);
+
+    useEffect(() => {
+        const body = bodyRef.current;
+        if (!body) return;
+
+        let scrollEndTimer: ReturnType<typeof setTimeout>;
+        const handleScroll = () => {
+            if (!body.hasAttribute("data-scrolling")) body.setAttribute("data-scrolling", "");
+            clearTimeout(scrollEndTimer);
+            scrollEndTimer = setTimeout(() => body.removeAttribute("data-scrolling"), 180);
+        };
+
+        body.addEventListener("scroll", handleScroll, { passive: true });
+        body.addEventListener("wheel", handleScroll, { passive: true });
+        body.addEventListener("touchmove", handleScroll, { passive: true });
+
+        return () => {
+            body.removeEventListener("scroll", handleScroll);
+            body.removeEventListener("wheel", handleScroll);
+            body.removeEventListener("touchmove", handleScroll);
+            clearTimeout(scrollEndTimer);
+            body.removeAttribute("data-scrolling");
+        };
+    }, []);
 
     const registerGalleryEl = (index: number) => (el: HTMLElement | null) => {
         if (el) galleryElRefs.current.set(index, el);
@@ -130,7 +219,7 @@ function ModalContent({ item, onClose }: ModalContentProps) {
 
     const modalInner = (
         <>
-            <div className={styles.body}>
+            <div ref={bodyRef} className={styles.body}>
                 <div className={styles.banner}>
                     {item.src && (
                         <div className={styles.bannerImageWrap}>
@@ -217,7 +306,12 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                                                     onClick={(e) => openLightbox(index, e)}
                                                     aria-label={image.alt}
                                                 >
-                                                    <TileImage src={image.src} alt={image.alt} />
+                                                    <TileImage
+                                                        src={image.src}
+                                                        alt={image.alt}
+                                                        scrollRoot={bodyRef}
+                                                        enabled={!lightbox}
+                                                    />
                                                 </button>
                                             ))}
                                         </div>
@@ -265,6 +359,8 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                                                         <TileImage
                                                             src={image.src}
                                                             alt={image.alt}
+                                                            scrollRoot={bodyRef}
+                                                            enabled={!lightbox}
                                                         />
                                                     </button>
                                                 ))}

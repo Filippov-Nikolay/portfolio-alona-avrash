@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { m, useMotionValueEvent, useScroll, useTransform, type MotionValue } from "framer-motion";
 import type { ShowcaseGalleryImage } from "@/shared/types";
 import { CloseIcon } from "@/shared/ui";
+import { createImageBackdrop, getImageBackdrop } from "./imageBackdrop";
 import styles from "./GalleryLightbox.module.scss";
 
 export interface LightboxRect {
@@ -29,16 +31,33 @@ const CLOSE_TRANSITION = { duration: 0.4, ease: [0.65, 0, 0.25, 1] as const };
 const RENDER_WINDOW = 2;
 
 function FramedImage({ src, alt }: { src: string; alt: string }) {
+    const [backdrop, setBackdrop] = useState(() => getImageBackdrop(src));
+
     return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-            src={src}
-            alt={alt}
-            className={styles.imageForeground}
-            draggable={false}
-            loading="lazy"
-            decoding="async"
-        />
+        <>
+            {backdrop && (
+                <Image
+                    src={backdrop}
+                    alt=""
+                    aria-hidden="true"
+                    fill
+                    unoptimized
+                    loading="eager"
+                    className={styles.imageBackdrop}
+                    draggable={false}
+                />
+            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+                src={src}
+                alt={alt}
+                className={styles.imageForeground}
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+                onLoad={(event) => setBackdrop(createImageBackdrop(src, event.currentTarget))}
+            />
+        </>
     );
 }
 

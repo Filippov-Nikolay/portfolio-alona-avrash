@@ -1,0 +1,395 @@
+@use "@/shared/styles/mixins" as *;
+
+.container {
+    // The header is fixed at every breakpoint, so its own height plus a
+    // fixed 50px gap is added on top of the page's own block padding.
+    padding-block: calc(var(--header-scene-height, 120px) + 50px) clamp(64px, 8vw, 96px);
+}
+
+// === Page header ==============================================
+
+.pageHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    margin-bottom: clamp(28px, 3.5vw, 40px);
+
+    @include respond-to("tablet") {
+        flex-direction: column;
+        gap: 16px;
+    }
+}
+
+.pageTitle {
+    margin: 0;
+    max-width: 400px;
+    font-family: var(--font-title-accent);
+    font-size: clamp(40px, 5.6vw, 64px);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+}
+
+.pageSubtitle {
+    max-width: 330px;
+    flex-shrink: 0;
+    font-size: 24px;
+    font-weight: 300;
+    color: var(--color-text-primary);
+}
+
+// === Controls: filters + sort ==================================
+
+.controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: clamp(32px, 4vw, 48px);
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 420px;
+}
+
+.filterPill {
+    flex-shrink: 0;
+    padding: 10px 20px;
+    border: 1px solid var(--color-text-primary);
+    border-radius: 999px;
+    background: transparent;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+
+    @include transition(background, color, border-color);
+    @include focus-ring;
+
+    @include can-hover {
+        &:hover:not(.filterPillActive) {
+            background: #000;
+            border-color: #000;
+            color: var(--color-primary);
+        }
+    }
+}
+
+.filterPillActive {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #000;
+}
+
+.sortWrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sortLabel {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.sortTrigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 2px;
+    background: none;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+    cursor: pointer;
+
+    @include focus-ring;
+}
+
+.sortChevron {
+    width: 9px;
+    height: auto;
+    transform: rotate(45deg);
+    transition: transform var(--transition-base);
+
+    & path {
+        fill: currentColor;
+    }
+}
+
+.sortTriggerOpen .sortChevron {
+    transform: rotate(225deg);
+}
+
+.sortDropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 5;
+    min-width: 140px;
+    padding: 6px;
+    margin: 0;
+    list-style: none;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md, 0 12px 24px rgba(0 0 0 / 0.16));
+}
+
+.sortOption {
+    display: block;
+    width: 100%;
+    padding: 9px 12px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-v-sm);
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+
+    @include transition(background, color);
+
+    @include can-hover {
+        &:hover {
+            background: var(--color-surface-light, var(--color-card));
+            color: var(--color-text-primary);
+        }
+    }
+}
+
+.sortOptionActive {
+    color: var(--color-primary-text, var(--color-primary));
+}
+
+// === Category group ==============================================
+
+.group {
+    margin-bottom: clamp(40px, 5vw, 56px);
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 20px;
+}
+
+.sectionTitle {
+    margin: 0;
+    flex-shrink: 0;
+    font-family: var(--font-body);
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+}
+
+.sectionRule {
+    flex: 1;
+    height: 1px;
+    background: var(--color-border-primary);
+    border-radius: var(--radius-lg);
+}
+
+.sectionSuffix {
+    flex-shrink: 0;
+    font-size: 16px;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+}
+
+// === List + card ==================================================
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.card {
+    display: flex;
+    align-items: stretch;
+    min-height: clamp(220px, 22vw, 365px);
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--color-surface);
+    cursor: pointer;
+    text-align: left;
+
+    @include transition(background-color, box-shadow, transform);
+    @include focus-ring;
+
+    @include can-hover {
+        &:hover {
+            background: var(--hover-bg, var(--color-surface));
+
+            .image {
+                transform: scale(1.04);
+            }
+
+            .rank,
+            .year,
+            .cardSubtitle {
+                color: var(--hover-accent, var(--color-text-secondary));
+            }
+
+            .cardTitle {
+                color: var(--hover-accent, var(--color-text-primary));
+            }
+
+            .viewBtn {
+                background: var(--hover-btn-bg, var(--color-primary));
+                color: var(--hover-btn-text, var(--color-text-primary));
+            }
+        }
+    }
+
+    @include respond-to("tablet") {
+        flex-direction: column;
+        min-height: 0;
+    }
+}
+
+.visual {
+    position: relative;
+    flex: 0 0 55%;
+    overflow: hidden;
+    background: var(--color-visual-bg);
+    border-radius: var(--radius-sm);
+
+    @include respond-to("tablet") {
+        flex: none;
+        aspect-ratio: 16 / 10;
+    }
+}
+
+.image {
+    object-fit: cover;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    padding: 20px;
+
+    @include respond-to("tablet") {
+        padding: 16px;
+    }
+}
+
+.infoTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rank {
+    font-family: var(--font-body);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--color-text-primary);
+
+    @include transition(color);
+}
+
+.year {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--color-text-primary);
+
+    @include transition(color);
+}
+
+.infoBody {
+    margin-top: 20px;
+
+    @include respond-to("tablet") {
+        margin-top: 18px;
+    }
+}
+
+.cardTitle {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: clamp(22px, 2.4vw, 36px);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+
+    @include transition(color);
+}
+
+.cardSubtitle {
+    margin: 5px 0 0;
+    font-size: 20px;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-secondary);
+
+    @include transition(color);
+}
+
+.viewBtn {
+    align-self: flex-start;
+    margin-top: auto;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.viewArrow {
+    width: 11px;
+    height: auto;
+    transform: rotate(-135deg);
+
+    & path {
+        fill: currentColor;
+    }
+}
+
+@include reduced-motion {
+    .image,
+    .viewBtn,
+    .sortChevron {
+        transition: none;
+    }
+}

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
-import { ShowcaseSection } from "@/widgets/ShowcaseSection";
-import { GallerySection } from "@/widgets/GallerySection";
-import { siteConfig } from "@/shared/config/site.config";
+import { WorksCatalog } from "@/widgets/WorksCatalog";
 import type { CategoryKey } from "@/shared/types";
 import { getAllProjects, toShowcaseItem } from "@/entities/project/lib/resolveProjects";
+import { getCta } from "@/entities/cta/api/getCta";
 
-const SHOWCASE_COUNT = 4;
+const ALL_CATEGORY_KEYS: CategoryKey[] = ["ui-ux", "branding", "logo", "packaging", "web-design"];
 
 interface WorksPageProps {
     params: Promise<{ locale: string }>;
@@ -22,51 +22,44 @@ export async function generateMetadata({ params }: WorksPageProps): Promise<Meta
 export default async function WorksPage({ params }: WorksPageProps) {
     const { locale } = await params;
 
-    const [tCategories, tShowcase, tGallery, allProjects] = await Promise.all([
+    const [tCategories, tWorksPage, allProjects, cta] = await Promise.all([
         getTranslations({ locale, namespace: "categories" }),
-        getTranslations({ locale, namespace: "showcase" }),
-        getTranslations({ locale, namespace: "gallery" }),
+        getTranslations({ locale, namespace: "worksPage" }),
         getAllProjects(),
+        getCta(),
     ]);
     const translateCategory = (key: CategoryKey) => tCategories(key);
 
-    const showcaseProjects = allProjects.slice(0, SHOWCASE_COUNT);
-    const galleryProjects = allProjects.slice(SHOWCASE_COUNT);
+    const categoryLabels = Object.fromEntries(
+        ALL_CATEGORY_KEYS.map((key) => [key, translateCategory(key)])
+    ) as Record<CategoryKey, string>;
 
-    const showcaseItems = showcaseProjects.map((project, i) =>
-        toShowcaseItem(project, i, translateCategory, true)
-    );
-    const galleryItems = galleryProjects.map((project, i) =>
+    const modalItems = allProjects.map((project, i) =>
         toShowcaseItem(project, i, translateCategory, i === 0)
     );
 
-    const showcaseLabels = {
-        viewSource: tShowcase("viewSource"),
-        more: tShowcase("more"),
-        moreDesc: tShowcase("moreDesc"),
-    };
-    const galleryLabels = {
-        subtitle: tGallery("subtitle"),
-        featured: tGallery("featured"),
-        primaryAction: tGallery("primaryAction"),
-        secondaryAction: tGallery("secondaryAction"),
-        more: tGallery("more"),
-        moreDesc: tGallery("moreDesc"),
-        viewSource: tGallery("viewSource"),
+    const labels = {
+        title: tWorksPage("title"),
+        subtitle: tWorksPage("subtitle"),
+        allFilter: tWorksPage("allFilter"),
+        sortLabel: tWorksPage("sortLabel"),
+        sortLatest: tWorksPage("sortLatest"),
+        sortOldest: tWorksPage("sortOldest"),
+        sectionSuffix: tWorksPage("sectionSuffix"),
+        viewProject: tWorksPage("viewProject"),
     };
 
     return (
         <main>
-            <ShowcaseSection
-                initialItems={showcaseItems}
-                initialFeaturedIndex={0}
-                initialLabels={showcaseLabels}
-            />
-            <GallerySection
-                initialItems={galleryItems}
-                initialLabels={galleryLabels}
-                collectionUrl={siteConfig.links.instagram}
-            />
+            <Suspense>
+                <WorksCatalog
+                    projects={allProjects}
+                    modalItems={modalItems}
+                    categoryLabels={categoryLabels}
+                    cta={cta}
+                    labels={labels}
+                />
+            </Suspense>
         </main>
     );
 }

@@ -38,6 +38,16 @@
         "viewAll": "Zobacz wszystkie prace",
         "viewLabel": "Zobacz projekt"
     },
+    "worksPage": {
+        "title": "Wybrane prace",
+        "subtitle": "Kolekcja projektów brandingowych, cyfrowych i opakowań stworzonych ze strategią, kreatywnością i dbałością o szczegóły.",
+        "allFilter": "Wszystkie",
+        "sortLabel": "Sortuj",
+        "sortLatest": "Najnowsze",
+        "sortOldest": "Najstarsze",
+        "sectionSuffix": "Projekty",
+        "viewProject": "Zobacz projekt"
+    },
     "projects": {
         "title": "Projekty",
         "viewAll": "Zobacz wszystkie projekty",

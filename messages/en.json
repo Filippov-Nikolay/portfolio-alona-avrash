@@ -38,6 +38,16 @@
         "viewAll": "View all work",
         "viewLabel": "View project"
     },
+    "worksPage": {
+        "title": "Selected Work",
+        "subtitle": "A collection of branding, digital and packaging projects crafted with strategy, creativity and attention to detail.",
+        "allFilter": "All",
+        "sortLabel": "Sort by",
+        "sortLatest": "Latest",
+        "sortOldest": "Oldest",
+        "sectionSuffix": "Projects",
+        "viewProject": "View project"
+    },
     "projects": {
         "title": "Projects",
         "viewAll": "View all projects",

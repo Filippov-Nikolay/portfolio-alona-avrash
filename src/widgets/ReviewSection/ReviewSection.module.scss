@@ -176,12 +176,6 @@
     border-radius: 28px;
     background: var(--color-surface);
     color: var(--color-text-primary);
-
-    @include respond-to("mobile") {
-        width: 320px;
-        height: 260px;
-        padding: 24px;
-    }
 }
 
 .cardActive {
@@ -237,18 +231,181 @@
     opacity: 0.5;
 }
 
-@include respond-to("mobile") {
+@media (max-width: 1024px) {
+    .section {
+        --reviews-gutter: clamp(24px, 3.125vw, 32px);
+        --reviews-card-gap: clamp(18px, 2.35vw, 24px);
+        --reviews-card-width: clamp(320px, 42vw, 430px);
+        --reviews-title-size: clamp(72px, 11vw, 120px);
+        --reviews-top-gap: clamp(28px, 3.125vw, 32px);
+
+        padding-block: clamp(56px, 6.25vw, 64px) 56px;
+    }
+
+    .header {
+        gap: 24px;
+        margin-bottom: var(--reviews-top-gap);
+        padding-inline: var(--reviews-gutter);
+    }
+
+    .title {
+        min-width: 0;
+        font-size: var(--reviews-title-size);
+    }
+
+    .aside {
+        gap: 16px;
+        padding-top: 0;
+    }
+
+    .decor {
+        display: flex;
+        align-items: flex-start;
+        gap: clamp(16px, 2.35vw, 24px);
+        width: auto;
+        height: auto;
+    }
+
+    .decorShape {
+        position: static;
+        flex-shrink: 0;
+        height: auto;
+        aspect-ratio: 1;
+        border-radius: 28px;
+    }
+
+    .decorShapeBack {
+        width: clamp(90px, 10.75vw, 110px);
+        margin-top: 24px;
+    }
+
+    .decorShapeFront {
+        width: clamp(120px, 14.65vw, 150px);
+    }
+
+    .navButton {
+        width: 46px;
+        height: 46px;
+
+        @include focus-ring;
+    }
+
+    .track {
+        padding-bottom: 24px;
+    }
+
+    .slot {
+        display: flex;
+        flex: 0 0 var(--reviews-card-width);
+        min-width: 0;
+        margin-right: var(--reviews-card-gap);
+    }
+
+    .card {
+        width: 100%;
+        height: auto;
+        min-height: clamp(320px, 35.2vw, 360px);
+        gap: 24px;
+        padding: clamp(28px, 3.125vw, 32px);
+        border-radius: 30px;
+    }
+
+    .cardTop {
+        gap: 16px;
+    }
+
+    .quoteIcon {
+        flex-shrink: 0;
+    }
+
+    .projectName {
+        min-width: 0;
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+
+    .comment,
+    .personName {
+        overflow-wrap: anywhere;
+    }
+}
+
+@media (max-width: 767px) {
+    .section {
+        --reviews-gutter: clamp(16px, calc(7.3vw - 8px), 24px);
+        --reviews-card-gap: clamp(12px, 3.6vw, 16px);
+        --reviews-card-width: calc(
+            (100vw - var(--reviews-gutter) - var(--reviews-card-gap)) / 1.15
+        );
+        --reviews-title-size: clamp(56px, 18vw, 82px);
+        --reviews-top-gap: 28px;
+
+        padding-top: clamp(56px, 16vw, 68px);
+    }
+
     .header {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch;
         gap: 24px;
     }
 
     .aside {
-        align-items: flex-start;
+        align-items: flex-end;
         width: 100%;
         flex-direction: row;
         justify-content: space-between;
+        gap: 12px;
+    }
+
+    .decor {
+        order: 1;
+        gap: 12px;
+    }
+
+    .decorShape {
+        border-radius: 22px;
+    }
+
+    .decorShapeBack {
+        width: clamp(64px, 17.7vw, 76px);
+        margin-top: 20px;
+    }
+
+    .decorShapeFront {
+        width: clamp(86px, 23.25vw, 100px);
+    }
+
+    .nav {
+        gap: 8px;
+    }
+
+    .navButton {
+        width: 44px;
+        height: 44px;
+    }
+
+    .navDivider {
+        font-size: 18px;
+    }
+
+    .viewport {
+        width: calc(100% - var(--reviews-gutter));
+        margin-left: var(--reviews-gutter);
+    }
+
+    .card {
+        min-height: 320px;
+        gap: 20px;
+        padding: clamp(24px, 6.5vw, 28px);
+        border-radius: 26px;
+    }
+
+    .cardTop {
+        gap: 12px;
+    }
+
+    .quoteIcon {
+        width: 30px;
     }
 }
 

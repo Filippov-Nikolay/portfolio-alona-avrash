@@ -35,7 +35,14 @@ export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
         []
     );
     const [viewportRef, emblaApi] = useEmblaCarousel(
-        { loop: true, align: "center", startIndex: middleStartIndex },
+        {
+            loop: true,
+            align: "center",
+            startIndex: middleStartIndex,
+            breakpoints: {
+                "(max-width: 767px)": { align: "start" },
+            },
+        },
         emblaPlugins
     );
 

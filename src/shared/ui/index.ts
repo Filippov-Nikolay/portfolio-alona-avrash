@@ -13,4 +13,5 @@ export { Tag } from "./Tag";
 export { TagList } from "./TagList";
 export { ThemeToggle } from "./ThemeToggle";
 export { Title } from "./Title";
+export { ToolBadge, getToolBadge } from "./ToolBadge";
 export * from "./Icon";

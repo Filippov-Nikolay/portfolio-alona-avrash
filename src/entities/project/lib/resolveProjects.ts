@@ -35,6 +35,10 @@ export function toShowcaseItem(
     featured: boolean
 ): ShowcaseItem {
     const heroImage = project.image.find((image) => image.isHero) ?? project.image[0];
+    const gallery = project.image
+        .filter((image) => !image.isHero)
+        .sort((a, b) => a.order - b.order)
+        .map((image) => ({ src: image.src, alt: image.alt ?? project.name }));
 
     return {
         id: project.id,
@@ -44,5 +48,9 @@ export function toShowcaseItem(
         tags: project.categories,
         src: heroImage?.src,
         featured,
+        gallery,
+        tools: project.tools,
+        websiteUrl: project.websiteUrl,
+        accentColorModal: project.accentColorModal ?? project.hover.background,
     };
 }

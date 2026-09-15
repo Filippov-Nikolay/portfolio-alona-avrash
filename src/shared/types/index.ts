@@ -1,5 +1,6 @@
 export type {
     ShowcaseItem,
+    ShowcaseGalleryImage,
     ShowcaseItemRaw,
     ShowcaseItemTranslation,
     ShowcaseCarouselI18n,

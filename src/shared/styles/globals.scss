@@ -88,11 +88,13 @@ html.is-theme-changing *::after {
         box-shadow 0.4s ease-in-out;
 }
 
-// Transition не нужен элементам, где анимация цвета выглядит странно
-canvas,
-video,
-img,
-svg * {
+// Transition не нужен элементам, где анимация цвета выглядит странно -
+// но только во время самой смены темы (иначе это глушит transition на
+// <img>/<canvas>/<svg> вообще всегда, например hover-зум картинок)
+html.is-theme-changing canvas,
+html.is-theme-changing video,
+html.is-theme-changing img,
+html.is-theme-changing svg * {
     transition: none !important;
 }
 

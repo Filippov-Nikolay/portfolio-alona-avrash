@@ -902,10 +902,10 @@
             "packaging"
         ],
         "hover": {
-            "background": "#F7F7F7",
-            "accentColor": "#000417",
-            "buttonBackground": "#000417",
-            "buttonTextColor": "#F7F7F7"
+            "background": "#000417",
+            "accentColor": "#F7F7F7",
+            "buttonBackground": "#F7F7F7",
+            "buttonTextColor": "#000417"
         },
         "tools": [
             "figma",

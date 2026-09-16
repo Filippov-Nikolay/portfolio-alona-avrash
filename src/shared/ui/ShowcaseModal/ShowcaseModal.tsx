@@ -11,7 +11,7 @@ import { Button, ArrowIcon, ToolBadge, getToolBadge, CloseIcon } from "@/shared/
 import { ACCENT_COLORS } from "@/shared/constants/colors";
 import { cn } from "@/shared/lib/cn";
 import { GalleryLightbox, type LightboxRect } from "./GalleryLightbox";
-import { createImageBackdrop, getImageBackdrop } from "./imageBackdrop";
+import { createImageBackdrop } from "./imageBackdrop";
 import styles from "./ShowcaseModal.module.scss";
 
 const GALLERY_PREVIEW_COUNT = 3;
@@ -44,14 +44,13 @@ function TileImage({
     enabled: boolean;
 }) {
     const imageRef = useRef<HTMLDivElement>(null);
-    const [backdrop, setBackdrop] = useState(() => getImageBackdrop(src));
     const [poster, setPoster] = useState<string>();
     const inView = useInView(imageRef, { root: scrollRoot, margin: "200px 0px" });
     const animated = /\.gif(?:[?#]|$)/i.test(src);
 
-    const drawBackdrop = (image: HTMLImageElement) => {
+    const handleImageLoad = (image: HTMLImageElement) => {
         if (!image.naturalWidth || !image.naturalHeight) return;
-        setBackdrop(createImageBackdrop(src, image));
+        createImageBackdrop(src, image);
 
         if (animated && !poster) {
             const canvas = document.createElement("canvas");
@@ -73,17 +72,6 @@ function TileImage({
         <div ref={imageRef} className={styles.tileImages}>
             {enabled && inView && (
                 <>
-                    {backdrop && (
-                        <Image
-                            src={backdrop}
-                            alt=""
-                            aria-hidden="true"
-                            fill
-                            unoptimized
-                            className={styles.previewImageBackdrop}
-                            draggable={false}
-                        />
-                    )}
                     {poster && (
                         <Image
                             src={poster}
@@ -103,7 +91,7 @@ function TileImage({
                         loading="eager"
                         unoptimized={animated}
                         className={cn(styles.previewImage, animated && styles.previewImageAnimated)}
-                        onLoad={(event) => drawBackdrop(event.currentTarget)}
+                        onLoad={(event) => handleImageLoad(event.currentTarget)}
                         draggable={false}
                     />
                 </>
@@ -296,7 +284,17 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                                         <h3 className={styles.sectionLabel}>
                                             {t("galleryPreview")}
                                         </h3>
-                                        <div className={styles.previewGrid}>
+                                        <div
+                                            className={cn(
+                                                styles.previewGrid,
+                                                styles.overviewPreview
+                                            )}
+                                            style={
+                                                {
+                                                    "--preview-count": previewImages.length,
+                                                } as React.CSSProperties
+                                            }
+                                        >
                                             {previewImages.map((image, index) => (
                                                 <button
                                                     key={image.src}

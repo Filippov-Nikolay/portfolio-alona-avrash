@@ -317,40 +317,52 @@
 // === Gallery preview / full gallery =========================
 
 .previewGrid {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 25px;
     contain: layout;
 
     @include respond-to("mobile") {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
     }
 }
 
 .previewItem {
     position: relative;
-    flex: 1 1 0%;
+    width: 100%;
     min-width: 0;
-    height: 200px;
+    aspect-ratio: 3 / 2;
     overflow: hidden;
     padding: 0;
     border: none;
     border-radius: var(--radius-sm);
     background: var(--color-visual-bg);
     cursor: pointer;
-    transition: flex-grow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-
-    @include can-hover {
-        &:hover {
-            flex-grow: 2.2;
-        }
-    }
 
     @include focus-ring;
+}
 
-    @include respond-to("mobile") {
-        height: 140px;
+.overviewPreview {
+    @include can-hover {
+        @include respond-from("mobile") {
+            display: flex;
+            container-type: inline-size;
+
+            .previewItem {
+                flex: 1 1 0%;
+                width: auto;
+                height: calc(
+                    (100cqw - (var(--preview-count) - 1) * 25px) / var(--preview-count) / 1.5
+                );
+                aspect-ratio: auto;
+                transition: flex-grow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+
+                &:hover {
+                    flex-grow: 2.2;
+                }
+            }
+        }
     }
 }
 
@@ -359,29 +371,12 @@
     inset: 0;
 }
 
-.previewImageBackdrop {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: blur(28px) saturate(1.3) brightness(0.75);
-    transform: scale(1.2);
-    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-
-    @include can-hover {
-        .previewItem:hover & {
-            transform: scale(1.3);
-        }
-    }
-}
-
 .previewImage {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     display: block;
     filter: drop-shadow(0 14px 26px rgba(0 0 0 / 0.35));
     transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
@@ -398,13 +393,8 @@
 }
 
 .body[data-scrolling] {
-    .previewItem {
+    .overviewPreview .previewItem {
         flex-grow: 1;
-        transition: none;
-    }
-
-    .previewImageBackdrop {
-        transform: scale(1.2);
         transition: none;
     }
 

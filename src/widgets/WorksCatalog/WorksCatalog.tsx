@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -13,7 +13,7 @@ import {
     getPrimaryCategory,
     groupProjectsByPrimaryCategory,
 } from "@/entities/project/lib/groupProjects";
-import { ArrowIcon, Button, Container, ShowcaseModal } from "@/shared/ui";
+import { ArrowIcon, ArrowV2Icon, Button, Container, ShowcaseModal } from "@/shared/ui";
 import { CtaSection } from "@/widgets/CtaSection";
 import { cn } from "@/shared/lib/cn";
 import { usePreloader } from "@/shared/providers";
@@ -21,6 +21,7 @@ import { useMotionVariants } from "@/shared/hooks";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { fadeIn } from "@/shared/lib/motion/fade-in";
 import { reveal } from "@/shared/lib/motion/reveal";
+import { useWorksCardReveal } from "./useWorksCardReveal";
 import styles from "./WorksCatalog.module.scss";
 
 const FILTER_CATEGORIES: CategoryKey[] = ["ui-ux", "branding", "logo", "packaging", "web-design"];
@@ -28,7 +29,35 @@ const FILTER_CATEGORY_SET = new Set<string>(FILTER_CATEGORIES);
 
 type SortOrder = "latest" | "oldest";
 
-const CTA_INSERT_INDEX = 3;
+const SORT_DROPDOWN_EASE = [0.25, 0.1, 0.25, 1] as const;
+const SORT_DROPDOWN_CLOSE_EASE = [0.22, 1, 0.36, 1] as const;
+
+const sortDropdownVariants = {
+    hidden: {
+        opacity: 0,
+        y: -4,
+        scaleY: 0.95,
+        transition: { duration: 0.45, ease: SORT_DROPDOWN_CLOSE_EASE },
+    },
+    visible: {
+        opacity: 1,
+        y: 0,
+        scaleY: 1,
+        transition: {
+            duration: 0.18,
+            ease: SORT_DROPDOWN_EASE,
+            staggerChildren: 0.04,
+            delayChildren: 0.02,
+        },
+    },
+};
+
+const sortOptionVariants = {
+    hidden: { opacity: 0, x: -6 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.16, ease: SORT_DROPDOWN_EASE } },
+};
+
+const CTA_MIN_GROUP_SIZE = 3;
 
 const FILTER_PARAM = "filter";
 const SORT_PARAM = "sort";
@@ -75,6 +104,7 @@ export function WorksCatalog({
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
     const safeReveal = useMotionVariants(reveal);
+    const registerCard = useWorksCardReveal();
 
     const [sortOrder, setSortOrder] = useState<SortOrder>(() =>
         parseSortParam(searchParams.get(SORT_PARAM))
@@ -129,6 +159,12 @@ export function WorksCatalog({
         () => groupProjectsByPrimaryCategory(visibleProjects),
         [visibleProjects]
     );
+
+    // The very first card on the page sits above the reveal effect's own
+    // "settled" line before any scrolling happens at all, so it would
+    // render blurred on load - which reads as broken, not intentional.
+    // It's exempt from the reveal entirely and always shows sharp.
+    const firstCardId = groups[0]?.projects[0]?.id;
 
     const sortOptions: { value: SortOrder; label: string }[] = [
         { value: "latest", label: labels.sortLatest },
@@ -198,9 +234,10 @@ export function WorksCatalog({
                     <m.div className={styles.list} variants={safeStagger}>
                         {group.projects.map((project, i) => (
                             <Fragment key={project.id}>
-                                {i === CTA_INSERT_INDEX && (
-                                    <CtaSection content={cta} variant="banner" />
-                                )}
+                                {i === group.projects.length - 1 &&
+                                    group.projects.length > CTA_MIN_GROUP_SIZE && (
+                                        <CtaSection content={cta} variant="banner" />
+                                    )}
                                 <m.div variants={safeReveal}>
                                     <WorksCard
                                         project={project}
@@ -210,6 +247,11 @@ export function WorksCatalog({
                                         }
                                         viewLabel={labels.viewProject}
                                         onOpen={() => setSelectedId(project.id)}
+                                        cardRef={
+                                            project.id === firstCardId
+                                                ? undefined
+                                                : registerCard(project.id)
+                                        }
                                     />
                                 </m.div>
                             </Fragment>
@@ -231,9 +273,10 @@ interface WorksCardProps {
     categoryLabel: string;
     viewLabel: string;
     onOpen: () => void;
+    cardRef?: (el: HTMLDivElement | null) => void;
 }
 
-function WorksCard({ project, rank, categoryLabel, viewLabel, onOpen }: WorksCardProps) {
+function WorksCard({ project, rank, categoryLabel, viewLabel, onOpen, cardRef }: WorksCardProps) {
     const heroImage = project.image.find((image) => image.isHero) ?? project.image[0];
     const year = new Date(project.createdAt).getFullYear();
 
@@ -245,7 +288,7 @@ function WorksCard({ project, rank, categoryLabel, viewLabel, onOpen }: WorksCar
     } as CSSProperties;
 
     return (
-        <div className={styles.card} style={hoverStyle} onClick={onOpen}>
+        <div ref={cardRef} className={styles.card} style={hoverStyle} onClick={onOpen}>
             <div className={styles.visual}>
                 {heroImage?.src && (
                     <Image
@@ -299,6 +342,7 @@ interface SortMenuProps {
 function SortMenu({ label, value, options, onChange }: SortMenuProps) {
     const [isOpen, setIsOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
+    const dotLayoutId = `sort-dot-${useId()}`;
 
     useEffect(() => {
         function onOutsideClick(e: PointerEvent) {
@@ -320,52 +364,67 @@ function SortMenu({ label, value, options, onChange }: SortMenuProps) {
     return (
         <div ref={ref} className={styles.sortWrap}>
             <span className={styles.sortLabel}>{label}</span>
-            <button
-                type="button"
-                className={cn(styles.sortTrigger, isOpen && styles.sortTriggerOpen)}
-                onClick={() => setIsOpen((o) => !o)}
-                aria-haspopup="listbox"
-                aria-expanded={isOpen}
-            >
-                {current?.label}
-                <ArrowIcon className={styles.sortChevron} />
-            </button>
 
-            <AnimatePresence>
-                {isOpen && (
-                    <m.ul
-                        className={styles.sortDropdown}
-                        role="listbox"
-                        initial={{ opacity: 0, y: -4, scaleY: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scaleY: 1 }}
-                        exit={{ opacity: 0, y: -4, scaleY: 0.95 }}
-                        transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-                        style={{ transformOrigin: "top" }}
-                    >
-                        {options.map((option) => (
-                            <li
-                                key={option.value}
-                                role="option"
-                                aria-selected={option.value === value}
-                            >
-                                <button
-                                    type="button"
-                                    className={cn(
-                                        styles.sortOption,
-                                        option.value === value && styles.sortOptionActive
-                                    )}
-                                    onClick={() => {
-                                        onChange(option.value);
-                                        setIsOpen(false);
-                                    }}
+            <div className={styles.sortTriggerWrap}>
+                <button
+                    type="button"
+                    className={cn(styles.sortTrigger, isOpen && styles.sortTriggerOpen)}
+                    onClick={() => setIsOpen((o) => !o)}
+                    aria-haspopup="listbox"
+                    aria-expanded={isOpen}
+                >
+                    {current?.label}
+                    <ArrowV2Icon className={styles.sortChevron} />
+                </button>
+
+                <AnimatePresence>
+                    {isOpen && (
+                        <m.ul
+                            className={styles.sortDropdown}
+                            role="listbox"
+                            variants={sortDropdownVariants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="hidden"
+                            style={{ transformOrigin: "top" }}
+                        >
+                            {options.map((option) => (
+                                <m.li
+                                    key={option.value}
+                                    role="option"
+                                    aria-selected={option.value === value}
+                                    variants={sortOptionVariants}
                                 >
-                                    {option.label}
-                                </button>
-                            </li>
-                        ))}
-                    </m.ul>
-                )}
-            </AnimatePresence>
+                                    <button
+                                        type="button"
+                                        className={cn(
+                                            styles.sortOption,
+                                            option.value === value && styles.sortOptionActive
+                                        )}
+                                        onClick={() => {
+                                            onChange(option.value);
+                                            setIsOpen(false);
+                                        }}
+                                    >
+                                        {option.value === value && (
+                                            <m.span
+                                                layoutId={dotLayoutId}
+                                                className={styles.sortOptionDot}
+                                                transition={{
+                                                    type: "spring",
+                                                    stiffness: 500,
+                                                    damping: 32,
+                                                }}
+                                            />
+                                        )}
+                                        {option.label}
+                                    </button>
+                                </m.li>
+                            ))}
+                        </m.ul>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 }

@@ -92,43 +92,61 @@
 }
 
 .sortWrap {
-    position: relative;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
 .sortLabel {
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
+    font-size: 16px;
+    font-weight: 300;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
     color: var(--color-text-secondary);
     white-space: nowrap;
+}
+
+.sortTriggerWrap {
+    position: relative;
 }
 
 .sortTrigger {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 4px 2px;
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
     background: none;
     border: none;
     font-family: var(--font-body);
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
     color: var(--color-text-primary);
     cursor: pointer;
 
+    @include transition(background-color, color, border-radius);
     @include focus-ring;
+
+    @include can-hover {
+        &:hover {
+            background: #000;
+            color: var(--color-primary);
+        }
+    }
+}
+
+.sortTriggerOpen {
+    background: #000;
+    color: var(--color-primary);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
 }
 
 .sortChevron {
-    width: 9px;
+    width: 16px;
     height: auto;
-    transform: rotate(45deg);
     transition: transform var(--transition-base);
 
     & path {
@@ -137,26 +155,31 @@
 }
 
 .sortTriggerOpen .sortChevron {
-    transform: rotate(225deg);
+    transform: rotate(180deg);
 }
 
 .sortDropdown {
     position: absolute;
-    top: calc(100% + 8px);
+    top: 100%;
+    left: 0;
     right: 0;
     z-index: 5;
-    min-width: 140px;
     padding: 6px;
     margin: 0;
     list-style: none;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-md, 0 12px 24px rgba(0 0 0 / 0.16));
+    background: #000;
+    border: 1px solid rgba(234, 253, 39, 0.18);
+    border-top: none;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    box-shadow:
+        0 20px 30px -18px rgba(0, 0, 0, 0.5),
+        0 0 24px rgba(234, 253, 39, 0.12);
 }
 
 .sortOption {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
     padding: 9px 12px;
     background: none;
@@ -167,21 +190,37 @@
     text-align: left;
     letter-spacing: 0.02em;
     text-transform: uppercase;
-    color: var(--color-text-secondary);
+    color: rgba(255, 255, 255, 0.65);
     cursor: pointer;
 
-    @include transition(background, color);
+    @include transition(background, color, opacity);
 
     @include can-hover {
         &:hover {
-            background: var(--color-surface-light, var(--color-card));
-            color: var(--color-text-primary);
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
         }
     }
 }
 
 .sortOptionActive {
-    color: var(--color-primary-text, var(--color-primary));
+    color: var(--color-primary);
+
+    @include can-hover {
+        &:hover {
+            background: rgba(234, 253, 39, 0.12);
+            color: var(--color-primary);
+        }
+    }
+}
+
+.sortOptionDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    box-shadow: 0 0 6px rgba(234, 253, 39, 0.8);
+    flex-shrink: 0;
 }
 
 // === Category group ==============================================
@@ -236,6 +275,15 @@
     gap: 20px;
 }
 
+$card-reveal-rise: 24px;
+$card-reveal-min-scale: 0.9;
+$card-hover-lift-scale: 1.015;
+$card-transition: 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+
+@function card-reveal-scale() {
+    @return calc(#{$card-reveal-min-scale} + var(--reveal, 1) * #{1 - $card-reveal-min-scale});
+}
+
 .card {
     display: flex;
     align-items: stretch;
@@ -247,16 +295,27 @@
     background: var(--color-surface);
     cursor: pointer;
     text-align: left;
+    transform: translateY(calc((1 - var(--reveal, 1)) * #{$card-reveal-rise}))
+        scale(card-reveal-scale());
+    box-shadow: 0 20px 40px -12px transparent;
 
-    @include transition(background-color, box-shadow, transform);
+    transition:
+        background-color $card-transition,
+        filter $card-transition,
+        transform $card-transition,
+        box-shadow $card-transition;
     @include focus-ring;
 
     @include can-hover {
         &:hover {
             background: var(--hover-bg, var(--color-surface));
+            box-shadow: 0 20px 40px -12px
+                color-mix(in srgb, var(--hover-bg, var(--color-primary)) 55%, transparent);
+            transform: translateY(calc((1 - var(--reveal, 1)) * #{$card-reveal-rise}))
+                scale(calc(#{card-reveal-scale()} * #{$card-hover-lift-scale}));
 
             .image {
-                transform: scale(1.04);
+                transform: scale(1.06);
             }
 
             .rank,
@@ -297,7 +356,7 @@
 
 .image {
     object-fit: cover;
-    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform $card-transition;
 }
 
 .info {
@@ -325,7 +384,7 @@
     letter-spacing: 0.1em;
     color: var(--color-text-primary);
 
-    @include transition(color);
+    transition: color $card-transition;
 }
 
 .year {
@@ -334,7 +393,7 @@
     letter-spacing: 0.1em;
     color: var(--color-text-primary);
 
-    @include transition(color);
+    transition: color $card-transition;
 }
 
 .infoBody {
@@ -354,7 +413,7 @@
     text-transform: uppercase;
     color: var(--color-text-primary);
 
-    @include transition(color);
+    transition: color $card-transition;
 }
 
 .cardSubtitle {
@@ -365,7 +424,7 @@
     text-transform: uppercase;
     color: var(--color-text-secondary);
 
-    @include transition(color);
+    transition: color $card-transition;
 }
 
 .viewBtn {
@@ -387,6 +446,7 @@
 }
 
 @include reduced-motion {
+    .card,
     .image,
     .viewBtn,
     .sortChevron {

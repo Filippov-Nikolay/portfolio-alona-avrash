@@ -1,4 +1,5 @@
 export { default as ArrowIcon } from "./arrow.svg";
+export { default as ArrowV2Icon } from "./arrowV2.svg";
 export { default as GitHubIcon } from "./github-logo.svg";
 export { default as TelegramIcon } from "./telegram-logo.svg";
 export { default as LinkedInIcon } from "./linkedin-logo.svg";

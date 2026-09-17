@@ -12,6 +12,7 @@ import { ACCENT_COLORS } from "@/shared/constants/colors";
 import { cn } from "@/shared/lib/cn";
 import { GalleryLightbox, type LightboxRect } from "./GalleryLightbox";
 import { createImageBackdrop } from "./imageBackdrop";
+import { useGalleryTilt } from "./useGalleryTilt";
 import styles from "./ShowcaseModal.module.scss";
 
 const GALLERY_PREVIEW_COUNT = 3;
@@ -120,8 +121,10 @@ function ModalContent({ item, onClose }: ModalContentProps) {
     );
     const modalRef = useRef<HTMLDivElement>(null);
     const bodyRef = useRef<HTMLDivElement>(null);
+    const tabsRef = useRef<HTMLDivElement>(null);
     const galleryElRefs = useRef<Map<number, HTMLElement>>(new Map());
     const [lightbox, setLightbox] = useState<LightboxState | null>(null);
+    const registerTile = useGalleryTilt(bodyRef, tabsRef);
 
     useEffect(() => {
         const body = bodyRef.current;
@@ -246,7 +249,7 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                 </div>
 
                 <div className={styles.content}>
-                    <div className={styles.tabs} role="tablist">
+                    <div ref={tabsRef} className={styles.tabs} role="tablist">
                         <button
                             type="button"
                             role="tab"
@@ -348,9 +351,15 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                                                 {row.map(({ image, index }) => (
                                                     <button
                                                         key={image.src}
-                                                        ref={registerGalleryEl(index)}
+                                                        ref={(el) => {
+                                                            registerGalleryEl(index)(el);
+                                                            registerTile(index)(el);
+                                                        }}
                                                         type="button"
-                                                        className={styles.previewItem}
+                                                        className={cn(
+                                                            styles.previewItem,
+                                                            styles.galleryTile
+                                                        )}
                                                         onClick={(e) => openLightbox(index, e)}
                                                         aria-label={image.alt}
                                                     >

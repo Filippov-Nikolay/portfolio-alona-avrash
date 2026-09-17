@@ -237,9 +237,14 @@
 // === Tabs ==================================================
 
 .tabs {
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 3;
     display: flex;
     gap: 28px;
+    padding-top: 10px;
+    margin-top: -10px;
+    background: var(--color-surface);
 
     &::after {
         content: "";
@@ -415,10 +420,40 @@
 .galleryRows {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 18px;
+    padding-block: 12px 16px;
+    overflow-x: visible;
+    overflow-y: clip;
+
+    .previewGrid {
+        position: relative;
+        gap: 18px;
+        perspective: 1100px;
+        perspective-origin: center center;
+        transform: translateY(var(--gallery-row-offset, 0px));
+    }
 
     @include respond-to("mobile") {
-        gap: 10px;
+        gap: 12px;
+
+        .previewGrid {
+            gap: 12px;
+        }
+    }
+}
+
+.galleryTile {
+    transform-origin: center center;
+    transform: translateZ(calc(var(--tilt-z, 0) * 1px)) rotateX(calc(var(--tilt, 0) * 1deg));
+    box-shadow: 0 6px 14px rgba(0 0 0 / 0.1);
+
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border: 1px solid rgba(255 255 255 / 0.16);
+        border-radius: inherit;
+        pointer-events: none;
     }
 }
 

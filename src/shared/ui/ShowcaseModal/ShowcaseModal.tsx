@@ -129,6 +129,12 @@ function ModalContent({ item, onClose }: ModalContentProps) {
     const tabsRef = useRef<HTMLDivElement>(null);
     const galleryElRefs = useRef<Map<number, HTMLElement>>(new Map());
     const [lightbox, setLightbox] = useState<LightboxState | null>(null);
+    // GalleryLightbox stays mounted for its ~400ms shrink-back animation
+    // after the user clicks close, but the background preview tiles
+    // shouldn't wait that long to start re-rendering their images - flip
+    // this the moment the close animation *starts*, not when it ends,
+    // so tiles have time to load before the shrink finishes.
+    const [lightboxClosing, setLightboxClosing] = useState(false);
     const registerTile = useGalleryTilt(bodyRef, tabsRef);
 
     // Overview is usually much shorter than a scrolled-down Gallery, so
@@ -210,6 +216,7 @@ function ModalContent({ item, onClose }: ModalContentProps) {
         const tileRect = measureRect(e.currentTarget);
         if (!modalEl || !tileRect) return;
 
+        setLightboxClosing(false);
         setLightbox({
             index,
             launchRect: tileRect,
@@ -390,7 +397,7 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                                                         src={image.src}
                                                         alt={image.alt}
                                                         scrollRoot={bodyRef}
-                                                        enabled={!lightbox}
+                                                        enabled={!lightbox || lightboxClosing}
                                                     />
                                                 </button>
                                             ))}
@@ -446,7 +453,7 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                                                             src={image.src}
                                                             alt={image.alt}
                                                             scrollRoot={bodyRef}
-                                                            enabled={!lightbox}
+                                                            enabled={!lightbox || lightboxClosing}
                                                         />
                                                     </button>
                                                 ))}
@@ -467,7 +474,11 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                     launchRect={lightbox.launchRect}
                     fillRect={lightbox.fillRect}
                     getCloseRect={getCloseRect}
-                    onClose={() => setLightbox(null)}
+                    onCloseStart={() => setLightboxClosing(true)}
+                    onClose={() => {
+                        setLightbox(null);
+                        setLightboxClosing(false);
+                    }}
                 />
             )}
         </>

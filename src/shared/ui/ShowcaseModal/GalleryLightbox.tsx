@@ -22,6 +22,10 @@ interface GalleryLightboxProps {
     fillRect: LightboxRect;
 
     getCloseRect: (index: number) => LightboxRect | null;
+    // Fires the moment the close animation starts (not when it finishes,
+    // unlike onClose) so callers can react immediately - e.g. re-enabling
+    // background tiles to load while this is still shrinking.
+    onCloseStart?: () => void;
     onClose: () => void;
 }
 
@@ -142,6 +146,7 @@ export function GalleryLightbox({
     launchRect,
     fillRect,
     getCloseRect,
+    onCloseStart,
     onClose,
 }: GalleryLightboxProps) {
     const [phase, setPhase] = useState<"opening" | "open" | "closing">("opening");
@@ -157,6 +162,7 @@ export function GalleryLightbox({
         setCloseIndex(index);
         setCloseRect(getCloseRect(index) ?? launchRect);
         setPhase("closing");
+        onCloseStart?.();
     };
 
     const requestCloseRef = useRef(requestClose);

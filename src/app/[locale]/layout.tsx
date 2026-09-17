@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Almarai, Geist_Mono, Zalando_Sans_SemiExpanded } from "next/font/google";
+import localFont from "next/font/local";
 import { cookies, headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
@@ -33,6 +34,15 @@ const zalandoSansSemiExpanded = Zalando_Sans_SemiExpanded({
 const geistMono = Geist_Mono({
     subsets: ["latin"],
     variable: "--font-geist-mono",
+});
+
+// Chromium on Windows renders country flags as ISO letters. This compact
+// flag-only font provides those glyphs without shipping hundreds of SVG files.
+const countryFlags = localFont({
+    src: "../../../node_modules/country-flag-emoji-polyfill/dist/TwemojiCountryFlags.woff2",
+    variable: "--font-country-flags",
+    display: "swap",
+    preload: false,
 });
 
 export function generateStaticParams() {
@@ -136,7 +146,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             lang={locale}
             data-theme={theme}
             suppressHydrationWarning
-            className={`${almarai.variable} ${zalandoSansSemiExpanded.variable} ${geistMono.variable}`}
+            className={`${almarai.variable} ${zalandoSansSemiExpanded.variable} ${geistMono.variable} ${countryFlags.variable}`}
         >
             <body>
                 <NextIntlClientProvider messages={messages}>

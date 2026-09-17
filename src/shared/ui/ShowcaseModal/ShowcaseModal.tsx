@@ -113,6 +113,11 @@ function ModalContent({ item, onClose }: ModalContentProps) {
     const color = ACCENT_COLORS[item.color ?? "purple"];
     const hasGallery = item.gallery.length > 0;
     const [tab, setTab] = useState<Tab>("overview");
+    // Separate from `tab`: `tab` flips the active-tab underline instantly
+    // (immediate click feedback), while `contentTab` - which actually
+    // swaps the rendered panel - waits until the scroll-to-top below has
+    // finished. Swapping the DOM mid-scroll is what caused the jump.
+    const [contentTab, setContentTab] = useState<Tab>("overview");
     const tools = (item.tools ?? []).map(getToolBadge).filter((badge) => badge !== undefined);
     const previewImages = item.gallery.slice(0, GALLERY_PREVIEW_COUNT);
     const galleryRows = chunk(
@@ -126,6 +131,42 @@ function ModalContent({ item, onClose }: ModalContentProps) {
     const [lightbox, setLightbox] = useState<LightboxState | null>(null);
     const registerTile = useGalleryTilt(bodyRef, tabsRef);
 
+    // Overview is usually much shorter than a scrolled-down Gallery, so
+    // swapping panels while deep in the gallery would otherwise shrink
+    // the content mid-scroll and make the browser abruptly clamp
+    // scrollTop - a jarring snap. Scroll to the top first, and only swap
+    // the panel (contentTab) once that scroll has actually finished.
+    const handleTabChange = (nextTab: Tab) => {
+        if (nextTab === tab) return;
+        setTab(nextTab);
+
+        const body = bodyRef.current;
+        if (!body || body.scrollTop === 0) {
+            setContentTab(nextTab);
+            return;
+        }
+
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (reducedMotion) {
+            body.scrollTop = 0;
+            setContentTab(nextTab);
+            return;
+        }
+
+        let settled = false;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            body.removeEventListener("scrollend", finish);
+            setContentTab(nextTab);
+        };
+        body.addEventListener("scrollend", finish, { once: true });
+        // Fallback in case "scrollend" doesn't fire (unsupported browser,
+        // or the scroll gets interrupted).
+        window.setTimeout(finish, 500);
+        body.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
     useEffect(() => {
         const body = bodyRef.current;
         if (!body) return;
@@ -138,13 +179,9 @@ function ModalContent({ item, onClose }: ModalContentProps) {
         };
 
         body.addEventListener("scroll", handleScroll, { passive: true });
-        body.addEventListener("wheel", handleScroll, { passive: true });
-        body.addEventListener("touchmove", handleScroll, { passive: true });
 
         return () => {
             body.removeEventListener("scroll", handleScroll);
-            body.removeEventListener("wheel", handleScroll);
-            body.removeEventListener("touchmove", handleScroll);
             clearTimeout(scrollEndTimer);
             body.removeAttribute("data-scrolling");
         };
@@ -256,7 +293,7 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                                 role="tab"
                                 aria-selected={tab === "overview"}
                                 className={cn(styles.tab, tab === "overview" && styles.tabActive)}
-                                onClick={() => setTab("overview")}
+                                onClick={() => handleTabChange("overview")}
                             >
                                 {t("overviewTab")}
                             </button>
@@ -269,7 +306,7 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                                         styles.tab,
                                         tab === "gallery" && styles.tabActive
                                     )}
-                                    onClick={() => setTab("gallery")}
+                                    onClick={() => handleTabChange("gallery")}
                                 >
                                     {t("galleryTab")}
                                 </button>
@@ -278,7 +315,7 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                     </div>
 
                     <AnimatePresence mode="wait" initial={false}>
-                        {tab === "overview" ? (
+                        {contentTab === "overview" ? (
                             <m.div
                                 key="overview"
                                 className={styles.tabPanel}

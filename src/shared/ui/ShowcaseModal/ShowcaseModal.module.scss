@@ -102,6 +102,10 @@
     @include respond-to("mobile") {
         height: 220px;
     }
+
+    @media (max-height: 480px) {
+        height: 150px;
+    }
 }
 
 .bannerImageWrap {
@@ -132,6 +136,12 @@
         top: 18px;
         left: 20px;
         font-size: 24px;
+    }
+
+    @media (max-height: 480px) {
+        top: 14px;
+        left: 20px;
+        font-size: 22px;
     }
 }
 
@@ -180,6 +190,13 @@
         height: 32px;
         font-size: 17px;
     }
+
+    @media (max-height: 480px) {
+        top: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+    }
 }
 
 .closeIcon {
@@ -201,6 +218,11 @@
     @include respond-to("mobile") {
         left: 20px;
         bottom: 18px;
+    }
+
+    @media (max-height: 480px) {
+        left: 20px;
+        bottom: 14px;
     }
 }
 
@@ -344,6 +366,10 @@
     @include respond-to("mobile") {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
+
+        > :nth-child(odd):last-child {
+            grid-column: 1 / -1;
+        }
     }
 }
 

@@ -8,6 +8,7 @@ const MAX_TILT_DEG = 18;
 const MAX_TILT_Z = 100;
 const TILT_RESPONSE_MS = 65;
 const TILT_SETTLE_THRESHOLD = 0.001;
+const TILT_RAMP_DISTANCE = 420;
 
 interface TileTiltState {
     current: number;
@@ -65,6 +66,7 @@ export function useGalleryTilt(
         let frame = 0;
         let needsMeasure = true;
         let previousTime = 0;
+        let currentTiltRamp = 1;
 
         const measure = () => {
             const containerRect = container.getBoundingClientRect();
@@ -78,6 +80,15 @@ export function useGalleryTilt(
             if (visibleHeight <= 0) return false;
 
             viewportCenter = topBoundary + visibleHeight / 2;
+            const smoothstep = (t: number) => t * t * (3 - 2 * t);
+            const distanceFromTop = container.scrollTop;
+            const distanceFromBottom =
+                container.scrollHeight - container.clientHeight - container.scrollTop;
+            const tiltRamp = Math.min(
+                smoothstep(clamp(distanceFromTop / TILT_RAMP_DISTANCE, 0, 1)),
+                smoothstep(clamp(distanceFromBottom / TILT_RAMP_DISTANCE, 0, 1))
+            );
+            currentTiltRamp = tiltRamp;
             const contentTop = containerRect.top - getLayoutTop(container) - container.scrollTop;
             const rowGeometry = new Map<HTMLElement, GalleryRowGeometry>();
             for (const tile of tilesMap.values()) {
@@ -101,7 +112,7 @@ export function useGalleryTilt(
                 geometry.tiles.push({ element: tile, top: tile.offsetTop, height });
                 const centerY = top + height / 2;
                 const relY = (centerY - topBoundary) / visibleHeight;
-                const signed = clamp((relY - 0.5) * 2, -1, 1);
+                const signed = clamp((relY - 0.5) * 2, -1, 1) * tiltRamp;
 
                 const visible =
                     top < containerRect.bottom + height && top + height > topBoundary - height;
@@ -183,7 +194,10 @@ export function useGalleryTilt(
 
                 return { top: row.top, height: row.height, projectedTop, projectedBottom };
             });
-            const offsets = getGalleryRowOffsets(projectedRows, rowGap, viewportCenter);
+            const offsets =
+                currentTiltRamp === 0
+                    ? rows.map(() => 0)
+                    : getGalleryRowOffsets(projectedRows, rowGap, viewportCenter);
             const currentRows = new Set(rows.map((row) => row.element));
 
             for (const row of shiftedRows) {
@@ -222,8 +236,15 @@ export function useGalleryTilt(
         if (topBoundaryRef.current) resizeObserver.observe(topBoundaryRef.current);
         for (const tile of tilesMap.values()) resizeObserver.observe(tile);
 
+        let lastScrollTop = container.scrollTop;
+        const handleScroll = () => {
+            if (container.scrollTop === lastScrollTop) return;
+            lastScrollTop = container.scrollTop;
+            scheduleUpdate();
+        };
+
         scheduleUpdate();
-        container.addEventListener("scroll", scheduleUpdate, { passive: true });
+        container.addEventListener("scroll", handleScroll, { passive: true });
         window.addEventListener("resize", scheduleUpdate);
 
         return () => {
@@ -231,7 +252,7 @@ export function useGalleryTilt(
             resizeObserverRef.current = null;
             scheduleUpdateRef.current = null;
             cancelAnimationFrame(frame);
-            container.removeEventListener("scroll", scheduleUpdate);
+            container.removeEventListener("scroll", handleScroll);
             window.removeEventListener("resize", scheduleUpdate);
             for (const tile of tilesMap.values()) {
                 tile.style.removeProperty("--tilt");

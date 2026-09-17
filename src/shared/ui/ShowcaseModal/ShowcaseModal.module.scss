@@ -31,8 +31,7 @@
 .modal {
     position: relative;
     width: 100%;
-    // max-width: 960px;
-    max-width: calc(100% - 390px);
+    max-width: var(--container-width);
     // svh = small viewport height (excludes browser chrome).
     // vh fallback for older browsers; svh overrides it where supported.
     max-height: 90vh;

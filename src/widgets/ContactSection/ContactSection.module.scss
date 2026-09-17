@@ -1,190 +1,461 @@
 @use "@/shared/styles/mixins" as *;
 
-// === Section =============================================
-
 .section {
-    --_pad-top: 40px;
-    --_pad-bottom: 120px;
-    // Direct values guard against CSS-variable cascade failures in production
-    // (Section.module.scss uses var(--_pad-top, --section-spacing: 160px);
-    // if the variable resolves to nothing, padding would jump to 160px).
-    padding-block-start: 40px;
-    padding-block-end: 120px;
+    --_pad-top: 178px;
+    --_pad-bottom: 52px;
+    padding-block: var(--_pad-top) var(--_pad-bottom);
 }
 
-// === Header ==============================================
+.introGrid,
+.contentGrid {
+    display: grid;
+    grid-template-columns: minmax(300px, 0.8fr) minmax(560px, 1.4fr);
+    column-gap: clamp(48px, 4.5vw, 72px);
+}
 
-.header {
+.introGrid {
+    align-items: start;
     margin-bottom: 52px;
-
-    @include respond-to("tablet") {
-        margin-bottom: 36px;
-    }
 }
 
-// === Headline display ====================================
-
-// Large split headline: first word left + tagline below, second word right.
-.headlineBlock {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 16px;
-    margin-bottom: 48px;
-
-    @include respond-to("tablet") {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0;
-        margin-bottom: 36px;
-    }
+.title {
+    max-width: 470px;
+    font-family: var(--font-almarai);
+    font-size: clamp(54px, 5.2vw, 72px);
+    font-weight: 700;
+    line-height: 1.13;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    white-space: pre-line;
+    color: var(--color-text-primary);
 }
 
-.headlineLeft {
+.intro {
+    max-width: 390px;
+    margin-top: 52px;
+    margin-left: auto;
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 1.26;
+    color: var(--color-text-primary);
+}
+
+.contentGrid {
+    align-items: start;
+}
+
+.details {
+    position: relative;
     display: flex;
     flex-direction: column;
+    padding: 126px 0 0 65px;
+}
+
+.timeline {
+    position: absolute;
+    inset: 0 auto 0 30px;
+    width: 2px;
+    background: var(--color-text-primary);
+
+    span {
+        position: absolute;
+        top: 139px;
+        left: 50%;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--color-accent);
+        transform: translate(-50%, -50%);
+    }
+}
+
+.availability,
+.talk {
+    h2 {
+        font-size: 23px;
+        font-weight: 700;
+        line-height: 1.15;
+        letter-spacing: 0;
+        text-transform: uppercase;
+    }
+}
+
+.availability ul {
+    display: grid;
     gap: 10px;
+    margin-top: 30px;
+    color: color-mix(in srgb, var(--color-text-primary) 30%, transparent);
+    font-size: 18px;
+    line-height: 1.2;
 }
 
-.headlineStart {
-    font-family: var(--font-mono);
-    font-size: clamp(52px, 9vw, 130px);
-    font-weight: 800;
-    line-height: 0.88;
-    letter-spacing: -0.04em;
-    color: var(--color-text-primary);
-    will-change: transform, filter;
-    backface-visibility: hidden;
-
-    @include respond-to("mobile") {
-        font-size: clamp(40px, 12vw, 64px);
-    }
+.talk {
+    margin-top: 90px;
 }
 
-.tagline {
-    font-family: var(--font-mono);
-    font-size: clamp(11px, 1.1vw, 16px);
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--color-text-secondary);
-    will-change: transform, filter;
-    backface-visibility: hidden;
-
-    @include respond-to("tablet") {
-        font-size: 11px;
-        margin-bottom: 12px;
-    }
-}
-
-.headlineEnd {
-    font-family: var(--font-mono);
-    font-size: clamp(52px, 9vw, 130px);
-    font-weight: 800;
-    line-height: 0.88;
-    letter-spacing: -0.04em;
-    color: var(--color-primary);
-    text-align: right;
-    will-change: transform, filter;
-    backface-visibility: hidden;
-    // Subtle glow on the accented word
-    text-shadow:
-        0 0 80px rgba(234, 253, 39, 0.2),
-        0 0 160px rgba(234, 253, 39, 0.08);
-
-    @include respond-to("tablet") {
-        text-align: left;
-    }
-
-    @include respond-to("mobile") {
-        font-size: clamp(40px, 12vw, 64px);
-    }
-}
-
-// === Social links ========================================
-
-.linksRow {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding-top: 28px;
-    border-top: 1px solid var(--color-border);
-    will-change: transform, filter;
-    backface-visibility: hidden;
-
-    @include respond-to("tablet") {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 16px;
-    }
-}
-
-// Shared pill link token
-%pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 9999px;
-    border: 1px solid var(--color-border);
-    background: transparent;
-    color: var(--color-text-primary);
-    font-family: var(--font-mono);
-    text-decoration: none;
-    white-space: nowrap;
-    @include transition(border-color, background, color);
-
-    @include can-hover {
-        &:hover {
-            border-color: rgba(234, 253, 39, 0.4);
-            background: rgba(234, 253, 39, 0.06);
-            color: var(--color-primary);
-        }
-    }
-
+.email {
+    display: inline-block;
+    margin-top: 28px;
+    font-size: 15px;
+    font-weight: 300;
     @include focus-ring;
 }
 
-.githubLink {
-    @extend %pill;
-
-    padding: 10px 20px;
-    font-size: 13px;
-    font-weight: 500;
+.socials {
+    margin-top: 46px;
 }
 
-.socialList {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    align-items: center;
+.form {
+    position: relative;
+    display: grid;
+    gap: 40px;
+    padding: 32px;
+    border: 1px solid color-mix(in srgb, var(--color-text-primary) 28%, transparent);
+    border-radius: 25px;
+}
 
-    @include respond-to("mobile") {
-        gap: 6px;
+.field,
+.phoneField {
+    display: grid;
+    gap: 9px;
+    min-width: 0;
+    border: 0;
+
+    label,
+    legend {
+        width: 100%;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.2;
+        text-transform: uppercase;
+    }
+
+    input,
+    textarea {
+        width: 100%;
+        border: 1px solid var(--color-text-primary);
+        border-radius: 9px;
+        outline: none;
+        background: transparent;
+        color: var(--color-text-primary);
+        font-size: 15px;
+        font-weight: 300;
+        transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease;
+
+        &::placeholder {
+            color: color-mix(in srgb, var(--color-text-primary) 28%, transparent);
+            opacity: 1;
+        }
+
+        &:focus {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 25%, transparent);
+        }
+
+        &:user-invalid {
+            border-color: var(--color-error);
+        }
+    }
+
+    input {
+        height: 49px;
+        padding: 0 15px;
+    }
+
+    textarea {
+        min-height: 184px;
+        padding: 14px 15px;
+        resize: vertical;
     }
 }
 
-.socialLink {
-    @extend %pill;
+.phoneField legend {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 9px;
 
-    padding: 8px 16px;
-    font-size: 12px;
-    font-weight: 400;
+    span:last-child {
+        color: color-mix(in srgb, var(--color-text-primary) 35%, transparent);
+    }
 }
 
-.linkIcon {
-    flex-shrink: 0;
+.phoneField {
+    position: relative;
+    z-index: 2;
+}
 
-    // Logo SVGs (GitHub, Telegram, LinkedIn, Instagram) have explicit
-    // fill="#hex" attributes on their paths. Override to currentColor.
-    // Stroke-based icons (Mail.svg) use stroke="currentColor" on the SVG
-    // root and have no explicit fill on paths — left untouched.
-    path[fill]:not([fill="none"]),
-    circle[fill]:not([fill="none"]),
-    rect[fill]:not([fill="none"]) {
-        fill: currentColor;
+.phoneInputs {
+    display: grid;
+    grid-template-columns: 104px 1fr;
+    gap: 14px;
+}
+
+.selectedCountry,
+.countryIdentity {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+}
+
+.countryFlag {
+    width: 22px;
+    flex: 0 0 22px;
+    font-family:
+        var(--font-country-flags), "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
+        sans-serif;
+    font-size: 18px;
+    line-height: 1;
+    text-align: center;
+}
+
+.countrySelect {
+    position: relative;
+    min-width: 0;
+}
+
+.countryTrigger {
+    display: flex;
+    width: 100%;
+    height: 49px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 12px 0 15px;
+    border: 1px solid var(--color-text-primary);
+    border-radius: 9px;
+    background: transparent;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 300;
+
+    &:focus-visible,
+    &[aria-expanded="true"] {
+        border-color: var(--color-accent);
+        outline: none;
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 25%, transparent);
+    }
+}
+
+.countryChevron {
+    width: 8px;
+    height: 8px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 0.2s ease;
+
+    [aria-expanded="true"] & {
+        transform: translateY(2px) rotate(225deg);
+    }
+}
+
+.countryDropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    z-index: 20;
+    width: min(340px, calc(100vw - 80px));
+    padding: 10px;
+    border: 1px solid color-mix(in srgb, var(--color-text-primary) 22%, transparent);
+    border-radius: 10px;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-md);
+    transform-origin: top left;
+    will-change: opacity, transform, clip-path;
+}
+
+.phoneField .countrySearch {
+    height: 42px;
+    padding: 0 12px;
+    border-color: color-mix(in srgb, var(--color-text-primary) 35%, transparent);
+    border-radius: 7px;
+}
+
+.countryOptions {
+    max-height: 238px;
+    margin-top: 8px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+
+    li[aria-selected="true"] button {
+        background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+    }
+
+    button {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 9px 10px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--color-text-primary);
+        cursor: pointer;
+        font-size: 14px;
+        text-align: left;
+
+        &:focus-visible {
+            outline: 2px solid var(--color-accent);
+            outline-offset: -2px;
+        }
+
+        @include can-hover {
+            &:hover {
+                background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+            }
+        }
+    }
+}
+
+.countryName {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.callingCode {
+    flex-shrink: 0;
+    color: var(--color-text-secondary);
+}
+
+.noCountries {
+    padding: 14px 10px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    text-align: center;
+}
+
+.submit {
+    min-height: 47px;
+    margin-top: 6px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--color-accent);
+    color: #000;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        opacity 0.2s ease;
+    @include focus-ring;
+
+    @include can-hover {
+        &:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(234, 253, 39, 0.28);
+        }
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    &:disabled {
+        cursor: wait;
+        opacity: 0.65;
+    }
+}
+
+.status {
+    position: absolute;
+    right: 32px;
+    bottom: 8px;
+    left: 32px;
+    min-height: 1em;
+    font-size: 12px;
+    text-align: center;
+    color: var(--color-text-secondary);
+}
+
+@media (max-width: 1023px) {
+    .section {
+        --_pad-top: 140px;
+        --_pad-bottom: 40px;
+    }
+
+    .introGrid,
+    .contentGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .introGrid {
+        gap: 32px;
+        margin-bottom: 60px;
+    }
+
+    .intro {
+        margin-top: 0;
+        margin-left: 0;
+    }
+
+    .details {
+        padding: 36px 0 0 54px;
+    }
+
+    .timeline {
+        left: 18px;
+
+        span {
+            top: 48px;
+        }
+    }
+
+    .talk {
+        margin-top: 64px;
+    }
+}
+
+@include respond-to("mobile") {
+    .section {
+        --_pad-top: 122px;
+    }
+
+    .title {
+        font-size: clamp(42px, 13vw, 58px);
+    }
+
+    .intro {
+        font-size: 18px;
+    }
+
+    .details {
+        padding-left: 48px;
+    }
+
+    .availability h2,
+    .talk h2 {
+        font-size: 20px;
+    }
+
+    .form {
+        gap: 30px;
+        padding: 24px 18px 28px;
+        border-radius: 18px;
+    }
+
+    .phoneInputs {
+        grid-template-columns: 98px 1fr;
+        gap: 8px;
+    }
+
+    .countryDropdown {
+        width: min(310px, calc(100vw - 76px));
+    }
+
+    .status {
+        right: 18px;
+        bottom: 6px;
+        left: 18px;
     }
 }

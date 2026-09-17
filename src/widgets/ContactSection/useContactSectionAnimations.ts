@@ -2,130 +2,165 @@
 
 import { useRef } from "react";
 import { useReducedMotion } from "framer-motion";
-import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
-import { useGSAP, gsap } from "@/shared/lib/gsap";
-import { revealHeader } from "@/shared/lib/animation";
+import { gsap, useGSAP } from "@/shared/lib/gsap";
 
-const isCompact = () => window.matchMedia("(max-width: 767px)").matches;
+export function useContactSectionAnimations(enabled: boolean) {
+    const sectionRef = useRef<HTMLElement>(null);
+    const reducedMotion = useReducedMotion();
 
-export function useContactSectionAnimations(enabled = true) {
-    const reduced = useReducedMotion();
-
-    useScrollTriggerAutoRefresh([reduced, enabled]);
-
-    const sectionRef = useRef<HTMLDivElement>(null);
-    const headerRef = useRef<HTMLDivElement>(null);
-    const terminalWrapRef = useRef<HTMLDivElement>(null);
-    const headlineBlockRef = useRef<HTMLDivElement>(null);
-    const linksRef = useRef<HTMLDivElement>(null);
-
-    // == Header: terminal wrap slides in from left ============
     useGSAP(
         () => {
-            if (!sectionRef.current) return;
-            const header = headerRef.current;
-            const wrap = terminalWrapRef.current;
-            if (!header || !wrap) return;
-            if (!enabled) return;
+            const section = sectionRef.current;
+            if (!section || !enabled) return;
 
-            revealHeader({
-                leading: wrap,
-                trigger: header,
-                start: isCompact() ? "top 92%" : "top 90%",
-                reduced,
-            });
-        },
-        { scope: sectionRef, dependencies: [reduced, enabled], revertOnUpdate: true }
-    );
+            const title = section.querySelector<HTMLElement>("[data-contact-title]");
+            const intro = section.querySelector<HTMLElement>("[data-contact-intro]");
+            const line = section.querySelector<HTMLElement>("[data-contact-line]");
+            const dot = section.querySelector<HTMLElement>("[data-contact-dot]");
+            const details = gsap.utils.toArray<HTMLElement>("[data-contact-detail]", section);
+            const services = gsap.utils.toArray<HTMLElement>("[data-contact-service]", section);
+            const form = section.querySelector<HTMLElement>("[data-contact-form]");
+            const formItems = gsap.utils.toArray<HTMLElement>("[data-contact-form-item]", section);
+            const targets = [
+                title,
+                intro,
+                line,
+                dot,
+                form,
+                ...details,
+                ...services,
+                ...formItems,
+            ].filter(Boolean);
 
-    // == Headline: start word slides from left, end word from right ====
-    useGSAP(
-        () => {
-            if (!sectionRef.current) return;
-            const block = headlineBlockRef.current;
-            if (!block) return;
-            if (!enabled) return;
-
-            const start = block.querySelector<HTMLElement>("[data-contact-start]");
-            const end = block.querySelector<HTMLElement>("[data-contact-end]");
-            const tagline = block.querySelector<HTMLElement>("[data-contact-tagline]");
-
-            if (reduced) {
-                gsap.set([start, end, tagline].filter(Boolean), { clearProps: "all" });
+            if (reducedMotion) {
+                gsap.set(targets, { clearProps: "all" });
                 return;
             }
 
-            const tl = gsap.timeline({
-                defaults: { force3D: true },
-                scrollTrigger: {
-                    trigger: block,
-                    start: "top 80%",
-                    toggleActions: "play none none reverse",
-                    invalidateOnRefresh: true,
-                },
-            });
+            const timeline = gsap.timeline({ defaults: { force3D: true } });
 
-            if (start) {
-                tl.fromTo(
-                    start,
-                    { x: -70, filter: "blur(22px)" },
-                    { x: 0, filter: "blur(0px)", duration: 0.9, ease: "power3.out" },
-                    0
-                );
-            }
-            if (end) {
-                tl.fromTo(
-                    end,
-                    { x: 70, filter: "blur(22px)" },
-                    { x: 0, filter: "blur(0px)", duration: 0.9, ease: "power3.out" },
-                    0
-                );
-            }
-            if (tagline) {
-                tl.fromTo(
-                    tagline,
-                    { y: 18, filter: "blur(8px)" },
-                    { y: 0, filter: "blur(0px)", duration: 0.6, ease: "power2.out" },
-                    0.22
-                );
-            }
-        },
-        { scope: sectionRef, dependencies: [reduced, enabled], revertOnUpdate: true }
-    );
-
-    // == Links: fade up as a unit ============================
-    useGSAP(
-        () => {
-            if (!sectionRef.current) return;
-            const links = linksRef.current;
-            if (!links) return;
-            if (!enabled) return;
-
-            if (reduced) {
-                gsap.set(links, { clearProps: "all" });
-                return;
-            }
-
-            gsap.fromTo(
-                links,
-                { y: 28, filter: "blur(10px)" },
-                {
-                    y: 0,
-                    filter: "blur(0px)",
-                    duration: 0.65,
-                    ease: "power2.out",
-                    force3D: true,
-                    scrollTrigger: {
-                        trigger: links,
-                        start: "top 88%",
-                        toggleActions: "play none none reverse",
-                        invalidateOnRefresh: true,
+            if (title) {
+                timeline.fromTo(
+                    title,
+                    { autoAlpha: 0, y: 42, filter: "blur(14px)" },
+                    {
+                        autoAlpha: 1,
+                        y: 0,
+                        filter: "blur(0px)",
+                        duration: 0.9,
+                        ease: "power3.out",
                     },
-                }
-            );
+                    0
+                );
+            }
+
+            if (intro) {
+                timeline.fromTo(
+                    intro,
+                    { autoAlpha: 0, y: 26, filter: "blur(10px)" },
+                    {
+                        autoAlpha: 1,
+                        y: 0,
+                        filter: "blur(0px)",
+                        duration: 0.75,
+                        ease: "power3.out",
+                    },
+                    0.18
+                );
+            }
+
+            if (line) {
+                timeline.fromTo(
+                    line,
+                    { scaleY: 0, transformOrigin: "top center" },
+                    { scaleY: 1, duration: 0.85, ease: "power3.inOut" },
+                    0.38
+                );
+            }
+
+            if (dot) {
+                timeline.fromTo(
+                    dot,
+                    { scale: 0, autoAlpha: 0 },
+                    { scale: 1, autoAlpha: 1, duration: 0.55, ease: "back.out(2.2)" },
+                    0.88
+                );
+            }
+
+            if (details.length > 0) {
+                timeline.fromTo(
+                    details,
+                    { autoAlpha: 0, x: -20, y: 18 },
+                    {
+                        autoAlpha: 1,
+                        x: 0,
+                        y: 0,
+                        duration: 0.65,
+                        stagger: 0.14,
+                        ease: "power3.out",
+                    },
+                    0.58
+                );
+            }
+
+            if (services.length > 0) {
+                timeline.fromTo(
+                    services,
+                    {
+                        autoAlpha: 0,
+                        x: -48,
+                        y: 9,
+                        scale: 0.97,
+                        filter: "blur(5px)",
+                        transformOrigin: "left center",
+                    },
+                    {
+                        autoAlpha: 1,
+                        x: 0,
+                        y: 0,
+                        scale: 1,
+                        filter: "blur(0px)",
+                        duration: 0.62,
+                        stagger: 0.13,
+                        ease: "back.out(1.45)",
+                    },
+                    0.84
+                );
+            }
+
+            if (form) {
+                timeline.fromTo(
+                    form,
+                    { autoAlpha: 0, y: 38, scale: 0.985, filter: "blur(10px)" },
+                    {
+                        autoAlpha: 1,
+                        y: 0,
+                        scale: 1,
+                        filter: "blur(0px)",
+                        duration: 0.85,
+                        ease: "power3.out",
+                    },
+                    0.34
+                );
+            }
+
+            if (formItems.length > 0) {
+                timeline.fromTo(
+                    formItems,
+                    { autoAlpha: 0, y: 16 },
+                    {
+                        autoAlpha: 1,
+                        y: 0,
+                        duration: 0.5,
+                        stagger: 0.07,
+                        ease: "power2.out",
+                    },
+                    0.68
+                );
+            }
         },
-        { scope: sectionRef, dependencies: [reduced, enabled], revertOnUpdate: true }
+        { scope: sectionRef, dependencies: [enabled, reducedMotion], revertOnUpdate: true }
     );
 
-    return { sectionRef, headerRef, terminalWrapRef, headlineBlockRef, linksRef };
+    return sectionRef;
 }

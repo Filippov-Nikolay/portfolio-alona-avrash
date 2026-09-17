@@ -12,14 +12,34 @@
         "unavailable": "Obecnie niedostępna"
     },
     "contact": {
-        "headlineStart": "Porozmawiajmy",
-        "headlineEnd": "Razem",
-        "tagline": "Skontaktuj się z nami",
-        "github": "GitHub",
-        "telegram": "Telegram",
-        "gmail": "Gmail",
-        "linkedin": "LinkedIn",
-        "instagram": "Instagram"
+        "title": "Stwórzmy\ncoś\nrazem",
+        "intro": "Masz pomysł na projekt lub po prostu chcesz się przywitać? Wypełnij formularz, a odezwę się tak szybko, jak to możliwe.",
+        "availability": {
+            "title": "Dostępna w zakresie",
+            "branding": "Branding",
+            "packaging": "Projektowanie opakowań",
+            "digital": "Digital design",
+            "direction": "Art direction"
+        },
+        "talk": "Porozmawiajmy",
+        "socialsLabel": "Linki społecznościowe",
+        "form": {
+            "name": "Imię*",
+            "namePlaceholder": "Twoje imię",
+            "email": "E-mail*",
+            "emailPlaceholder": "twoj@email.com",
+            "phone": "Telefon",
+            "countryCode": "Kod kraju",
+            "countrySearch": "Szukaj kraju lub kodu",
+            "noCountries": "Nie znaleziono kraju",
+            "optional": "Opcjonalnie",
+            "message": "Wiadomość*",
+            "messagePlaceholder": "Opowiedz mi o swoim projekcie...",
+            "submit": "Wyślij wiadomość",
+            "sending": "Wysyłanie...",
+            "success": "Dziękuję! Twoja wiadomość została przyjęta.",
+            "error": "Coś poszło nie tak. Spróbuj ponownie."
+        }
     },
     "categories": {
         "ui-ux": "UI/UX",

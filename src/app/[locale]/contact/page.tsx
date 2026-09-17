@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { getSocials } from "@/entities/social/api/getSocials";
 import { ContactSection } from "@/widgets/ContactSection";
 
 interface ContactPageProps {
@@ -13,10 +14,12 @@ export async function generateMetadata({ params }: ContactPageProps): Promise<Me
     return { title: t("contact") };
 }
 
-export default function ContactPage() {
+export default async function ContactPage() {
+    const socials = await getSocials();
+
     return (
         <main>
-            <ContactSection />
+            <ContactSection socials={socials} />
         </main>
     );
 }

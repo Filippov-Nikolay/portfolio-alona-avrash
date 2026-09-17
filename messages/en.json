@@ -12,14 +12,34 @@
         "unavailable": "Not available right now"
     },
     "contact": {
-        "headlineStart": "Let's",
-        "headlineEnd": "Talk",
-        "tagline": "Get in touch",
-        "github": "GitHub",
-        "telegram": "Telegram",
-        "gmail": "Gmail",
-        "linkedin": "LinkedIn",
-        "instagram": "Instagram"
+        "title": "Let's\ncreate\ntogether",
+        "intro": "Have a project in mind or just want to say hello? Fill out the form and I'll get back to you as soon as possible.",
+        "availability": {
+            "title": "Available for",
+            "branding": "Branding",
+            "packaging": "Packaging Design",
+            "digital": "Digital Design",
+            "direction": "Art Direction"
+        },
+        "talk": "Let's talk",
+        "socialsLabel": "Social links",
+        "form": {
+            "name": "Name*",
+            "namePlaceholder": "Your name",
+            "email": "Email*",
+            "emailPlaceholder": "your@email.com",
+            "phone": "Phone",
+            "countryCode": "Country code",
+            "countrySearch": "Search country or code",
+            "noCountries": "No countries found",
+            "optional": "Optional",
+            "message": "Message*",
+            "messagePlaceholder": "Tell me about your project...",
+            "submit": "Send message",
+            "sending": "Sending...",
+            "success": "Thank you! Your message has been received.",
+            "error": "Something went wrong. Please try again."
+        }
     },
     "categories": {
         "ui-ux": "UI/UX",

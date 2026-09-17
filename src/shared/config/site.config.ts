@@ -17,7 +17,7 @@ export const siteConfig = {
         instagram: "https://instagram.com/",
         pinterest: "https://pinterest.com/",
         behance: "https://behance.net/",
-        email: "mailto:hello@example.com",
+        email: "mailto:alonaavrash009@gmail.com",
         // TODO: drop the real CV/resume PDF at this path.
         cv: "/cv/alona-avrash-cv.pdf",
     },

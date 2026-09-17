@@ -300,7 +300,13 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                                 alt=""
                                 fill
                                 className={styles.bannerImage}
-                                sizes="(max-width: 1023px) 70vw, 672px"
+                                // The banner is 70% of the modal's width, and the modal
+                                // itself is fluid (calc(100% - 390px)) - a fixed desktop
+                                // value here (e.g. "672px") stays right for one viewport
+                                // width and then serves an under-sized, upscaled-looking
+                                // image on every wider one. 70vw is always >= the actual
+                                // rendered width, so the browser never under-fetches.
+                                sizes="70vw"
                                 quality={95}
                                 priority
                                 draggable={false}

@@ -249,27 +249,32 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                 </div>
 
                 <div className={styles.content}>
-                    <div ref={tabsRef} className={styles.tabs} role="tablist">
-                        <button
-                            type="button"
-                            role="tab"
-                            aria-selected={tab === "overview"}
-                            className={cn(styles.tab, tab === "overview" && styles.tabActive)}
-                            onClick={() => setTab("overview")}
-                        >
-                            {t("overviewTab")}
-                        </button>
-                        {hasGallery && (
+                    <div ref={tabsRef} className={styles.tabs}>
+                        <div className={styles.tabsRow} role="tablist">
                             <button
                                 type="button"
                                 role="tab"
-                                aria-selected={tab === "gallery"}
-                                className={cn(styles.tab, tab === "gallery" && styles.tabActive)}
-                                onClick={() => setTab("gallery")}
+                                aria-selected={tab === "overview"}
+                                className={cn(styles.tab, tab === "overview" && styles.tabActive)}
+                                onClick={() => setTab("overview")}
                             >
-                                {t("galleryTab")}
+                                {t("overviewTab")}
                             </button>
-                        )}
+                            {hasGallery && (
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={tab === "gallery"}
+                                    className={cn(
+                                        styles.tab,
+                                        tab === "gallery" && styles.tabActive
+                                    )}
+                                    onClick={() => setTab("gallery")}
+                                >
+                                    {t("galleryTab")}
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     <AnimatePresence mode="wait" initial={false}>

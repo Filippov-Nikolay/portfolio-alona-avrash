@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import type { FooterContent } from "@/entities/footer/model/footer";
 import type { Social } from "@/entities/social/model/social";
+import { SocialLinks } from "@/entities/social/ui/SocialLinks";
 import { siteConfig } from "@/shared/config/site.config";
 import { Container } from "@/shared/ui";
 import { useFooterAnimations } from "./useFooterAnimations";
@@ -47,30 +48,12 @@ export function FooterClient({ footer, socials }: FooterClientProps) {
                             </span>
                         </p>
 
-                        <ul className={styles.socials} aria-label="Social links">
-                            {socials.map((social) => (
-                                <li
-                                    key={social.id}
-                                    className={styles.socialItem}
-                                    data-footer-social-item
-                                >
-                                    <a
-                                        href={social.link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        aria-label={social.logo.alt ?? social.id}
-                                        className={styles.socialLink}
-                                        style={
-                                            {
-                                                "--social-icon": `url(${social.logo.src})`,
-                                            } as CSSProperties
-                                        }
-                                    >
-                                        <span className={styles.socialIcon} aria-hidden="true" />
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
+                        <SocialLinks
+                            socials={socials}
+                            ariaLabel="Social links"
+                            variant="accent"
+                            animateItems
+                        />
                     </div>
 
                     <div ref={rightRef} className={styles.right}>

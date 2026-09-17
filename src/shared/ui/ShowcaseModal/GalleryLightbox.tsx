@@ -74,8 +74,9 @@ function StackItem({
     scrollYProgress: MotionValue<number>;
     render: boolean;
 }) {
-    const ownSlotStart = index / total;
-    const ownSlotEnd = (index + 1) / total;
+    const scrollSegments = Math.max(total - 1, 1);
+    const ownSlotStart = index / scrollSegments;
+    const ownSlotEnd = (index + 1) / scrollSegments;
     const covered = useTransform(scrollYProgress, [ownSlotStart, ownSlotEnd], [0, 1], {
         clamp: true,
     });

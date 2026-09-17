@@ -363,13 +363,16 @@
     gap: 25px;
     contain: layout;
 
-    @include respond-to("mobile") {
+    @include respond-to("tablet") {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
 
         > :nth-child(odd):last-child {
             grid-column: 1 / -1;
         }
+    }
+
+    @include respond-to("mobile") {
+        gap: 10px;
     }
 }
 

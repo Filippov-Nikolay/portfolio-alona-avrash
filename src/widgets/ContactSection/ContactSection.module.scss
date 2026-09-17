@@ -94,11 +94,39 @@
 }
 
 .email {
+    position: relative;
     display: inline-block;
-    margin-top: 28px;
+    margin-top: 12px;
+    padding-bottom: 4px;
     font-size: 15px;
     font-weight: 300;
+    text-decoration: none;
     @include focus-ring;
+
+    &::after {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 1px;
+        background: currentColor;
+        content: "";
+        transform: scaleX(0);
+        transform-origin: right center;
+        transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    &:focus-visible::after {
+        transform: scaleX(1);
+        transform-origin: left center;
+    }
+
+    @include can-hover {
+        &:hover::after {
+            transform: scaleX(1);
+            transform-origin: left center;
+        }
+    }
 }
 
 .socials {
@@ -130,6 +158,24 @@
         text-transform: uppercase;
     }
 
+    label,
+    legend > span:first-child {
+        transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        will-change: transform;
+    }
+
+    &:focus-within > label,
+    &:focus-within > legend > span:first-child {
+        transform: translateX(6px);
+    }
+
+    @include can-hover {
+        &:hover > label,
+        &:hover > legend > span:first-child {
+            transform: translateX(6px);
+        }
+    }
+
     input,
     textarea {
         width: 100%;
@@ -138,20 +184,25 @@
         outline: none;
         background: transparent;
         color: var(--color-text-primary);
+        caret-color: currentColor;
         font-size: 15px;
         font-weight: 300;
         transition:
-            border-color 0.2s ease,
-            box-shadow 0.2s ease;
+            border-color 0.24s ease,
+            background-color 0.24s ease,
+            color 0.24s ease;
 
         &::placeholder {
             color: color-mix(in srgb, var(--color-text-primary) 28%, transparent);
             opacity: 1;
+            transition: color 0.24s ease;
         }
 
         &:focus {
-            border-color: var(--color-accent);
-            box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 25%, transparent);
+            border-color: var(--color-text-primary);
+            background: transparent;
+            color: var(--color-text-primary);
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-text-primary) 14%, transparent);
         }
 
         &:user-invalid {
@@ -169,6 +220,105 @@
         padding: 14px 15px;
         resize: vertical;
     }
+}
+
+.control {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 9px;
+
+    input,
+    textarea {
+        position: relative;
+        z-index: 1;
+        background: transparent;
+
+        &::placeholder {
+            color: transparent;
+        }
+
+        &:focus {
+            background: transparent;
+            color: var(--color-text-primary);
+        }
+
+        &:not(:placeholder-shown) + .animatedPlaceholder {
+            opacity: 0;
+        }
+    }
+
+    &:focus-within {
+        .placeholderCharTop {
+            transform: translateY(-100%);
+        }
+
+        .placeholderCharBottom {
+            transform: translateY(0);
+        }
+    }
+
+    @include can-hover {
+        &:hover {
+            .placeholderCharTop {
+                transform: translateY(-100%);
+            }
+
+            .placeholderCharBottom {
+                transform: translateY(0);
+            }
+        }
+    }
+}
+
+.animatedPlaceholder {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    left: 15px;
+    z-index: 2;
+    display: flex;
+    overflow: hidden;
+    color: color-mix(in srgb, var(--color-text-primary) 28%, transparent);
+    font-size: 15px;
+    font-weight: 300;
+    line-height: 1;
+    pointer-events: none;
+    transform: translateY(-50%);
+    transition: opacity 0.16s ease;
+    white-space: nowrap;
+}
+
+.textareaControl .animatedPlaceholder {
+    top: 16px;
+    transform: none;
+}
+
+.placeholderChar {
+    position: relative;
+    display: inline-block;
+    height: 1em;
+    flex: 0 0 auto;
+    overflow: hidden;
+    line-height: 1;
+    vertical-align: top;
+}
+
+.placeholderCharTop,
+.placeholderCharBottom {
+    display: block;
+    white-space: pre;
+    transition: transform 0.22s cubic-bezier(0.65, 0, 0.35, 1);
+    transition-delay: var(--placeholder-delay, 0ms);
+}
+
+.placeholderCharBottom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: inherit;
+    transform: translateY(100%);
 }
 
 .phoneField legend {
@@ -231,12 +381,17 @@
     cursor: pointer;
     font-size: 15px;
     font-weight: 300;
+    transition:
+        border-color 0.24s ease,
+        background-color 0.24s ease,
+        color 0.24s ease;
 
     &:focus-visible,
     &[aria-expanded="true"] {
-        border-color: var(--color-accent);
+        border-color: var(--color-text-primary);
         outline: none;
-        box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 25%, transparent);
+        color: var(--color-text-primary);
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-text-primary) 14%, transparent);
     }
 }
 
@@ -384,14 +539,23 @@
         --_pad-bottom: 40px;
     }
 
-    .introGrid,
-    .contentGrid {
-        grid-template-columns: 1fr;
+    .contactLayout {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(300px, 1.1fr);
+        column-gap: 40px;
+        row-gap: 64px;
+        align-items: start;
     }
 
     .introGrid {
+        display: flex;
+        flex-direction: column;
         gap: 32px;
-        margin-bottom: 60px;
+        margin-bottom: 0;
+    }
+
+    .contentGrid {
+        display: contents;
     }
 
     .intro {
@@ -400,7 +564,15 @@
     }
 
     .details {
+        grid-column: 2;
+        grid-row: 1;
         padding: 36px 0 0 54px;
+    }
+
+    .form {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        width: 100%;
     }
 
     .timeline {
@@ -413,6 +585,31 @@
 
     .talk {
         margin-top: 64px;
+    }
+}
+
+@media (max-width: 599px) {
+    .contactLayout {
+        grid-template-columns: 1fr;
+        row-gap: 48px;
+    }
+
+    .introGrid,
+    .details,
+    .form {
+        grid-column: 1;
+    }
+
+    .introGrid {
+        grid-row: 1;
+    }
+
+    .details {
+        grid-row: 2;
+    }
+
+    .form {
+        grid-row: 3;
     }
 }
 
@@ -457,5 +654,13 @@
         right: 18px;
         bottom: 6px;
         left: 18px;
+    }
+}
+
+@include reduced-motion {
+    .email::after,
+    .placeholderCharTop,
+    .placeholderCharBottom {
+        transition: none;
     }
 }

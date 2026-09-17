@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, type CSSProperties } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { Social } from "@/entities/social/model/social";
 import { SocialLinks } from "@/entities/social/ui/SocialLinks";
@@ -13,6 +13,28 @@ import { useContactSectionAnimations } from "./useContactSectionAnimations";
 import styles from "./ContactSection.module.scss";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
+const PLACEHOLDER_STAGGER_MS = 18;
+
+function AnimatedPlaceholder({ text }: { text: string }) {
+    return (
+        <span className={styles.animatedPlaceholder} aria-hidden="true">
+            {Array.from(text).map((character, index) => (
+                <span
+                    key={`${character}-${index}`}
+                    className={styles.placeholderChar}
+                    style={
+                        {
+                            "--placeholder-delay": `${index * PLACEHOLDER_STAGGER_MS}ms`,
+                        } as CSSProperties
+                    }
+                >
+                    <span className={styles.placeholderCharTop}>{character}</span>
+                    <span className={styles.placeholderCharBottom}>{character}</span>
+                </span>
+            ))}
+        </span>
+    );
+}
 
 interface ContactSectionProps {
     socials: Social[];
@@ -59,124 +81,140 @@ export function ContactSection({ socials }: ContactSectionProps) {
     return (
         <Section ref={sectionRef} id="contact" className={styles.section}>
             <Container>
-                <div className={styles.introGrid}>
-                    <h1 className={styles.title} data-contact-title>
-                        {t("title")}
-                    </h1>
-                    <p className={styles.intro} data-contact-intro>
-                        {t("intro")}
-                    </p>
-                </div>
+                <div className={styles.contactLayout}>
+                    <div className={styles.introGrid}>
+                        <h1 className={styles.title} data-contact-title>
+                            {t("title")}
+                        </h1>
+                        <p className={styles.intro} data-contact-intro>
+                            {t("intro")}
+                        </p>
+                    </div>
 
-                <div className={styles.contentGrid}>
-                    <aside className={styles.details}>
-                        <div className={styles.timeline} data-contact-line aria-hidden="true">
-                            <span data-contact-dot />
-                        </div>
+                    <div className={styles.contentGrid}>
+                        <aside className={styles.details}>
+                            <div className={styles.timeline} data-contact-line aria-hidden="true">
+                                <span data-contact-dot />
+                            </div>
 
-                        <div className={styles.availability} data-contact-detail>
-                            <h2>{t("availability.title")}</h2>
-                            <ul>
-                                <li data-contact-service>{t("availability.branding")}</li>
-                                <li data-contact-service>{t("availability.packaging")}</li>
-                                <li data-contact-service>{t("availability.digital")}</li>
-                                <li data-contact-service>{t("availability.direction")}</li>
-                            </ul>
-                        </div>
+                            <div className={styles.availability} data-contact-detail>
+                                <h2>{t("availability.title")}</h2>
+                                <ul>
+                                    <li data-contact-service>{t("availability.branding")}</li>
+                                    <li data-contact-service>{t("availability.packaging")}</li>
+                                    <li data-contact-service>{t("availability.digital")}</li>
+                                    <li data-contact-service>{t("availability.direction")}</li>
+                                </ul>
+                            </div>
 
-                        <div className={styles.talk} data-contact-detail>
-                            <h2>{t("talk")}</h2>
-                            <a className={styles.email} href={siteConfig.links.email}>
-                                {email}
-                            </a>
+                            <div className={styles.talk} data-contact-detail>
+                                <h2>{t("talk")}</h2>
+                                <a className={styles.email} href={siteConfig.links.email}>
+                                    {email}
+                                </a>
 
-                            <SocialLinks
-                                socials={socials}
-                                ariaLabel={t("socialsLabel")}
-                                variant="accent"
-                                className={styles.socials}
-                            />
-                        </div>
-                    </aside>
-
-                    <form
-                        className={styles.form}
-                        onSubmit={handleSubmit}
-                        data-contact-form
-                        noValidate
-                    >
-                        <div className={styles.field} data-contact-form-item>
-                            <label htmlFor="contact-name">{t("form.name")}</label>
-                            <input
-                                id="contact-name"
-                                name="name"
-                                type="text"
-                                placeholder={t("form.namePlaceholder")}
-                                autoComplete="name"
-                                required
-                            />
-                        </div>
-
-                        <div className={styles.field} data-contact-form-item>
-                            <label htmlFor="contact-email">{t("form.email")}</label>
-                            <input
-                                id="contact-email"
-                                name="email"
-                                type="email"
-                                placeholder={t("form.emailPlaceholder")}
-                                autoComplete="email"
-                                required
-                            />
-                        </div>
-
-                        <fieldset className={styles.phoneField} data-contact-form-item>
-                            <legend>
-                                <span>{t("form.phone")}</span>
-                                <span>{t("form.optional")}</span>
-                            </legend>
-                            <div className={styles.phoneInputs}>
-                                <CountryCodeSelect
-                                    locale={locale}
-                                    label={t("form.countryCode")}
-                                    searchPlaceholder={t("form.countrySearch")}
-                                    noResultsLabel={t("form.noCountries")}
-                                />
-                                <input
-                                    name="phone"
-                                    type="tel"
-                                    inputMode="tel"
-                                    aria-label={t("form.phone")}
-                                    placeholder="123 456 789"
-                                    autoComplete="tel-national"
+                                <SocialLinks
+                                    socials={socials}
+                                    ariaLabel={t("socialsLabel")}
+                                    variant="accent"
+                                    className={styles.socials}
                                 />
                             </div>
-                        </fieldset>
+                        </aside>
 
-                        <div className={styles.field} data-contact-form-item>
-                            <label htmlFor="contact-message">{t("form.message")}</label>
-                            <textarea
-                                id="contact-message"
-                                name="message"
-                                placeholder={t("form.messagePlaceholder")}
-                                rows={7}
-                                required
-                            />
-                        </div>
-
-                        <button
-                            className={styles.submit}
-                            type="submit"
-                            disabled={submitState === "submitting"}
-                            data-contact-form-item
+                        <form
+                            className={styles.form}
+                            onSubmit={handleSubmit}
+                            data-contact-form
+                            noValidate
                         >
-                            {submitState === "submitting" ? t("form.sending") : t("form.submit")}
-                        </button>
+                            <div className={styles.field} data-contact-form-item>
+                                <label htmlFor="contact-name">{t("form.name")}</label>
+                                <div className={styles.control}>
+                                    <input
+                                        id="contact-name"
+                                        name="name"
+                                        type="text"
+                                        placeholder={t("form.namePlaceholder")}
+                                        autoComplete="name"
+                                        required
+                                    />
+                                    <AnimatedPlaceholder text={t("form.namePlaceholder")} />
+                                </div>
+                            </div>
 
-                        <p className={styles.status} aria-live="polite">
-                            {submitState === "success" && t("form.success")}
-                            {submitState === "error" && t("form.error")}
-                        </p>
-                    </form>
+                            <div className={styles.field} data-contact-form-item>
+                                <label htmlFor="contact-email">{t("form.email")}</label>
+                                <div className={styles.control}>
+                                    <input
+                                        id="contact-email"
+                                        name="email"
+                                        type="email"
+                                        placeholder={t("form.emailPlaceholder")}
+                                        autoComplete="email"
+                                        required
+                                    />
+                                    <AnimatedPlaceholder text={t("form.emailPlaceholder")} />
+                                </div>
+                            </div>
+
+                            <fieldset className={styles.phoneField} data-contact-form-item>
+                                <legend>
+                                    <span>{t("form.phone")}</span>
+                                    <span>{t("form.optional")}</span>
+                                </legend>
+                                <div className={styles.phoneInputs}>
+                                    <CountryCodeSelect
+                                        locale={locale}
+                                        label={t("form.countryCode")}
+                                        searchPlaceholder={t("form.countrySearch")}
+                                        noResultsLabel={t("form.noCountries")}
+                                    />
+                                    <div className={styles.control}>
+                                        <input
+                                            name="phone"
+                                            type="tel"
+                                            inputMode="tel"
+                                            aria-label={t("form.phone")}
+                                            placeholder="123 456 789"
+                                            autoComplete="tel-national"
+                                        />
+                                        <AnimatedPlaceholder text="123 456 789" />
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <div className={styles.field} data-contact-form-item>
+                                <label htmlFor="contact-message">{t("form.message")}</label>
+                                <div className={`${styles.control} ${styles.textareaControl}`}>
+                                    <textarea
+                                        id="contact-message"
+                                        name="message"
+                                        placeholder={t("form.messagePlaceholder")}
+                                        rows={7}
+                                        required
+                                    />
+                                    <AnimatedPlaceholder text={t("form.messagePlaceholder")} />
+                                </div>
+                            </div>
+
+                            <button
+                                className={styles.submit}
+                                type="submit"
+                                disabled={submitState === "submitting"}
+                                data-contact-form-item
+                            >
+                                {submitState === "submitting"
+                                    ? t("form.sending")
+                                    : t("form.submit")}
+                            </button>
+
+                            <p className={styles.status} aria-live="polite">
+                                {submitState === "success" && t("form.success")}
+                                {submitState === "error" && t("form.error")}
+                            </p>
+                        </form>
+                    </div>
                 </div>
             </Container>
         </Section>

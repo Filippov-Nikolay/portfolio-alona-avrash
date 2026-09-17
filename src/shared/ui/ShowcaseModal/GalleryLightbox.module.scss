@@ -121,6 +121,68 @@
     display: block;
 }
 
+.imageCover {
+    object-fit: cover;
+}
+
+.fitMorph,
+.fitLayer {
+    position: absolute;
+    inset: 0;
+}
+
+.fitMorph {
+    overflow: hidden;
+}
+
+.fitLayer {
+    will-change: opacity;
+}
+
+.transitionPair,
+.transitionImage {
+    position: absolute;
+    inset: 0;
+}
+
+.transitionPair {
+    overflow: hidden;
+}
+
+.transitionPanel {
+    position: absolute;
+    overflow: hidden;
+    background: var(--accent-color-modal, #000);
+    will-change: top, left, width, height;
+}
+
+.transitionImage {
+    will-change: opacity;
+}
+
+.transitionDivider {
+    position: absolute;
+    z-index: 1;
+    background: var(--accent-color-modal, #000);
+    pointer-events: none;
+
+    &[data-orientation="row"] {
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 2px;
+        transform: translateX(-1px);
+    }
+
+    &[data-orientation="stack"] {
+        right: 0;
+        bottom: 50%;
+        left: 0;
+        height: 2px;
+        transform: translateY(1px);
+    }
+}
+
 .scrollArea {
     position: relative;
     z-index: 1;

@@ -9,6 +9,7 @@ import {
     useSpring,
     useTransform,
     type MotionValue,
+    type TargetAndTransition,
 } from "framer-motion";
 import type { ShowcaseGalleryImage } from "@/shared/types";
 import { CloseIcon } from "@/shared/ui";
@@ -37,26 +38,198 @@ interface GalleryLightboxProps {
 }
 
 const TILE_RADIUS_PX = 12;
-const OPEN_TRANSITION = { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const };
+const OPEN_TRANSITION = { duration: 0.64, ease: [0.22, 1, 0.36, 1] as const };
 // Exported so the background scroll-into-place (driven from
 // ShowcaseModal) can use the exact same duration/easing - two
 // independently-timed animations drifting apart is what caused the
 // mismatched landing this used to have.
-export const CLOSE_TRANSITION = { duration: 0.4, ease: [0.65, 0, 0.25, 1] as const };
+export const CLOSE_TRANSITION = { duration: 0.52, ease: [0.65, 0, 0.25, 1] as const };
 const RENDER_WINDOW = 2;
 const PROGRESS_SPRING = { stiffness: 460, damping: 38, mass: 0.45 };
 
-function FramedImage({ src, alt }: { src: string; alt: string }) {
+function FramedImage({
+    src,
+    alt,
+    eager = false,
+    fit = "contain",
+}: {
+    src: string;
+    alt: string;
+    eager?: boolean;
+    fit?: "contain" | "cover";
+}) {
     return (
         // eslint-disable-next-line @next/next/no-img-element
         <img
             src={src}
             alt={alt}
-            className={styles.imageForeground}
+            className={`${styles.imageForeground} ${fit === "cover" ? styles.imageCover : ""}`}
             draggable={false}
-            loading="lazy"
+            loading={eager ? "eager" : "lazy"}
             decoding="async"
         />
+    );
+}
+
+function FitMorphImage({
+    src,
+    alt,
+    phase,
+}: {
+    src: string;
+    alt: string;
+    phase: "opening" | "closing";
+}) {
+    const opening = phase === "opening";
+    const transition = {
+        duration: opening ? 0.34 : 0.3,
+        delay: opening ? 0.1 : 0.08,
+        ease: [0.4, 0, 0.2, 1] as const,
+    };
+
+    return (
+        <div className={styles.fitMorph}>
+            <m.div
+                className={styles.fitLayer}
+                initial={{ opacity: opening ? 1 : 0 }}
+                animate={{ opacity: opening ? 0 : 1 }}
+                transition={transition}
+                aria-hidden="true"
+            >
+                <FramedImage src={src} alt="" eager fit="cover" />
+            </m.div>
+            <m.div
+                className={styles.fitLayer}
+                initial={{ opacity: opening ? 0 : 1 }}
+                animate={{ opacity: opening ? 1 : 0 }}
+                transition={transition}
+            >
+                <FramedImage src={src} alt={alt} eager />
+            </m.div>
+        </div>
+    );
+}
+
+const FULL_FRAME: TargetAndTransition = {
+    top: "0%",
+    left: "0%",
+    width: "100%",
+    height: "100%",
+};
+
+function getPairFrame(type: "row" | "stack", position: number): TargetAndTransition {
+    if (type === "row") {
+        return {
+            top: "0%",
+            left: position === 0 ? "0%" : "50%",
+            width: "50%",
+            height: "100%",
+        };
+    }
+
+    return {
+        top: position === 0 ? "0%" : "50%",
+        left: "0%",
+        width: "100%",
+        height: "50%",
+    };
+}
+
+function getCollapsedFrame(type: "row" | "stack", position: number): TargetAndTransition {
+    if (type === "row") {
+        return {
+            top: "0%",
+            left: position === 0 ? "0%" : "100%",
+            width: "0%",
+            height: "100%",
+        };
+    }
+
+    return {
+        top: position === 0 ? "0%" : "100%",
+        left: "0%",
+        width: "100%",
+        height: "0%",
+    };
+}
+
+function TransitionSlotContent({
+    slot,
+    anchorIndex,
+    phase,
+}: {
+    slot: GallerySlot;
+    anchorIndex: number;
+    phase: "opening" | "closing";
+}) {
+    if (slot.type === "single") {
+        const { image } = slot.images[0];
+        return <FitMorphImage src={image.src} alt={image.alt} phase={phase} />;
+    }
+
+    const anchorPosition = Math.max(
+        0,
+        slot.images.findIndex(({ originalIndex }) => originalIndex === anchorIndex)
+    );
+    const opening = phase === "opening";
+
+    return (
+        <div className={styles.transitionPair}>
+            {slot.images.map(({ image, originalIndex }, position) => {
+                const anchor = position === anchorPosition;
+                const pairFrame = getPairFrame(slot.type, position);
+                const hiddenFrame = anchor ? FULL_FRAME : getCollapsedFrame(slot.type, position);
+
+                return (
+                    <m.div
+                        key={originalIndex}
+                        className={styles.transitionPanel}
+                        initial={opening ? hiddenFrame : pairFrame}
+                        animate={opening ? pairFrame : hiddenFrame}
+                        transition={
+                            opening
+                                ? {
+                                      duration: anchor ? 0.5 : 0.46,
+                                      delay: anchor ? 0.08 : 0.12,
+                                      ease: [0.22, 1, 0.36, 1],
+                                  }
+                                : {
+                                      duration: anchor ? 0.36 : 0.28,
+                                      ease: [0.65, 0, 0.25, 1],
+                                  }
+                        }
+                    >
+                        <m.div
+                            className={styles.transitionImage}
+                            initial={opening && !anchor ? { opacity: 0 } : { opacity: 1 }}
+                            animate={opening || anchor ? { opacity: 1 } : { opacity: 0 }}
+                            transition={
+                                opening
+                                    ? { duration: 0.3, delay: anchor ? 0 : 0.16 }
+                                    : { duration: anchor ? 0 : 0.2 }
+                            }
+                        >
+                            {anchor ? (
+                                <FitMorphImage src={image.src} alt={image.alt} phase={phase} />
+                            ) : (
+                                <FramedImage src={image.src} alt={image.alt} eager />
+                            )}
+                        </m.div>
+                    </m.div>
+                );
+            })}
+            <m.div
+                className={styles.transitionDivider}
+                data-orientation={slot.type}
+                initial={{ opacity: opening ? 0 : 1 }}
+                animate={{ opacity: opening ? 1 : 0 }}
+                transition={
+                    opening
+                        ? { duration: 0.24, delay: 0.32, ease: "easeOut" }
+                        : { duration: 0.16, ease: "easeOut" }
+                }
+            />
+        </div>
     );
 }
 
@@ -263,6 +436,7 @@ export function GalleryLightbox({
     const [phase, setPhase] = useState<"opening" | "open" | "closing">("opening");
     const [closeRect, setCloseRect] = useState<LightboxRect | null>(null);
     const [closeIndex, setCloseIndex] = useState(initialIndex);
+    const [closeSlotIndex, setCloseSlotIndex] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const slots = useMemo(() => computeGallerySlots(images), [images]);
@@ -276,10 +450,16 @@ export function GalleryLightbox({
         const slotIndex = el
             ? Math.min(slots.length - 1, Math.max(0, Math.round(el.scrollTop / el.clientHeight)))
             : initialSlotIndex;
-        // A paired slot holds two original images - report the first as
-        // the close target, since that's the one whose grid tile the
-        // shrink-back animation should land on.
-        const index = slots[slotIndex]?.images[0]?.originalIndex ?? initialIndex;
+        const slot = slots[slotIndex];
+        // When the currently visible pair is the one that was opened, return
+        // to the exact tile the user clicked. A pair reached by scrolling has
+        // no chosen half, so its first image is the stable fallback target.
+        const index =
+            slot?.images.find(({ originalIndex }) => originalIndex === initialIndex)
+                ?.originalIndex ??
+            slot?.images[0]?.originalIndex ??
+            initialIndex;
+        setCloseSlotIndex(slotIndex);
         setCloseIndex(index);
         setCloseRect(getCloseRect(index) ?? launchRect);
         setPhase("closing");
@@ -306,6 +486,9 @@ export function GalleryLightbox({
     }, []);
 
     const rect = phase === "closing" ? (closeRect ?? launchRect) : fillRect;
+    const transitionSlot =
+        slots[phase === "closing" ? closeSlotIndex : initialSlotIndex] ?? slots[0];
+    const transitionAnchorIndex = phase === "closing" ? closeIndex : initialIndex;
 
     return (
         <m.div
@@ -344,10 +527,17 @@ export function GalleryLightbox({
                     initialSlotIndex={initialSlotIndex}
                     scrollRef={scrollRef}
                 />
+            ) : transitionSlot ? (
+                <TransitionSlotContent
+                    slot={transitionSlot}
+                    anchorIndex={transitionAnchorIndex}
+                    phase={phase}
+                />
             ) : (
                 <FramedImage
-                    src={images[phase === "closing" ? closeIndex : initialIndex].src}
-                    alt={images[phase === "closing" ? closeIndex : initialIndex].alt}
+                    src={images[transitionAnchorIndex].src}
+                    alt={images[transitionAnchorIndex].alt}
+                    eager
                 />
             )}
         </m.div>

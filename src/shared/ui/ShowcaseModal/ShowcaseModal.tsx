@@ -11,7 +11,6 @@ import { Button, ArrowIcon, ToolBadge, getToolBadge, CloseIcon } from "@/shared/
 import { ACCENT_COLORS } from "@/shared/constants/colors";
 import { cn } from "@/shared/lib/cn";
 import { GalleryLightbox, CLOSE_TRANSITION, type LightboxRect } from "./GalleryLightbox";
-import { createImageBackdrop } from "./imageBackdrop";
 import { useGalleryTilt } from "./useGalleryTilt";
 import styles from "./ShowcaseModal.module.scss";
 
@@ -51,7 +50,6 @@ function TileImage({
 
     const handleImageLoad = (image: HTMLImageElement) => {
         if (!image.naturalWidth || !image.naturalHeight) return;
-        createImageBackdrop(src, image);
 
         if (animated && !poster) {
             const canvas = document.createElement("canvas");

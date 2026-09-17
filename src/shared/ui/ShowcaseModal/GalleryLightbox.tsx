@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
     m,
     useMotionValueEvent,
@@ -13,7 +12,7 @@ import {
 } from "framer-motion";
 import type { ShowcaseGalleryImage } from "@/shared/types";
 import { CloseIcon } from "@/shared/ui";
-import { createImageBackdrop, getImageBackdrop } from "./imageBackdrop";
+import { computeGallerySlots, type GallerySlot, type GallerySlotImage } from "./gallerySlots";
 import styles from "./GalleryLightbox.module.scss";
 
 export interface LightboxRect {
@@ -48,44 +47,56 @@ const RENDER_WINDOW = 2;
 const PROGRESS_SPRING = { stiffness: 460, damping: 38, mass: 0.45 };
 
 function FramedImage({ src, alt }: { src: string; alt: string }) {
-    const [backdrop, setBackdrop] = useState(() => getImageBackdrop(src));
-
     return (
-        <>
-            {backdrop && (
-                <Image
-                    src={backdrop}
-                    alt=""
-                    aria-hidden="true"
-                    fill
-                    unoptimized
-                    loading="eager"
-                    className={styles.imageBackdrop}
-                    draggable={false}
-                />
-            )}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-                src={src}
-                alt={alt}
-                className={styles.imageForeground}
-                draggable={false}
-                loading="lazy"
-                decoding="async"
-                onLoad={(event) => setBackdrop(createImageBackdrop(src, event.currentTarget))}
-            />
-        </>
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+            src={src}
+            alt={alt}
+            className={styles.imageForeground}
+            draggable={false}
+            loading="lazy"
+            decoding="async"
+        />
     );
 }
 
-function StackItem({
-    image,
+// A slot's single image fills the whole sticky frame; a paired slot
+// (two portraits side-by-side, or two short/wide images stacked) splits
+// the frame in half and gives each image its own contain-fit half, each
+// with its own blurred backdrop.
+function SlotContent({ slot }: { slot: GallerySlot }) {
+    if (slot.type === "single") {
+        const { image } = slot.images[0];
+        return <FramedImage src={image.src} alt={image.alt} />;
+    }
+
+    return (
+        <div className={slot.type === "row" ? styles.pairRow : styles.pairStack}>
+            {slot.images.map(({ image, originalIndex }) => (
+                <div key={originalIndex} className={styles.pairHalf}>
+                    <FramedImage src={image.src} alt={image.alt} />
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function slotKey(slot: GallerySlot) {
+    return slot.images.map((slotImage) => slotImage.image.src).join("|");
+}
+
+function slotLabel(slot: GallerySlot) {
+    return slot.images.map((slotImage) => slotImage.image.alt).join(" / ");
+}
+
+function StackSlot({
+    slot,
     index,
     total,
     scrollYProgress,
     render,
 }: {
-    image: ShowcaseGalleryImage;
+    slot: GallerySlot;
     index: number;
     total: number;
     scrollYProgress: MotionValue<number>;
@@ -103,21 +114,21 @@ function StackItem({
     return (
         <div className={styles.slot}>
             <m.div className={styles.sticky} style={{ scale, opacity, zIndex: index + 1 }}>
-                {render && <FramedImage src={image.src} alt={image.alt} />}
+                {render && <SlotContent slot={slot} />}
             </m.div>
         </div>
     );
 }
 
 function ProgressSegment({
-    image,
+    slot,
     index,
     total,
     active,
     scrollYProgress,
     onSelect,
 }: {
-    image: ShowcaseGalleryImage;
+    slot: GallerySlot;
     index: number;
     total: number;
     active: boolean;
@@ -151,24 +162,24 @@ function ProgressSegment({
                 opacity: reduceMotion ? targetOpacity : springOpacity,
             }}
             onClick={onSelect}
-            aria-label={image.alt}
+            aria-label={slotLabel(slot)}
             aria-current={active ? "true" : undefined}
         />
     );
 }
 
 function LightboxStack({
-    images,
-    initialIndex,
+    slots,
+    initialSlotIndex,
     scrollRef,
 }: {
-    images: ShowcaseGalleryImage[];
-    initialIndex: number;
+    slots: GallerySlot[];
+    initialSlotIndex: number;
     scrollRef: React.RefObject<HTMLDivElement | null>;
 }) {
-    const total = images.length;
+    const total = slots.length;
     const { scrollYProgress } = useScroll({ container: scrollRef });
-    const [centerIndex, setCenterIndex] = useState(initialIndex);
+    const [centerIndex, setCenterIndex] = useState(initialSlotIndex);
     const reduceMotion = useReducedMotion();
 
     useMotionValueEvent(scrollYProgress, "change", (v) => {
@@ -179,10 +190,10 @@ function LightboxStack({
     useLayoutEffect(() => {
         const el = scrollRef.current;
         if (!el) return;
-        el.scrollTop = initialIndex * el.clientHeight;
-    }, [initialIndex, scrollRef]);
+        el.scrollTop = initialSlotIndex * el.clientHeight;
+    }, [initialSlotIndex, scrollRef]);
 
-    const scrollToImage = (index: number) => {
+    const scrollToSlot = (index: number) => {
         const el = scrollRef.current;
         if (!el) return;
         el.scrollTo({
@@ -194,10 +205,10 @@ function LightboxStack({
     return (
         <>
             <div ref={scrollRef} className={styles.scrollArea}>
-                {images.map((image, index) => (
-                    <StackItem
-                        key={image.src}
-                        image={image}
+                {slots.map((slot, index) => (
+                    <StackSlot
+                        key={slotKey(slot)}
+                        slot={slot}
                         index={index}
                         total={total}
                         scrollYProgress={scrollYProgress}
@@ -216,21 +227,28 @@ function LightboxStack({
                     role="group"
                     aria-label="Gallery images"
                 >
-                    {images.map((image, index) => (
+                    {slots.map((slot, index) => (
                         <ProgressSegment
-                            key={image.src}
-                            image={image}
+                            key={slotKey(slot)}
+                            slot={slot}
                             index={index}
                             total={total}
                             active={index === centerIndex}
                             scrollYProgress={scrollYProgress}
-                            onSelect={() => scrollToImage(index)}
+                            onSelect={() => scrollToSlot(index)}
                         />
                     ))}
                 </m.div>
             )}
         </>
     );
+}
+
+function findSlotIndex(slots: GallerySlot[], originalIndex: number) {
+    const index = slots.findIndex((slot) =>
+        slot.images.some((slotImage: GallerySlotImage) => slotImage.originalIndex === originalIndex)
+    );
+    return index === -1 ? 0 : index;
 }
 
 export function GalleryLightbox({
@@ -247,11 +265,21 @@ export function GalleryLightbox({
     const [closeIndex, setCloseIndex] = useState(initialIndex);
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    const slots = useMemo(() => computeGallerySlots(images), [images]);
+    const initialSlotIndex = useMemo(
+        () => findSlotIndex(slots, initialIndex),
+        [slots, initialIndex]
+    );
+
     const requestClose = () => {
         const el = scrollRef.current;
-        const index = el
-            ? Math.min(images.length - 1, Math.max(0, Math.round(el.scrollTop / el.clientHeight)))
-            : initialIndex;
+        const slotIndex = el
+            ? Math.min(slots.length - 1, Math.max(0, Math.round(el.scrollTop / el.clientHeight)))
+            : initialSlotIndex;
+        // A paired slot holds two original images - report the first as
+        // the close target, since that's the one whose grid tile the
+        // shrink-back animation should land on.
+        const index = slots[slotIndex]?.images[0]?.originalIndex ?? initialIndex;
         setCloseIndex(index);
         setCloseRect(getCloseRect(index) ?? launchRect);
         setPhase("closing");
@@ -311,7 +339,11 @@ export function GalleryLightbox({
             </button>
 
             {phase === "open" ? (
-                <LightboxStack images={images} initialIndex={initialIndex} scrollRef={scrollRef} />
+                <LightboxStack
+                    slots={slots}
+                    initialSlotIndex={initialSlotIndex}
+                    scrollRef={scrollRef}
+                />
             ) : (
                 <FramedImage
                     src={images[phase === "closing" ? closeIndex : initialIndex].src}

@@ -38,7 +38,11 @@ export function toShowcaseItem(
     const gallery = project.image
         .filter((image) => !image.isHero)
         .sort((a, b) => a.order - b.order)
-        .map((image) => ({ src: image.src, alt: image.alt ?? project.name }));
+        .map((image) => ({
+            src: image.src,
+            alt: image.alt ?? project.name,
+            pairMode: image.pairMode,
+        }));
 
     return {
         id: project.id,

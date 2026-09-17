@@ -1,6 +1,8 @@
 export interface ShowcaseGalleryImage {
     src: string;
     alt: string;
+    // Pairs this image with the next one in the lightbox - see ProjectImage.
+    pairMode?: "row" | "stack";
 }
 
 // Generic "showcase item" shape — used for any card-based collection:

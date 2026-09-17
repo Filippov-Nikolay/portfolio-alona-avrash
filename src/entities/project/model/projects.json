@@ -25,7 +25,8 @@
                 "id": 3,
                 "order": 3,
                 "src": "/projects/esencha/003.png",
-                "alt": "ESENCHA — visual 3"
+                "alt": "ESENCHA — visual 3",
+                "pairMode": "row"
             },
             {
                 "id": 4,
@@ -37,7 +38,8 @@
                 "id": 5,
                 "order": 5,
                 "src": "/projects/esencha/005.png",
-                "alt": "ESENCHA — visual 5"
+                "alt": "ESENCHA — visual 5",
+                "pairMode": "row"
             },
             {
                 "id": 6,
@@ -55,7 +57,8 @@
                 "id": 8,
                 "order": 8,
                 "src": "/projects/esencha/008.png",
-                "alt": "ESENCHA — visual 8"
+                "alt": "ESENCHA — visual 8",
+                "pairMode": "row"
             },
             {
                 "id": 9,
@@ -79,7 +82,8 @@
                 "id": 12,
                 "order": 12,
                 "src": "/projects/esencha/012.png",
-                "alt": "ESENCHA — visual 12"
+                "alt": "ESENCHA — visual 12",
+                "pairMode": "row"
             },
             {
                 "id": 13,
@@ -97,7 +101,8 @@
                 "id": 15,
                 "order": 15,
                 "src": "/projects/esencha/015.png",
-                "alt": "ESENCHA — visual 15"
+                "alt": "ESENCHA — visual 15",
+                "pairMode": "row"
             },
             {
                 "id": 16,
@@ -109,7 +114,8 @@
                 "id": 17,
                 "order": 17,
                 "src": "/projects/esencha/017.png",
-                "alt": "ESENCHA — visual 17"
+                "alt": "ESENCHA — visual 17",
+                "pairMode": "row"
             },
             {
                 "id": 18,
@@ -127,7 +133,8 @@
                 "id": 20,
                 "order": 20,
                 "src": "/projects/esencha/020.png",
-                "alt": "ESENCHA — visual 20"
+                "alt": "ESENCHA — visual 20",
+                "pairMode": "row"
             },
             {
                 "id": 21,
@@ -139,7 +146,8 @@
                 "id": 22,
                 "order": 22,
                 "src": "/projects/esencha/022.png",
-                "alt": "ESENCHA — visual 22"
+                "alt": "ESENCHA — visual 22",
+                "pairMode": "row"
             },
             {
                 "id": 23,
@@ -206,7 +214,8 @@
                 "id": 3,
                 "order": 3,
                 "src": "/projects/crusty/003.png",
-                "alt": "CRUSTY — visual 3"
+                "alt": "CRUSTY — visual 3",
+                "pairMode": "row"
             },
             {
                 "id": 4,
@@ -218,7 +227,8 @@
                 "id": 5,
                 "order": 5,
                 "src": "/projects/crusty/005.png",
-                "alt": "CRUSTY — visual 5"
+                "alt": "CRUSTY — visual 5",
+                "pairMode": "row"
             },
             {
                 "id": 6,
@@ -236,7 +246,8 @@
                 "id": 8,
                 "order": 8,
                 "src": "/projects/crusty/008.gif",
-                "alt": "CRUSTY — visual 8"
+                "alt": "CRUSTY — visual 8",
+                "pairMode": "row"
             },
             {
                 "id": 9,
@@ -254,7 +265,8 @@
                 "id": 11,
                 "order": 11,
                 "src": "/projects/crusty/011.png",
-                "alt": "CRUSTY — visual 11"
+                "alt": "CRUSTY — visual 11",
+                "pairMode": "row"
             },
             {
                 "id": 12,
@@ -266,7 +278,8 @@
                 "id": 13,
                 "order": 13,
                 "src": "/projects/crusty/013.gif",
-                "alt": "CRUSTY — visual 13"
+                "alt": "CRUSTY — visual 13",
+                "pairMode": "row"
             },
             {
                 "id": 14,
@@ -463,7 +476,8 @@
                 "id": 3,
                 "order": 3,
                 "src": "/projects/olva/003.png",
-                "alt": "OLVA — visual 3"
+                "alt": "OLVA — visual 3",
+                "pairMode": "row"
             },
             {
                 "id": 4,
@@ -475,7 +489,8 @@
                 "id": 5,
                 "order": 5,
                 "src": "/projects/olva/005.png",
-                "alt": "OLVA — visual 5"
+                "alt": "OLVA — visual 5",
+                "pairMode": "row"
             },
             {
                 "id": 6,
@@ -493,7 +508,8 @@
                 "id": 8,
                 "order": 8,
                 "src": "/projects/olva/008.png",
-                "alt": "OLVA — visual 8"
+                "alt": "OLVA — visual 8",
+                "pairMode": "row"
             },
             {
                 "id": 9,
@@ -517,7 +533,8 @@
                 "id": 12,
                 "order": 12,
                 "src": "/projects/olva/012.png",
-                "alt": "OLVA — visual 12"
+                "alt": "OLVA — visual 12",
+                "pairMode": "row"
             },
             {
                 "id": 13,
@@ -535,7 +552,8 @@
                 "id": 15,
                 "order": 15,
                 "src": "/projects/olva/015.png",
-                "alt": "OLVA — visual 15"
+                "alt": "OLVA — visual 15",
+                "pairMode": "row"
             },
             {
                 "id": 16,
@@ -547,7 +565,8 @@
                 "id": 17,
                 "order": 17,
                 "src": "/projects/olva/017.png",
-                "alt": "OLVA — visual 17"
+                "alt": "OLVA — visual 17",
+                "pairMode": "row"
             },
             {
                 "id": 18,
@@ -565,7 +584,8 @@
                 "id": 20,
                 "order": 20,
                 "src": "/projects/olva/020.png",
-                "alt": "OLVA — visual 20"
+                "alt": "OLVA — visual 20",
+                "pairMode": "row"
             },
             {
                 "id": 21,
@@ -577,7 +597,8 @@
                 "id": 22,
                 "order": 22,
                 "src": "/projects/olva/022.png",
-                "alt": "OLVA — visual 22"
+                "alt": "OLVA — visual 22",
+                "pairMode": "row"
             },
             {
                 "id": 23,
@@ -650,7 +671,8 @@
                 "id": 4,
                 "order": 4,
                 "src": "/projects/bitebox/004.jpg",
-                "alt": "BiteBox — visual 4"
+                "alt": "BiteBox — visual 4",
+                "pairMode": "stack"
             },
             {
                 "id": 5,
@@ -765,7 +787,8 @@
                 "id": 5,
                 "order": 5,
                 "src": "/projects/brunzo/005.png",
-                "alt": "Brunzo — visual 5"
+                "alt": "Brunzo — visual 5",
+                "pairMode": "row"
             },
             {
                 "id": 6,
@@ -783,7 +806,8 @@
                 "id": 8,
                 "order": 8,
                 "src": "/projects/brunzo/008.png",
-                "alt": "Brunzo — visual 8"
+                "alt": "Brunzo — visual 8",
+                "pairMode": "row"
             },
             {
                 "id": 9,
@@ -795,7 +819,8 @@
                 "id": 10,
                 "order": 10,
                 "src": "/projects/brunzo/010.png",
-                "alt": "Brunzo — visual 10"
+                "alt": "Brunzo — visual 10",
+                "pairMode": "row"
             },
             {
                 "id": 11,
@@ -813,7 +838,8 @@
                 "id": 13,
                 "order": 13,
                 "src": "/projects/brunzo/013.png",
-                "alt": "Brunzo — visual 13"
+                "alt": "Brunzo — visual 13",
+                "pairMode": "row"
             },
             {
                 "id": 14,
@@ -831,7 +857,8 @@
                 "id": 16,
                 "order": 16,
                 "src": "/projects/brunzo/016.png",
-                "alt": "Brunzo — visual 16"
+                "alt": "Brunzo — visual 16",
+                "pairMode": "row"
             },
             {
                 "id": 17,
@@ -843,7 +870,8 @@
                 "id": 18,
                 "order": 18,
                 "src": "/projects/brunzo/018.png",
-                "alt": "Brunzo — visual 18"
+                "alt": "Brunzo — visual 18",
+                "pairMode": "row"
             },
             {
                 "id": 19,
@@ -861,7 +889,8 @@
                 "id": 21,
                 "order": 21,
                 "src": "/projects/brunzo/021.png",
-                "alt": "Brunzo — visual 21"
+                "alt": "Brunzo — visual 21",
+                "pairMode": "row"
             },
             {
                 "id": 22,
@@ -873,7 +902,8 @@
                 "id": 23,
                 "order": 23,
                 "src": "/projects/brunzo/023.png",
-                "alt": "Brunzo — visual 23"
+                "alt": "Brunzo — visual 23",
+                "pairMode": "row"
             },
             {
                 "id": 24,
@@ -885,7 +915,8 @@
                 "id": 25,
                 "order": 25,
                 "src": "/projects/brunzo/025.png",
-                "alt": "Brunzo — visual 25"
+                "alt": "Brunzo — visual 25",
+                "pairMode": "row"
             },
             {
                 "id": 26,
@@ -1085,7 +1116,8 @@
                 "id": 6,
                 "order": 6,
                 "src": "/projects/florelle/006.png",
-                "alt": "Florelle — visual 6"
+                "alt": "Florelle — visual 6",
+                "pairMode": "stack"
             },
             {
                 "id": 7,
@@ -1310,7 +1342,8 @@
                 "id": 7,
                 "order": 7,
                 "src": "/projects/gasimi-wine/007.png",
-                "alt": "GASIMI WINE — visual 7"
+                "alt": "GASIMI WINE — visual 7",
+                "pairMode": "stack"
             },
             {
                 "id": 8,
@@ -1398,7 +1431,8 @@
                 "id": 5,
                 "order": 5,
                 "src": "/projects/mirage/005.png",
-                "alt": "MIRAGE — visual 5"
+                "alt": "MIRAGE — visual 5",
+                "pairMode": "stack"
             },
             {
                 "id": 6,
@@ -1434,7 +1468,8 @@
                 "id": 11,
                 "order": 11,
                 "src": "/projects/mirage/011.png",
-                "alt": "MIRAGE — visual 11"
+                "alt": "MIRAGE — visual 11",
+                "pairMode": "stack"
             },
             {
                 "id": 12,
@@ -1853,7 +1888,8 @@
                 "id": 1,
                 "order": 1,
                 "src": "/projects/mair-cosmetic/001.png",
-                "alt": "MAIR cosmetic — visual 1"
+                "alt": "MAIR cosmetic — visual 1",
+                "pairMode": "stack"
             },
             {
                 "id": 2,
@@ -1877,7 +1913,8 @@
                 "id": 5,
                 "order": 5,
                 "src": "/projects/mair-cosmetic/005.png",
-                "alt": "MAIR cosmetic — visual 5"
+                "alt": "MAIR cosmetic — visual 5",
+                "pairMode": "stack"
             },
             {
                 "id": 6,
@@ -1935,7 +1972,8 @@
                 "id": 2,
                 "order": 2,
                 "src": "/projects/fizzup-craft-lemonade-package/002.png",
-                "alt": "FizzUp Craft lemonade package — visual 2"
+                "alt": "FizzUp Craft lemonade package — visual 2",
+                "pairMode": "stack"
             },
             {
                 "id": 3,
@@ -1947,7 +1985,8 @@
                 "id": 4,
                 "order": 4,
                 "src": "/projects/fizzup-craft-lemonade-package/004.png",
-                "alt": "FizzUp Craft lemonade package — visual 4"
+                "alt": "FizzUp Craft lemonade package — visual 4",
+                "pairMode": "stack"
             },
             {
                 "id": 5,
@@ -2029,7 +2068,8 @@
                 "id": 2,
                 "order": 2,
                 "src": "/projects/brownie-bakery/002.png",
-                "alt": "BROWNIE bakery — visual 2"
+                "alt": "BROWNIE bakery — visual 2",
+                "pairMode": "stack"
             },
             {
                 "id": 3,
@@ -2059,7 +2099,8 @@
                 "id": 7,
                 "order": 7,
                 "src": "/projects/brownie-bakery/007.png",
-                "alt": "BROWNIE bakery — visual 7"
+                "alt": "BROWNIE bakery — visual 7",
+                "pairMode": "stack"
             },
             {
                 "id": 8,
@@ -2111,7 +2152,8 @@
                 "id": 1,
                 "order": 1,
                 "src": "/projects/palum-clothing-brand/001.gif",
-                "alt": "PALUM clothing brand — visual 1"
+                "alt": "PALUM clothing brand — visual 1",
+                "pairMode": "stack"
             },
             {
                 "id": 2,
@@ -2186,7 +2228,8 @@
                 "id": 1,
                 "order": 1,
                 "src": "/projects/doza-coffee/001.jpg",
-                "alt": "DOZA coffee — visual 1"
+                "alt": "DOZA coffee — visual 1",
+                "pairMode": "stack"
             },
             {
                 "id": 2,

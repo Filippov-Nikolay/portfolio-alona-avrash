@@ -14,6 +14,13 @@ export interface ProjectImage {
     order: number;
     src: string;
     alt?: string;
+    // Pairs this image with the very next one (by order) in the gallery
+    // lightbox: "row" places them side by side (for two portrait images),
+    // "stack" places them one above the other (for two short/wide banners).
+    // Leave unset for a normal full-bleed single-image slot. Only takes
+    // effect on the first image of the pair - the second image's own
+    // pairMode (if any) is ignored, since it was already consumed.
+    pairMode?: "row" | "stack";
     // True for the one image (per project) to use as the preview/hero
     // shot — in a card, a listing thumbnail, an OG image, etc. A project
     // with multiple images should have exactly one marked true.

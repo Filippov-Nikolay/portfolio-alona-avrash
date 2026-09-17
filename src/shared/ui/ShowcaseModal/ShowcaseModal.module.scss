@@ -63,7 +63,10 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    overscroll-behavior: contain;
+    // "contain" only stops scroll from chaining to the page behind the
+    // modal - it still lets the browser's own rubber-band/bounce play at
+    // this element's own edges. "none" turns the bounce itself off too.
+    overscroll-behavior: none;
 
     // Firefox
     scrollbar-width: thin;

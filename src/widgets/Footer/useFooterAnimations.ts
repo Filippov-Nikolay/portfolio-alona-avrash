@@ -5,8 +5,8 @@ import { useReducedMotion } from "framer-motion";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
-const isCompact = () => window.matchMedia("(max-width: 767px)").matches;
-const getStart = () => (isCompact() ? "top 88%" : "top 76%");
+const isCompact = () => window.matchMedia("(max-width: 1023px)").matches;
+const getStart = () => (isCompact() ? "top bottom-=24px" : "top 76%");
 
 const PANEL_CLIP_HIDDEN = "inset(0% 0% 100% 0% round 20px 20px 0px 0px)";
 const PANEL_CLIP_VISIBLE = "inset(0% 0% 0% 0% round 20px 20px 0px 0px)";

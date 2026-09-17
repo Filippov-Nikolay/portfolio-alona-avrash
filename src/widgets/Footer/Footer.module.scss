@@ -7,6 +7,19 @@
     border-radius: 20px 20px 0 0;
     padding-top: 20px;
     overflow: hidden;
+
+    @include respond-to("desktop") {
+        padding-top: 20px;
+    }
+
+    @include respond-to("tablet") {
+        padding-top: 24px;
+    }
+
+    @include respond-to("mobile") {
+        padding-top: 20px;
+        border-radius: 16px 16px 0 0;
+    }
 }
 
 .top {
@@ -15,9 +28,20 @@
     justify-content: space-between;
     gap: 24px;
 
-    @include respond-to("mobile") {
+    @include respond-to("desktop") {
+        gap: 24px;
+    }
+
+    @include respond-to("tablet") {
+        gap: 32px;
+    }
+
+    @media (max-width: 599px) {
         flex-direction: column;
-        gap: 20px;
+    }
+
+    @include respond-to("mobile") {
+        gap: 28px;
     }
 }
 
@@ -25,6 +49,10 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+
+    @media (max-width: 599px) {
+        width: 100%;
+    }
 }
 
 .tagline {
@@ -33,6 +61,10 @@
     font-size: 20px;
     font-weight: 700;
     color: #000;
+
+    @include respond-to("mobile") {
+        font-size: 18px;
+    }
 }
 
 .maskLineInner {
@@ -45,8 +77,10 @@
     align-items: flex-end;
     gap: 12px;
 
-    @include respond-to("mobile") {
+    @media (max-width: 599px) {
+        width: 100%;
         align-items: flex-start;
+        gap: 14px;
     }
 }
 
@@ -57,6 +91,10 @@
     font-weight: 300;
     text-transform: uppercase;
     color: #000;
+
+    @include respond-to("mobile") {
+        font-size: 14px;
+    }
 }
 
 .legal {
@@ -67,6 +105,22 @@
     margin: 0;
     padding: 0;
 
+    @include respond-to("tablet") {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 18px 24px;
+    }
+
+    @include respond-to("mobile") {
+        gap: 14px 20px;
+    }
+
+    @media (max-width: 359px) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
     a {
         position: relative;
         isolation: isolate;
@@ -76,6 +130,10 @@
         color: #000;
         text-decoration: none;
         @include focus-ring;
+
+        @include respond-to("mobile") {
+            font-size: 14px;
+        }
 
         &:focus-visible {
             outline-color: #000;
@@ -155,30 +213,83 @@
 .brandClip {
     display: flex;
     justify-content: center;
-    height: clamp(90px, 11vw, 145px);
+    height: 145px;
     margin-top: 35px;
+    padding-inline: 20px;
     overflow: hidden;
 
-    @include respond-to("mobile") {
-        height: clamp(48px, 22vw, 64px);
+    @include respond-to("desktop") {
+        height: 122px;
         margin-top: 35px;
+    }
+
+    @media (max-width: 1023px) {
+        height: 94px;
+        margin-top: 35px;
+    }
+
+    @include respond-to("tablet") {
+        height: 76px;
+        margin-top: 34px;
+    }
+
+    @include respond-to("mobile") {
+        height: 55px;
+        margin-top: 30px;
+    }
+
+    @media (max-width: 359px) {
+        height: 48px;
+        margin-top: 28px;
     }
 }
 
 .brand {
+    display: flex;
+    width: 100%;
+    max-width: calc(var(--container-width) - 40px);
+    justify-content: center;
+    gap: 28px;
     margin: 0;
     font-family: var(--font-title-accent);
     font-weight: 700;
     font-size: 198px;
     line-height: 1;
-    letter-spacing: 0.15em;
+    letter-spacing: 0;
     text-transform: uppercase;
     color: #000;
     white-space: nowrap;
     flex-shrink: 0;
 
+    @include respond-to("desktop") {
+        gap: 22px;
+        font-size: 168px;
+    }
+
+    @media (max-width: 1023px) {
+        justify-content: space-between;
+        gap: 0;
+        font-size: 128px;
+    }
+
+    @include respond-to("tablet") {
+        font-size: 102px;
+    }
+
+    @media (max-width: 599px) {
+        justify-content: center;
+        gap: 8px;
+        font-size: 86px;
+    }
+
     @include respond-to("mobile") {
-        font-size: clamp(72px, 32vw, 108px);
+        gap: 4px;
+        font-size: 64px;
+    }
+
+    @media (max-width: 359px) {
+        gap: 3px;
+        font-size: 58px;
     }
 }
 

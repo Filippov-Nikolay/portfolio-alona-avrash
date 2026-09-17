@@ -27,7 +27,11 @@ interface GalleryLightboxProps {
 
 const TILE_RADIUS_PX = 12;
 const OPEN_TRANSITION = { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const };
-const CLOSE_TRANSITION = { duration: 0.4, ease: [0.65, 0, 0.25, 1] as const };
+// Exported so the background scroll-into-place (driven from
+// ShowcaseModal) can use the exact same duration/easing - two
+// independently-timed animations drifting apart is what caused the
+// mismatched landing this used to have.
+export const CLOSE_TRANSITION = { duration: 0.4, ease: [0.65, 0, 0.25, 1] as const };
 const RENDER_WINDOW = 2;
 
 function FramedImage({ src, alt }: { src: string; alt: string }) {

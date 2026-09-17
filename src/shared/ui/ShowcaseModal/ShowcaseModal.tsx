@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
-import { m, AnimatePresence, useInView } from "framer-motion";
+import { m, animate, AnimatePresence, useInView } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { ShowcaseItem } from "@/shared/types";
 import { useMounted } from "@/shared/hooks/useMounted";
 import { Button, ArrowIcon, ToolBadge, getToolBadge, CloseIcon } from "@/shared/ui";
 import { ACCENT_COLORS } from "@/shared/constants/colors";
 import { cn } from "@/shared/lib/cn";
-import { GalleryLightbox, type LightboxRect } from "./GalleryLightbox";
+import { GalleryLightbox, CLOSE_TRANSITION, type LightboxRect } from "./GalleryLightbox";
 import { createImageBackdrop } from "./imageBackdrop";
 import { useGalleryTilt } from "./useGalleryTilt";
 import styles from "./ShowcaseModal.module.scss";
@@ -219,9 +219,46 @@ function ModalContent({ item, onClose }: ModalContentProps) {
 
     const getCloseRect = (index: number): LightboxRect | null => {
         const el = galleryElRefs.current.get(index);
-        if (!el) return null;
-        el.scrollIntoView({ block: "center", inline: "nearest" });
-        return measureRect(el);
+        const body = bodyRef.current;
+        const modalEl = modalRef.current;
+        if (!el || !body || !modalEl) return null;
+
+        // Compute where `el` will land once centered, and animate the
+        // background scroll there in step with the lightbox's own
+        // shrink-back transition instead of jumping straight there with
+        // scrollIntoView(). An instant jump moves the page behind the
+        // lightbox to a totally different scroll position in a single
+        // frame while the lightbox itself is still smoothly shrinking
+        // toward it over ~400ms - the mismatch between "snaps instantly"
+        // and "eases in" is what read as a jarring landing. Driving both
+        // with the same framer-motion tween + CLOSE_TRANSITION keeps them
+        // frame-for-frame identical.
+        const elRect = el.getBoundingClientRect();
+        const bodyRect = body.getBoundingClientRect();
+        const currentAbsoluteTop = elRect.top - bodyRect.top + body.scrollTop;
+        const maxScrollTop = Math.max(0, body.scrollHeight - body.clientHeight);
+        const targetScrollTop = Math.min(
+            maxScrollTop,
+            Math.max(0, currentAbsoluteTop - body.clientHeight / 2 + elRect.height / 2)
+        );
+
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        animate(body.scrollTop, targetScrollTop, {
+            duration: reducedMotion ? 0 : CLOSE_TRANSITION.duration,
+            ease: CLOSE_TRANSITION.ease,
+            onUpdate: (value) => {
+                body.scrollTop = value;
+            },
+        });
+
+        const modalRect = modalEl.getBoundingClientRect();
+        const finalTop = bodyRect.top + (currentAbsoluteTop - targetScrollTop);
+        return {
+            top: finalTop - modalRect.top,
+            left: elRect.left - modalRect.left,
+            width: elRect.width,
+            height: elRect.height,
+        };
     };
 
     // ESC closes the lightbox first when it's open, the modal itself otherwise.

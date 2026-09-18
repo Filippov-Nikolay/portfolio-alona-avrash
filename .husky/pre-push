@@ -1,7 +1,4 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
+echo "pre-push: running build check..."
+pnpm --filter web run build:check
 
-echo "🔍 pre-push: running build check..."
-npm run build:check
-
-echo "✅ pre-push passed"
+echo "pre-push passed"

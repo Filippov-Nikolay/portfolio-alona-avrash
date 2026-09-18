@@ -11,7 +11,9 @@ import { siteConfig } from "@/shared/config/site.config";
 import { AppProviders } from "@/shared/providers";
 import { Header } from "@/widgets/Header";
 import { Footer } from "@/widgets/Footer";
-import { LOCALES, DEFAULT_LOCALE, isLocale, getLocaleMeta } from "@/i18n/locales";
+import { LOCALES, isLocale, getLocaleMeta } from "@/i18n/locales";
+import { buildPageAlternates } from "@/shared/lib/seo";
+import { getSocials } from "@/entities/social/api/getSocials";
 
 import "@/shared/styles/globals.scss";
 
@@ -49,14 +51,15 @@ export function generateStaticParams() {
     return LOCALES.map(({ code }) => ({ locale: code }));
 }
 
-// hreflang alternates — derived from LOCALES, nothing to edit here when a
-// language is added or removed.
-const HREFLANG_LANGUAGES = Object.fromEntries([
-    ...LOCALES.map(({ code }) => [code, `${siteConfig.url}/${code}`]),
-    ["x-default", `${siteConfig.url}/${DEFAULT_LOCALE}`],
-]);
-
-const KEYWORDS_COMMON = [siteConfig.name, siteConfig.title, "React", "Next.js", "TypeScript"];
+const KEYWORDS_COMMON = [
+    siteConfig.name,
+    siteConfig.title,
+    "brand identity design",
+    "packaging design",
+    "logo design",
+    "visual identity",
+    "graphic designer portfolio",
+];
 
 interface LocaleLayoutProps {
     children: React.ReactNode;
@@ -68,6 +71,7 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
     const title = `${siteConfig.name} — ${siteConfig.title}`;
     const description = (await getTranslations({ locale, namespace: "seo" }))("description");
     const { ogLocale } = getLocaleMeta(locale);
+    const { canonical, languages } = buildPageAlternates(locale);
 
     return {
         metadataBase: new URL(siteConfig.url),
@@ -80,13 +84,13 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
         authors: [{ name: siteConfig.name }],
         creator: siteConfig.name,
         alternates: {
-            canonical: `${siteConfig.url}/${locale}`,
-            languages: HREFLANG_LANGUAGES,
+            canonical,
+            languages,
         },
         openGraph: {
             title,
             description,
-            url: `${siteConfig.url}/${locale}`,
+            url: canonical,
             siteName: siteConfig.name,
             type: "website",
             locale: ogLocale,
@@ -112,10 +116,11 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         notFound();
     }
 
-    const [messages, cookieStore, requestHeaders] = await Promise.all([
+    const [messages, cookieStore, requestHeaders, socials] = await Promise.all([
         getMessages(),
         cookies(),
         headers(),
+        getSocials(),
     ]);
 
     // Приоритет: кука (явный выбор пользователя)
@@ -138,7 +143,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         name: siteConfig.name,
         description: siteConfig.title,
         url: siteConfig.url,
-        sameAs: [siteConfig.links.instagram],
+        sameAs: socials.map((social) => social.link),
     };
 
     return (

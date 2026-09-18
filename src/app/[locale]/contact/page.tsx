@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { getSocials } from "@/entities/social/api/getSocials";
 import { ContactSection } from "@/widgets/ContactSection";
+import { siteConfig } from "@/shared/config/site.config";
+import { getLocaleMeta } from "@/i18n/locales";
+import { buildPageAlternates } from "@/shared/lib/seo";
 
 interface ContactPageProps {
     params: Promise<{ locale: string }>;
@@ -9,9 +12,28 @@ interface ContactPageProps {
 
 export async function generateMetadata({ params }: ContactPageProps): Promise<Metadata> {
     const { locale } = await params;
-    const t = await getTranslations({ locale, namespace: "nav" });
+    const [t, tSeo] = await Promise.all([
+        getTranslations({ locale, namespace: "nav" }),
+        getTranslations({ locale, namespace: "seo" }),
+    ]);
+    const { ogLocale } = getLocaleMeta(locale);
+    const { canonical, languages } = buildPageAlternates(locale, "/contact");
+    const title = t("contact");
+    const ogTitle = `${title} | ${siteConfig.name}`;
 
-    return { title: t("contact") };
+    return {
+        title,
+        alternates: { canonical, languages },
+        openGraph: {
+            title: ogTitle,
+            description: tSeo("description"),
+            url: canonical,
+            siteName: siteConfig.name,
+            type: "website",
+            locale: ogLocale,
+            images: [{ url: "/og/cover.png", width: 1200, height: 630 }],
+        },
+    };
 }
 
 export default async function ContactPage() {

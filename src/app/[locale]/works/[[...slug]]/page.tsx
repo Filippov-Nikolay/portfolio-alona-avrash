@@ -9,6 +9,7 @@ import { slugifyProjectName } from "@/entities/project/lib/slug";
 import { getCta } from "@/entities/cta/api/getCta";
 import { siteConfig } from "@/shared/config/site.config";
 import { getLocaleMeta } from "@/i18n/locales";
+import { buildPageAlternates } from "@/shared/lib/seo";
 
 const ALL_CATEGORY_KEYS: CategoryKey[] = ["ui-ux", "branding", "logo", "packaging", "web-design"];
 
@@ -39,17 +40,17 @@ export async function generateMetadata({ params }: WorksPageProps): Promise<Meta
         if (project) {
             const heroImage = project.image.find((image) => image.isHero) ?? project.image[0];
             const description = project.categories.map((key) => tCategories(key)).join(" · ");
-            const url = `${siteConfig.url}/${locale}/works/${slug[0]}`;
+            const { canonical, languages } = buildPageAlternates(locale, `/works/${slug[0]}`);
             const ogTitle = `${project.name} | ${siteConfig.name}`;
 
             return {
                 title: project.name,
                 description,
-                alternates: { canonical: url },
+                alternates: { canonical, languages },
                 openGraph: {
                     title: ogTitle,
                     description,
-                    url,
+                    url: canonical,
                     siteName: siteConfig.name,
                     type: "website",
                     locale: ogLocale,
@@ -66,16 +67,16 @@ export async function generateMetadata({ params }: WorksPageProps): Promise<Meta
     }
 
     const title = t("works");
-    const url = `${siteConfig.url}/${locale}/works`;
+    const { canonical, languages } = buildPageAlternates(locale, "/works");
     const ogTitle = `${title} | ${siteConfig.name}`;
 
     return {
         title,
-        alternates: { canonical: url },
+        alternates: { canonical, languages },
         openGraph: {
             title: ogTitle,
             description: tSeo("description"),
-            url,
+            url: canonical,
             siteName: siteConfig.name,
             type: "website",
             locale: ogLocale,

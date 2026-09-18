@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Image from "next/image";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, m } from "framer-motion";
 import type { ShowcaseItem } from "@/shared/types";
 import type { CategoryKey } from "@/shared/types/category";
@@ -14,6 +14,7 @@ import {
     groupProjectsByPrimaryCategory,
 } from "@/entities/project/lib/groupProjects";
 import { ArrowIcon, ArrowV2Icon, Button, Container, ShowcaseModal } from "@/shared/ui";
+import type { ShowcaseModalTab } from "@/shared/ui";
 import { CtaSection } from "@/widgets/CtaSection";
 import { cn } from "@/shared/lib/cn";
 import { usePreloader } from "@/shared/providers";
@@ -61,6 +62,8 @@ const CTA_MIN_GROUP_SIZE = 3;
 
 const FILTER_PARAM = "filter";
 const SORT_PARAM = "sort";
+const TAB_PARAM = "tab";
+const IMAGE_PARAM = "image";
 
 function parseFilterParam(raw: string | null): CategoryKey[] {
     if (!raw) return [];
@@ -69,6 +72,17 @@ function parseFilterParam(raw: string | null): CategoryKey[] {
 
 function parseSortParam(raw: string | null): SortOrder {
     return raw === "oldest" ? "oldest" : "latest";
+}
+
+function parseTabParam(raw: string | null): ShowcaseModalTab {
+    return raw === "gallery" ? "gallery" : "overview";
+}
+
+function parseImageParam(raw: string | null, galleryLength: number): number | null {
+    if (raw === null) return null;
+    const index = Number(raw);
+    if (!Number.isInteger(index) || index < 0 || index >= galleryLength) return null;
+    return index;
 }
 
 interface WorksCatalogLabels {
@@ -88,6 +102,7 @@ interface WorksCatalogProps {
     categoryLabels: Record<CategoryKey, string>;
     cta: CtaContent;
     labels: WorksCatalogLabels;
+    initialSelectedId?: number | null;
 }
 
 export function WorksCatalog({
@@ -96,10 +111,11 @@ export function WorksCatalog({
     categoryLabels,
     cta,
     labels,
+    initialSelectedId = null,
 }: WorksCatalogProps) {
-    const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const worksBasePath = useMemo(() => pathname.replace(/\/works(\/.*)?$/, "/works"), [pathname]);
     const { isReady } = usePreloader();
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
@@ -112,15 +128,57 @@ export function WorksCatalog({
     const [selectedCategories, setSelectedCategories] = useState<CategoryKey[]>(() =>
         parseFilterParam(searchParams.get(FILTER_PARAM))
     );
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+
+    const modalItemsById = useMemo(
+        () => new Map(modalItems.map((item) => [item.id, item])),
+        [modalItems]
+    );
+
+    const [selectedId, setSelectedId] = useState<number | null>(initialSelectedId);
+    const [activeTab, setActiveTab] = useState<ShowcaseModalTab>(() => {
+        if (initialSelectedId === null) return "overview";
+        const hasImage = searchParams.get(IMAGE_PARAM) !== null;
+        return hasImage ? "gallery" : parseTabParam(searchParams.get(TAB_PARAM));
+    });
+    const [lightboxIndex, setLightboxIndex] = useState<number | null>(() => {
+        if (initialSelectedId === null) return null;
+        const galleryLength = modalItemsById.get(initialSelectedId)?.gallery.length ?? 0;
+        return parseImageParam(searchParams.get(IMAGE_PARAM), galleryLength);
+    });
+
+    const selectedItem = selectedId === null ? null : (modalItemsById.get(selectedId) ?? null);
+    const selectedSlug = selectedItem?.slug ?? null;
+
+    const openProject = useCallback((id: number) => {
+        setSelectedId(id);
+        setActiveTab("overview");
+        setLightboxIndex(null);
+    }, []);
+
+    const closeProject = useCallback(() => {
+        setSelectedId(null);
+        setActiveTab("overview");
+        setLightboxIndex(null);
+    }, []);
 
     useEffect(() => {
         const params = new URLSearchParams();
         if (selectedCategories.length > 0) params.set(FILTER_PARAM, selectedCategories.join(","));
         if (sortOrder !== "latest") params.set(SORT_PARAM, sortOrder);
+
+        let path = worksBasePath;
+        if (selectedItem) {
+            path = `${worksBasePath}/${selectedItem.slug}`;
+            if (activeTab !== "overview") params.set(TAB_PARAM, activeTab);
+            if (lightboxIndex !== null) params.set(IMAGE_PARAM, String(lightboxIndex));
+        }
+
         const query = params.toString();
-        router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-    }, [selectedCategories, sortOrder, pathname, router]);
+        const url = query ? `${path}?${query}` : path;
+        window.history.replaceState(window.history.state, "", url);
+        // selectedItem is read for its (stable) slug - see selectedSlug above.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedCategories, sortOrder, selectedSlug, activeTab, lightboxIndex, worksBasePath]);
 
     const toggleCategory = useCallback((key: CategoryKey) => {
         setSelectedCategories((prev) =>
@@ -131,12 +189,6 @@ export function WorksCatalog({
     const clearCategories = useCallback(() => {
         setSelectedCategories([]);
     }, []);
-
-    const modalItemsById = useMemo(
-        () => new Map(modalItems.map((item) => [item.id, item])),
-        [modalItems]
-    );
-    const selectedItem = selectedId === null ? null : (modalItemsById.get(selectedId) ?? null);
 
     const sortedProjects = useMemo(() => {
         const sign = sortOrder === "latest" ? -1 : 1;
@@ -246,7 +298,7 @@ export function WorksCatalog({
                                             categoryLabels[getPrimaryCategory(project.categories)]
                                         }
                                         viewLabel={labels.viewProject}
-                                        onOpen={() => setSelectedId(project.id)}
+                                        onOpen={() => openProject(project.id)}
                                         cardRef={
                                             project.id === firstCardId
                                                 ? undefined
@@ -260,7 +312,14 @@ export function WorksCatalog({
                 </m.section>
             ))}
 
-            <ShowcaseModal item={selectedItem} onClose={() => setSelectedId(null)} />
+            <ShowcaseModal
+                item={selectedItem}
+                onClose={closeProject}
+                initialTab={activeTab}
+                onTabChange={setActiveTab}
+                initialLightboxIndex={lightboxIndex}
+                onLightboxChange={setLightboxIndex}
+            />
         </Container>
     );
 }

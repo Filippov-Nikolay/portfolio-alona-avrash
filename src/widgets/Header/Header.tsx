@@ -25,6 +25,11 @@ function isHomeLink(item: NavItem) {
     return item.href === "/";
 }
 
+function isActiveLink(pathname: string, item: NavItem) {
+    if (isHomeLink(item)) return pathname === "/";
+    return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
 const CV_DOWNLOAD_DELAY_MS = 250;
 
 function triggerCvDownload(href: string) {
@@ -237,7 +242,7 @@ export function Header() {
                                         }}
                                         className={cn(
                                             styles.link,
-                                            pathname === item.href && styles.linkActive
+                                            isActiveLink(pathname, item) && styles.linkActive
                                         )}
                                     >
                                         <span className={styles.srOnly}>{t(item.key)}</span>
@@ -303,7 +308,7 @@ export function Header() {
                                 <nav aria-label="Mobile navigation">
                                     <ul className={styles.menuNavList}>
                                         {navigation.map((item) => {
-                                            const isActive = pathname === item.href;
+                                            const isActive = isActiveLink(pathname, item);
 
                                             return (
                                                 <m.li key={item.href} variants={menuItemVariants}>

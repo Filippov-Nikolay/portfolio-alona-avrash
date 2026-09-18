@@ -16,7 +16,7 @@ import styles from "./ShowcaseModal.module.scss";
 
 const GALLERY_PREVIEW_COUNT = 3;
 
-type Tab = "overview" | "gallery";
+export type Tab = "overview" | "gallery";
 
 interface LightboxState {
     index: number;
@@ -104,18 +104,29 @@ function TileImage({
 interface ModalContentProps {
     item: ShowcaseItem;
     onClose: () => void;
+    initialTab: Tab;
+    onTabChange?: (tab: Tab) => void;
+    initialLightboxIndex?: number | null;
+    onLightboxChange?: (index: number | null) => void;
 }
 
-function ModalContent({ item, onClose }: ModalContentProps) {
+function ModalContent({
+    item,
+    onClose,
+    initialTab,
+    onTabChange,
+    initialLightboxIndex,
+    onLightboxChange,
+}: ModalContentProps) {
     const t = useTranslations("modal");
     const color = ACCENT_COLORS[item.color ?? "purple"];
     const hasGallery = item.gallery.length > 0;
-    const [tab, setTab] = useState<Tab>("overview");
+    const [tab, setTab] = useState<Tab>(initialTab);
     // Separate from `tab`: `tab` flips the active-tab underline instantly
     // (immediate click feedback), while `contentTab` - which actually
     // swaps the rendered panel - waits until the scroll-to-top below has
     // finished. Swapping the DOM mid-scroll is what caused the jump.
-    const [contentTab, setContentTab] = useState<Tab>("overview");
+    const [contentTab, setContentTab] = useState<Tab>(initialTab);
     const tools = (item.tools ?? []).map(getToolBadge).filter((badge) => badge !== undefined);
     const previewImages = item.gallery.slice(0, GALLERY_PREVIEW_COUNT);
     const galleryRows = chunk(
@@ -134,6 +145,8 @@ function ModalContent({ item, onClose }: ModalContentProps) {
     // so tiles have time to load before the shrink finishes.
     const [lightboxClosing, setLightboxClosing] = useState(false);
     const registerTile = useGalleryTilt(bodyRef, tabsRef);
+    const [modalEntranceDone, setModalEntranceDone] = useState(false);
+    const autoOpenedLightboxRef = useRef(false);
 
     // Overview is usually much shorter than a scrolled-down Gallery, so
     // swapping panels while deep in the gallery would otherwise shrink
@@ -143,6 +156,7 @@ function ModalContent({ item, onClose }: ModalContentProps) {
     const handleTabChange = (nextTab: Tab) => {
         if (nextTab === tab) return;
         setTab(nextTab);
+        onTabChange?.(nextTab);
 
         const body = bodyRef.current;
         if (!body || body.scrollTop === 0) {
@@ -209,9 +223,9 @@ function ModalContent({ item, onClose }: ModalContentProps) {
         };
     };
 
-    const openLightbox = (index: number, e: React.MouseEvent<HTMLElement>) => {
+    const openLightboxAt = (index: number, el: HTMLElement) => {
         const modalEl = modalRef.current;
-        const tileRect = measureRect(e.currentTarget);
+        const tileRect = measureRect(el);
         if (!modalEl || !tileRect) return;
 
         setLightboxClosing(false);
@@ -220,7 +234,25 @@ function ModalContent({ item, onClose }: ModalContentProps) {
             launchRect: tileRect,
             fillRect: { top: 0, left: 0, width: modalEl.clientWidth, height: modalEl.clientHeight },
         });
+        onLightboxChange?.(index);
     };
+
+    const openLightbox = (index: number, e: React.MouseEvent<HTMLElement>) => {
+        openLightboxAt(index, e.currentTarget);
+    };
+
+    useEffect(() => {
+        if (autoOpenedLightboxRef.current) return;
+        if (initialLightboxIndex == null) return;
+        if (!modalEntranceDone || contentTab !== "gallery") return;
+
+        const el = galleryElRefs.current.get(initialLightboxIndex);
+        if (!el) return;
+
+        autoOpenedLightboxRef.current = true;
+        openLightboxAt(initialLightboxIndex, el);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [modalEntranceDone, contentTab, initialLightboxIndex]);
 
     const getCloseRect = (index: number): LightboxRect | null => {
         const el = galleryElRefs.current.get(index);
@@ -480,6 +512,7 @@ function ModalContent({ item, onClose }: ModalContentProps) {
                     onClose={() => {
                         setLightbox(null);
                         setLightboxClosing(false);
+                        onLightboxChange?.(null);
                     }}
                 />
             )}
@@ -497,6 +530,7 @@ function ModalContent({ item, onClose }: ModalContentProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", stiffness: 380, damping: 34 }}
+            onAnimationComplete={() => setModalEntranceDone(true)}
             onClick={(e) => e.stopPropagation()}
             style={colorStyle}
         >
@@ -510,9 +544,20 @@ function ModalContent({ item, onClose }: ModalContentProps) {
 interface ShowcaseModalProps {
     item: ShowcaseItem | null;
     onClose: () => void;
+    initialTab?: Tab;
+    onTabChange?: (tab: Tab) => void;
+    initialLightboxIndex?: number | null;
+    onLightboxChange?: (index: number | null) => void;
 }
 
-export function ShowcaseModal({ item, onClose }: ShowcaseModalProps) {
+export function ShowcaseModal({
+    item,
+    onClose,
+    initialTab = "overview",
+    onTabChange,
+    initialLightboxIndex,
+    onLightboxChange,
+}: ShowcaseModalProps) {
     const mounted = useMounted();
 
     useEffect(() => {
@@ -553,7 +598,15 @@ export function ShowcaseModal({ item, onClose }: ShowcaseModalProps) {
                     transition={{ duration: 0.22 }}
                 >
                     <div className={styles.overlayInner} onClick={onClose}>
-                        <ModalContent key={item.id} item={item} onClose={onClose} />
+                        <ModalContent
+                            key={item.id}
+                            item={item}
+                            onClose={onClose}
+                            initialTab={initialTab}
+                            onTabChange={onTabChange}
+                            initialLightboxIndex={initialLightboxIndex}
+                            onLightboxChange={onLightboxChange}
+                        />
                     </div>
                 </m.div>
             )}

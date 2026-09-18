@@ -1,6 +1,7 @@
 import type { ShowcaseItem } from "@/shared/types";
 import type { Project } from "../model/project";
 import { getProjects } from "../api/getProjects";
+import { slugifyProjectName } from "./slug";
 
 const COLOR_ROTATION = ["purple", "blue", "orange"] as const;
 
@@ -46,6 +47,7 @@ export function toShowcaseItem(
 
     return {
         id: project.id,
+        slug: slugifyProjectName(project.name),
         title: project.name,
         category: project.categories.map(translateCategory).join(" · "),
         color: COLOR_ROTATION[index % COLOR_ROTATION.length],

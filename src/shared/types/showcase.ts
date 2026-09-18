@@ -9,6 +9,7 @@ export interface ShowcaseGalleryImage {
 // products, case studies, integrations, portfolio work, etc.
 export interface ShowcaseItem {
     id: number;
+    slug: string;
     title: string;
     category?: string;
     color?: "orange" | "blue" | "purple";

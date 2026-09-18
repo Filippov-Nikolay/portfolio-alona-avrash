@@ -8,6 +8,7 @@ export { NoiseLayer } from "./NoiseLayer";
 export { Section } from "./Section";
 export { SectionHeader } from "./SectionHeader";
 export { ShowcaseModal } from "./ShowcaseModal";
+export type { ShowcaseModalTab } from "./ShowcaseModal";
 export { Skeleton } from "./Skeleton";
 export { Tag } from "./Tag";
 export { TagList } from "./TagList";

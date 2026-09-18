@@ -48,11 +48,6 @@
         "packaging": "Packaging",
         "web-design": "Web Design"
     },
-    "showcase": {
-        "viewSource": "View project",
-        "more": "More",
-        "moreDesc": "Browse the full collection."
-    },
     "selectedWork": {
         "title": "Selected work",
         "viewAll": "View all work",
@@ -79,15 +74,6 @@
     "tools": {
         "title": "Tools",
         "description": "A focused toolkit for building identities, interfaces and visual systems."
-    },
-    "gallery": {
-        "subtitle": "Branding, logo and packaging work — the full collection.",
-        "featured": "FEATURED",
-        "primaryAction": "View project",
-        "secondaryAction": "View project",
-        "more": "More",
-        "moreDesc": "Browse the full collection.",
-        "viewSource": "View project"
     },
     "modal": {
         "overviewTab": "Overview",

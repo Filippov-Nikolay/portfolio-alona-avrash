@@ -12,12 +12,12 @@ product presentation.
 
 Nothing in the architecture assumes a specific business domain:
 
-- **SaaS / AI product landing pages** — Showcase = feature highlights, Timeline = changelog/roadmap
-- **Agencies & studios** — Showcase/Gallery = client work, Timeline = company milestones
-- **Developer / designer portfolios** — Showcase/Gallery = your projects, Timeline = work experience
-- **Startups & product presentations** — Showcase = product highlights, CTA = waitlist/signup
-- **Any other single-page marketing site** that needs a hero, a features grid, a showcase, and a
-  contact call-to-action
+- **SaaS / AI product landing pages** — Services = feature highlights, Reviews = testimonials
+- **Agencies & studios** — Projects = client work, Reviews = testimonials
+- **Developer / designer portfolios** — Projects = your case studies, each with its own showcase modal
+- **Startups & product presentations** — Services = product highlights, CTA = waitlist/signup
+- **Any other single-page marketing site** that needs a hero, a services/features grid, a project
+  showcase, and a contact call-to-action
 
 See [Example customization](#example-customization) for concrete per-use-case file changes.
 
@@ -33,8 +33,8 @@ See [Example customization](#example-customization) for concrete per-use-case fi
 - **Dark / light theme** — persisted in a cookie, respects the OS `prefers-color-scheme`, no
   flash-of-wrong-theme on load
 - **Localization (i18n)** — 2 languages (`en`, `pl`) via `next-intl`
-- **Composable sections** — Hero, Showcase, Features, Gallery, Timeline, Contact/CTA, Footer — each
-  independent, removable, and reusing the same UI primitives
+- **Composable sections** — Hero, Services, Projects, Clients, Tools, Reviews, Contact/CTA, Footer —
+  each independent, removable, and reusing the same UI primitives
 - **SEO-ready** — per-locale metadata, OpenGraph/Twitter cards, `hreflang` alternates, structured data
   (JSON-LD), dynamic `sitemap.xml` and `robots.txt`
 - **TypeScript strict mode** end to end, with domain-neutral content shapes
@@ -75,8 +75,8 @@ Requires Node.js 22+ (see `.nvmrc`).
 
 ## Architecture
 
-Layers follow [Feature-Sliced Design](https://feature-sliced.design): `app` → `widgets` → `shared`
-(`entities`/`features` are reserved for when the project grows a real domain — see below).
+Layers follow [Feature-Sliced Design](https://feature-sliced.design): `app` → `widgets` → `entities` →
+`shared` (`features` is reserved for when the project grows real user-facing features — see below).
 
 ```
 src/
@@ -85,15 +85,14 @@ src/
 ├── i18n/                  # next-intl routing, middleware, request handling
 ├── widgets/                # Self-contained UI blocks, composable, independent, no cross-imports
 │   ├── Header/, Footer/, Preloader/  # Global chrome, rendered once in layout.tsx
-│   ├── HeroSection/
-│   ├── ShowcaseSection/       # Featured items carousel
-│   ├── FeaturesSection/        # Capabilities / "what's included" block
-│   ├── GallerySection/          # Secondary showcase: featured item + browsable collection
-│   ├── TimelineSection/           # Generic timeline (history, roadmap or work experience)
-│   └── ContactSection/              # CTA + contact links
+│   ├── HeroSection/, ServicesSection/, ProjectsSection/, ClientsSection/, ToolsSection/
+│   ├── ReviewSection/, CtaSection/, SelectedWorkSection/, StatsSection/
+│   ├── WorksCatalog/                # Full project catalog + showcase modal, /works
+│   └── ContactSection/              # Contact page content
+├── entities/               # Content-shaped data: model + JSON + a get*() fetcher per entity
+│   └── hero/, project/, service/, review/, cta/, footer/, social/, client/, tool/, stat/, ...
 └── shared/
     ├── config/               # site.config.ts, navigation.config.ts, env.ts — BRANDING
-    ├── content/                # features.json, timeline.json, showcase.json, gallery.json — CONTENT
     ├── types/                   # TypeScript contracts for every content shape
     ├── ui/                       # Reusable UI kit — see "Reusable UI" below
     ├── constants/                  # colors.ts, motion.ts, breakpoints.ts, layers.ts — TOKENS (JS side)
@@ -101,17 +100,16 @@ src/
     ├── lib/, hooks/, providers/       # Infrastructure — rarely needs edits
 ```
 
-There is no separate "sections" layer — a landing-page block like `HeroSection` or `FeaturesSection` is,
+There is no separate "sections" layer — a landing-page block like `HeroSection` or `ServicesSection` is,
 by FSD's own definition, a widget: a self-contained composition with no reuse requirement beyond being
-assembled into a page. `src/entities/` and `src/features/` are kept as empty placeholders for when the
-project grows an actual domain (e.g. a real `product` or `user` entity) — safe to ignore or delete
-otherwise.
+assembled into a page. `src/features/` is kept as an empty placeholder for when the project grows a
+real feature slice — safe to ignore or delete.
 
 This separation is deliberate: **infrastructure**, **design system**, **reusable UI**, **widgets**,
-**demo content** and **project configuration** each live in their own place, so changing one rarely
-touches the others. Branding lives in `shared/config`, demo copy lives in `shared/content`,
-colors/spacing/type live in `shared/styles` + `shared/constants`, and layout/animation primitives live
-in `shared/ui` + `shared/lib`.
+**content** and **project configuration** each live in their own place, so changing one rarely touches
+the others. Branding lives in `shared/config`, content lives in `src/entities/*/model` (one folder per
+entity: JSON + type + a `get*()` fetcher — see [Content](#content)), colors/spacing/type live in
+`shared/styles` + `shared/constants`, and layout/animation primitives live in `shared/ui` + `shared/lib`.
 
 ### Page composition
 
@@ -119,17 +117,20 @@ The homepage is assembled explicitly in [`src/app/[locale]/page.tsx`](<src/app/[
 there's no page-builder, CMS or JSON-driven rendering engine, just JSX:
 
 ```tsx
-<HeroSection />
-<ShowcaseSection ... />
-<FeaturesSection ... />
-<GallerySection ... />
-<TimelineSection ... />
-<ContactSection />
+<HeroSection ... />
+<ServicesSection services={services} />
+<ProjectsSection ... />
+<ClientsSection ... />
+<ToolsSection ... />
+<ReviewSection reviews={reviews} labels={reviewsLabels} />
+<CtaSection content={cta} />
 ```
 
-`Header` and `Footer` are rendered once in [`layout.tsx`](<src/app/[locale]/layout.tsx>), outside the
-per-page composition. Every page-composition widget only depends on `shared/`, never on another widget
-— that means:
+`/works` ([`WorksCatalog`](src/widgets/WorksCatalog)) and `/contact`
+([`ContactSection`](src/widgets/ContactSection)) are their own routes, assembled the same way in their
+own `page.tsx`. `Header` and `Footer` are rendered once in
+[`layout.tsx`](<src/app/[locale]/layout.tsx>), outside the per-page composition. Every page-composition
+widget only depends on `shared/`, never on another widget — that means:
 
 - **Remove a section** — delete its import and JSX line from `page.tsx` (and its folder under
   `src/widgets/`, if you like). Nothing else breaks.
@@ -163,8 +164,8 @@ what color it holds. Current palette: white `#ffffff` / black `#000000` for `--c
 To re-skin the whole site, change `--color-accent` and the per-theme `--color-bg` / `--color-text-primary`
 blocks in this one file — components reference the variables, never raw hex values.
 **[`src/shared/constants/colors.ts`](src/shared/constants/colors.ts)** is a separate, intentionally
-multi-color palette (orange/blue/purple/red) used only to tell showcase/gallery cards apart — it does not
-follow the single site accent.
+multi-color palette (orange/blue/purple) used only to tell project cards/modals in
+[`ShowcaseModal`](src/shared/ui/ShowcaseModal) apart — it does not follow the single site accent.
 
 ### Typography
 
@@ -195,7 +196,7 @@ section is built with.
 `TagList`, `ThemeToggle`, `LangSwitcher`, `GridOverlay`, `NoiseLayer`, `Skeleton`, `GlowCard`,
 `ShowcaseModal`. These are the building blocks a new section is expected to reuse — e.g. a
 `PricingSection` would compose `Section` + `Container` + `SectionHeader` + `Card`-style markup + `Tag` +
-`Button`, the same way `FeaturesSection` does today.
+`Button`, the same way `ServicesSection` does today.
 
 ---
 
@@ -249,9 +250,9 @@ already wired up.
   switcher label, OG locale) and `DEFAULT_LOCALE`. Routing (`src/i18n/routing.ts`), the message loader
   (`src/i18n/request.ts`), the language switcher, hreflang alternates and `sitemap.ts` all derive from
   this one file — none of them hold their own copy of the locale list.
-- **UI chrome translations** (nav labels, hero/contact/footer copy, SEO description): `messages/<locale>.json`.
-- **Content translations** (timeline, showcase/gallery items): inline `i18n` blocks inside each file in
-  `src/shared/content/`.
+- **UI chrome translations** (nav labels, button/tab copy, SEO description): `messages/<locale>.json`.
+- **Content translations** (hero, services, cta, footer, reviews, ...): inline `i18n` blocks inside the
+  entity's JSON in `src/entities/*/model/` — see [Content](#content).
 - **Locale detection & routing:** [`src/proxy.ts`](src/proxy.ts) (Next.js middleware).
 - **Language switcher UI:** [`src/shared/ui/LangSwitcher`](src/shared/ui/LangSwitcher) — reads `LOCALES`
   directly, nothing to keep in sync by hand.
@@ -260,8 +261,8 @@ already wired up.
 
 1. Add `{ code: "fr", label: "FR", ogLocale: "fr_FR" }` to `LOCALES` in `src/i18n/locales.ts`.
 2. Create `messages/fr.json` (copy `messages/en.json` and translate, including the `seo.description` key).
-3. Add an `"fr"` key to every `i18n` block in `src/shared/content/*.json` — English is the fallback for
-   any locale you skip, so this can be done incrementally.
+3. Add an `"fr"` key to every `i18n` block across `src/entities/*/model/*.json` — English is the fallback
+   for any locale you skip, so this can be done incrementally.
 
 That's it — routing, the message loader, the language switcher, hreflang tags and the sitemap all pick
 it up automatically.
@@ -273,65 +274,42 @@ above is optional cleanup).
 
 ## Content
 
-Content lives in **[`src/shared/content/`](src/shared/content)**, separate from the components that
-render it:
+Content lives one folder per entity under **[`src/entities/`](src/entities)**, separate from the
+components that render it — e.g. `entities/hero/` holds `model/hero.json` + `model/hero.ts` (the type) +
+`api/getHero.ts` (the fetcher). Every entity follows the same shape.
 
-- `features.json` — intro copy, status line, highlight card, capability groups
-- `showcase.json` — the featured carousel under the hero
-- `gallery.json` — the secondary showcase (one featured item + a browsable collection)
-- `timeline.json` — dated entries (history, roadmap, or work experience)
-
-All typed via [`src/shared/types/`](src/shared/types) (`FeaturesData`, `ShowcaseCarouselData`,
-`GalleryData`, `TimelineData`). Data is read directly in Server Components via
-[`src/shared/lib/showcase/resolveShowcase.ts`](src/shared/lib/showcase/resolveShowcase.ts) — editing
-the JSON is enough, there's no API layer to configure.
-
-**Images are optional** on showcase/gallery items. Omit `src` and the card falls back to a colored ring
-with the item's initials — every example item in this template does exactly that.
-
-### Streaming sections with real data
-
-Every section in this template reads static JSON today, so there's nothing to stream — but one widget,
-**[`TimelineSection`](src/widgets/TimelineSection)**, is set up as a working reference for the day you
-replace static content with a real data source (a CMS, a database, an internal API).
-
-It's split in two:
-
-```
-src/widgets/TimelineSection/
-├── TimelineSection.tsx         # async Server Component — the data-fetching boundary
-├── TimelineSectionClient.tsx   # "use client" — rendering, animation, interactivity (unchanged)
-└── TimelineSkeleton.tsx        # loading placeholder, same layout as the real content
-```
-
-`TimelineSection` is declared `async` and currently just resolves the local JSON import — but the
-function body is exactly where a real `await fetch(...)` or database call would go. `page.tsx` wraps it
-in `<Suspense>`:
-
-```tsx
-<Suspense fallback={<TimelineSkeleton />}>
-    <TimelineSection />
-</Suspense>
-```
-
-The rest of the page renders immediately; Timeline streams in independently once its data resolves. To
-apply this pattern to another section: split it the same way (async server wrapper that fetches + a
-`"use client"` component that receives the resolved data as props + a matching `*Skeleton`), then wrap
-it in `page.tsx` the same way.
+- Fields that differ per locale live inside an `i18n: { en: {...}, pl: {...} }` block in the JSON;
+  fields that don't (ids, image paths, hrefs, a person's name) sit outside it. `get*(locale)` picks the
+  right block — falling back to English if a locale is missing — and returns one flat, already-localized
+  object/array, so components never see the raw `i18n` shape.
+- All entities are read through **[`src/shared/api/contentStore.ts`](src/shared/api/contentStore.ts)**
+  (local JSON, keyed by resource name) via
+  **[`src/shared/api/contentClient.ts`](src/shared/api/contentClient.ts)**'s `fetchContent()`. Editing
+  the JSON is enough — there's no API layer to configure by default.
+- **Swapping a resource for a real CMS:** remove it from `contentStore.ts`'s map; `fetchContent()` then
+  falls back to `` `${CONTENT_API_URL}/<resource>` `` for that resource only (see
+  [Environment Variables](#environment-variables)).
 
 ---
 
 ## SEO
 
 - **Per-locale metadata & JSON-LD:** [`src/app/[locale]/layout.tsx`](<src/app/[locale]/layout.tsx>) —
-  `LOCALE_META` (title/description per locale) and the `jsonLd` object default to a generic `WebSite`
-  schema; swap `@type` to `Person` (portfolio), `Organization` (company/agency) or `Product` (SaaS).
+  the `jsonLd` object defaults to a `Person` schema, with `sameAs` built from `getSocials()`; swap
+  `@type` to `Organization` (company/agency) or `Product` (SaaS) if that fits better.
+- **Canonical / hreflang / OG url per page:** every route's own `generateMetadata` calls
+  [`buildPageAlternates(locale, path)`](src/shared/lib/seo.ts) so `/works`, `/works/<slug>` and
+  `/contact` each point at themselves instead of inheriting the locale root's URL from the layout.
 - **Branding & site URL:** [`src/shared/config/site.config.ts`](src/shared/config/site.config.ts) —
-  name, tagline, description, canonical URL, social links. Everything above reads from here.
+  name, tagline, description, canonical URL. Social links live in
+  [`entities/social/model/social.json`](src/entities/social/model/social.json) instead (single source
+  of truth for both the footer icons and the JSON-LD `sameAs`).
 - **Sitemap & robots:** [`src/app/sitemap.ts`](src/app/sitemap.ts) / [`src/app/robots.ts`](src/app/robots.ts)
   — both dynamic, both derive their domain from `siteConfig.url`.
-- **OpenGraph / favicon images:** `public/og/cover.png` (1200×630) and `public/icon/icon.png` (32×32) —
-  currently neutral placeholders, replace before publishing.
+- **OpenGraph / favicon images:** `public/og/cover.png` (1200×630, the site-wide default) and
+  `public/icon/icon.png` (32×32). A `/works/<slug>` page overrides `og:image` with that project's own
+  hero image — see `generateMetadata` in
+  [`works/[[...slug]]/page.tsx`](<src/app/[locale]/works/[[...slug]]/page.tsx>).
 
 ---
 
@@ -388,8 +366,8 @@ Then add it to [`page.tsx`](<src/app/[locale]/page.tsx>) and, if it should be in
 1. Remove the component import + JSX line from `page.tsx`.
 2. Remove its entry from `navigation.config.ts` (if it had one) and the corresponding key from
    `messages/*.json`.
-3. Delete its folder under `src/widgets/` and, if nothing else uses it, its file(s) under
-   `src/shared/content/`.
+3. Delete its folder under `src/widgets/` and, if nothing else uses it, its entity under
+   `src/entities/`.
 
 ---
 
@@ -446,21 +424,21 @@ Standard Next.js app, deploys anywhere Next.js runs.
 ```text
 AI SaaS landing
   → site.config.ts: name = product name, title = tagline
-  → showcase.json / gallery.json: feature highlights or case studies
-  → timeline.json: changelog / roadmap entries
+  → entities/service/model/services.json: feature highlights
+  → entities/review/model/reviews.json: customer testimonials
   → layout.tsx: JSON-LD @type = "Product" or "Organization"
   → Minimal deletion: none of the existing sections need to be removed.
 
 Design agency landing
   → tokens.scss: swap --color-accent (and --color-bg / --color-text-primary) for the agency's brand colors
   → motion.ts: bump GSAP_DURATION / MOTION_DISTANCE for punchier motion, or lower them for restraint
-  → site.config.ts + content/*.json: agency name, services, client work, milestones
+  → site.config.ts + entities/*/model/*.json: agency name, services, client work
   → No theme/design architecture changes needed — only token values.
 
 Developer / designer portfolio
   → site.config.ts: name = your name, title = your role
-  → showcase.json / gallery.json: your projects (secondaryHref = GitHub links)
-  → timeline.json: title = company, subtitle = role → your work experience
+  → entities/project/model/projects.json: your work, one entry per case study
+  → entities/review/model/reviews.json: client testimonials
   → layout.tsx: JSON-LD @type = "Person"
 ```
 
@@ -472,10 +450,11 @@ Developer / designer portfolio
 - [ ] Set brand name, tagline and links in `src/shared/config/site.config.ts`
 - [ ] Set brand colors in `src/shared/styles/tokens.scss` (`--color-accent`, plus `--color-bg` /
       `--color-text-primary` per theme)
-- [ ] Replace the content in `src/shared/content/*.json` (features, showcase, gallery, timeline)
+- [ ] Replace the content under `src/entities/*/model/*.json` (and add real translations to each `i18n`
+      block per locale)
 - [ ] Replace `public/icon/icon.png` (favicon) and `public/og/cover.png` (social share image)
 - [ ] Set `NEXT_PUBLIC_SITE_URL` for your production environment
-- [ ] Update `LOCALE_META` and the JSON-LD `@type` in `src/app/[locale]/layout.tsx`
+- [ ] Update the JSON-LD `@type` in `src/app/[locale]/layout.tsx` (defaults to `Person`)
 - [ ] Remove any languages you don't need, or add your own (see [Localization](#localization))
 - [ ] Add or remove sections to match your composition (see [Creating](#creating-a-section) /
       [Removing](#removing-a-section) a section)

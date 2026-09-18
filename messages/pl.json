@@ -48,11 +48,6 @@
         "packaging": "Opakowania",
         "web-design": "Projektowanie stron"
     },
-    "showcase": {
-        "viewSource": "Zobacz projekt",
-        "more": "Więcej",
-        "moreDesc": "Przeglądaj całą kolekcję."
-    },
     "selectedWork": {
         "title": "Wybrane prace",
         "viewAll": "Zobacz wszystkie prace",
@@ -79,15 +74,6 @@
     "tools": {
         "title": "Tools",
         "description": "Wyselekcjonowany zestaw narzędzi do budowania identyfikacji, interfejsów i systemów wizualnych."
-    },
-    "gallery": {
-        "subtitle": "Branding, logo i opakowania — cała kolekcja.",
-        "featured": "WYRÓŻNIONY",
-        "primaryAction": "Zobacz projekt",
-        "secondaryAction": "Zobacz projekt",
-        "more": "Więcej",
-        "moreDesc": "Przeglądaj całą kolekcję.",
-        "viewSource": "Zobacz projekt"
     },
     "modal": {
         "overviewTab": "Przegląd",

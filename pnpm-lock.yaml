@@ -24,8 +24,42 @@ importers:
         specifier: ^3.8.3
         version: 3.9.8
 
+  apps/admin:
+    dependencies:
+      '@avrash/content-data':
+        specifier: workspace:*
+        version: link:../../packages/content-data
+      '@avrash/content-schema':
+        specifier: workspace:*
+        version: link:../../packages/content-schema
+      next:
+        specifier: 16.2.6
+        version: 16.2.6(@babel/core@7.29.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(sass@1.104.1)
+      react:
+        specifier: 19.2.4
+        version: 19.2.4
+      react-dom:
+        specifier: 19.2.4
+        version: 19.2.4(react@19.2.4)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.19.41
+        version: 20.19.43
+      '@types/react':
+        specifier: ^19
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.3.0(@types/react@19.3.0)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
   apps/web:
     dependencies:
+      '@avrash/content-data':
+        specifier: workspace:*
+        version: link:../../packages/content-data
       '@avrash/content-schema':
         specifier: workspace:*
         version: link:../../packages/content-schema
@@ -93,6 +127,16 @@ importers:
       cross-env:
         specifier: ^10.1.0
         version: 10.1.0
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
+  packages/content-data:
+    dependencies:
+      '@avrash/content-schema':
+        specifier: workspace:*
+        version: link:../content-schema
+    devDependencies:
       typescript:
         specifier: ^5
         version: 5.9.3

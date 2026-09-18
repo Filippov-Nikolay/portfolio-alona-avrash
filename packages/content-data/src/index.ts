@@ -1,0 +1,41 @@
+import type {
+    HeroContentRaw,
+    CtaContentRaw,
+    FooterContentRaw,
+    Social,
+    Project,
+    HomeProjectGalleryConfig,
+    ServiceRaw,
+    ReviewRaw,
+    StatItem,
+    ClientsConfig,
+    Tool,
+} from "@avrash/content-schema";
+
+import heroJson from "./hero.json";
+import ctaJson from "./cta.json";
+import footerJson from "./footer.json";
+import socialJson from "./social.json";
+import projectsJson from "./projects.json";
+import homeProjectGalleryJson from "./home-project-gallery.json";
+import servicesJson from "./services.json";
+import reviewsJson from "./reviews.json";
+import statsJson from "./stats.json";
+import clientsJson from "./clients.json";
+import toolsJson from "./tools.json";
+
+// hero.floatingImages[].image and service.image are single standalone
+// images, not gallery entries - they reuse ProjectImage for its src/alt
+// shape but never carry id/order, so the JSON genuinely doesn't satisfy
+// it structurally. Pre-existing looseness in the schema, not new here.
+export const hero = heroJson as unknown as HeroContentRaw;
+export const cta = ctaJson as CtaContentRaw;
+export const footer = footerJson as FooterContentRaw;
+export const social = socialJson as Social[];
+export const projects = projectsJson as Project[];
+export const homeProjectGallery = homeProjectGalleryJson as HomeProjectGalleryConfig;
+export const services = servicesJson as unknown as ServiceRaw[];
+export const reviews = reviewsJson as ReviewRaw[];
+export const stats = statsJson as StatItem[];
+export const clients = clientsJson as ClientsConfig;
+export const tools = toolsJson as Tool[];

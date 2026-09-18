@@ -28,6 +28,7 @@
         "react": "19.2.4",
         "react-dom": "19.2.4",
         "sass": "^1.99.0",
+        "@avrash/content-data": "workspace:*",
         "@avrash/content-schema": "workspace:*"
     },
     "browserslist": [

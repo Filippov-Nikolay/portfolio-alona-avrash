@@ -53,12 +53,12 @@ export default async function HomePage({ params }: HomePageProps) {
         getTranslations({ locale, namespace: "reviews" }),
         getAllProjects(),
         getHomeProjectGallery(),
-        getServices(),
-        getReviews(),
+        getServices(locale),
+        getReviews(locale),
         getStats(),
         getClients(),
         getTools(),
-        getCta(),
+        getCta(locale),
     ]);
     const translateCategory = (key: CategoryKey) => tCategories(key);
 
@@ -99,6 +99,7 @@ export default async function HomePage({ params }: HomePageProps) {
     return (
         <main>
             <HeroSection
+                locale={locale}
                 stats={stats}
                 selectedWork={{
                     projects: selectedWorkProjects,

@@ -1,8 +1,23 @@
 {
-    "tagline": "Let's work together",
     "brandMark": "Avrash",
     "legalLinks": [
-        { "id": "terms", "label": "Terms of use", "href": "/terms-of-use" },
-        { "id": "privacy", "label": "Privacy policy", "href": "/privacy-policy" }
-    ]
+        { "id": "terms", "href": "/terms-of-use" },
+        { "id": "privacy", "href": "/privacy-policy" }
+    ],
+    "i18n": {
+        "en": {
+            "tagline": "Let's work together",
+            "legalLinkLabels": {
+                "terms": "Terms of use",
+                "privacy": "Privacy policy"
+            }
+        },
+        "pl": {
+            "tagline": "Pracujmy razem",
+            "legalLinkLabels": {
+                "terms": "Warunki korzystania",
+                "privacy": "Polityka prywatności"
+            }
+        }
+    }
 }

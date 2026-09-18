@@ -1,6 +1,8 @@
 import { fetchContent } from "@/shared/api/contentClient";
-import type { CtaContent } from "../model/cta";
+import { resolveLocaleContent } from "@/shared/lib/resolveLocaleContent";
+import type { CtaContent, CtaContentRaw } from "../model/cta";
 
-export function getCta(): Promise<CtaContent> {
-    return fetchContent<CtaContent>("cta", "cta");
+export async function getCta(locale: string): Promise<CtaContent> {
+    const { i18n } = await fetchContent<CtaContentRaw>("cta", "cta");
+    return resolveLocaleContent(i18n, locale);
 }

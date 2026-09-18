@@ -1,6 +1,14 @@
 import { fetchContent } from "@/shared/api/contentClient";
-import type { FooterContent } from "../model/footer";
+import { resolveLocaleContent } from "@/shared/lib/resolveLocaleContent";
+import type { FooterContent, FooterContentRaw } from "../model/footer";
 
-export function getFooter(): Promise<FooterContent> {
-    return fetchContent<FooterContent>("footer", "footer");
+export async function getFooter(locale: string): Promise<FooterContent> {
+    const { i18n, legalLinks, ...rest } = await fetchContent<FooterContentRaw>("footer", "footer");
+    const { tagline, legalLinkLabels } = resolveLocaleContent(i18n, locale);
+
+    return {
+        ...rest,
+        tagline,
+        legalLinks: legalLinks.map((link) => ({ ...link, label: legalLinkLabels[link.id] })),
+    };
 }

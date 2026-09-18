@@ -1,5 +1,4 @@
 {
-    "description": "I create visual identities and design solutions that communicate meaning and build connection.",
     "availableForWork": true,
     "floatingImages": [
         {
@@ -38,5 +37,13 @@
                 "scale": 1.32
             }
         }
-    ]
+    ],
+    "i18n": {
+        "en": {
+            "description": "I create visual identities and design solutions that communicate meaning and build connection."
+        },
+        "pl": {
+            "description": "Tworzę identyfikacje wizualne i rozwiązania projektowe, które komunikują znaczenie i budują więź."
+        }
+    }
 }

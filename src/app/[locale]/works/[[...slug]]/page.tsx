@@ -94,7 +94,7 @@ export default async function WorksPage({ params }: WorksPageProps) {
         getTranslations({ locale, namespace: "categories" }),
         getTranslations({ locale, namespace: "worksPage" }),
         getAllProjects(),
-        getCta(),
+        getCta(locale),
     ]);
     const translateCategory = (key: CategoryKey) => tCategories(key);
 

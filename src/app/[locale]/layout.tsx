@@ -158,7 +158,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                     <AppProviders initialHasSeenPreloader={hasSeenPreloader}>
                         <Header />
                         {children}
-                        <Footer />
+                        <Footer locale={locale} />
                     </AppProviders>
                     <SpeedInsights />
                     <Analytics />

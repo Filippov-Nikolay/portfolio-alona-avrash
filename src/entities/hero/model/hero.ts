@@ -5,6 +5,16 @@ export interface HeroFloatingImage {
     image: ProjectImage;
 }
 
+export interface HeroI18n {
+    description: string;
+}
+
+export interface HeroContentRaw {
+    availableForWork: boolean;
+    floatingImages: HeroFloatingImage[];
+    i18n: Record<string, HeroI18n>;
+}
+
 export interface HeroContent {
     description: string;
     availableForWork: boolean;

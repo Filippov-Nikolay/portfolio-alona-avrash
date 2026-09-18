@@ -1,6 +1,8 @@
 import { fetchContent } from "@/shared/api/contentClient";
-import type { Service } from "../model/service";
+import { resolveLocaleContent } from "@/shared/lib/resolveLocaleContent";
+import type { Service, ServiceRaw } from "../model/service";
 
-export function getServices(): Promise<Service[]> {
-    return fetchContent<Service[]>("services", "services");
+export async function getServices(locale: string): Promise<Service[]> {
+    const raw = await fetchContent<ServiceRaw[]>("services", "services");
+    return raw.map(({ i18n, ...rest }) => ({ ...rest, ...resolveLocaleContent(i18n, locale) }));
 }

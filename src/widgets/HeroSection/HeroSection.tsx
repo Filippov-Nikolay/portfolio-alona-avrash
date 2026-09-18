@@ -5,12 +5,13 @@ import type { SelectedWorkSectionProps } from "@/widgets/SelectedWorkSection/Sel
 import { HeroSectionClient } from "./HeroSectionClient";
 
 interface HeroSectionProps {
+    locale: string;
     stats: StatItem[];
     selectedWork?: SelectedWorkSectionProps;
 }
 
-export async function HeroSection({ stats, selectedWork }: HeroSectionProps) {
-    const [hero, socials] = await Promise.all([getHero(), getSocials()]);
+export async function HeroSection({ locale, stats, selectedWork }: HeroSectionProps) {
+    const [hero, socials] = await Promise.all([getHero(locale), getSocials()]);
 
     return (
         <HeroSectionClient

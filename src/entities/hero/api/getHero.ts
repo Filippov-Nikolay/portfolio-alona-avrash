@@ -1,6 +1,8 @@
 import { fetchContent } from "@/shared/api/contentClient";
-import type { HeroContent } from "../model/hero";
+import { resolveLocaleContent } from "@/shared/lib/resolveLocaleContent";
+import type { HeroContent, HeroContentRaw } from "../model/hero";
 
-export function getHero(): Promise<HeroContent> {
-    return fetchContent<HeroContent>("hero", "hero");
+export async function getHero(locale: string): Promise<HeroContent> {
+    const { i18n, ...rest } = await fetchContent<HeroContentRaw>("hero", "hero");
+    return { ...rest, ...resolveLocaleContent(i18n, locale) };
 }

@@ -1,12 +1,22 @@
 import type { CategoryKey } from "@/shared/types/category";
 import type { ProjectImage } from "@/shared/types/project-image";
 
+export interface ServiceI18n {
+    description: string;
+    approachLabel: string;
+}
+
+export interface ServiceRaw {
+    id: number;
+    title: CategoryKey;
+    image: ProjectImage;
+    i18n: Record<string, ServiceI18n>;
+}
+
 export interface Service {
     id: number;
     title: CategoryKey;
     description: string;
-    // Short call-to-action label under the description (e.g. "Digital Design
-    // Approach") — written per category, not derived from `title`.
     approachLabel: string;
     image: ProjectImage;
 }

@@ -2,19 +2,40 @@
     {
         "id": 0,
         "nameProject": "Olva",
-        "comment": "Working with Alona was a fantastic experience. She's creative, detail-oriented, and truly understands how to bring brands' visions to life.",
-        "name": "maria pinto"
+        "name": "maria pinto",
+        "i18n": {
+            "en": {
+                "comment": "Working with Alona was a fantastic experience. She's creative, detail-oriented, and truly understands how to bring brands' visions to life."
+            },
+            "pl": {
+                "comment": "Współpraca z Aloną była fantastycznym doświadczeniem. Jest kreatywna, dba o szczegóły i naprawdę rozumie, jak urzeczywistnić wizję marki."
+            }
+        }
     },
     {
         "id": 1,
         "nameProject": "Esencha",
-        "comment": "Alona took our packaging from an idea on a napkin to something that actually stops people on the shelf. Fast, sharp, and easy to work with.",
-        "name": "daniel cruz"
+        "name": "daniel cruz",
+        "i18n": {
+            "en": {
+                "comment": "Alona took our packaging from an idea on a napkin to something that actually stops people on the shelf. Fast, sharp, and easy to work with."
+            },
+            "pl": {
+                "comment": "Alona zamieniła nasz pomysł zapisany na serwetce w opakowanie, które naprawdę przyciąga wzrok na półce. Szybka, precyzyjna i świetnie się z nią współpracuje."
+            }
+        }
     },
     {
         "id": 2,
         "nameProject": "Crusty",
-        "comment": "Every round of feedback came back better than we imagined. Our new identity feels exactly like us, just sharper and more confident.",
-        "name": "sophie laurent"
+        "name": "sophie laurent",
+        "i18n": {
+            "en": {
+                "comment": "Every round of feedback came back better than we imagined. Our new identity feels exactly like us, just sharper and more confident."
+            },
+            "pl": {
+                "comment": "Każda runda poprawek wracała lepsza, niż się spodziewaliśmy. Nasza nowa identyfikacja jest dokładnie tym, kim jesteśmy — tylko bardziej wyrazista i pewna siebie."
+            }
+        }
     }
 ]

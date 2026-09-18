@@ -1,5 +1,14 @@
 {
-    "heading": "Let's create something distinctive.",
-    "availability": "I'm available for freelance and collaborations.",
-    "buttonLabel": "Start a project"
+    "i18n": {
+        "en": {
+            "heading": "Let's create something distinctive.",
+            "availability": "I'm available for freelance and collaborations.",
+            "buttonLabel": "Start a project"
+        },
+        "pl": {
+            "heading": "Stwórzmy razem coś wyjątkowego.",
+            "availability": "Jestem dostępna do współpracy freelancingowej i projektowej.",
+            "buttonLabel": "Rozpocznij projekt"
+        }
+    }
 }

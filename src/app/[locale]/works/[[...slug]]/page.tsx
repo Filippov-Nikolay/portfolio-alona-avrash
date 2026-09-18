@@ -7,6 +7,8 @@ import type { CategoryKey } from "@/shared/types";
 import { getAllProjects, toShowcaseItem } from "@/entities/project/lib/resolveProjects";
 import { slugifyProjectName } from "@/entities/project/lib/slug";
 import { getCta } from "@/entities/cta/api/getCta";
+import { siteConfig } from "@/shared/config/site.config";
+import { getLocaleMeta } from "@/i18n/locales";
 
 const ALL_CATEGORY_KEYS: CategoryKey[] = ["ui-ux", "branding", "logo", "packaging", "web-design"];
 
@@ -24,15 +26,62 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: WorksPageProps): Promise<Metadata> {
     const { locale, slug } = await params;
-    const t = await getTranslations({ locale, namespace: "nav" });
+    const [t, tCategories, tSeo] = await Promise.all([
+        getTranslations({ locale, namespace: "nav" }),
+        getTranslations({ locale, namespace: "categories" }),
+        getTranslations({ locale, namespace: "seo" }),
+    ]);
+    const { ogLocale } = getLocaleMeta(locale);
 
     if (slug?.length === 1) {
         const projects = await getAllProjects();
         const project = projects.find((p) => slugifyProjectName(p.name) === slug[0]);
-        if (project) return { title: `${project.name} — ${t("works")}` };
+        if (project) {
+            const heroImage = project.image.find((image) => image.isHero) ?? project.image[0];
+            const description = project.categories.map((key) => tCategories(key)).join(" · ");
+            const url = `${siteConfig.url}/${locale}/works/${slug[0]}`;
+            const ogTitle = `${project.name} | ${siteConfig.name}`;
+
+            return {
+                title: project.name,
+                description,
+                alternates: { canonical: url },
+                openGraph: {
+                    title: ogTitle,
+                    description,
+                    url,
+                    siteName: siteConfig.name,
+                    type: "website",
+                    locale: ogLocale,
+                    images: heroImage?.src ? [{ url: heroImage.src }] : undefined,
+                },
+                twitter: {
+                    card: "summary_large_image",
+                    title: ogTitle,
+                    description,
+                    images: heroImage?.src ? [heroImage.src] : undefined,
+                },
+            };
+        }
     }
 
-    return { title: t("works") };
+    const title = t("works");
+    const url = `${siteConfig.url}/${locale}/works`;
+    const ogTitle = `${title} | ${siteConfig.name}`;
+
+    return {
+        title,
+        alternates: { canonical: url },
+        openGraph: {
+            title: ogTitle,
+            description: tSeo("description"),
+            url,
+            siteName: siteConfig.name,
+            type: "website",
+            locale: ogLocale,
+            images: [{ url: "/og/cover.png", width: 1200, height: 630 }],
+        },
+    };
 }
 
 export default async function WorksPage({ params }: WorksPageProps) {

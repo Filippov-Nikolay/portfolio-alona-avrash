@@ -88,6 +88,11 @@
     "reviews": {
         "title": "Opinie"
     },
+    "notFound": {
+        "title": "Ta strona zbłądziła",
+        "description": "Strona, której szukasz, nie istnieje, została przeniesiona albo nigdy nie powstała. Wróćmy do prawdziwych projektów.",
+        "button": "Wróć na stronę główną"
+    },
     "seo": {
         "description": "Identyfikacja marki, opakowania i projektowanie logo dla rozwijających się marek."
     }

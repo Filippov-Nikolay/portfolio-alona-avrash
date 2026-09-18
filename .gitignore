@@ -60,11 +60,15 @@ Thumbs.db
 
 # =========================
 # Project gallery images (temporary local placeholders)
-# Each project's full image set lives in public/projects/<slug>/ for now,
-# scraped from Behance ahead of the real CMS/Cloudflare-backed asset API.
+# Each project's full image set lives in apps/web/public/projects/<slug>/ for
+# now, scraped from Behance ahead of the real CMS/Cloudflare-backed asset API.
 # They're heavy (hundreds of MB) and disposable, so they stay untracked -
 # every dev who needs them locally re-runs the import rather than everyone
 # carrying them in git history forever. The single curated hero image per
 # project (public/projects/image-<slug>.png) is unaffected and stays tracked.
+# A slash in the middle of a gitignore pattern anchors it to this file's own
+# directory (repo root) instead of matching at any depth - that's exactly
+# what broke this rule when the app moved into apps/web/, so it's spelled
+# out with the full path now rather than assuming it travels on its own.
 # =========================
-public/projects/*/
+apps/web/public/projects/*/

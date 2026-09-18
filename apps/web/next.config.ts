@@ -1,0 +1,131 @@
+import path from "node:path";
+import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+const isDev = process.env.NODE_ENV === "development";
+
+// SVGO's default preset strips `viewBox` whenever it exactly matches the
+// SVG's `width`/`height` attributes (true for most icons in this project) —
+// without a viewBox, CSS-resizing an icon crops its canvas instead of
+// scaling the artwork. Keep it so icons can be freely resized via CSS.
+const svgrOptions = {
+    svgoConfig: {
+        plugins: [
+            {
+                name: "preset-default",
+                params: {
+                    overrides: {
+                        removeViewBox: false,
+                    },
+                },
+            },
+        ],
+    },
+};
+
+const nextConfig: NextConfig = {
+    // Turbopack (next dev)
+    turbopack: {
+        rules: {
+            "*.svg": {
+                loaders: [{ loader: "@svgr/webpack", options: svgrOptions }],
+                as: "*.tsx",
+            },
+        },
+    },
+
+    // Webpack (next build)
+    webpack(config) {
+        // Отключаем дефолтный Next.js обработчик .svg
+        const fileLoaderRule = config.module.rules.find((rule: { test?: RegExp }) =>
+            rule.test?.test?.(".svg")
+        );
+        if (fileLoaderRule) {
+            fileLoaderRule.exclude = /\.svg$/i;
+        }
+
+        // SVGR — импорт .svg как React-компонента
+        config.module.rules.push({
+            test: /\.svg$/i,
+            issuer: /\.[jt]sx?$/,
+            use: [{ loader: "@svgr/webpack", options: svgrOptions }],
+        });
+
+        return config;
+    },
+
+    output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
+
+    // This app now lives in a pnpm workspace (apps/web) and depends on
+    // packages/content-schema, which sits outside this directory. Without
+    // this, the standalone build's file tracing wouldn't follow that
+    // dependency back to the monorepo root and would silently omit it.
+    outputFileTracingRoot: path.join(__dirname, "../../"),
+    transpilePackages: ["@avrash/content-schema"],
+
+    // Default is 60s. CI runners are 2-core, so page generation runs on a
+    // single worker there (vs several locally) - give it real headroom
+    // instead of racing a cold, single-threaded build against the default.
+    staticPageGenerationTimeout: 180,
+
+    poweredByHeader: false,
+
+    images: {
+        remotePatterns: [],
+        // Next only serves qualities explicitly allow-listed here (else 400s).
+        // 75 stays the project-wide default; 95 is opted into per-Image where
+        // the default's visible softening actually matters (e.g. the
+        // full-bleed ShowcaseModal banner).
+        qualities: [75, 95],
+    },
+
+    async headers() {
+        return [
+            {
+                source: "/(.*)",
+                headers: [
+                    {
+                        key: "X-Frame-Options",
+                        value: "DENY",
+                    },
+                    {
+                        key: "X-Content-Type-Options",
+                        value: "nosniff",
+                    },
+                    {
+                        key: "Referrer-Policy",
+                        value: "strict-origin-when-cross-origin",
+                    },
+                    {
+                        // Запрашиваем у браузера системную тему — он вернёт её
+                        // в Sec-CH-Prefers-Color-Scheme при следующих запросах.
+                        // Vary нужен, чтобы CDN не отдавал кешированную страницу
+                        // другой темы другому пользователю.
+                        key: "Accept-CH",
+                        value: "Sec-CH-Prefers-Color-Scheme",
+                    },
+                    {
+                        key: "Vary",
+                        value: "Sec-CH-Prefers-Color-Scheme",
+                    },
+                    {
+                        key: "Content-Security-Policy",
+                        value: [
+                            "default-src 'self'",
+                            `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+                            "style-src 'self' 'unsafe-inline'",
+                            "font-src 'self' https://fonts.gstatic.com",
+                            "img-src 'self' data: blob:",
+                            "connect-src 'self'",
+                            "frame-ancestors 'none'",
+                        ].join("; "),
+                    },
+                ],
+            },
+        ];
+    },
+};
+
+export default withNextIntl(nextConfig);

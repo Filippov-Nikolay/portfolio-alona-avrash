@@ -1,9 +1,9 @@
 # Dependencies
-node_modules
+**/node_modules
 
 # Next.js
-.next
-out
+**/.next
+**/out
 
 # Logs
 npm-debug.log*
@@ -20,6 +20,7 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+!**/.env.example
 
 # IDE
 .vscode
@@ -36,9 +37,10 @@ dist
 
 # Docs
 README.md
+**/README.md
 
 # Docker
 docker-compose.yml
 
 # TypeScript
-*.tsbuildinfo
+**/*.tsbuildinfo

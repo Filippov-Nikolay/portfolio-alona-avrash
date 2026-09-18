@@ -1,12 +1,14 @@
 services:
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
     ports:
       - "3000:3000"
     environment:
       - NEXT_OUTPUT=standalone
       - NEXT_PUBLIC_SITE_URL=http://localhost:3000
       # Optional - only needed if a resource isn't in the local content
-      # JSON. See .env.example.
+      # JSON. See apps/web/.env.example.
       # - CONTENT_API_URL=https://your-content-api.com/api
     restart: unless-stopped

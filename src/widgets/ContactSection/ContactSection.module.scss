@@ -1,7 +1,7 @@
 @use "@/shared/styles/mixins" as *;
 
 .section {
-    --_pad-top: 178px;
+    --_pad-top: var(--page-top-offset);
     --_pad-bottom: 52px;
     padding-block: var(--_pad-top) var(--_pad-bottom);
 }
@@ -535,7 +535,6 @@
 
 @media (max-width: 1023px) {
     .section {
-        --_pad-top: 140px;
         --_pad-bottom: 40px;
     }
 
@@ -614,10 +613,6 @@
 }
 
 @include respond-to("mobile") {
-    .section {
-        --_pad-top: 122px;
-    }
-
     .title {
         font-size: clamp(42px, 13vw, 58px);
     }

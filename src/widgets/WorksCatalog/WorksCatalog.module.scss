@@ -1,9 +1,7 @@
 @use "@/shared/styles/mixins" as *;
 
 .container {
-    // The header is fixed at every breakpoint, so its own height plus a
-    // fixed 50px gap is added on top of the page's own block padding.
-    padding-block: calc(var(--header-scene-height, 120px) + 50px) clamp(64px, 8vw, 96px);
+    padding-block: var(--page-top-offset) clamp(64px, 8vw, 96px);
 }
 
 // === Page header ==============================================

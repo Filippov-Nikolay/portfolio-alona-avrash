@@ -13,6 +13,7 @@ import { usePreloader } from "@/shared/providers";
 import { cn } from "@/shared/lib/cn";
 import styles from "./Header.module.scss";
 import { useServicesHeaderBandController } from "./useServicesHeaderBandController";
+import { useHeaderHeightVar } from "./useHeaderHeightVar";
 import { LangSwitcher, ThemeToggle, DownloadIcon } from "@/shared/ui";
 import type { NavItem } from "@/shared/types";
 
@@ -102,6 +103,7 @@ export function Header() {
     const menuRef = useRef<HTMLDivElement>(null);
     const menuTriggerRef = useRef<HTMLButtonElement>(null);
     const bandY = useServicesHeaderBandController(headerRef, sceneBackdropRef);
+    useHeaderHeightVar(headerRef);
 
     // Keep the pills hidden for at least one committed frame after `isReady`
     // so the browser always sees a real "before" state. This is what makes

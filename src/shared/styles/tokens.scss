@@ -2,6 +2,7 @@
     // === Layout =======================================
     --container-width: 1105px;
     --content-width: 1280px;
+    --page-top-offset: calc(var(--header-height, 120px) + 50px);
     --section-spacing: 160px;
     --hero-scroll-runway: clamp(1260px, 182vh, 2140px);
     --hero-scroll-runway-compact: clamp(760px, 122vh, 1080px);

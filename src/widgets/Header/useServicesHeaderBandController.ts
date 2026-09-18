@@ -64,6 +64,8 @@ export function useServicesHeaderBandController(
                     geometryRef.current = null;
                     syncBand();
                 }
+                root.style.removeProperty(HEADER_SCENE_HEIGHT_VAR);
+                band.style.removeProperty(HEADER_SCENE_HEIGHT_VAR);
                 return;
             }
 

@@ -12,11 +12,10 @@ export const siteConfig = {
     links: {
         // TODO: replace with the real handle/URL once available.
         github: "https://github.com/your-username",
-        linkedin: "https://www.linkedin.com/in/your-profile",
         telegram: "https://t.me/your-username",
-        instagram: "https://instagram.com/",
-        pinterest: "https://pinterest.com/",
-        behance: "https://behance.net/",
+        // Instagram/Behance/LinkedIn/Pinterest live in entities/social/model/
+        // social.json (getSocials()) - that's what actually renders the
+        // icons, so it's the single source of truth for those.
         email: "mailto:alonaavrash009@gmail.com",
         // TODO: drop the real CV/resume PDF at this path.
         cv: "/cv/alona-avrash-cv.pdf",

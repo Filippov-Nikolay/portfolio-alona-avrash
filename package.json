@@ -8,6 +8,7 @@
     },
     "scripts": {
         "dev": "pnpm --filter @avrash/web run dev",
+        "dev:admin": "pnpm --filter @avrash/admin run dev",
         "build": "pnpm -r --if-present run build",
         "start": "pnpm --filter @avrash/web run start",
         "lint": "pnpm -r --if-present run lint",
@@ -22,7 +23,7 @@
             "eslint --fix",
             "prettier --write"
         ],
-        "*.scss": [
+        "*.{scss,css}": [
             "prettier --write"
         ]
     },

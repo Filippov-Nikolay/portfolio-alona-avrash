@@ -57,6 +57,11 @@ const nextConfig: NextConfig = {
 
     output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
 
+    // Default is 60s. CI runners are 2-core, so page generation runs on a
+    // single worker there (vs several locally) - give it real headroom
+    // instead of racing a cold, single-threaded build against the default.
+    staticPageGenerationTimeout: 180,
+
     poweredByHeader: false,
 
     images: {

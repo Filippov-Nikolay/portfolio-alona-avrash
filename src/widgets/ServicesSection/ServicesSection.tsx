@@ -2,10 +2,9 @@
 
 import { Fragment, type CSSProperties } from "react";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { Service } from "@/entities/service/model/service";
 import { Container, Section, ArrowIcon } from "@/shared/ui";
-import { scrollToElementId } from "@/shared/lib/scroll";
 import { useServicesSectionAnimations } from "./useServicesSectionAnimations";
 import styles from "./ServicesSection.module.scss";
 
@@ -13,13 +12,9 @@ interface ServicesSectionProps {
     services: Service[];
 }
 
-function handleApproachClick(e: React.MouseEvent) {
-    e.preventDefault();
-    scrollToElementId("contact", { offset: 80 });
-}
-
 export function ServicesSection({ services }: ServicesSectionProps) {
     const t = useTranslations("categories");
+    const locale = useLocale();
     const { sectionRef, titleRef, gridRef } = useServicesSectionAnimations(services);
 
     return (
@@ -42,9 +37,8 @@ export function ServicesSection({ services }: ServicesSectionProps) {
                                         <p className={styles.description}>{service.description}</p>
 
                                         <a
-                                            href="#contact"
+                                            href={`/${locale}/contact`}
                                             className={styles.approachLink}
-                                            onClick={handleApproachClick}
                                         >
                                             {service.approachLabel}
                                             <ArrowIcon className={styles.approachArrow} />

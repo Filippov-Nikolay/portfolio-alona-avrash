@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { m, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { HeroContent } from "@/entities/hero/model/hero";
 import type { Social } from "@/entities/social/model/social";
@@ -21,7 +21,6 @@ import { cn } from "@/shared/lib/cn";
 import { fadeIn } from "@/shared/lib/motion/fade-in";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { StatsSelectedChoreographyProvider } from "@/shared/lib/motion/StatsSelectedChoreographyContext";
-import { scrollToElementId } from "@/shared/lib/scroll";
 import { usePreloader } from "@/shared/providers";
 import { Button, Container, GlassSurface, NoiseLayer, Section } from "@/shared/ui";
 import { StatsSection } from "@/widgets/StatsSection";
@@ -51,11 +50,6 @@ const FLOATER_LAYER_CLASSES = [
     styles.floaterFront,
     styles.floaterFront,
 ];
-
-function handleCtaClick(e: React.MouseEvent) {
-    e.preventDefault();
-    scrollToElementId("contact", { offset: 100 });
-}
 
 function clamp01(value: number) {
     return Math.max(0, Math.min(1, value));
@@ -122,6 +116,7 @@ interface HeroSectionClientProps {
 
 export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSectionClientProps) {
     const t = useTranslations("hero");
+    const locale = useLocale();
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
     const { isReady } = usePreloader();
@@ -555,11 +550,10 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
 
                                                 <Button
                                                     as="a"
-                                                    href="#contact"
+                                                    href={`/${locale}/contact`}
                                                     variant="primary"
                                                     size="lg"
                                                     className={styles.cta}
-                                                    onClick={handleCtaClick}
                                                 >
                                                     {t("cta")}
                                                 </Button>

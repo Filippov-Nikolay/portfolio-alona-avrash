@@ -100,7 +100,8 @@
     }
 
     @include respond-to("mobile") {
-        height: 220px;
+        aspect-ratio: 101 / 79;
+        height: auto;
     }
 
     @media (max-height: 480px) {
@@ -112,6 +113,22 @@
     position: absolute;
     inset: 0 0 0 30%;
     overflow: hidden;
+
+    @include respond-to("tablet") {
+        inset: 0 0 0 38%;
+    }
+
+    @include respond-to("mobile") {
+        inset: 0;
+
+        &::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0) 55%);
+            pointer-events: none;
+        }
+    }
 }
 
 .bannerImage {
@@ -124,18 +141,28 @@
     top: 28px;
     left: 32px;
     z-index: 1;
+    max-width: calc(30% - 48px);
     margin: 0;
     font-family: var(--font-title-accent);
     font-size: 40px;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+    overflow-wrap: break-word;
     color: #fff;
 
+    @include respond-to("tablet") {
+        max-width: calc(38% - 48px);
+        font-size: 28px;
+    }
+
     @include respond-to("mobile") {
-        top: 18px;
+        top: 30px;
         left: 20px;
-        font-size: 24px;
+        right: 56px;
+        max-width: none;
+        transform: translateY(-50%);
+        font-size: 22px;
     }
 
     @media (max-height: 480px) {

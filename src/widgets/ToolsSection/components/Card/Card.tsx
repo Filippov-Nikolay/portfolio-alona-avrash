@@ -30,11 +30,12 @@ export const Card = forwardRef<HTMLButtonElement, CardProps>(function Card(
                 alt=""
                 aria-hidden="true"
                 className={styles.cardFolderActive}
+                draggable={false}
             />
 
             <span className={styles.cardBody}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={tool.icon} alt="" className={styles.cardIconTool} />
+                <img src={tool.icon} alt="" className={styles.cardIconTool} draggable={false} />
                 <span className={styles.cardLabelTool}>{tool.name}</span>
             </span>
 

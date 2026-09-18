@@ -340,6 +340,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                                 src={peekBlendSrc(image.src)}
                                 alt=""
                                 className={styles.cardItemImg}
+                                draggable={false}
                             />
                         </span>
                     ))}

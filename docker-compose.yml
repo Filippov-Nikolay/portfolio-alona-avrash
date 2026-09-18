@@ -6,4 +6,7 @@ services:
     environment:
       - NEXT_OUTPUT=standalone
       - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+      # Optional - only needed if a resource isn't in the local content
+      # JSON. See .env.example.
+      # - CONTENT_API_URL=https://your-content-api.com/api
     restart: unless-stopped

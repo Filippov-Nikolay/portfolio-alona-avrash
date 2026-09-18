@@ -344,6 +344,7 @@ cp .env.example .env.local
 | Variable               | Required   | Description                                                                 |
 | ----------------------- | ---------- | ----------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL`  | In production | Public base URL, used for canonical links, OpenGraph, `sitemap.xml` and `robots.txt`. Defaults to `http://localhost:3000` if unset. |
+| `CONTENT_API_URL`       | No | Base URL of an external CMS API. Content (hero, socials, projects, ...) ships as local JSON under `src/entities/*/model` and is used as-is — this is only a fallback for a resource not found there. |
 
 Analytics (`@vercel/analytics`, `@vercel/speed-insights`) are wired into the layout and are safe no-ops
 outside of Vercel — remove the two components in `layout.tsx` if you don't want them.

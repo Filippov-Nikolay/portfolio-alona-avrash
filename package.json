@@ -7,7 +7,8 @@
         "node": ">=22"
     },
     "scripts": {
-        "dev": "pnpm --filter @avrash/web run dev",
+        "dev": "pnpm --parallel --filter @avrash/web --filter @avrash/admin run dev",
+        "dev:web": "pnpm --filter @avrash/web run dev",
         "dev:admin": "pnpm --filter @avrash/admin run dev",
         "build": "pnpm -r --if-present run build",
         "start": "pnpm --filter @avrash/web run start",

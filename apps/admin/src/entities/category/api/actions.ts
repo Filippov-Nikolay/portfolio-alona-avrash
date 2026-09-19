@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { CategoryOption } from "@avrash/content-schema";
 import { addOption, removeOption } from "@/entities/optionList/api/optionListRepository";
 import { listProjects } from "@/entities/project/api/projectsRepository";
+import { notifyContentChanged } from "@/shared/lib/notifyWeb";
 
 const CATEGORIES_FILE = "categories.json";
 
@@ -11,6 +12,7 @@ export async function addCategoryAction(label: string): Promise<CategoryOption> 
     const option = (await addOption(CATEGORIES_FILE, label)) as CategoryOption;
     revalidatePath("/global/categories");
     revalidatePath("/works/projects/new");
+    await notifyContentChanged("categories");
     return option;
 }
 
@@ -30,4 +32,5 @@ export async function removeCategoryAction(key: string): Promise<void> {
 
     await removeOption(CATEGORIES_FILE, key);
     revalidatePath("/global/categories");
+    await notifyContentChanged("categories");
 }

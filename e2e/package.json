@@ -1,0 +1,16 @@
+{
+    "name": "@avrash/e2e",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "test": "playwright test",
+        "test:ui": "playwright test --ui",
+        "type-check": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.57.1",
+        "@types/node": "^20.19.41",
+        "bcryptjs": "^3.0.3",
+        "typescript": "^5"
+    }
+}

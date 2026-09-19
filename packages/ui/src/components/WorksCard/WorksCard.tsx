@@ -33,7 +33,14 @@ export function WorksCard({
     } as CSSProperties;
 
     return (
-        <div ref={cardRef} className={styles.card} style={hoverStyle} onClick={onOpen}>
+        <div
+            ref={cardRef}
+            className={styles.card}
+            style={hoverStyle}
+            onClick={onOpen}
+            data-testid="works-card"
+            data-category={categoryLabel}
+        >
             <div className={styles.visual}>
                 {heroImage?.src && (
                     <Image

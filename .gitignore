@@ -59,6 +59,14 @@ Thumbs.db
 .codex-artifacts/
 
 # =========================
+# Playwright (e2e/)
+# =========================
+e2e/.scratch/
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+
+# =========================
 # Project gallery images (temporary local placeholders)
 # Each project's full image set lives in apps/web/public/projects/<slug>/ for
 # now, scraped from Behance ahead of the real CMS/Cloudflare-backed asset API.

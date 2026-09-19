@@ -1,0 +1,61 @@
+.backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(24, 24, 27, 0.4);
+    animation: fadeIn 0.12s ease;
+}
+
+.dialog {
+    width: 100%;
+    max-width: 380px;
+    padding: 20px;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.24);
+    animation: popIn 0.15s ease;
+}
+
+.title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #18181b;
+}
+
+.message {
+    margin: 0 0 20px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #52525b;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

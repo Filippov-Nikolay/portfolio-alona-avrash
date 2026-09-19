@@ -6,6 +6,14 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const isDev = process.env.NODE_ENV === "development";
 
+// Single source of truth for the R2/CDN origin admin's uploaded images (and,
+// via CONTENT_SOURCE=remote, JSON content) are served from - see
+// shared/api/contentClient.ts and apps/admin's R2_PUBLIC_URL_BASE. Deriving
+// both the Image allowlist and the CSP img-src from this one env var means
+// turning on remote R2 in production is a single env change, not three
+// separately-remembered ones.
+const cdnOrigin = process.env.CONTENT_CDN_URL ? new URL(process.env.CONTENT_CDN_URL) : undefined;
+
 // SVGO's default preset strips `viewBox` whenever it exactly matches the
 // SVG's `width`/`height` attributes (true for most icons in this project) —
 // without a viewBox, CSS-resizing an icon crops its canvas instead of
@@ -73,7 +81,14 @@ const nextConfig: NextConfig = {
     poweredByHeader: false,
 
     images: {
-        remotePatterns: [],
+        remotePatterns: cdnOrigin
+            ? [
+                  {
+                      protocol: cdnOrigin.protocol.replace(":", "") as "http" | "https",
+                      hostname: cdnOrigin.hostname,
+                  },
+              ]
+            : [],
         // Next only serves qualities explicitly allow-listed here (else 400s).
         // 75 stays the project-wide default; 95 is opted into per-Image where
         // the default's visible softening actually matters (e.g. the
@@ -117,7 +132,7 @@ const nextConfig: NextConfig = {
                             `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
                             "style-src 'self' 'unsafe-inline'",
                             "font-src 'self' https://fonts.gstatic.com",
-                            "img-src 'self' data: blob:",
+                            `img-src 'self' data: blob:${cdnOrigin ? ` ${cdnOrigin.origin}` : ""}`,
                             "connect-src 'self'",
                             "frame-ancestors 'none'",
                         ].join("; "),

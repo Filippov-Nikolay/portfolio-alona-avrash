@@ -84,10 +84,10 @@ export function trackEvent(eventName: AnalyticsEvent, options: TrackOptions = {}
     const endpoint = process.env.NEXT_PUBLIC_ANALYTICS_ENDPOINT;
     if (!endpoint) return;
 
+    let dedupeKey: string | undefined;
     if (eventName === "project_open" && options.entityId) {
-        const dedupeKey = `${eventName}:${options.entityId}`;
+        dedupeKey = `${eventName}:${options.entityId}`;
         if (shouldDedupe(Date.now(), readSeen()[dedupeKey])) return;
-        markTracked(dedupeKey);
     }
 
     const payload = buildEventPayload(eventName, options, {
@@ -97,5 +97,10 @@ export function trackEvent(eventName: AnalyticsEvent, options: TrackOptions = {}
         referrer: document.referrer,
     });
 
-    navigator.sendBeacon(endpoint, JSON.stringify(payload));
+    // Only mark it seen once the browser actually accepted the beacon - if
+    // sendBeacon() returns false (e.g. its queue is full), the next
+    // project_open should still get a real chance to be sent instead of
+    // silently staying "deduped" for the rest of the 30-minute window.
+    const queued = navigator.sendBeacon(endpoint, JSON.stringify(payload));
+    if (queued && dedupeKey) markTracked(dedupeKey);
 }

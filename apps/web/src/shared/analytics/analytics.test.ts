@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { buildEventPayload, shouldDedupe } from "./analytics";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { buildEventPayload, shouldDedupe, trackEvent } from "./analytics";
 
 describe("shouldDedupe", () => {
     it("returns false when the entity was never tracked", () => {
@@ -52,5 +52,60 @@ describe("buildEventPayload", () => {
             { ...context, referrer: "" }
         );
         expect(payload.referrer).toBeUndefined();
+    });
+});
+
+function createFakeSessionStorage(): Storage {
+    const store = new Map<string, string>();
+    return {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => void store.set(key, value),
+        removeItem: (key: string) => void store.delete(key),
+        clear: () => store.clear(),
+        key: () => null,
+        get length() {
+            return store.size;
+        },
+    } as Storage;
+}
+
+describe("trackEvent", () => {
+    beforeEach(() => {
+        vi.stubGlobal("window", { location: { pathname: "/en/works" } });
+        vi.stubGlobal("document", { documentElement: { lang: "en" }, referrer: "" });
+        vi.stubGlobal("sessionStorage", createFakeSessionStorage());
+        vi.stubEnv("NEXT_PUBLIC_ANALYTICS_ENDPOINT", "https://analytics.example.com/event");
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        vi.unstubAllEnvs();
+    });
+
+    it("does not mark project_open as seen when sendBeacon fails to queue - it gets a real retry", () => {
+        vi.stubGlobal("navigator", { sendBeacon: vi.fn().mockReturnValue(false) });
+
+        trackEvent("project_open", { entityId: "17" });
+        trackEvent("project_open", { entityId: "17" });
+
+        expect(navigator.sendBeacon).toHaveBeenCalledTimes(2);
+    });
+
+    it("marks project_open as seen only once sendBeacon actually queues it", () => {
+        vi.stubGlobal("navigator", { sendBeacon: vi.fn().mockReturnValue(true) });
+
+        trackEvent("project_open", { entityId: "17" });
+        trackEvent("project_open", { entityId: "17" });
+
+        expect(navigator.sendBeacon).toHaveBeenCalledTimes(1);
+    });
+
+    it("does nothing when no analytics endpoint is configured", () => {
+        vi.stubEnv("NEXT_PUBLIC_ANALYTICS_ENDPOINT", "");
+        vi.stubGlobal("navigator", { sendBeacon: vi.fn() });
+
+        trackEvent("project_open", { entityId: "17" });
+
+        expect(navigator.sendBeacon).not.toHaveBeenCalled();
     });
 });

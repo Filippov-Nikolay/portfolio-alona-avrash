@@ -9,22 +9,36 @@ export interface ImageStorage {
     delete(src: string): Promise<void>;
 }
 
-// Writes straight into apps/web's own public/ folder - only works when
-// admin and web share a filesystem (local dev, or a single deployment).
-const UPLOAD_DIR = path.join(process.cwd(), "..", "web", "public", "projects", "uploads");
 const PUBLIC_PATH_PREFIX = "/projects/uploads";
 const R2_KEY_PREFIX = "projects/uploads";
 
+// Writes straight into apps/web's own public/ folder - only works when
+// admin and web share a filesystem (local dev, or a single deployment).
+// ADMIN_CONTENT_DIR (set only by the Playwright E2E suite) redirects this to
+// a scratch directory instead, same as contentDataDir() - the returned src
+// still points at /projects/uploads/<file> either way, so a test-mode
+// upload's src won't actually resolve over HTTP from web's dev server. That
+// is an accepted tradeoff: E2E assertions check the upload flow's DOM state
+// (the gallery gained an item with this filename), not that the pixels
+// render, in exchange for test runs never writing into the real, committed
+// public/projects/uploads directory.
+function uploadDir(): string {
+    const contentDir = process.env.ADMIN_CONTENT_DIR;
+    if (contentDir) return path.join(contentDir, "uploads");
+    return path.join(process.cwd(), "..", "web", "public", "projects", "uploads");
+}
+
 const fileSystemImageStorage: ImageStorage = {
     async upload(fileName, buffer) {
-        await mkdir(UPLOAD_DIR, { recursive: true });
-        await writeFile(path.join(UPLOAD_DIR, fileName), buffer);
+        const dir = uploadDir();
+        await mkdir(dir, { recursive: true });
+        await writeFile(path.join(dir, fileName), buffer);
         return { src: `${PUBLIC_PATH_PREFIX}/${fileName}` };
     },
     async delete(src) {
         if (!src.startsWith(`${PUBLIC_PATH_PREFIX}/`)) return;
         const fileName = src.slice(PUBLIC_PATH_PREFIX.length + 1);
-        await deleteFile(path.join(UPLOAD_DIR, fileName));
+        await deleteFile(path.join(uploadDir(), fileName));
     },
 };
 

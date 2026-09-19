@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { Project } from "@avrash/content-schema";
+import { contentDataDir } from "@/shared/storage/contentDir";
 import { getStorageDriver } from "@/shared/storage/driver";
 import { readJsonFile, writeJsonFile } from "@/shared/storage/fs";
 import { readJsonObject, writeJsonObject } from "@/shared/storage/r2";
@@ -60,20 +61,15 @@ export function createProjectsRepository(
     };
 }
 
-const PROJECTS_JSON_PATH = path.join(
-    process.cwd(),
-    "..",
-    "..",
-    "packages",
-    "content-data",
-    "src",
-    "projects.json"
-);
 const PROJECTS_R2_KEY = "content/projects.json";
 
+function projectsJsonPath(): string {
+    return path.join(contentDataDir(), "projects.json");
+}
+
 const fileSystemProjectsRepository = createProjectsRepository(
-    () => readJsonFile<Project[]>(PROJECTS_JSON_PATH),
-    (projects) => writeJsonFile(PROJECTS_JSON_PATH, projects)
+    () => readJsonFile<Project[]>(projectsJsonPath()),
+    (projects) => writeJsonFile(projectsJsonPath(), projects)
 );
 
 const r2ProjectsRepository = createProjectsRepository(

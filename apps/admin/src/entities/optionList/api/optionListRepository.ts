@@ -1,6 +1,7 @@
 import path from "node:path";
 import type { CategoryOption, ToolBadgeOption } from "@avrash/content-schema";
 import { slugify } from "@/shared/lib/slugify";
+import { contentDataDir } from "@/shared/storage/contentDir";
 import { getStorageDriver } from "@/shared/storage/driver";
 import { readJsonFile, writeJsonFile } from "@/shared/storage/fs";
 import { readJsonObject, writeJsonObject } from "@/shared/storage/r2";
@@ -48,7 +49,7 @@ export function createOptionListRepository(
 }
 
 function resolveFsPath(fileName: string): string {
-    return path.join(process.cwd(), "..", "..", "packages", "content-data", "src", fileName);
+    return path.join(contentDataDir(), fileName);
 }
 
 function resolveR2Key(fileName: string): string {

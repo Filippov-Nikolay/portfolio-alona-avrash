@@ -156,15 +156,15 @@ export function WorksCatalog({
     const selectedItem = selectedId === null ? null : (modalItemsById.get(selectedId) ?? null);
     const selectedSlug = selectedItem?.slug ?? null;
 
-    const openProject = useCallback(
-        (id: number) => {
-            setSelectedId(id);
-            setActiveTab("overview");
-            setLightboxIndex(null);
-            trackEvent("project_open", { entityId: modalItemsById.get(id)?.slug });
-        },
-        [modalItemsById]
-    );
+    const openProject = useCallback((id: number) => {
+        setSelectedId(id);
+        setActiveTab("overview");
+        setLightboxIndex(null);
+        // The project's own numeric id, not its slug - a slug changes if the
+        // project is ever renamed, which would silently split that
+        // project's analytics history in two.
+        trackEvent("project_open", { entityId: String(id) });
+    }, []);
 
     const closeProject = useCallback(() => {
         setSelectedId(null);
@@ -336,7 +336,9 @@ export function WorksCatalog({
                 onLightboxChange={setLightboxIndex}
                 labels={modalLabels}
                 onVisitWebsite={() =>
-                    trackEvent("project_external_click", { entityId: selectedItem?.slug })
+                    trackEvent("project_external_click", {
+                        entityId: selectedItem ? String(selectedItem.id) : undefined,
+                    })
                 }
             />
         </Container>

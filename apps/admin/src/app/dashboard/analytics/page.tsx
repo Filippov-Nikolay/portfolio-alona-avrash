@@ -3,7 +3,6 @@ import {
     getTopProjects,
     isAnalyticsConfigured,
 } from "@/entities/analytics/api/analyticsRepository";
-import { slugifyProjectName } from "@/entities/analytics/lib/slugifyProjectName";
 import { listProjects } from "@/entities/project/api/projectsRepository";
 import { AnalyticsOverview } from "@/widgets/AnalyticsOverview";
 import { AnalyticsNotice } from "@/widgets/AnalyticsNotice";
@@ -44,8 +43,11 @@ export default async function AnalyticsOverviewPage() {
         );
     }
 
+    // Keyed by the project's own numeric id (what trackEvent() actually sends
+    // as entityId), not its slug - a slug changes if the project is renamed,
+    // which would silently split its analytics history across two rows.
     const projectNames = Object.fromEntries(
-        allProjects.map((project) => [slugifyProjectName(project.name), project.name])
+        allProjects.map((project) => [String(project.id), project.name])
     );
 
     return (

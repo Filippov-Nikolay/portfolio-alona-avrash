@@ -75,7 +75,11 @@ export function SelectedWorkSection({
 
     const openProject = (index: number) => {
         setSelectedIndex(index);
-        trackEvent("project_open", { entityId: modalItems[index]?.slug });
+        // The project's own numeric id, not its slug - a slug changes if the
+        // project is ever renamed, which would silently split that
+        // project's analytics history in two.
+        const item = modalItems[index];
+        trackEvent("project_open", { entityId: item ? String(item.id) : undefined });
     };
 
     return (
@@ -163,7 +167,9 @@ export function SelectedWorkSection({
                 onClose={() => setSelectedIndex(null)}
                 labels={modalLabels}
                 onVisitWebsite={() =>
-                    trackEvent("project_external_click", { entityId: selectedItem?.slug })
+                    trackEvent("project_external_click", {
+                        entityId: selectedItem ? String(selectedItem.id) : undefined,
+                    })
                 }
             />
         </Section>

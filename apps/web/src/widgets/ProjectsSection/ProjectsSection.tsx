@@ -132,8 +132,9 @@ export function ProjectsSection({
                                     }
 
                                     setSelectedIndex(sourceIndex);
+                                    const openedItem = modalItems[sourceIndex];
                                     trackEvent("project_open", {
-                                        entityId: modalItems[sourceIndex]?.slug,
+                                        entityId: openedItem ? String(openedItem.id) : undefined,
                                     });
                                 }}
                             >
@@ -177,7 +178,9 @@ export function ProjectsSection({
                 onClose={() => setSelectedIndex(null)}
                 labels={modalLabels}
                 onVisitWebsite={() =>
-                    trackEvent("project_external_click", { entityId: selectedItem?.slug })
+                    trackEvent("project_external_click", {
+                        entityId: selectedItem ? String(selectedItem.id) : undefined,
+                    })
                 }
             />
         </Section>

@@ -2,26 +2,26 @@ import {
     getProjectDetail,
     isAnalyticsConfigured,
 } from "@/entities/analytics/api/analyticsRepository";
-import { slugifyProjectName } from "@/entities/analytics/lib/slugifyProjectName";
 import { listProjects } from "@/entities/project/api/projectsRepository";
 import { ProjectAnalytics } from "@/widgets/ProjectAnalytics";
 import { AnalyticsNotice } from "@/widgets/AnalyticsNotice";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
 interface ProjectAnalyticsPageProps {
-    params: Promise<{ slug: string }>;
+    params: Promise<{ id: string }>;
 }
 
 const DAYS = 30;
 
 export default async function ProjectAnalyticsPage({ params }: ProjectAnalyticsPageProps) {
-    const { slug } = await params;
+    const { id } = await params;
 
     const allProjects = await listProjects();
-    const matchingProject = allProjects.find(
-        (project) => slugifyProjectName(project.name) === slug
-    );
-    const title = matchingProject?.name ?? slug;
+    // entityId is the project's own numeric id (see WorksCatalog.tsx's
+    // trackEvent calls), not its slug - a slug changes if the project is
+    // renamed, which would silently split its analytics history in two.
+    const matchingProject = allProjects.find((project) => String(project.id) === id);
+    const title = matchingProject?.name ?? id;
 
     if (!isAnalyticsConfigured()) {
         return (
@@ -35,7 +35,7 @@ export default async function ProjectAnalyticsPage({ params }: ProjectAnalyticsP
         );
     }
 
-    const detail = await getProjectDetail(slug, DAYS);
+    const detail = await getProjectDetail(id, DAYS);
 
     if (!detail) {
         return (

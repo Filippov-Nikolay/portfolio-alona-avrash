@@ -11,6 +11,11 @@ export interface AdminPage {
 
 export const ADMIN_NAV: AdminPage[] = [
     {
+        slug: "dashboard",
+        label: "Dashboard",
+        sections: [{ slug: "analytics", label: "Analytics" }],
+    },
+    {
         slug: "home",
         label: "Home",
         sections: [

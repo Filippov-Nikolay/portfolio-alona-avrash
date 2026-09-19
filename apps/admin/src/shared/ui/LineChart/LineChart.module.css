@@ -1,0 +1,50 @@
+.wrap {
+    display: flex;
+    gap: 12px;
+}
+
+.yAxis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 2px 0;
+    font-size: 11px;
+    color: #a1a1aa;
+}
+
+.chartArea {
+    flex: 1;
+    min-width: 0;
+}
+
+.svg {
+    display: block;
+    width: 100%;
+}
+
+.line {
+    fill: none;
+    stroke: #18181b;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+.xAxis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 11px;
+    color: #a1a1aa;
+}
+
+.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    border: 1px dashed #d4d4d8;
+    border-radius: 10px;
+    color: #71717a;
+    font-size: 13px;
+}

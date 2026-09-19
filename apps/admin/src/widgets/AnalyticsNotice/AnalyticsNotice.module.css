@@ -1,0 +1,21 @@
+.notice {
+    display: flex;
+    align-items: center;
+    padding: 40px 20px;
+    border: 1px dashed #d4d4d8;
+    border-radius: 10px;
+    color: #52525b;
+}
+
+.notice p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.notice code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: #f4f4f5;
+    font-size: 12px;
+}

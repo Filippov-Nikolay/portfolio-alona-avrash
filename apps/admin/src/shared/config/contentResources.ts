@@ -13,9 +13,9 @@ const RESOURCE_BY_PAGE_SECTION: Record<string, Record<string, ContentDataKey>> =
         reviews: "reviews",
         cta: "cta",
     },
-    works: {
-        projects: "projects",
-    },
+    // works/projects has its own route (app/works/projects) with a real
+    // list/edit UI now, not the generic JSON viewer - nothing to map here.
+    works: {},
     contact: {},
     global: {
         socials: "social",

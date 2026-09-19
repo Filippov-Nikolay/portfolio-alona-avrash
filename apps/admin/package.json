@@ -14,10 +14,14 @@
         "next": "16.2.6",
         "react": "19.2.4",
         "react-dom": "19.2.4",
+        "framer-motion": "^12.38.0",
+        "sass": "^1.99.0",
         "@avrash/content-data": "workspace:*",
-        "@avrash/content-schema": "workspace:*"
+        "@avrash/content-schema": "workspace:*",
+        "@avrash/ui": "workspace:*"
     },
     "devDependencies": {
+        "@svgr/webpack": "^8.1.0",
         "@types/node": "^20.19.41",
         "@types/react": "^19",
         "@types/react-dom": "^19",

@@ -1,0 +1,120 @@
+.backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(24, 24, 27, 0.6);
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1200px;
+    max-height: calc(100vh - 48px);
+    overflow: hidden;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+}
+
+@media (max-width: 640px) {
+    .backdrop {
+        padding: 0;
+    }
+
+    .panel {
+        max-width: none;
+        max-height: none;
+        height: 100%;
+        border-radius: 0;
+    }
+}
+
+.bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 14px 20px;
+    background: #fff;
+    border-bottom: 1px solid #e4e4e7;
+}
+
+@media (max-width: 480px) {
+    .bar {
+        padding: 12px 14px;
+    }
+}
+
+.title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #18181b;
+}
+
+.barActions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.themeToggle,
+.closeButton {
+    padding: 8px 16px;
+    border: 1px solid #d4d4d8;
+    border-radius: 8px;
+    background: #fff;
+    color: #18181b;
+    font-size: 13px;
+    cursor: pointer;
+
+    &:hover {
+        background: #f4f4f5;
+    }
+}
+
+@media (max-width: 480px) {
+    .barActions {
+        gap: 6px;
+    }
+
+    .themeToggle,
+    .closeButton {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+}
+
+.stage {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 24px;
+    background: var(--color-bg, #000);
+}
+
+@media (max-width: 640px) {
+    .stage {
+        padding: 20px 12px;
+    }
+}
+
+.cardWrap {
+    width: 100%;
+    max-width: var(--container-width, 1105px);
+}
+
+.stage :global(h1),
+.stage :global(h2),
+.stage :global(h3) {
+    line-height: 1;
+}

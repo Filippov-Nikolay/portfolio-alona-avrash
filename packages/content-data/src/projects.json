@@ -1,6 +1,19 @@
 [
     {
         "id": 0,
+        "name": "ESENCHA",
+        "createdAt": "2026-08-07T00:00:00.000Z",
+        "categories": [
+            "branding",
+            "logo",
+            "packaging"
+        ],
+        "hover": {
+            "background": "#F7BAE3",
+            "accentColor": "#3A1B16",
+            "buttonBackground": "#012D14",
+            "buttonTextColor": "#F7BAE3"
+        },
         "image": [
             {
                 "id": 0,
@@ -162,19 +175,6 @@
                 "alt": "ESENCHA — visual 24"
             }
         ],
-        "createdAt": "2026-08-07T00:00:00.000Z",
-        "name": "ESENCHA",
-        "categories": [
-            "branding",
-            "logo",
-            "packaging"
-        ],
-        "hover": {
-            "background": "#F7BAE3",
-            "accentColor": "#3A1B16",
-            "buttonBackground": "#012D14",
-            "buttonTextColor": "#F7BAE3"
-        },
         "selectedWork": {
             "rank": 1
         },

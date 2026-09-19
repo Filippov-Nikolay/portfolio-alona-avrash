@@ -4,12 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ADMIN_NAV } from "@/shared/config/nav";
 import { cn } from "@/shared/lib/cn";
+import { logoutAction } from "@/entities/session/api/actions";
 import styles from "./AdminNav.module.css";
 
 export function AdminNav() {
     const pathname = usePathname();
     const currentPageSlug = pathname.split("/")[1];
     const currentPage = ADMIN_NAV.find((page) => page.slug === currentPageSlug) ?? ADMIN_NAV[0];
+
+    if (pathname === "/login") return null;
 
     return (
         <nav className={styles.nav}>
@@ -30,6 +33,13 @@ export function AdminNav() {
                         </Link>
                     </li>
                 ))}
+                <li className={cn(styles.tabItem, styles.logoutItem)}>
+                    <form action={logoutAction}>
+                        <button type="submit" className={styles.tab}>
+                            Log out
+                        </button>
+                    </form>
+                </li>
             </ul>
 
             <ul className={styles.sectionTabs}>

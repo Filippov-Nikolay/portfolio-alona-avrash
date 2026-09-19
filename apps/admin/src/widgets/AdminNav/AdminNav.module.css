@@ -48,15 +48,23 @@
     background: #e4e4e7;
 }
 
+.logoutItem {
+    margin-left: auto;
+}
+
 .tab,
 .subtab {
     display: inline-block;
     padding: 10px 14px;
+    border: none;
+    background: none;
     color: #52525b;
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
+    font-family: inherit;
     white-space: nowrap;
+    cursor: pointer;
     border-bottom: 2px solid transparent;
 }
 

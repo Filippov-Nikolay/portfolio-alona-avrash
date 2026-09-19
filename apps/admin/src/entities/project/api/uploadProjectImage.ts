@@ -1,12 +1,10 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { getImageStorage } from "@/shared/storage/imageStorage";
 
 const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg"]);
 const MAX_BYTES = 10 * 1024 * 1024;
-const UPLOAD_DIR = path.join(process.cwd(), "..", "web", "public", "projects", "uploads");
-const PUBLIC_PATH_PREFIX = "/projects/uploads";
 
 function sanitizeBaseName(name: string): string {
     const cleaned = name
@@ -31,10 +29,7 @@ export async function uploadProjectImageAction(file: File): Promise<{ src: strin
 
     const base = sanitizeBaseName(path.basename(file.name, ext));
     const fileName = `${Date.now()}-${base}${ext}`;
-
-    await mkdir(UPLOAD_DIR, { recursive: true });
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(UPLOAD_DIR, fileName), buffer);
 
-    return { src: `${PUBLIC_PATH_PREFIX}/${fileName}` };
+    return getImageStorage().upload(fileName, buffer, file.type);
 }

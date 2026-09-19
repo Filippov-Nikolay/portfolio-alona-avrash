@@ -1,7 +1,22 @@
 [
-    { "key": "figma", "label": "Figma" },
-    { "key": "illustrator", "label": "Illustrator" },
-    { "key": "photoshop", "label": "Photoshop" },
-    { "key": "after-effects", "label": "After Effects" },
-    { "key": "indesign", "label": "InDesign" }
+    {
+        "key": "figma",
+        "label": "Figma"
+    },
+    {
+        "key": "illustrator",
+        "label": "Illustrator"
+    },
+    {
+        "key": "photoshop",
+        "label": "Photoshop"
+    },
+    {
+        "key": "after-effects",
+        "label": "After Effects"
+    },
+    {
+        "key": "indesign",
+        "label": "InDesign"
+    }
 ]

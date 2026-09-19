@@ -1,6 +1,61 @@
-import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Project } from "@avrash/content-schema";
+import { getStorageDriver } from "@/shared/storage/driver";
+import { readJsonFile, writeJsonFile } from "@/shared/storage/fs";
+import { readJsonObject, writeJsonObject } from "@/shared/storage/r2";
+
+export type ProjectInput = Omit<Project, "id">;
+
+export interface ProjectsRepository {
+    list(): Promise<Project[]>;
+    get(id: number): Promise<Project | undefined>;
+    create(input: ProjectInput): Promise<Project>;
+    update(id: number, input: ProjectInput): Promise<Project>;
+    delete(id: number): Promise<void>;
+}
+
+function nextId(projects: Project[]): number {
+    return projects.reduce((max, project) => Math.max(max, project.id), -1) + 1;
+}
+
+function createProjectsRepository(
+    readAll: () => Promise<Project[]>,
+    writeAll: (projects: Project[]) => Promise<void>
+): ProjectsRepository {
+    return {
+        async list() {
+            const projects = await readAll();
+            return [...projects].sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+        },
+        async get(id) {
+            const projects = await readAll();
+            return projects.find((project) => project.id === id);
+        },
+        async create(input) {
+            const projects = await readAll();
+            const project: Project = { id: nextId(projects), ...input };
+            await writeAll([...projects, project]);
+            return project;
+        },
+        async update(id, input) {
+            const projects = await readAll();
+            const index = projects.findIndex((project) => project.id === id);
+            if (index === -1) {
+                throw new Error(`Project ${id} not found`);
+            }
+            const updated: Project = { id, ...input };
+            projects[index] = updated;
+            await writeAll(projects);
+            return updated;
+        },
+        async delete(id) {
+            const projects = await readAll();
+            await writeAll(projects.filter((project) => project.id !== id));
+        },
+    };
+}
 
 const PROJECTS_JSON_PATH = path.join(
     process.cwd(),
@@ -11,51 +66,38 @@ const PROJECTS_JSON_PATH = path.join(
     "src",
     "projects.json"
 );
+const PROJECTS_R2_KEY = "content/projects.json";
 
-async function readProjects(): Promise<Project[]> {
-    const raw = await readFile(PROJECTS_JSON_PATH, "utf-8");
-    return JSON.parse(raw) as Project[];
-}
+const fileSystemProjectsRepository = createProjectsRepository(
+    () => readJsonFile<Project[]>(PROJECTS_JSON_PATH),
+    (projects) => writeJsonFile(PROJECTS_JSON_PATH, projects)
+);
 
-async function writeProjects(projects: Project[]): Promise<void> {
-    await writeFile(PROJECTS_JSON_PATH, `${JSON.stringify(projects, null, 4)}\n`, "utf-8");
+const r2ProjectsRepository = createProjectsRepository(
+    () => readJsonObject<Project[]>(PROJECTS_R2_KEY),
+    (projects) => writeJsonObject(PROJECTS_R2_KEY, projects)
+);
+
+function getProjectsRepository(): ProjectsRepository {
+    return getStorageDriver() === "r2" ? r2ProjectsRepository : fileSystemProjectsRepository;
 }
 
 export async function listProjects(): Promise<Project[]> {
-    const projects = await readProjects();
-    return [...projects].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return getProjectsRepository().list();
 }
 
 export async function getProject(id: number): Promise<Project | undefined> {
-    const projects = await readProjects();
-    return projects.find((project) => project.id === id);
+    return getProjectsRepository().get(id);
 }
 
-export type ProjectInput = Omit<Project, "id">;
-
 export async function createProject(input: ProjectInput): Promise<Project> {
-    const projects = await readProjects();
-    const nextId = projects.reduce((max, project) => Math.max(max, project.id), -1) + 1;
-    const project: Project = { id: nextId, ...input };
-    await writeProjects([...projects, project]);
-    return project;
+    return getProjectsRepository().create(input);
 }
 
 export async function updateProject(id: number, input: ProjectInput): Promise<Project> {
-    const projects = await readProjects();
-    const index = projects.findIndex((project) => project.id === id);
-    if (index === -1) {
-        throw new Error(`Project ${id} not found`);
-    }
-    const updated: Project = { id, ...input };
-    projects[index] = updated;
-    await writeProjects(projects);
-    return updated;
+    return getProjectsRepository().update(id, input);
 }
 
 export async function deleteProject(id: number): Promise<void> {
-    const projects = await readProjects();
-    await writeProjects(projects.filter((project) => project.id !== id));
+    return getProjectsRepository().delete(id);
 }

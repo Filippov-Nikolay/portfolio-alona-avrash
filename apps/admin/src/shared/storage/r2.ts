@@ -1,4 +1,9 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+    DeleteObjectCommand,
+    GetObjectCommand,
+    PutObjectCommand,
+    S3Client,
+} from "@aws-sdk/client-s3";
 
 // Cloudflare R2 exposes an S3-compatible API, so the regular AWS SDK works
 // against it - only the endpoint/credentials differ. See
@@ -58,5 +63,11 @@ export async function writeObject(key: string, body: Buffer, contentType: string
             Body: body,
             ContentType: contentType,
         })
+    );
+}
+
+export async function deleteObject(key: string): Promise<void> {
+    await getClient().send(
+        new DeleteObjectCommand({ Bucket: requiredEnv("R2_BUCKET_NAME"), Key: key })
     );
 }

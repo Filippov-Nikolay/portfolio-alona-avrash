@@ -125,7 +125,8 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
     // Приоритет: кука (явный выбор пользователя)
     //          → Sec-CH-Prefers-Color-Scheme (системная тема, Chrome 2й+ визит)
-    //          → "dark" (абсолютный fallback; useTheme на клиенте поправит без flash)
+    //          → "light" (абсолютный fallback - основная тема сайта; useTheme
+    //             на клиенте поправит без flash)
     const savedTheme = cookieStore.get("site-theme")?.value;
     const hasSeenPreloader = cookieStore.get("site-preloader")?.value === "1";
     const clientHint = requestHeaders.get("sec-ch-prefers-color-scheme");
@@ -134,7 +135,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             ? savedTheme
             : clientHint === "light" || clientHint === "dark"
               ? clientHint
-              : "dark";
+              : "light";
 
     // Personal-portfolio structured data — see README > Customization > SEO.
     const jsonLd = {

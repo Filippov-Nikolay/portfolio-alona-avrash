@@ -7,7 +7,7 @@ export type Theme = "dark" | "light";
 const STORAGE_KEY = "site-theme";
 const COOKIE_KEY = "site-theme";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
-const DEFAULT_THEME: Theme = "dark";
+const DEFAULT_THEME: Theme = "light";
 
 function getSystemTheme(): Theme {
     if (typeof window === "undefined") return DEFAULT_THEME;

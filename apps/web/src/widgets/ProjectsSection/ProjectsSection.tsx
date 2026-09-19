@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ShowcaseItem } from "@/shared/types";
 import type { Project, HomeProjectGalleryCard } from "@avrash/content-schema";
-import { ArrowIcon, Button, Container, Section, ShowcaseModal } from "@/shared/ui";
+import { ShowcaseModal } from "@avrash/ui";
+import { ArrowIcon, Button, Container, Section } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import { useProjectsSectionAnimations } from "./useProjectsSectionAnimations";
 import styles from "./ProjectsSection.module.scss";
@@ -32,6 +33,14 @@ export function ProjectsSection({
     labels,
 }: ProjectsSectionProps) {
     const locale = useLocale();
+    const modalT = useTranslations("modal");
+    const modalLabels = {
+        viewWebsite: modalT("viewWebsite"),
+        overviewTab: modalT("overviewTab"),
+        galleryTab: modalT("galleryTab"),
+        galleryPreview: modalT("galleryPreview"),
+        tools: modalT("tools"),
+    };
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [pinnedIndex, setPinnedIndex] = useState<number | null>(null);
@@ -159,7 +168,11 @@ export function ProjectsSection({
                 </div>
             </Container>
 
-            <ShowcaseModal item={selectedItem} onClose={() => setSelectedIndex(null)} />
+            <ShowcaseModal
+                item={selectedItem}
+                onClose={() => setSelectedIndex(null)}
+                labels={modalLabels}
+            />
         </Section>
     );
 }

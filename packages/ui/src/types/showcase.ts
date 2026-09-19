@@ -5,6 +5,15 @@ export interface ShowcaseGalleryImage {
     pairMode?: "row" | "stack";
 }
 
+// Same shape as shared/ui/ToolBadge's ToolBadgeData - duplicated here
+// instead of imported so shared/types doesn't reach into shared/ui.
+export interface ShowcaseToolBadge {
+    id: string;
+    icon: string;
+    title: string;
+    description: string;
+}
+
 // Generic "showcase item" shape — used for any card-based collection:
 // products, case studies, integrations, portfolio work, etc.
 export interface ShowcaseItem {
@@ -24,9 +33,10 @@ export interface ShowcaseItem {
     featured?: boolean;
     // Non-hero project images, in order — the modal's gallery preview/tab.
     gallery: ShowcaseGalleryImage[];
-    // ToolBadge ids (see shared/ui/ToolBadge/toolBadges.data.ts). Modal
-    // only renders the TOOLS section when this is present.
-    tools?: string[];
+    // Already resolved to display data (icon/title/description) - see
+    // entities/toolBadge/lib/resolveToolBadges. Modal only renders the
+    // TOOLS section when this is present.
+    tools?: ShowcaseToolBadge[];
     websiteUrl?: string;
     // Modal accent color (see Project.accentColorModal).
     accentColorModal?: string;

@@ -1,4 +1,4 @@
-export type { ShowcaseItem, ShowcaseGalleryImage } from "./showcase";
+export type { ShowcaseItem, ShowcaseGalleryImage, ShowcaseToolBadge } from "@avrash/ui";
 export type { NavItem } from "./navigation";
 export type {
     CategoryKey,

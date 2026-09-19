@@ -1,0 +1,37 @@
+// src/shared/styles/typography.scss
+
+:root {
+    // Swap these to change the whole site's typography — every component
+    // reads its font through these variables, never a raw font-family name.
+    // Almarai (light 300 / bold 700) for titles and body copy site-wide.
+    --font-display: var(--font-almarai);
+    --font-body: var(--font-almarai);
+    --font-mono: var(--font-geist-mono);
+
+    // Zalando Sans SemiExpanded (bold) — used only for the Hero headline
+    // and the Footer brand name, never site-wide.
+    --font-title-accent: var(--font-zalando);
+
+    // === Type scale =====================================
+    // Reference scale for new sections/components, derived from the
+    // sizes already in use across the demo sections. Existing sections
+    // keep their own fine-tuned fluid clamp() values.
+    --text-xs: 13px;
+    --text-sm: 15px;
+    --text-base: 17px;
+    --text-lg: 19px;
+    --text-xl: 22px;
+    --text-2xl: clamp(26px, 3.5vw, 38px);
+    --text-3xl: clamp(32px, 5vw, 56px);
+    --text-display: clamp(40px, 9vw, 130px);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    line-height: 1;
+    font-weight: 700;
+}

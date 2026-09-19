@@ -4,12 +4,13 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import { m, animate, AnimatePresence, useInView } from "framer-motion";
-import { useTranslations } from "next-intl";
-import type { ShowcaseItem } from "@/shared/types";
-import { useMounted } from "@/shared/hooks/useMounted";
-import { Button, ArrowIcon, ToolBadge, getToolBadge, CloseIcon } from "@/shared/ui";
-import { ACCENT_COLORS } from "@/shared/constants/colors";
-import { cn } from "@/shared/lib/cn";
+import type { ShowcaseItem } from "../../types/showcase";
+import { useMounted } from "../../hooks/useMounted";
+import { Button } from "../Button";
+import { ArrowIcon, CloseIcon } from "../../icons";
+import { ACCENT_COLORS } from "../../constants/colors";
+import { ToolBadge } from "../ToolBadge";
+import { cn } from "../../lib/cn";
 import { GalleryLightbox, CLOSE_TRANSITION, type LightboxRect } from "./GalleryLightbox";
 import { useGalleryTilt } from "./useGalleryTilt";
 import styles from "./ShowcaseModal.module.scss";
@@ -17,6 +18,14 @@ import styles from "./ShowcaseModal.module.scss";
 const GALLERY_PREVIEW_COUNT = 3;
 
 export type Tab = "overview" | "gallery";
+
+export interface ShowcaseModalLabels {
+    viewWebsite: string;
+    overviewTab: string;
+    galleryTab: string;
+    galleryPreview: string;
+    tools: string;
+}
 
 interface LightboxState {
     index: number;
@@ -63,7 +72,9 @@ function TileImage({
             canvas.width = Math.max(1, Math.round(image.naturalWidth * posterScale));
             canvas.height = Math.max(1, Math.round(image.naturalHeight * posterScale));
             context.drawImage(image, 0, 0, canvas.width, canvas.height);
-            setPoster(canvas.toDataURL("image/webp", 0.85));
+            try {
+                setPoster(canvas.toDataURL("image/webp", 0.85));
+            } catch {}
         }
     };
 
@@ -89,7 +100,10 @@ function TileImage({
                         sizes="50vw"
                         loading="eager"
                         unoptimized={animated}
-                        className={cn(styles.previewImage, animated && styles.previewImageAnimated)}
+                        className={cn(
+                            styles.previewImage,
+                            animated && poster && styles.previewImageAnimated
+                        )}
                         onLoad={(event) => handleImageLoad(event.currentTarget)}
                         draggable={false}
                     />
@@ -108,6 +122,7 @@ interface ModalContentProps {
     onTabChange?: (tab: Tab) => void;
     initialLightboxIndex?: number | null;
     onLightboxChange?: (index: number | null) => void;
+    labels: ShowcaseModalLabels;
 }
 
 function ModalContent({
@@ -117,17 +132,13 @@ function ModalContent({
     onTabChange,
     initialLightboxIndex,
     onLightboxChange,
+    labels,
 }: ModalContentProps) {
-    const t = useTranslations("modal");
     const color = ACCENT_COLORS[item.color ?? "purple"];
     const hasGallery = item.gallery.length > 0;
     const [tab, setTab] = useState<Tab>(initialTab);
-    // Separate from `tab`: `tab` flips the active-tab underline instantly
-    // (immediate click feedback), while `contentTab` - which actually
-    // swaps the rendered panel - waits until the scroll-to-top below has
-    // finished. Swapping the DOM mid-scroll is what caused the jump.
     const [contentTab, setContentTab] = useState<Tab>(initialTab);
-    const tools = (item.tools ?? []).map(getToolBadge).filter((badge) => badge !== undefined);
+    const tools = item.tools ?? [];
     const previewImages = item.gallery.slice(0, GALLERY_PREVIEW_COUNT);
     const galleryRows = chunk(
         item.gallery.map((image, index) => ({ image, index })),
@@ -138,21 +149,10 @@ function ModalContent({
     const tabsRef = useRef<HTMLDivElement>(null);
     const galleryElRefs = useRef<Map<number, HTMLElement>>(new Map());
     const [lightbox, setLightbox] = useState<LightboxState | null>(null);
-    // GalleryLightbox stays mounted for its ~400ms shrink-back animation
-    // after the user clicks close, but the background preview tiles
-    // shouldn't wait that long to start re-rendering their images - flip
-    // this the moment the close animation *starts*, not when it ends,
-    // so tiles have time to load before the shrink finishes.
     const [lightboxClosing, setLightboxClosing] = useState(false);
     const registerTile = useGalleryTilt(bodyRef, tabsRef);
     const [modalEntranceDone, setModalEntranceDone] = useState(false);
     const autoOpenedLightboxRef = useRef(false);
-
-    // Overview is usually much shorter than a scrolled-down Gallery, so
-    // swapping panels while deep in the gallery would otherwise shrink
-    // the content mid-scroll and make the browser abruptly clamp
-    // scrollTop - a jarring snap. Scroll to the top first, and only swap
-    // the panel (contentTab) once that scroll has actually finished.
     const handleTabChange = (nextTab: Tab) => {
         if (nextTab === tab) return;
         setTab(nextTab);
@@ -179,8 +179,6 @@ function ModalContent({
             setContentTab(nextTab);
         };
         body.addEventListener("scrollend", finish, { once: true });
-        // Fallback in case "scrollend" doesn't fire (unsupported browser,
-        // or the scroll gets interrupted).
         window.setTimeout(finish, 500);
         body.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -260,16 +258,6 @@ function ModalContent({
         const modalEl = modalRef.current;
         if (!el || !body || !modalEl) return null;
 
-        // Compute where `el` will land once centered, and animate the
-        // background scroll there in step with the lightbox's own
-        // shrink-back transition instead of jumping straight there with
-        // scrollIntoView(). An instant jump moves the page behind the
-        // lightbox to a totally different scroll position in a single
-        // frame while the lightbox itself is still smoothly shrinking
-        // toward it over ~400ms - the mismatch between "snaps instantly"
-        // and "eases in" is what read as a jarring landing. Driving both
-        // with the same framer-motion tween + CLOSE_TRANSITION keeps them
-        // frame-for-frame identical.
         const elRect = el.getBoundingClientRect();
         const bodyRect = body.getBoundingClientRect();
         const currentAbsoluteTop = elRect.top - bodyRect.top + body.scrollTop;
@@ -330,10 +318,6 @@ function ModalContent({
                                 alt=""
                                 fill
                                 className={styles.bannerImage}
-                                // The image is up to 70% of the modal's width down to
-                                // tablet, then full-bleed (100vw) on mobile - both are
-                                // safe upper bounds on the actual rendered width, so the
-                                // browser never under-fetches.
                                 sizes="(max-width: 479px) 100vw, 70vw"
                                 quality={95}
                                 priority
@@ -358,7 +342,7 @@ function ModalContent({
                             rel="noopener noreferrer"
                             rightIcon={<ArrowIcon className={styles.arrow} />}
                         >
-                            {t("viewWebsite")}
+                            {labels.viewWebsite}
                         </Button>
                     )}
                 </div>
@@ -373,7 +357,7 @@ function ModalContent({
                                 className={cn(styles.tab, tab === "overview" && styles.tabActive)}
                                 onClick={() => handleTabChange("overview")}
                             >
-                                {t("overviewTab")}
+                                {labels.overviewTab}
                             </button>
                             {hasGallery && (
                                 <button
@@ -386,7 +370,7 @@ function ModalContent({
                                     )}
                                     onClick={() => handleTabChange("gallery")}
                                 >
-                                    {t("galleryTab")}
+                                    {labels.galleryTab}
                                 </button>
                             )}
                         </div>
@@ -405,7 +389,7 @@ function ModalContent({
                                 {previewImages.length > 0 && (
                                     <section className={styles.section}>
                                         <h3 className={styles.sectionLabel}>
-                                            {t("galleryPreview")}
+                                            {labels.galleryPreview}
                                         </h3>
                                         <div
                                             className={cn(
@@ -441,7 +425,7 @@ function ModalContent({
 
                                 {tools.length > 0 && (
                                     <section className={styles.section}>
-                                        <h3 className={styles.sectionLabel}>{t("tools")}</h3>
+                                        <h3 className={styles.sectionLabel}>{labels.tools}</h3>
                                         <div className={styles.toolsRow}>
                                             {tools.map((tool) => (
                                                 <ToolBadge
@@ -548,6 +532,7 @@ interface ShowcaseModalProps {
     onTabChange?: (tab: Tab) => void;
     initialLightboxIndex?: number | null;
     onLightboxChange?: (index: number | null) => void;
+    labels: ShowcaseModalLabels;
 }
 
 export function ShowcaseModal({
@@ -557,6 +542,7 @@ export function ShowcaseModal({
     onTabChange,
     initialLightboxIndex,
     onLightboxChange,
+    labels,
 }: ShowcaseModalProps) {
     const mounted = useMounted();
 
@@ -606,6 +592,7 @@ export function ShowcaseModal({
                             onTabChange={onTabChange}
                             initialLightboxIndex={initialLightboxIndex}
                             onLightboxChange={onLightboxChange}
+                            labels={labels}
                         />
                     </div>
                 </m.div>

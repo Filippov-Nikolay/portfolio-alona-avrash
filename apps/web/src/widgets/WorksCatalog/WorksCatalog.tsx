@@ -1,18 +1,18 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import type { CSSProperties } from "react";
-import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, m } from "framer-motion";
+import { useTranslations } from "next-intl";
 import type { ShowcaseItem } from "@/shared/types";
-import type { CategoryKey, Project, CtaContent } from "@avrash/content-schema";
+import type { CategoryKey, CtaContent, Project } from "@avrash/content-schema";
+import { WorksCard, ShowcaseModal } from "@avrash/ui";
+import type { ShowcaseModalTab } from "@avrash/ui";
 import {
     getPrimaryCategory,
     groupProjectsByPrimaryCategory,
 } from "@/entities/project/lib/groupProjects";
-import { ArrowIcon, ArrowV2Icon, Button, Container, ShowcaseModal } from "@/shared/ui";
-import type { ShowcaseModalTab } from "@/shared/ui";
+import { ArrowV2Icon, Container } from "@/shared/ui";
 import { CtaSection } from "@/widgets/CtaSection";
 import { cn } from "@/shared/lib/cn";
 import { usePreloader } from "@/shared/providers";
@@ -22,9 +22,6 @@ import { fadeIn } from "@/shared/lib/motion/fade-in";
 import { reveal } from "@/shared/lib/motion/reveal";
 import { useWorksCardReveal } from "./useWorksCardReveal";
 import styles from "./WorksCatalog.module.scss";
-
-const FILTER_CATEGORIES: CategoryKey[] = ["ui-ux", "branding", "logo", "packaging", "web-design"];
-const FILTER_CATEGORY_SET = new Set<string>(FILTER_CATEGORIES);
 
 type SortOrder = "latest" | "oldest";
 
@@ -63,9 +60,9 @@ const SORT_PARAM = "sort";
 const TAB_PARAM = "tab";
 const IMAGE_PARAM = "image";
 
-function parseFilterParam(raw: string | null): CategoryKey[] {
+function parseFilterParam(raw: string | null, validKeys: Set<string>): CategoryKey[] {
     if (!raw) return [];
-    return raw.split(",").filter((value): value is CategoryKey => FILTER_CATEGORY_SET.has(value));
+    return raw.split(",").filter((value) => validKeys.has(value));
 }
 
 function parseSortParam(raw: string | null): SortOrder {
@@ -97,6 +94,7 @@ interface WorksCatalogLabels {
 interface WorksCatalogProps {
     projects: Project[];
     modalItems: ShowcaseItem[];
+    categoryKeys: CategoryKey[];
     categoryLabels: Record<CategoryKey, string>;
     cta: CtaContent;
     labels: WorksCatalogLabels;
@@ -106,6 +104,7 @@ interface WorksCatalogProps {
 export function WorksCatalog({
     projects,
     modalItems,
+    categoryKeys,
     categoryLabels,
     cta,
     labels,
@@ -114,6 +113,14 @@ export function WorksCatalog({
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const worksBasePath = useMemo(() => pathname.replace(/\/works(\/.*)?$/, "/works"), [pathname]);
+    const modalT = useTranslations("modal");
+    const modalLabels = {
+        viewWebsite: modalT("viewWebsite"),
+        overviewTab: modalT("overviewTab"),
+        galleryTab: modalT("galleryTab"),
+        galleryPreview: modalT("galleryPreview"),
+        tools: modalT("tools"),
+    };
     const { isReady } = usePreloader();
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
@@ -123,8 +130,9 @@ export function WorksCatalog({
     const [sortOrder, setSortOrder] = useState<SortOrder>(() =>
         parseSortParam(searchParams.get(SORT_PARAM))
     );
+    const validCategoryKeys = useMemo(() => new Set(categoryKeys), [categoryKeys]);
     const [selectedCategories, setSelectedCategories] = useState<CategoryKey[]>(() =>
-        parseFilterParam(searchParams.get(FILTER_PARAM))
+        parseFilterParam(searchParams.get(FILTER_PARAM), validCategoryKeys)
     );
 
     const modalItemsById = useMemo(
@@ -200,14 +208,16 @@ export function WorksCatalog({
             selectedCategories.length === 0
                 ? sortedProjects
                 : sortedProjects.filter((project) =>
-                      selectedCategories.includes(getPrimaryCategory(project.categories))
+                      selectedCategories.includes(
+                          getPrimaryCategory(project.categories, categoryKeys)
+                      )
                   ),
-        [sortedProjects, selectedCategories]
+        [sortedProjects, selectedCategories, categoryKeys]
     );
 
     const groups = useMemo(
-        () => groupProjectsByPrimaryCategory(visibleProjects),
-        [visibleProjects]
+        () => groupProjectsByPrimaryCategory(visibleProjects, categoryKeys),
+        [visibleProjects, categoryKeys]
     );
 
     // The very first card on the page sits above the reveal effect's own
@@ -242,7 +252,7 @@ export function WorksCatalog({
                         >
                             {labels.allFilter}
                         </button>
-                        {FILTER_CATEGORIES.map((key) => (
+                        {categoryKeys.map((key) => (
                             <button
                                 key={key}
                                 type="button"
@@ -293,7 +303,9 @@ export function WorksCatalog({
                                         project={project}
                                         rank={i + 1}
                                         categoryLabel={
-                                            categoryLabels[getPrimaryCategory(project.categories)]
+                                            categoryLabels[
+                                                getPrimaryCategory(project.categories, categoryKeys)
+                                            ]
                                         }
                                         viewLabel={labels.viewProject}
                                         onOpen={() => openProject(project.id)}
@@ -317,73 +329,9 @@ export function WorksCatalog({
                 onTabChange={setActiveTab}
                 initialLightboxIndex={lightboxIndex}
                 onLightboxChange={setLightboxIndex}
+                labels={modalLabels}
             />
         </Container>
-    );
-}
-
-// == WorksCard ================================================
-
-interface WorksCardProps {
-    project: Project;
-    rank: number;
-    categoryLabel: string;
-    viewLabel: string;
-    onOpen: () => void;
-    cardRef?: (el: HTMLDivElement | null) => void;
-}
-
-function WorksCard({ project, rank, categoryLabel, viewLabel, onOpen, cardRef }: WorksCardProps) {
-    const heroImage = project.image.find((image) => image.isHero) ?? project.image[0];
-    const year = new Date(project.createdAt).getFullYear();
-
-    const hoverStyle = {
-        "--hover-bg": project.hover.background,
-        "--hover-accent": project.hover.accentColor,
-        "--hover-btn-bg": project.hover.buttonBackground,
-        "--hover-btn-text": project.hover.buttonTextColor,
-    } as CSSProperties;
-
-    return (
-        <div ref={cardRef} className={styles.card} style={hoverStyle} onClick={onOpen}>
-            <div className={styles.visual}>
-                {heroImage?.src && (
-                    <Image
-                        src={heroImage.src}
-                        alt={heroImage.alt ?? project.name}
-                        fill
-                        className={styles.image}
-                        sizes="(max-width: 767px) 100vw, 45vw"
-                    />
-                )}
-            </div>
-
-            <div className={styles.info}>
-                <div className={styles.infoTop}>
-                    <span className={styles.rank}>{String(rank).padStart(2, "0")}</span>
-                    <span className={styles.year}>{year}</span>
-                </div>
-
-                <div className={styles.infoBody}>
-                    <h3 className={styles.cardTitle}>{project.name}</h3>
-                    <p className={styles.cardSubtitle}>{categoryLabel}</p>
-                </div>
-
-                <Button
-                    type="button"
-                    variant="primary"
-                    size="md"
-                    className={styles.viewBtn}
-                    rightIcon={<ArrowIcon className={styles.viewArrow} />}
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        onOpen();
-                    }}
-                >
-                    {viewLabel}
-                </Button>
-            </div>
-        </div>
     );
 }
 

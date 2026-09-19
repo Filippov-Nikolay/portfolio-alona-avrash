@@ -1,0 +1,128 @@
+// `[data-theme]` alongside `:root`: `:root` only ever matches the literal
+// document root, so a non-root wrapper carrying `data-theme` (e.g. the
+// admin app's preview stage, which can't put these on `<html>` without
+// affecting the rest of its own UI) would otherwise fall back to unset
+// values for every token declared here. On the real site `<html>` both
+// *is* root and carries `data-theme`, so this changes nothing there.
+:root,
+[data-theme] {
+    // === Layout =======================================
+    --container-width: 1105px;
+    --content-width: 1280px;
+    --page-top-offset: calc(var(--header-height, 120px) + 50px);
+    --section-spacing: 160px;
+    --hero-scroll-runway: clamp(1260px, 182vh, 2140px);
+    --hero-scroll-runway-compact: clamp(760px, 122vh, 1080px);
+    --hero-flat-handoff-overlap: clamp(160px, 24vh, 220px);
+    --hero-flat-handoff-overlap-compact: clamp(92px, 15vh, 132px);
+
+    // === Spacing scale =================================
+    // Generic scale for new sections/components. Existing sections keep
+    // their individually fine-tuned fluid values — this scale is the
+    // starting point for anything you build on top of the template.
+    --space-2xs: 4px;
+    --space-xs: 8px;
+    --space-sm: 12px;
+    --space-md: 20px;
+    --space-lg: 32px;
+    --space-xl: 48px;
+    --space-2xl: 80px;
+    --space-3xl: 120px;
+
+    // === Radius =======================================
+    --radius-v-sm: 5px;
+    --radius-sm: 12px;
+    --radius-md: 20px;
+    --radius-lg: 24px;
+    --radius-xl: 32px;
+    --radius-xxl: 50px;
+
+    // === Effects ======================================
+    --blur-lg: 80px;
+
+    // === Shadows =======================================
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.12);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.18);
+    --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.28);
+
+    // === Motion =======================================
+    --transition-base: 0.3s ease;
+    --transition-fast: 0.2s ease;
+
+    // === Brand accent (same in both themes) ===========
+    // Change this one value to re-skin the whole site — every themed
+    // component reads its accent color from --color-primary (directly
+    // or via the --color-secondary alias below). Named by role, not by
+    // hue, so it stays accurate no matter what color it holds.
+    --color-accent: #eafd27;
+
+    // === Semantic aliases ==============================
+    // Prefer these names in components — they stay meaningful even if
+    // you swap the underlying accent color above.
+    --color-primary: var(--color-accent);
+    --color-primary-text: var(--color-accent);
+    --color-secondary: var(--color-accent);
+
+    // Status colors — intentionally independent of the brand accents.
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+}
+
+// === Dark theme (default) ================================
+[data-theme="dark"] {
+    color-scheme: dark;
+
+    --color-bg: #000000;
+    --color-surface: #0d0d0d;
+    --color-surface-light: #161616;
+
+    --color-text-primary: #ffffff;
+    --color-text-primary-reverse: #000000;
+    --color-text-secondary: #a1a1aa;
+
+    --color-border: rgba(255, 255, 255, 0.08);
+    --color-border-primary: #fff;
+    --color-card: rgba(255, 255, 255, 0.03);
+    --color-scrollbar-track: #000000;
+    --color-scrollbar-thumb: #343434;
+    --color-scrollbar-thumb-hover: var(--color-accent);
+
+    // === Button =======================================
+    --color-bg-btn: #ffffff;
+    --color-bg-btn-element: #000000;
+
+    // === Card visual area =============================
+    --color-visual-bg: #080810;
+    --color-visual-grid: rgba(255, 255, 255, 0.022);
+    --color-visual-badge-bg: rgba(0, 0, 0, 0.55);
+}
+
+// === Light theme =========================================
+[data-theme="light"] {
+    color-scheme: light;
+
+    --color-bg: #ffffff;
+    --color-surface: #f4f4f5;
+    --color-surface-light: #e4e4e7;
+
+    --color-text-primary: #000000;
+    --color-text-primary-reverse: #ffffff;
+    --color-text-secondary: #52525b;
+
+    --color-border: rgba(0, 0, 0, 0.08);
+    --color-border-primary: #000;
+    --color-card: rgba(0, 0, 0, 0.03);
+    --color-scrollbar-track: #ffffff;
+    --color-scrollbar-thumb: #c7c7cc;
+    --color-scrollbar-thumb-hover: #000000;
+
+    // === Button =======================================
+    --color-bg-btn: #000000;
+    --color-bg-btn-element: #ffffff;
+
+    // === Card visual area =============================
+    --color-visual-bg: #eeeef4;
+    --color-visual-grid: rgba(0, 0, 0, 0.045);
+    --color-visual-badge-bg: rgba(255, 255, 255, 0.78);
+}

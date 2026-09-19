@@ -1,4 +1,4 @@
-import { cn } from "@/shared/lib/cn";
+import { cn } from "../../lib/cn";
 import styles from "./ToolBadge.module.scss";
 
 interface ToolBadgeProps {

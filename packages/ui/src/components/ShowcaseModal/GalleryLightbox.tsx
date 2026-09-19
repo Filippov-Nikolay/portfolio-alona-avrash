@@ -11,8 +11,8 @@ import {
     type MotionValue,
     type TargetAndTransition,
 } from "framer-motion";
-import type { ShowcaseGalleryImage } from "@/shared/types";
-import { CloseIcon } from "@/shared/ui";
+import type { ShowcaseGalleryImage } from "../../types/showcase";
+import { CloseIcon } from "../../icons";
 import { computeGallerySlots, type GallerySlot, type GallerySlotImage } from "./gallerySlots";
 import styles from "./GalleryLightbox.module.scss";
 
@@ -30,19 +30,12 @@ interface GalleryLightboxProps {
     fillRect: LightboxRect;
 
     getCloseRect: (index: number) => LightboxRect | null;
-    // Fires the moment the close animation starts (not when it finishes,
-    // unlike onClose) so callers can react immediately - e.g. re-enabling
-    // background tiles to load while this is still shrinking.
     onCloseStart?: () => void;
     onClose: () => void;
 }
 
 const TILE_RADIUS_PX = 12;
 const OPEN_TRANSITION = { duration: 0.64, ease: [0.22, 1, 0.36, 1] as const };
-// Exported so the background scroll-into-place (driven from
-// ShowcaseModal) can use the exact same duration/easing - two
-// independently-timed animations drifting apart is what caused the
-// mismatched landing this used to have.
 export const CLOSE_TRANSITION = { duration: 0.52, ease: [0.65, 0, 0.25, 1] as const };
 const RENDER_WINDOW = 2;
 const PROGRESS_SPRING = { stiffness: 460, damping: 38, mass: 0.45 };
@@ -233,10 +226,6 @@ function TransitionSlotContent({
     );
 }
 
-// A slot's single image fills the whole sticky frame; a paired slot
-// (two portraits side-by-side, or two short/wide images stacked) splits
-// the frame in half and gives each image its own contain-fit half, each
-// with its own blurred backdrop.
 function SlotContent({ slot }: { slot: GallerySlot }) {
     if (slot.type === "single") {
         const { image } = slot.images[0];
@@ -451,9 +440,6 @@ export function GalleryLightbox({
             ? Math.min(slots.length - 1, Math.max(0, Math.round(el.scrollTop / el.clientHeight)))
             : initialSlotIndex;
         const slot = slots[slotIndex];
-        // When the currently visible pair is the one that was opened, return
-        // to the exact tile the user clicked. A pair reached by scrolling has
-        // no chosen half, so its first image is the stable fallback target.
         const index =
             slot?.images.find(({ originalIndex }) => originalIndex === initialIndex)
                 ?.originalIndex ??

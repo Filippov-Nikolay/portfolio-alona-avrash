@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { m } from "framer-motion";
+import { useTranslations } from "next-intl";
 import type { ShowcaseItem } from "@/shared/types";
 import type { Project } from "@avrash/content-schema";
 import { Link } from "@/i18n/navigation";
-import { Container, Section, ShowcaseModal, ArrowIcon } from "@/shared/ui";
+import { ShowcaseModal } from "@avrash/ui";
+import { Container, Section, ArrowIcon } from "@/shared/ui";
 import { useMotionVariants } from "@/shared/hooks";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { fadeIn } from "@/shared/lib/motion/fade-in";
@@ -36,6 +38,14 @@ export function SelectedWorkSection({
 }: SelectedWorkSectionProps) {
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
+    const modalT = useTranslations("modal");
+    const modalLabels = {
+        viewWebsite: modalT("viewWebsite"),
+        overviewTab: modalT("overviewTab"),
+        galleryTab: modalT("galleryTab"),
+        galleryPreview: modalT("galleryPreview"),
+        tools: modalT("tools"),
+    };
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const choreographyProgress = useStatsSelectedChoreographyProgress();
     const [isContentRevealed, setIsContentRevealed] = useState(
@@ -142,7 +152,11 @@ export function SelectedWorkSection({
                 </m.div>
             </Container>
 
-            <ShowcaseModal item={selectedItem} onClose={() => setSelectedIndex(null)} />
+            <ShowcaseModal
+                item={selectedItem}
+                onClose={() => setSelectedIndex(null)}
+                labels={modalLabels}
+            />
         </Section>
     );
 }

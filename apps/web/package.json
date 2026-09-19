@@ -29,7 +29,8 @@
         "react-dom": "19.2.4",
         "sass": "^1.99.0",
         "@avrash/content-data": "workspace:*",
-        "@avrash/content-schema": "workspace:*"
+        "@avrash/content-schema": "workspace:*",
+        "@avrash/ui": "workspace:*"
     },
     "browserslist": [
         "chrome >= 93",

@@ -1,4 +1,4 @@
-@use "@/shared/styles/mixins" as *;
+@use "../../styles/mixins" as *;
 
 // === Overlay =============================================
 
@@ -21,7 +21,6 @@
 
     @include respond-to("mobile") {
         padding: 12px;
-        // Respect home indicator / gesture bar on notched phones
         padding-bottom: max(12px, env(safe-area-inset-bottom));
     }
 }
@@ -32,11 +31,8 @@
     position: relative;
     width: 100%;
     max-width: var(--container-width);
-    // svh = small viewport height (excludes browser chrome).
-    // vh fallback for older browsers; svh overrides it where supported.
     max-height: 90vh;
     max-height: 90svh;
-    // overflow: hidden clips the inner scrollbar to the border-radius
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -55,16 +51,11 @@
 }
 
 // === Inner scroll container ===============================
-// Separated from .modal so the scrollbar is clipped by .modal's
-// overflow:hidden + border-radius instead of bleeding past the corners.
 
 .body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    // "contain" only stops scroll from chaining to the page behind the
-    // modal - it still lets the browser's own rubber-band/bounce play at
-    // this element's own edges. "none" turns the bounce itself off too.
     overscroll-behavior: none;
 
     // Firefox
@@ -267,9 +258,6 @@
     padding: 24px 32px 32px;
     display: flex;
     flex-direction: column;
-    // No gap here: the tabs-to-panel spacing comes entirely from .tabs's
-    // own padding-bottom, so it survives scroll (see .tabs below). A gap
-    // here would just stack on top of that and double the visible space.
     gap: 0;
 
     @include respond-to("mobile") {
@@ -289,9 +277,6 @@
 
 // === Tabs ==================================================
 
-// Sticky element's own box - the padding-bottom here is a permanently
-// reserved buffer (part of the sticky box itself, so it never scrolls
-// away, unlike padding/gap on the content below it).
 .tabs {
     position: sticky;
     top: 0;
@@ -302,8 +287,6 @@
     background: var(--color-surface);
 }
 
-// Separate from .tabs's own box so the underline stays glued to the tab
-// text - only .tabs's padding-bottom (the buffer) moves, never this.
 .tabsRow {
     position: relative;
     display: flex;
@@ -453,7 +436,6 @@
     height: 100%;
     object-fit: cover;
     display: block;
-    // filter: drop-shadow(0 8px 14px rgba(0 0 0 / 0.22));
     transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 
     @include can-hover {
@@ -515,7 +497,6 @@
 .galleryTile {
     transform-origin: center center;
     transform: translateZ(calc(var(--tilt-z, 0) * 1px)) rotateX(calc(var(--tilt, 0) * 1deg));
-    // box-shadow: 0 4px 8px rgba(0 0 0 / 0.08);
 
     &::after {
         content: "";

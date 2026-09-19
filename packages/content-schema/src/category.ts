@@ -1,13 +1,14 @@
-// The set of categories a project/service can belong to. Kept as a plain
-// string union (not the CategoryOption object below) because that's the
-// shape every real project actually stores in projects.json.
-export type CategoryKey = "ui-ux" | "branding" | "logo" | "packaging" | "web-design";
+// The key stored on a project (Project.categories) and looked up against
+// the category catalog (CategoryOption below). Was a fixed string union
+// of the 5 built-in categories; widened to plain string once the admin's
+// Global > Categories page could add more at runtime - the union could
+// no longer describe what's actually valid.
+export type CategoryKey = string;
 
-// Lookup/display entry for a category — id + label, meant for building a
-// category filter UI (see README's "Work" page idea). Deliberately a
-// separate type from CategoryKey: don't conflate "the key stored on a
-// project" with "the row in the category lookup table."
+// One entry in the admin-managed category catalog (@avrash/content-data's
+// categories.json) - the pool of categories a project can be tagged with,
+// editable from the admin's Global > Categories page.
 export interface CategoryOption {
-    id: number;
-    name: CategoryKey;
+    key: string;
+    label: string;
 }

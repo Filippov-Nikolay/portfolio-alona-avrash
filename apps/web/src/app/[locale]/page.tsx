@@ -6,7 +6,6 @@ import { ToolsSection } from "@/widgets/ToolsSection";
 import { ServicesSection } from "@/widgets/ServicesSection";
 import { ReviewSection } from "@/widgets/ReviewSection";
 import { CtaSection } from "@/widgets/CtaSection";
-import type { CategoryKey } from "@/shared/types";
 import {
     getAllProjects,
     getSelectedWork,
@@ -14,6 +13,9 @@ import {
 } from "@/entities/project/lib/resolveProjects";
 import { getHomeProjectGalleryCards } from "@/entities/home-project-gallery/lib/resolveHomeProjectGallery";
 import { getHomeProjectGallery } from "@/entities/home-project-gallery/api/getHomeProjectGallery";
+import { getCategories } from "@/entities/category/api/getCategories";
+import { buildCategoryTranslator } from "@/entities/category/lib/resolveCategoryLabel";
+import { getToolBadges } from "@/entities/toolBadge/api/getToolBadges";
 import { getServices } from "@/entities/service/api/getServices";
 import { getReviews } from "@/entities/review/api/getReviews";
 import { getStats } from "@/entities/stat/api/getStats";
@@ -38,6 +40,8 @@ export default async function HomePage({ params }: HomePageProps) {
         tReviews,
         allProjects,
         homeProjectGallery,
+        categories,
+        toolBadges,
         services,
         reviews,
         stats,
@@ -53,6 +57,8 @@ export default async function HomePage({ params }: HomePageProps) {
         getTranslations({ locale, namespace: "reviews" }),
         getAllProjects(),
         getHomeProjectGallery(),
+        getCategories(),
+        getToolBadges(),
         getServices(locale),
         getReviews(locale),
         getStats(),
@@ -60,19 +66,19 @@ export default async function HomePage({ params }: HomePageProps) {
         getTools(),
         getCta(locale),
     ]);
-    const translateCategory = (key: CategoryKey) => tCategories(key);
+    const translateCategory = buildCategoryTranslator(tCategories, categories);
 
     const selectedWorkProjects = getSelectedWork(allProjects);
     const projectsSectionCards = getHomeProjectGalleryCards(homeProjectGallery);
 
     const selectedWorkModalItems = selectedWorkProjects.map((project, i) =>
-        toShowcaseItem(project, i, translateCategory, false)
+        toShowcaseItem(project, i, translateCategory, false, toolBadges)
     );
     const selectedWorkCategoryLabels = selectedWorkProjects.map((project) =>
         project.categories.map(translateCategory)
     );
     const projectsModalItems = allProjects.map((project, i) =>
-        toShowcaseItem(project, i, translateCategory, false)
+        toShowcaseItem(project, i, translateCategory, false, toolBadges)
     );
 
     const selectedWorkLabels = {

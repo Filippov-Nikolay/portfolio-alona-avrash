@@ -6,12 +6,13 @@ import { WorksCatalog } from "@/widgets/WorksCatalog";
 import type { CategoryKey } from "@/shared/types";
 import { getAllProjects, toShowcaseItem } from "@/entities/project/lib/resolveProjects";
 import { slugifyProjectName } from "@/entities/project/lib/slug";
+import { getCategories } from "@/entities/category/api/getCategories";
+import { buildCategoryTranslator } from "@/entities/category/lib/resolveCategoryLabel";
+import { getToolBadges } from "@/entities/toolBadge/api/getToolBadges";
 import { getCta } from "@/entities/cta/api/getCta";
 import { siteConfig } from "@/shared/config/site.config";
 import { getLocaleMeta } from "@/i18n/locales";
 import { buildPageAlternates } from "@/shared/lib/seo";
-
-const ALL_CATEGORY_KEYS: CategoryKey[] = ["ui-ux", "branding", "logo", "packaging", "web-design"];
 
 interface WorksPageProps {
     params: Promise<{ locale: string; slug?: string[] }>;
@@ -27,19 +28,21 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: WorksPageProps): Promise<Metadata> {
     const { locale, slug } = await params;
-    const [t, tCategories, tSeo] = await Promise.all([
+    const [t, tCategories, tSeo, categories] = await Promise.all([
         getTranslations({ locale, namespace: "nav" }),
         getTranslations({ locale, namespace: "categories" }),
         getTranslations({ locale, namespace: "seo" }),
+        getCategories(),
     ]);
     const { ogLocale } = getLocaleMeta(locale);
+    const translateCategory = buildCategoryTranslator(tCategories, categories);
 
     if (slug?.length === 1) {
         const projects = await getAllProjects();
         const project = projects.find((p) => slugifyProjectName(p.name) === slug[0]);
         if (project) {
             const heroImage = project.image.find((image) => image.isHero) ?? project.image[0];
-            const description = project.categories.map((key) => tCategories(key)).join(" · ");
+            const description = project.categories.map(translateCategory).join(" · ");
             const { canonical, languages } = buildPageAlternates(locale, `/works/${slug[0]}`);
             const ogTitle = `${project.name} | ${siteConfig.name}`;
 
@@ -90,20 +93,23 @@ export default async function WorksPage({ params }: WorksPageProps) {
 
     if (slug && slug.length > 1) notFound();
 
-    const [tCategories, tWorksPage, allProjects, cta] = await Promise.all([
+    const [tCategories, tWorksPage, allProjects, categories, toolBadges, cta] = await Promise.all([
         getTranslations({ locale, namespace: "categories" }),
         getTranslations({ locale, namespace: "worksPage" }),
         getAllProjects(),
+        getCategories(),
+        getToolBadges(),
         getCta(locale),
     ]);
-    const translateCategory = (key: CategoryKey) => tCategories(key);
+    const translateCategory = buildCategoryTranslator(tCategories, categories);
+    const categoryKeys = categories.map((category) => category.key);
 
     const categoryLabels = Object.fromEntries(
-        ALL_CATEGORY_KEYS.map((key) => [key, translateCategory(key)])
+        categoryKeys.map((key) => [key, translateCategory(key)])
     ) as Record<CategoryKey, string>;
 
     const modalItems = allProjects.map((project, i) =>
-        toShowcaseItem(project, i, translateCategory, i === 0)
+        toShowcaseItem(project, i, translateCategory, i === 0, toolBadges)
     );
 
     let initialSelectedId: number | null = null;
@@ -130,6 +136,7 @@ export default async function WorksPage({ params }: WorksPageProps) {
                 <WorksCatalog
                     projects={allProjects}
                     modalItems={modalItems}
+                    categoryKeys={categoryKeys}
                     categoryLabels={categoryLabels}
                     cta={cta}
                     labels={labels}

@@ -1,5 +1,6 @@
 import type { ShowcaseItem } from "@/shared/types";
-import type { Project } from "@avrash/content-schema";
+import type { Project, ToolBadgeOption } from "@avrash/content-schema";
+import { resolveToolBadges } from "@/entities/toolBadge/lib/resolveToolBadges";
 import { getProjects } from "../api/getProjects";
 import { slugifyProjectName } from "./slug";
 
@@ -33,7 +34,8 @@ export function toShowcaseItem(
     project: Project,
     index: number,
     translateCategory: (key: Project["categories"][number]) => string,
-    featured: boolean
+    featured: boolean,
+    toolCatalog: ToolBadgeOption[]
 ): ShowcaseItem {
     const heroImage = project.image.find((image) => image.isHero) ?? project.image[0];
     const gallery = project.image
@@ -55,7 +57,7 @@ export function toShowcaseItem(
         src: heroImage?.src,
         featured,
         gallery,
-        tools: project.tools,
+        tools: project.tools ? resolveToolBadges(project.tools, toolCatalog) : undefined,
         websiteUrl: project.websiteUrl,
         accentColorModal: project.accentColorModal ?? project.hover.background,
     };

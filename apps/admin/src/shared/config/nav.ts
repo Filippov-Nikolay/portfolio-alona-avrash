@@ -40,6 +40,8 @@ export const ADMIN_NAV: AdminPage[] = [
         sections: [
             { slug: "socials", label: "Socials" },
             { slug: "footer", label: "Footer" },
+            { slug: "categories", label: "Categories" },
+            { slug: "tool-badges", label: "Tool Badges" },
         ],
     },
 ];

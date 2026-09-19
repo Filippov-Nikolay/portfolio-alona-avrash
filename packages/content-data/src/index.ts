@@ -10,6 +10,8 @@ import type {
     StatItem,
     ClientsConfig,
     Tool,
+    CategoryOption,
+    ToolBadgeOption,
 } from "@avrash/content-schema";
 
 import heroJson from "./hero.json";
@@ -23,6 +25,8 @@ import reviewsJson from "./reviews.json";
 import statsJson from "./stats.json";
 import clientsJson from "./clients.json";
 import toolsJson from "./tools.json";
+import categoriesJson from "./categories.json";
+import toolBadgesJson from "./tool-badges.json";
 
 // hero.floatingImages[].image and service.image are single standalone
 // images, not gallery entries - they reuse ProjectImage for its src/alt
@@ -39,3 +43,5 @@ export const reviews = reviewsJson as ReviewRaw[];
 export const stats = statsJson as StatItem[];
 export const clients = clientsJson as ClientsConfig;
 export const tools = toolsJson as Tool[];
+export const categories = categoriesJson as CategoryOption[];
+export const toolBadges = toolBadgesJson as ToolBadgeOption[];

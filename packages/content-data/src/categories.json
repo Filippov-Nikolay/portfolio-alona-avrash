@@ -1,0 +1,7 @@
+[
+    { "key": "ui-ux", "label": "UI/UX" },
+    { "key": "branding", "label": "Branding" },
+    { "key": "logo", "label": "Logo Design" },
+    { "key": "packaging", "label": "Packaging" },
+    { "key": "web-design", "label": "Web Design" }
+]

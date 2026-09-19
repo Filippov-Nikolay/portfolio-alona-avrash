@@ -12,6 +12,8 @@ const CONTENT: Record<string, unknown> = {
     stats: contentData.stats,
     clients: contentData.clients,
     tools: contentData.tools,
+    categories: contentData.categories,
+    "tool-badges": contentData.toolBadges,
 };
 
 export function getContentResource(resource: string): unknown | undefined {

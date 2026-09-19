@@ -1,0 +1,82 @@
+@use "@/shared/styles/mixins" as *;
+
+.region {
+    position: fixed;
+    top: calc(var(--header-height, 120px));
+    right: 12px;
+    z-index: 110;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    pointer-events: none;
+
+    @media (max-width: 640px) {
+        right: 12px;
+        left: 12px;
+        align-items: stretch;
+    }
+}
+
+.toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: min(360px, calc(100vw - 24px));
+    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+    pointer-events: auto;
+
+    @media (max-width: 640px) {
+        width: auto;
+    }
+}
+
+.toastSuccess .icon {
+    color: var(--color-success);
+}
+
+.toastError .icon {
+    color: var(--color-error);
+}
+
+.icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding-top: 1px;
+}
+
+.message {
+    flex: 1;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--color-text-primary);
+}
+
+.close {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: color 0.15s ease;
+    @include focus-ring;
+
+    @include can-hover {
+        &:hover {
+            color: var(--color-text-primary);
+        }
+    }
+}

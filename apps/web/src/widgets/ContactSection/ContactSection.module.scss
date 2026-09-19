@@ -522,17 +522,6 @@
     }
 }
 
-.status {
-    position: absolute;
-    right: 32px;
-    bottom: 8px;
-    left: 32px;
-    min-height: 1em;
-    font-size: 12px;
-    text-align: center;
-    color: var(--color-text-secondary);
-}
-
 @media (max-width: 1023px) {
     .section {
         --_pad-bottom: 40px;
@@ -643,12 +632,6 @@
 
     .countryDropdown {
         width: min(310px, calc(100vw - 76px));
-    }
-
-    .status {
-        right: 18px;
-        bottom: 6px;
-        left: 18px;
     }
 }
 

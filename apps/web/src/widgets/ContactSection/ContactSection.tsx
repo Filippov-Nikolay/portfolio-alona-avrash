@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState, type CSSProperties } from "react";
+import { FormEvent, useEffect, useState, type CSSProperties } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { Social } from "@avrash/content-schema";
 import { SocialLinks } from "@/entities/social/ui/SocialLinks";
@@ -9,8 +9,11 @@ import { siteConfig } from "@/shared/config/site.config";
 import { usePreloader } from "@/shared/providers";
 import { Container, Section } from "@/shared/ui";
 import { CountryCodeSelect } from "./CountryCodeSelect";
+import { ContactToast } from "./ContactToast";
 import { useContactSectionAnimations } from "./useContactSectionAnimations";
 import styles from "./ContactSection.module.scss";
+
+const TOAST_AUTO_DISMISS_MS = 6000;
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 const PLACEHOLDER_STAGGER_MS = 18;
@@ -46,6 +49,12 @@ export function ContactSection({ socials }: ContactSectionProps) {
     const { isReady } = usePreloader();
     const sectionRef = useContactSectionAnimations(isReady);
     const [submitState, setSubmitState] = useState<SubmitState>("idle");
+
+    useEffect(() => {
+        if (submitState !== "success" && submitState !== "error") return;
+        const timer = window.setTimeout(() => setSubmitState("idle"), TOAST_AUTO_DISMISS_MS);
+        return () => window.clearTimeout(timer);
+    }, [submitState]);
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -208,12 +217,17 @@ export function ContactSection({ socials }: ContactSectionProps) {
                                     ? t("form.sending")
                                     : t("form.submit")}
                             </button>
-
-                            <p className={styles.status} aria-live="polite">
-                                {submitState === "success" && t("form.success")}
-                                {submitState === "error" && t("form.error")}
-                            </p>
                         </form>
+
+                        <ContactToast
+                            status={
+                                submitState === "success" || submitState === "error"
+                                    ? submitState
+                                    : null
+                            }
+                            message={submitState === "error" ? t("form.error") : t("form.success")}
+                            onDismiss={() => setSubmitState("idle")}
+                        />
                     </div>
                 </div>
             </Container>

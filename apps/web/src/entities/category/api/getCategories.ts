@@ -1,6 +1,6 @@
 import { fetchContent } from "@/shared/api/contentClient";
-import type { CategoryOption } from "@avrash/content-schema";
+import { CategoryOptionSchema, type CategoryOption } from "@avrash/content-schema";
 
 export function getCategories(): Promise<CategoryOption[]> {
-    return fetchContent<CategoryOption[]>("categories", "categories");
+    return fetchContent("categories", "categories", CategoryOptionSchema.array());
 }

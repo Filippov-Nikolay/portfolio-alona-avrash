@@ -1,8 +1,12 @@
-import type { CategoryOption, Project, ToolBadgeOption } from "@avrash/content-schema";
+import type {
+    CategoryOption,
+    Project,
+    ProjectInput,
+    ToolBadgeOption,
+} from "@avrash/content-schema";
 import type { ShowcaseItem, ShowcaseToolBadge } from "@avrash/ui";
 import { getToolBadge } from "@avrash/ui";
 import { assetUrl } from "@/shared/config/assets";
-import type { ProjectInput } from "@/entities/project/api/projectsRepository";
 
 const GENERIC_TOOL_ICON = "/assets/tools/generic.svg";
 const PREVIEW_ID = -1;

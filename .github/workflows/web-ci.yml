@@ -51,6 +51,11 @@ jobs:
 
             - run: pnpm --filter @avrash/web run type-check
 
+            # content-schema is a dependency, not something web's own test
+            # run touches - its own tests (the Zod schemas actually reject
+            # bad data) would otherwise never run in CI at all.
+            - run: pnpm --filter @avrash/content-schema run test
+
             - run: pnpm --filter @avrash/web run test
 
             - run: pnpm --filter @avrash/web run build

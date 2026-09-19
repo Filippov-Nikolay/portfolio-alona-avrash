@@ -2,7 +2,12 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Project, CategoryOption, ToolBadgeOption } from "@avrash/content-schema";
+import type {
+    Project,
+    CategoryOption,
+    ToolBadgeOption,
+    ProjectInput,
+} from "@avrash/content-schema";
 import { Button } from "@/shared/ui/Button";
 import { ConfirmDialog } from "@/shared/ui/ConfirmDialog";
 import { slugify } from "@/shared/lib/slugify";
@@ -14,7 +19,6 @@ import {
 } from "@/entities/project/api/actions";
 import { addCategoryAction } from "@/entities/category/api/actions";
 import { addToolBadgeAction } from "@/entities/toolBadge/api/actions";
-import type { ProjectInput } from "@/entities/project/api/projectsRepository";
 import {
     clearDraft,
     readDraft,

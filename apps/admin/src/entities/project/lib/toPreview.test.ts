@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CategoryOption, ToolBadgeOption } from "@avrash/content-schema";
-import type { ProjectInput } from "@/entities/project/api/projectsRepository";
+import type { CategoryOption, ProjectInput, ToolBadgeOption } from "@avrash/content-schema";
 import { toPreviewProject, toPreviewShowcaseItem } from "./toPreview";
 
 const CATEGORIES: CategoryOption[] = [

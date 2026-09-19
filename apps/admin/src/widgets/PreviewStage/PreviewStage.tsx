@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import { Almarai, Zalando_Sans_SemiExpanded } from "next/font/google";
 import { LazyMotion, domMax } from "framer-motion";
-import type { CategoryOption, ToolBadgeOption } from "@avrash/content-schema";
+import type { CategoryOption, ToolBadgeOption, ProjectInput } from "@avrash/content-schema";
 import { WorksCard, ShowcaseModal, type ShowcaseModalLabels } from "@avrash/ui";
-import type { ProjectInput } from "@/entities/project/api/projectsRepository";
 import { toPreviewProject, toPreviewShowcaseItem } from "@/entities/project/lib/toPreview";
 import styles from "./PreviewStage.module.scss";
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Project } from "@avrash/content-schema";
-import { createProjectsRepository, type ProjectInput } from "./projectsRepository";
+import type { Project, ProjectInput } from "@avrash/content-schema";
+import { createProjectsRepository } from "./projectsRepository";
 
 function makeInput(overrides: Partial<ProjectInput> = {}): ProjectInput {
     return {

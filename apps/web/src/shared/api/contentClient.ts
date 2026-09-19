@@ -1,3 +1,4 @@
+import type { ZodType } from "zod";
 import { getContentResource } from "./contentStore";
 
 const RESOURCE_FILE_NAMES: Record<string, string> = {
@@ -54,7 +55,7 @@ async function fetchRemoteContent<T>(path: string, tag: string): Promise<T | und
     }
 }
 
-export async function fetchContent<T>(path: string, tag: string): Promise<T> {
+async function resolveContent<T>(path: string, tag: string): Promise<T> {
     if (isRemoteSource()) {
         const remote = await fetchRemoteContent<T>(path, tag);
         if (remote !== undefined) return remote;
@@ -80,4 +81,14 @@ export async function fetchContent<T>(path: string, tag: string): Promise<T> {
     }
 
     return response.json();
+}
+
+// `schema` is optional and, today, only ever passed for the resources admin
+// can actually write to R2 (projects, categories, tool-badges) - those are
+// the only ones a malformed remote fetch could plausibly return wrong data
+// for. The rest still just cast, same as before, since they only ever come
+// from the bundled, TS-checked-at-the-call-site content-data package.
+export async function fetchContent<T>(path: string, tag: string, schema?: ZodType<T>): Promise<T> {
+    const content = await resolveContent<T>(path, tag);
+    return schema ? schema.parse(content) : content;
 }

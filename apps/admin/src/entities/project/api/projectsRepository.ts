@@ -1,11 +1,9 @@
 import path from "node:path";
-import type { Project } from "@avrash/content-schema";
+import { ProjectSchema, type Project, type ProjectInput } from "@avrash/content-schema";
 import { contentDataDir } from "@/shared/storage/contentDir";
 import { getStorageDriver } from "@/shared/storage/driver";
 import { readJsonFile, writeJsonFile } from "@/shared/storage/fs";
 import { readJsonObject, writeJsonObject } from "@/shared/storage/r2";
-
-export type ProjectInput = Omit<Project, "id">;
 
 export interface ProjectsRepository {
     list(): Promise<Project[]>;
@@ -67,13 +65,23 @@ function projectsJsonPath(): string {
     return path.join(contentDataDir(), "projects.json");
 }
 
+// Validates whatever comes back from disk/R2 against the real schema rather
+// than trusting a bare `as Project[]` cast - a hand-edited JSON file or a
+// stale/corrupted R2 object fails loudly here, at the read boundary, instead
+// of producing confusing downstream errors (or silently wrong UI) wherever
+// the bad data first gets used.
+async function readAndValidateProjects(readRaw: () => Promise<unknown>): Promise<Project[]> {
+    const raw = await readRaw();
+    return ProjectSchema.array().parse(raw);
+}
+
 const fileSystemProjectsRepository = createProjectsRepository(
-    () => readJsonFile<Project[]>(projectsJsonPath()),
+    () => readAndValidateProjects(() => readJsonFile<unknown>(projectsJsonPath())),
     (projects) => writeJsonFile(projectsJsonPath(), projects)
 );
 
 const r2ProjectsRepository = createProjectsRepository(
-    () => readJsonObject<Project[]>(PROJECTS_R2_KEY),
+    () => readAndValidateProjects(() => readJsonObject<unknown>(PROJECTS_R2_KEY)),
     (projects) => writeJsonObject(PROJECTS_R2_KEY, projects)
 );
 

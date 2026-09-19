@@ -1,5 +1,9 @@
 import path from "node:path";
-import type { CategoryOption, ToolBadgeOption } from "@avrash/content-schema";
+import {
+    CategoryOptionSchema,
+    type CategoryOption,
+    type ToolBadgeOption,
+} from "@avrash/content-schema";
 import { slugify } from "@/shared/lib/slugify";
 import { contentDataDir } from "@/shared/storage/contentDir";
 import { getStorageDriver } from "@/shared/storage/driver";
@@ -56,13 +60,23 @@ function resolveR2Key(fileName: string): string {
     return `content/${fileName}`;
 }
 
+// CategoryOptionSchema also validates ToolBadgeOption entries - both are
+// exactly {key, label}, so one schema covers this repository's whole
+// OptionItem union. See the matching note in projectsRepository.ts for why
+// this validates at all: a bare cast trusts disk/R2 content unconditionally,
+// this catches a malformed file at the read boundary instead.
+async function readAndValidateOptions(readRaw: () => Promise<unknown>): Promise<OptionItem[]> {
+    const raw = await readRaw();
+    return CategoryOptionSchema.array().parse(raw);
+}
+
 const fileSystemOptionListRepository = createOptionListRepository(
-    (fileName) => readJsonFile<OptionItem[]>(resolveFsPath(fileName)),
+    (fileName) => readAndValidateOptions(() => readJsonFile<unknown>(resolveFsPath(fileName))),
     (fileName, options) => writeJsonFile(resolveFsPath(fileName), options)
 );
 
 const r2OptionListRepository = createOptionListRepository(
-    (fileName) => readJsonObject<OptionItem[]>(resolveR2Key(fileName)),
+    (fileName) => readAndValidateOptions(() => readJsonObject<unknown>(resolveR2Key(fileName))),
     (fileName, options) => writeJsonObject(resolveR2Key(fileName), options)
 );
 

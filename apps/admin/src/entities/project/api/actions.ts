@@ -1,17 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { Project } from "@avrash/content-schema";
+import { ProjectInputSchema, type Project, type ProjectInput } from "@avrash/content-schema";
 import { requireAdminSession } from "@/shared/auth/requireAdminSession";
+import { formatZodError } from "@/shared/lib/formatZodError";
 import { notifyContentChanged } from "@/shared/lib/notifyWeb";
 import { getImageStorage } from "@/shared/storage/imageStorage";
-import {
-    createProject,
-    deleteProject,
-    getProject,
-    updateProject,
-    type ProjectInput,
-} from "./projectsRepository";
+import { createProject, deleteProject, getProject, updateProject } from "./projectsRepository";
 
 // Best-effort storage cleanup for images a project no longer references -
 // removed from the gallery then saved, or the whole project deleted. Not a
@@ -31,9 +26,22 @@ async function deleteProjectImages(images: Project["image"]): Promise<void> {
     });
 }
 
+// TypeScript's ProjectInput type only protects the code that calls this
+// action - it says nothing about what the client actually sends over the
+// wire when a Server Action is invoked. Parsing here means a malformed
+// payload fails with a clear message before it ever reaches the repository
+// or gets written to R2, instead of silently corrupting saved content.
+function parseProjectInput(input: ProjectInput): ProjectInput {
+    const result = ProjectInputSchema.safeParse(input);
+    if (!result.success) {
+        throw new Error(`Invalid project data: ${formatZodError(result.error)}`);
+    }
+    return result.data;
+}
+
 export async function createProjectAction(input: ProjectInput): Promise<Project> {
     await requireAdminSession();
-    const project = await createProject(input);
+    const project = await createProject(parseProjectInput(input));
     revalidatePath("/works/projects");
     await notifyContentChanged("projects");
     return project;
@@ -41,8 +49,9 @@ export async function createProjectAction(input: ProjectInput): Promise<Project>
 
 export async function updateProjectAction(id: number, input: ProjectInput): Promise<Project> {
     await requireAdminSession();
+    const parsedInput = parseProjectInput(input);
     const previous = await getProject(id);
-    const project = await updateProject(id, input);
+    const project = await updateProject(id, parsedInput);
     revalidatePath("/works/projects");
     revalidatePath(`/works/projects/${id}`);
     await notifyContentChanged("projects");

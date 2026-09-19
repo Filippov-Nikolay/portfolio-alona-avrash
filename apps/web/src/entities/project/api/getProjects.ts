@@ -1,6 +1,6 @@
 import { fetchContent } from "@/shared/api/contentClient";
-import type { Project } from "@avrash/content-schema";
+import { ProjectSchema, type Project } from "@avrash/content-schema";
 
 export function getProjects(): Promise<Project[]> {
-    return fetchContent<Project[]>("projects", "projects");
+    return fetchContent("projects", "projects", ProjectSchema.array());
 }

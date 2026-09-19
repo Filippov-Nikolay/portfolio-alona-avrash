@@ -1,17 +1,19 @@
 import Link from "next/link";
 import type { ProjectSummary } from "@/entities/analytics/model/types";
+import type { PeriodDays } from "@/entities/analytics/lib/period";
 import styles from "./TopProjectsTable.module.css";
 
 interface TopProjectsTableProps {
     projects: ProjectSummary[];
     projectNames: Record<string, string>;
+    days: PeriodDays;
 }
 
 function formatPercent(value: number): string {
     return `${(value * 100).toFixed(1)}%`;
 }
 
-export function TopProjectsTable({ projects, projectNames }: TopProjectsTableProps) {
+export function TopProjectsTable({ projects, projectNames, days }: TopProjectsTableProps) {
     if (projects.length === 0) {
         return (
             <div className={styles.empty}>
@@ -35,7 +37,7 @@ export function TopProjectsTable({ projects, projectNames }: TopProjectsTablePro
                     <tr key={project.entityId}>
                         <td>
                             <Link
-                                href={`/dashboard/analytics/${encodeURIComponent(project.entityId)}`}
+                                href={`/dashboard/analytics/${encodeURIComponent(project.entityId)}?days=${days}`}
                                 className={styles.name}
                             >
                                 {projectNames[project.entityId] ?? project.entityId}

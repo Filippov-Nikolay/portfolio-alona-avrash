@@ -8,6 +8,7 @@ import type {
     AnalyticsOverview as AnalyticsOverviewData,
     ProjectSummary,
 } from "@/entities/analytics/model/types";
+import type { PeriodDays } from "@/entities/analytics/lib/period";
 import styles from "./AnalyticsOverview.module.css";
 
 type Metric = "projectOpens" | "contacts";
@@ -21,9 +22,15 @@ interface AnalyticsOverviewProps {
     overview: AnalyticsOverviewData;
     projects: ProjectSummary[];
     projectNames: Record<string, string>;
+    days: PeriodDays;
 }
 
-export function AnalyticsOverview({ overview, projects, projectNames }: AnalyticsOverviewProps) {
+export function AnalyticsOverview({
+    overview,
+    projects,
+    projectNames,
+    days,
+}: AnalyticsOverviewProps) {
     const [metric, setMetric] = useState<Metric>("projectOpens");
     const chartPoints = overview.timeline.map((point) => ({
         date: point.date,
@@ -63,7 +70,7 @@ export function AnalyticsOverview({ overview, projects, projectNames }: Analytic
             </div>
 
             <h2 className={styles.tableTitle}>Top projects</h2>
-            <TopProjectsTable projects={projects} projectNames={projectNames} />
+            <TopProjectsTable projects={projects} projectNames={projectNames} days={days} />
         </div>
     );
 }

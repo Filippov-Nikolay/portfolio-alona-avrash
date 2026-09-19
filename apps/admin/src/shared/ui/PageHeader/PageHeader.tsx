@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import styles from "./PageHeader.module.css";
 
@@ -5,9 +6,10 @@ interface PageHeaderProps {
     title: string;
     backHref?: string;
     backLabel?: string;
+    actions?: ReactNode;
 }
 
-export function PageHeader({ title, backHref, backLabel = "Back" }: PageHeaderProps) {
+export function PageHeader({ title, backHref, backLabel = "Back", actions }: PageHeaderProps) {
     return (
         <div className={styles.header}>
             {backHref && (
@@ -15,7 +17,10 @@ export function PageHeader({ title, backHref, backLabel = "Back" }: PageHeaderPr
                     &larr; {backLabel}
                 </Link>
             )}
-            <h1 className={styles.title}>{title}</h1>
+            <div className={styles.titleRow}>
+                <h1 className={styles.title}>{title}</h1>
+                {actions && <div className={styles.actions}>{actions}</div>}
+            </div>
         </div>
     );
 }

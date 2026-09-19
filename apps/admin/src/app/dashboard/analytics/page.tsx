@@ -3,14 +3,21 @@ import {
     getTopProjects,
     isAnalyticsConfigured,
 } from "@/entities/analytics/api/analyticsRepository";
+import { parseDaysParam } from "@/entities/analytics/lib/period";
 import { listProjects } from "@/entities/project/api/projectsRepository";
 import { AnalyticsOverview } from "@/widgets/AnalyticsOverview";
 import { AnalyticsNotice } from "@/widgets/AnalyticsNotice";
+import { PeriodSwitcher } from "@/widgets/PeriodSwitcher";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
-const DAYS = 30;
+interface AnalyticsOverviewPageProps {
+    searchParams: Promise<{ days?: string | string[] }>;
+}
 
-export default async function AnalyticsOverviewPage() {
+export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsOverviewPageProps) {
+    const { days: rawDays } = await searchParams;
+    const days = parseDaysParam(rawDays);
+
     if (!isAnalyticsConfigured()) {
         return (
             <div>
@@ -25,8 +32,8 @@ export default async function AnalyticsOverviewPage() {
     }
 
     const [overview, projects, allProjects] = await Promise.all([
-        getOverview(DAYS),
-        getTopProjects(DAYS),
+        getOverview(days),
+        getTopProjects(days),
         listProjects(),
     ]);
 
@@ -52,11 +59,15 @@ export default async function AnalyticsOverviewPage() {
 
     return (
         <div>
-            <PageHeader title="Analytics" />
+            <PageHeader
+                title="Analytics"
+                actions={<PeriodSwitcher basePath="/dashboard/analytics" days={days} />}
+            />
             <AnalyticsOverview
                 overview={overview}
                 projects={projects}
                 projectNames={projectNames}
+                days={days}
             />
         </div>
     );

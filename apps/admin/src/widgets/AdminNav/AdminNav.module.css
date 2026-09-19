@@ -11,6 +11,20 @@
     padding: 0 24px;
     list-style: none;
     overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.pageTabs::-webkit-scrollbar,
+.sectionTabs::-webkit-scrollbar {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .pageTabs,
+    .sectionTabs {
+        padding: 0 16px;
+    }
 }
 
 .pageTabs {
@@ -20,6 +34,18 @@
 .sectionTabs {
     padding-bottom: 0;
     border-top: 1px solid #f4f4f5;
+}
+
+.tabItem {
+    display: flex;
+    align-items: center;
+}
+
+.divider {
+    width: 1px;
+    height: 18px;
+    margin-right: 4px;
+    background: #e4e4e7;
 }
 
 .tab,
@@ -32,6 +58,13 @@
     font-weight: 500;
     white-space: nowrap;
     border-bottom: 2px solid transparent;
+}
+
+@media (max-width: 640px) and (pointer: coarse) {
+    .tab,
+    .subtab {
+        padding: 13px 14px;
+    }
 }
 
 .tab:hover,

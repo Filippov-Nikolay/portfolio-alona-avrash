@@ -15,7 +15,10 @@ export function AdminNav() {
         <nav className={styles.nav}>
             <ul className={styles.pageTabs}>
                 {ADMIN_NAV.map((page) => (
-                    <li key={page.slug}>
+                    <li key={page.slug} className={styles.tabItem}>
+                        {page.slug === "global" && (
+                            <span className={styles.divider} aria-hidden="true" />
+                        )}
                         <Link
                             href={`/${page.slug}/${page.sections[0].slug}`}
                             className={cn(

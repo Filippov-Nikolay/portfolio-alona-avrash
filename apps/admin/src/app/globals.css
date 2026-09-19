@@ -17,3 +17,9 @@ body {
 main {
     padding: 24px;
 }
+
+@media (max-width: 640px) {
+    main {
+        padding: 16px;
+    }
+}

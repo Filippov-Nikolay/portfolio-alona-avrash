@@ -285,7 +285,7 @@
 }
 
 .actionIcon {
-    display: none;
+    display: inline-flex;
 }
 
 @media (max-width: 640px) {
@@ -324,10 +324,6 @@
         width: 44px;
         height: 44px;
         padding: 0;
-    }
-
-    .actionIcon {
-        display: inline-flex;
     }
 
     .actionLabel {

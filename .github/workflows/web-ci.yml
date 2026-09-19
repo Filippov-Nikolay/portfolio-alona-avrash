@@ -1,0 +1,54 @@
+name: Web CI
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - "apps/web/**"
+            - "packages/ui/**"
+            - "packages/content-schema/**"
+            - "packages/content-data/**"
+            - "pnpm-lock.yaml"
+            - "pnpm-workspace.yaml"
+            - "package.json"
+            - ".github/workflows/web-ci.yml"
+    pull_request:
+        branches: [main]
+        paths:
+            - "apps/web/**"
+            - "packages/ui/**"
+            - "packages/content-schema/**"
+            - "packages/content-data/**"
+            - "pnpm-lock.yaml"
+            - "pnpm-workspace.yaml"
+            - "package.json"
+            - ".github/workflows/web-ci.yml"
+
+jobs:
+    verify:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: "pnpm"
+
+            - run: pnpm install --frozen-lockfile
+
+            - uses: actions/cache@v4
+              with:
+                  path: apps/web/.next/cache
+                  key: ${{ runner.os }}-nextjs-web-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/web/src/**', 'apps/web/messages/**', 'packages/**/src/**') }}
+                  restore-keys: |
+                      ${{ runner.os }}-nextjs-web-${{ hashFiles('pnpm-lock.yaml') }}-
+
+            - run: pnpm --filter @avrash/web run lint
+
+            - run: pnpm --filter @avrash/web run type-check
+
+            - run: pnpm --filter @avrash/web run build

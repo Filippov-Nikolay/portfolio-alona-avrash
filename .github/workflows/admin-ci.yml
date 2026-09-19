@@ -1,0 +1,54 @@
+name: Admin CI
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - "apps/admin/**"
+            - "packages/ui/**"
+            - "packages/content-schema/**"
+            - "packages/content-data/**"
+            - "pnpm-lock.yaml"
+            - "pnpm-workspace.yaml"
+            - "package.json"
+            - ".github/workflows/admin-ci.yml"
+    pull_request:
+        branches: [main]
+        paths:
+            - "apps/admin/**"
+            - "packages/ui/**"
+            - "packages/content-schema/**"
+            - "packages/content-data/**"
+            - "pnpm-lock.yaml"
+            - "pnpm-workspace.yaml"
+            - "package.json"
+            - ".github/workflows/admin-ci.yml"
+
+jobs:
+    verify:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: "pnpm"
+
+            - run: pnpm install --frozen-lockfile
+
+            - uses: actions/cache@v4
+              with:
+                  path: apps/admin/.next/cache
+                  key: ${{ runner.os }}-nextjs-admin-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/admin/src/**', 'packages/**/src/**') }}
+                  restore-keys: |
+                      ${{ runner.os }}-nextjs-admin-${{ hashFiles('pnpm-lock.yaml') }}-
+
+            - run: pnpm --filter @avrash/admin run lint
+
+            - run: pnpm --filter @avrash/admin run type-check
+
+            - run: pnpm --filter @avrash/admin run build

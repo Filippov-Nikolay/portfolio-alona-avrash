@@ -15,8 +15,13 @@ its Analytics page shows a "not connected" state until `ANALYTICS_WORKER_URL` /
 
 ## Endpoints
 
-- `POST /event` - public, no auth (a beacon from any visitor's browser). Validated against the
-  event allowlist, rate-limited and deduped per session - see `src/handleEvent.ts`.
+- `POST /event` - public, no bearer auth (a beacon from any visitor's browser), but it does check
+  the request's `Origin` header against `ALLOWED_ORIGIN` and rejects a mismatch with `403` - a
+  CORS response header alone only constrains browsers, not curl or a script, so this is the actual
+  server-side gate. Not spoof-proof (a non-browser client can set `Origin` to whatever it wants),
+  but it stops a random third-party site's own visitors' browsers from posting events here.
+  Validated against the event allowlist, rate-limited and deduped per session too - see
+  `src/handleEvent.ts`.
 - `GET /analytics/overview?days=30` - daily `project_open`/`contact_success` counts.
 - `GET /analytics/projects?days=30` - per-project opens/external clicks/CTR, sorted by opens desc.
 - `GET /analytics/projects/:entityId?days=30` - one project's totals, daily timeline, top

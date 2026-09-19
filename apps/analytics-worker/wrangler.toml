@@ -2,8 +2,9 @@ name = "avrash-analytics-worker"
 main = "src/index.ts"
 compatibility_date = "2026-09-19"
 
-# Same-origin allowlist for the POST /event CORS check - set to the public
-# site's real origin before deploying.
+# Enforced server-side (src/security.ts's isAllowedOrigin), not just echoed
+# in the CORS response header - a request whose Origin doesn't match this
+# gets a 403. Set to the public site's real origin before deploying.
 [vars]
 ALLOWED_ORIGIN = "https://your-domain.com"
 

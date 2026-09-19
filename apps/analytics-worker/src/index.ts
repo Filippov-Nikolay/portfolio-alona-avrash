@@ -1,5 +1,6 @@
 import { handleEvent } from "./handleEvent";
 import { getOverview, getProjectDetail, getTopProjects, parseDays } from "./analyticsQueries";
+import { isAllowedOrigin, isAuthorizedRead } from "./security";
 
 export interface Env {
     DB: D1Database;
@@ -13,10 +14,6 @@ function corsHeaders(origin: string): HeadersInit {
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
     };
-}
-
-function isAuthorizedRead(request: Request, secret: string): boolean {
-    return request.headers.get("Authorization") === `Bearer ${secret}`;
 }
 
 async function handleEventRequest(
@@ -80,6 +77,9 @@ export default {
         const url = new URL(request.url);
 
         if (request.method === "POST" && url.pathname === "/event") {
+            if (!isAllowedOrigin(request, env.ALLOWED_ORIGIN)) {
+                return new Response("Forbidden", { status: 403, headers });
+            }
             return handleEventRequest(request, env, headers);
         }
 

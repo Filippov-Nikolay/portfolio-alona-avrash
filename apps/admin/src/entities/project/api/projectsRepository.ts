@@ -18,7 +18,10 @@ function nextId(projects: Project[]): number {
     return projects.reduce((max, project) => Math.max(max, project.id), -1) + 1;
 }
 
-function createProjectsRepository(
+// Exported for tests - lets them exercise the repository's actual business
+// logic (id assignment, sort order, not-found handling) against a fake,
+// in-memory readAll/writeAll instead of the real filesystem or R2.
+export function createProjectsRepository(
     readAll: () => Promise<Project[]>,
     writeAll: (projects: Project[]) => Promise<void>
 ): ProjectsRepository {

@@ -13,7 +13,8 @@ export interface OptionListRepository {
     remove(fileName: string, key: string): Promise<void>;
 }
 
-function createOptionListRepository(
+// Exported for tests - see the matching note in projectsRepository.ts.
+export function createOptionListRepository(
     readAll: (fileName: string) => Promise<OptionItem[]>,
     writeAll: (fileName: string, options: OptionItem[]) => Promise<void>
 ): OptionListRepository {

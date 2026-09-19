@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { Social } from "@avrash/content-schema";
 import { SocialLinks } from "@/entities/social/ui/SocialLinks";
 import { submitContactForm } from "@/shared/api/contactService";
+import { trackEvent } from "@/shared/analytics/analytics";
 import { siteConfig } from "@/shared/config/site.config";
 import { usePreloader } from "@/shared/providers";
 import { Container, Section } from "@/shared/ui";
@@ -69,7 +70,7 @@ export function ContactSection({ socials }: ContactSectionProps) {
         setSubmitState("submitting");
 
         try {
-            await submitContactForm({
+            const result = await submitContactForm({
                 name: String(formData.get("name") ?? "").trim(),
                 email: String(formData.get("email") ?? "").trim(),
                 phone: [countryCode, phoneNumber].filter(Boolean).join(" ") || undefined,
@@ -81,6 +82,9 @@ export function ContactSection({ socials }: ContactSectionProps) {
 
             form.reset();
             setSubmitState("success");
+            // A honeypot-caught bot submission gets the same "success" toast
+            // (see route.ts), but it's not a real contact - don't count it.
+            if (!result.honeypot) trackEvent("contact_success");
         } catch {
             setSubmitState("error");
         }

@@ -10,6 +10,7 @@ export interface ContactFormPayload {
 
 export interface ContactFormResult {
     accepted: true;
+    honeypot?: true;
 }
 
 export async function submitContactForm(payload: ContactFormPayload): Promise<ContactFormResult> {

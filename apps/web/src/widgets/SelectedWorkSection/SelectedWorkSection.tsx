@@ -9,6 +9,7 @@ import type { Project } from "@avrash/content-schema";
 import { Link } from "@/i18n/navigation";
 import { ShowcaseModal } from "@avrash/ui";
 import { Container, Section, ArrowIcon } from "@/shared/ui";
+import { trackEvent } from "@/shared/analytics/analytics";
 import { useMotionVariants } from "@/shared/hooks";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { fadeIn } from "@/shared/lib/motion/fade-in";
@@ -72,6 +73,11 @@ export function SelectedWorkSection({
 
     const selectedItem = selectedIndex === null ? null : (modalItems[selectedIndex] ?? null);
 
+    const openProject = (index: number) => {
+        setSelectedIndex(index);
+        trackEvent("project_open", { entityId: modalItems[index]?.slug });
+    };
+
     return (
         <Section id="selected-work" className={styles.section}>
             <Container>
@@ -104,11 +110,11 @@ export function SelectedWorkSection({
                                     role="button"
                                     tabIndex={0}
                                     aria-label={`${labels.viewLabel}: ${project.name}`}
-                                    onClick={() => setSelectedIndex(index)}
+                                    onClick={() => openProject(index)}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" || e.key === " ") {
                                             e.preventDefault();
-                                            setSelectedIndex(index);
+                                            openProject(index);
                                         }
                                     }}
                                 >
@@ -156,6 +162,9 @@ export function SelectedWorkSection({
                 item={selectedItem}
                 onClose={() => setSelectedIndex(null)}
                 labels={modalLabels}
+                onVisitWebsite={() =>
+                    trackEvent("project_external_click", { entityId: selectedItem?.slug })
+                }
             />
         </Section>
     );

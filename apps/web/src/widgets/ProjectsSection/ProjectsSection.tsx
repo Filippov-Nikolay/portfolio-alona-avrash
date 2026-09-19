@@ -7,6 +7,7 @@ import type { ShowcaseItem } from "@/shared/types";
 import type { Project, HomeProjectGalleryCard } from "@avrash/content-schema";
 import { ShowcaseModal } from "@avrash/ui";
 import { ArrowIcon, Button, Container, Section } from "@/shared/ui";
+import { trackEvent } from "@/shared/analytics/analytics";
 import { cn } from "@/shared/lib/cn";
 import { useProjectsSectionAnimations } from "./useProjectsSectionAnimations";
 import styles from "./ProjectsSection.module.scss";
@@ -131,6 +132,9 @@ export function ProjectsSection({
                                     }
 
                                     setSelectedIndex(sourceIndex);
+                                    trackEvent("project_open", {
+                                        entityId: modalItems[sourceIndex]?.slug,
+                                    });
                                 }}
                             >
                                 <span className={styles.interactionLayer} data-project-interaction>
@@ -172,6 +176,9 @@ export function ProjectsSection({
                 item={selectedItem}
                 onClose={() => setSelectedIndex(null)}
                 labels={modalLabels}
+                onVisitWebsite={() =>
+                    trackEvent("project_external_click", { entityId: selectedItem?.slug })
+                }
             />
         </Section>
     );

@@ -16,6 +16,7 @@ import { ArrowV2Icon, Container } from "@/shared/ui";
 import { CtaSection } from "@/widgets/CtaSection";
 import { cn } from "@/shared/lib/cn";
 import { usePreloader } from "@/shared/providers";
+import { trackEvent } from "@/shared/analytics/analytics";
 import { useMotionVariants } from "@/shared/hooks";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { fadeIn } from "@/shared/lib/motion/fade-in";
@@ -155,11 +156,15 @@ export function WorksCatalog({
     const selectedItem = selectedId === null ? null : (modalItemsById.get(selectedId) ?? null);
     const selectedSlug = selectedItem?.slug ?? null;
 
-    const openProject = useCallback((id: number) => {
-        setSelectedId(id);
-        setActiveTab("overview");
-        setLightboxIndex(null);
-    }, []);
+    const openProject = useCallback(
+        (id: number) => {
+            setSelectedId(id);
+            setActiveTab("overview");
+            setLightboxIndex(null);
+            trackEvent("project_open", { entityId: modalItemsById.get(id)?.slug });
+        },
+        [modalItemsById]
+    );
 
     const closeProject = useCallback(() => {
         setSelectedId(null);
@@ -330,6 +335,9 @@ export function WorksCatalog({
                 initialLightboxIndex={lightboxIndex}
                 onLightboxChange={setLightboxIndex}
                 labels={modalLabels}
+                onVisitWebsite={() =>
+                    trackEvent("project_external_click", { entityId: selectedItem?.slug })
+                }
             />
         </Container>
     );

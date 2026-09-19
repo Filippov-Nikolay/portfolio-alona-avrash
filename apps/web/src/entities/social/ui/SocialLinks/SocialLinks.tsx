@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import type { Social } from "@avrash/content-schema";
+import { trackEvent } from "@/shared/analytics/analytics";
 import { cn } from "@/shared/lib/cn";
 import styles from "./SocialLinks.module.scss";
 
@@ -34,6 +35,7 @@ export function SocialLinks({
                         aria-label={social.logo.alt ?? social.id}
                         className={styles.link}
                         style={{ "--social-icon": `url(${social.logo.src})` } as CSSProperties}
+                        onClick={() => trackEvent("social_click", { entityId: social.id })}
                     >
                         <span className={styles.icon} aria-hidden="true" />
                     </a>

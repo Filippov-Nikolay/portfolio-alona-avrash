@@ -50,9 +50,11 @@ export async function POST(request: Request) {
 
     // A filled-in honeypot means a bot submitted this, not a person - report
     // success without actually sending anything, so it doesn't learn to
-    // leave the field alone next time.
+    // leave the field alone next time. `honeypot: true` is only read by our
+    // own client (to skip the contact_success analytics event) - it doesn't
+    // change the bot-facing response in any way that would tip it off.
     if (asTrimmedString(body.company)) {
-        return NextResponse.json({ accepted: true });
+        return NextResponse.json({ accepted: true, honeypot: true });
     }
 
     const name = asTrimmedString(body.name);

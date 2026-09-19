@@ -10,6 +10,7 @@ import { useMotionVariants } from "@/shared/hooks/useMotionVariants";
 import { slideDown } from "@/shared/lib/motion/slide-down";
 import { scrollToTop } from "@/shared/lib/scroll";
 import { usePreloader } from "@/shared/providers";
+import { trackEvent } from "@/shared/analytics/analytics";
 import { cn } from "@/shared/lib/cn";
 import styles from "./Header.module.scss";
 import { useServicesHeaderBandController } from "./useServicesHeaderBandController";
@@ -170,6 +171,7 @@ export function Header() {
         e.preventDefault();
         setCvClicked(true);
         if (closeMenu) setMenuOpen(false);
+        trackEvent("cv_download");
         setTimeout(() => triggerCvDownload(siteConfig.links.cv), CV_DOWNLOAD_DELAY_MS);
     }
 

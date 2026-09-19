@@ -123,6 +123,7 @@ interface ModalContentProps {
     initialLightboxIndex?: number | null;
     onLightboxChange?: (index: number | null) => void;
     labels: ShowcaseModalLabels;
+    onVisitWebsite?: () => void;
 }
 
 function ModalContent({
@@ -133,6 +134,7 @@ function ModalContent({
     initialLightboxIndex,
     onLightboxChange,
     labels,
+    onVisitWebsite,
 }: ModalContentProps) {
     const color = ACCENT_COLORS[item.color ?? "purple"];
     const hasGallery = item.gallery.length > 0;
@@ -341,6 +343,7 @@ function ModalContent({
                             target="_blank"
                             rel="noopener noreferrer"
                             rightIcon={<ArrowIcon className={styles.arrow} />}
+                            onClick={onVisitWebsite}
                         >
                             {labels.viewWebsite}
                         </Button>
@@ -533,6 +536,7 @@ interface ShowcaseModalProps {
     initialLightboxIndex?: number | null;
     onLightboxChange?: (index: number | null) => void;
     labels: ShowcaseModalLabels;
+    onVisitWebsite?: () => void;
 }
 
 export function ShowcaseModal({
@@ -543,6 +547,7 @@ export function ShowcaseModal({
     initialLightboxIndex,
     onLightboxChange,
     labels,
+    onVisitWebsite,
 }: ShowcaseModalProps) {
     const mounted = useMounted();
 
@@ -599,6 +604,7 @@ export function ShowcaseModal({
                             initialLightboxIndex={initialLightboxIndex}
                             onLightboxChange={onLightboxChange}
                             labels={labels}
+                            onVisitWebsite={onVisitWebsite}
                         />
                     </div>
                 </m.div>

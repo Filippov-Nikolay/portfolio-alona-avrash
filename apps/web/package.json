@@ -27,6 +27,7 @@
         "next-intl": "^4.12.0",
         "react": "19.2.4",
         "react-dom": "19.2.4",
+        "resend": "^6.28.1",
         "sass": "^1.99.0",
         "@avrash/content-data": "workspace:*",
         "@avrash/content-schema": "workspace:*",

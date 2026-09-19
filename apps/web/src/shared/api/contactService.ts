@@ -9,18 +9,18 @@ export interface ContactFormPayload {
 
 export interface ContactFormResult {
     accepted: true;
-    submissionId: string;
 }
 
 export async function submitContactForm(payload: ContactFormPayload): Promise<ContactFormResult> {
-    await new Promise((resolve) => window.setTimeout(resolve, 450));
+    const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
 
-    if (process.env.NODE_ENV === "development") {
-        console.info("Contact form payload (API pending):", payload);
+    if (!response.ok) {
+        throw new Error("Failed to send the contact form.");
     }
 
-    return {
-        accepted: true,
-        submissionId: crypto.randomUUID(),
-    };
+    return response.json() as Promise<ContactFormResult>;
 }

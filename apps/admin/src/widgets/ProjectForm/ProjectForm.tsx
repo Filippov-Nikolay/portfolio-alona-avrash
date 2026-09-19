@@ -254,6 +254,12 @@ export function ProjectForm({
     }, []);
 
     useEffect(() => {
+        document.documentElement.style.removeProperty("overflow");
+        document.body.style.removeProperty("overflow");
+        document.documentElement.style.removeProperty("padding-right");
+    }, []);
+
+    useEffect(() => {
         if (!isDirty) return;
         writeDraft(draftId, snapshotData);
         // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -86,10 +86,6 @@ export function PreviewStage({ input, categoryOptions, toolOptions, onClose }: P
         const body = document.body;
         const scrollbarWidth = window.innerWidth - html.clientWidth;
 
-        const previousHtmlOverflow = html.style.overflow;
-        const previousBodyOverflow = body.style.overflow;
-        const previousHtmlPaddingRight = html.style.paddingRight;
-
         html.style.overflow = "hidden";
         body.style.overflow = "hidden";
         if (scrollbarWidth > 0) {
@@ -97,9 +93,9 @@ export function PreviewStage({ input, categoryOptions, toolOptions, onClose }: P
         }
 
         return () => {
-            html.style.overflow = previousHtmlOverflow;
-            body.style.overflow = previousBodyOverflow;
-            html.style.paddingRight = previousHtmlPaddingRight;
+            html.style.removeProperty("overflow");
+            body.style.removeProperty("overflow");
+            html.style.removeProperty("padding-right");
         };
     }, []);
 

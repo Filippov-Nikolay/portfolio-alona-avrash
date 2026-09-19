@@ -1,6 +1,7 @@
 "use server";
 
 import path from "node:path";
+import { requireAdminSession } from "@/shared/auth/requireAdminSession";
 import { getImageStorage } from "@/shared/storage/imageStorage";
 
 const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg"]);
@@ -15,6 +16,8 @@ function sanitizeBaseName(name: string): string {
 }
 
 export async function uploadProjectImageAction(file: File): Promise<{ src: string }> {
+    await requireAdminSession();
+
     if (!file.type.startsWith("image/")) {
         throw new Error("Only image files can be uploaded.");
     }

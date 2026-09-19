@@ -1,13 +1,17 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifyCredentials } from "@/shared/auth/credentials";
+import { getClientIp, isRateLimited } from "@/shared/lib/rateLimit";
 import {
     createSessionToken,
     SESSION_COOKIE_NAME,
     SESSION_MAX_AGE_SECONDS,
 } from "@/shared/auth/session";
+
+const LOGIN_RATE_LIMIT_MAX = 5;
+const LOGIN_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
 export type LoginState =
     | { status: "idle" }
@@ -23,6 +27,15 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
     // keys its shake animation off this so it replays every time, not just
     // when the text happens to change.
     const attempt = Date.now();
+
+    const ip = getClientIp(await headers());
+    if (isRateLimited(`login:${ip}`, LOGIN_RATE_LIMIT_MAX, LOGIN_RATE_LIMIT_WINDOW_MS)) {
+        return {
+            status: "error",
+            error: "Too many attempts - try again in a few minutes.",
+            attempt,
+        };
+    }
 
     if (!login || !password) {
         return { status: "error", error: "Enter your login and password.", attempt };

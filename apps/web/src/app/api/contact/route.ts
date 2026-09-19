@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { getClientIp, isRateLimited } from "@/shared/lib/rateLimit";
 
 interface ContactRequestBody {
     name?: unknown;
@@ -8,9 +9,15 @@ interface ContactRequestBody {
     message?: unknown;
     locale?: unknown;
     submittedAt?: unknown;
+    // Honeypot - a field real visitors never see or fill in (hidden
+    // off-screen in ContactSection.tsx). Bots that blindly fill every input
+    // they can find end up putting something here.
+    company?: unknown;
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
 function asTrimmedString(value: unknown): string {
     return typeof value === "string" ? value.trim() : "";
@@ -26,11 +33,26 @@ function escapeHtml(value: string): string {
 }
 
 export async function POST(request: Request) {
+    const ip = getClientIp(request.headers);
+    if (isRateLimited(`contact:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS)) {
+        return NextResponse.json(
+            { error: "Too many requests - try again later." },
+            { status: 429 }
+        );
+    }
+
     let body: ContactRequestBody;
     try {
         body = await request.json();
     } catch {
         return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+    }
+
+    // A filled-in honeypot means a bot submitted this, not a person - report
+    // success without actually sending anything, so it doesn't learn to
+    // leave the field alone next time.
+    if (asTrimmedString(body.company)) {
+        return NextResponse.json({ accepted: true });
     }
 
     const name = asTrimmedString(body.name);

@@ -76,6 +76,7 @@ export function ContactSection({ socials }: ContactSectionProps) {
                 message: String(formData.get("message") ?? "").trim(),
                 locale,
                 submittedAt: new Date().toISOString(),
+                company: String(formData.get("company") ?? "").trim(),
             });
 
             form.reset();
@@ -137,6 +138,17 @@ export function ContactSection({ socials }: ContactSectionProps) {
                             data-contact-form
                             noValidate
                         >
+                            <div className={styles.honeypot} aria-hidden="true">
+                                <label htmlFor="contact-company">Company</label>
+                                <input
+                                    id="contact-company"
+                                    name="company"
+                                    type="text"
+                                    tabIndex={-1}
+                                    autoComplete="off"
+                                />
+                            </div>
+
                             <div className={styles.field} data-contact-form-item>
                                 <label htmlFor="contact-name">{t("form.name")}</label>
                                 <div className={styles.control}>

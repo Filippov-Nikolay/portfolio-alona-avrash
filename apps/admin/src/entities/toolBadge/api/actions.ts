@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 import type { ToolBadgeOption } from "@avrash/content-schema";
 import { addOption, removeOption } from "@/entities/optionList/api/optionListRepository";
 import { listProjects } from "@/entities/project/api/projectsRepository";
+import { requireAdminSession } from "@/shared/auth/requireAdminSession";
 import { notifyContentChanged } from "@/shared/lib/notifyWeb";
 
 const TOOL_BADGES_FILE = "tool-badges.json";
 
 export async function addToolBadgeAction(label: string): Promise<ToolBadgeOption> {
+    await requireAdminSession();
     const option = (await addOption(TOOL_BADGES_FILE, label)) as ToolBadgeOption;
     revalidatePath("/global/tool-badges");
     revalidatePath("/works/projects/new");
@@ -17,6 +19,7 @@ export async function addToolBadgeAction(label: string): Promise<ToolBadgeOption
 }
 
 export async function removeToolBadgeAction(key: string): Promise<void> {
+    await requireAdminSession();
     const projects = await listProjects();
     const usedBy = projects.filter((project) => project.tools?.includes(key)).length;
 

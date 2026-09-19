@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 import type { CategoryOption } from "@avrash/content-schema";
 import { addOption, removeOption } from "@/entities/optionList/api/optionListRepository";
 import { listProjects } from "@/entities/project/api/projectsRepository";
+import { requireAdminSession } from "@/shared/auth/requireAdminSession";
 import { notifyContentChanged } from "@/shared/lib/notifyWeb";
 
 const CATEGORIES_FILE = "categories.json";
 
 export async function addCategoryAction(label: string): Promise<CategoryOption> {
+    await requireAdminSession();
     const option = (await addOption(CATEGORIES_FILE, label)) as CategoryOption;
     revalidatePath("/global/categories");
     revalidatePath("/works/projects/new");
@@ -17,6 +19,7 @@ export async function addCategoryAction(label: string): Promise<CategoryOption> 
 }
 
 export async function removeCategoryAction(key: string): Promise<void> {
+    await requireAdminSession();
     const projects = await listProjects();
     const usedBy = projects.filter((project) =>
         (project.categories as string[]).includes(key)

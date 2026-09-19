@@ -5,6 +5,7 @@ export interface ContactFormPayload {
     message: string;
     locale: string;
     submittedAt: string;
+    company?: string;
 }
 
 export interface ContactFormResult {

@@ -25,7 +25,7 @@ export function AdminNav({ buildInfo }: AdminNavProps) {
             <ul className={styles.pageTabs}>
                 {ADMIN_NAV.map((page) => (
                     <li key={page.slug} className={styles.tabItem}>
-                        {page.slug === "global" && (
+                        {(page.slug === "home" || page.slug === "global") && (
                             <span className={styles.divider} aria-hidden="true" />
                         )}
                         <Link

@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { BuildInfo as BuildInfoData } from "@/shared/config/buildInfo";
 import { ADMIN_NAV } from "@/shared/config/nav";
 import { cn } from "@/shared/lib/cn";
 import { logoutAction } from "@/entities/session/api/actions";
+import { BuildInfo } from "@/widgets/BuildInfo";
 import styles from "./AdminNav.module.css";
 
-export function AdminNav() {
+interface AdminNavProps {
+    buildInfo: BuildInfoData;
+}
+
+export function AdminNav({ buildInfo }: AdminNavProps) {
     const pathname = usePathname();
     const currentPageSlug = pathname.split("/")[1];
     const currentPage = ADMIN_NAV.find((page) => page.slug === currentPageSlug) ?? ADMIN_NAV[0];
@@ -39,6 +45,9 @@ export function AdminNav() {
                             Log out
                         </button>
                     </form>
+                </li>
+                <li className={styles.tabItem}>
+                    <BuildInfo data={buildInfo} />
                 </li>
             </ul>
 

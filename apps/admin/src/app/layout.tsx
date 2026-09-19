@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getBuildInfo } from "@/shared/config/buildInfo";
 import { AdminNav } from "@/widgets/AdminNav";
 import "./globals.css";
 // Design tokens the preview stage's WorksCard/ShowcaseModal rely on (see
@@ -15,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="en">
             <body>
-                <AdminNav />
+                <AdminNav buildInfo={getBuildInfo()} />
                 <main>{children}</main>
             </body>
         </html>

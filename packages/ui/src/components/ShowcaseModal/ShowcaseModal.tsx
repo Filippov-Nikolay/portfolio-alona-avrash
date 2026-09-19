@@ -583,7 +583,13 @@ export function ShowcaseModal({
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.22 }}
                 >
-                    <div className={styles.overlayInner} onClick={onClose}>
+                    <div
+                        className={styles.overlayInner}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onClose();
+                        }}
+                    >
                         <ModalContent
                             key={item.id}
                             item={item}

@@ -9,6 +9,7 @@
     flex-direction: column;
     gap: 10px;
     position: relative;
+    overflow-anchor: none;
 }
 
 .empty {

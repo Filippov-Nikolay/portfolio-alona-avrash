@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Reorder, useDragControls } from "framer-motion";
 import { ASSET_BASE_URL, assetUrl } from "@/shared/config/assets";
 import { Button } from "@/shared/ui/Button";
@@ -9,19 +9,27 @@ import { cn } from "@/shared/lib/cn";
 import { PAIR_MODE_OPTIONS } from "@/entities/project/model/constants";
 import { uploadProjectImageAction } from "@/entities/project/api/uploadProjectImage";
 import { useAutoScrollWhileDragging } from "./useAutoScrollWhileDragging";
+import { usePointerYTracker } from "./usePointerYTracker";
 import type { ImageDraft } from "./ImageDraft";
 import styles from "./ImageGalleryEditor.module.css";
 
 interface ImageGalleryEditorProps {
     images: ImageDraft[];
     onChange: (images: ImageDraft[]) => void;
+    onDraggingChange?: (dragging: boolean) => void;
+    scrollBoundsRef?: React.RefObject<HTMLElement | null>;
 }
 
 function nextDraftId(images: ImageDraft[]): number {
     return images.reduce((max, image) => Math.max(max, image.id), -1) + 1;
 }
 
-export function ImageGalleryEditor({ images, onChange }: ImageGalleryEditorProps) {
+export function ImageGalleryEditor({
+    images,
+    onChange,
+    onDraggingChange,
+    scrollBoundsRef,
+}: ImageGalleryEditorProps) {
     function updateById(id: number, patch: Partial<ImageDraft>) {
         onChange(images.map((image) => (image.id === id ? { ...image, ...patch } : image)));
     }
@@ -52,6 +60,9 @@ export function ImageGalleryEditor({ images, onChange }: ImageGalleryEditorProps
         ]);
     }
 
+    const listRef = useRef<HTMLDivElement>(null);
+    const pointerY = usePointerYTracker();
+
     return (
         <div className={styles.list}>
             {images.length === 0 && <p className={styles.empty}>No images yet.</p>}
@@ -59,6 +70,7 @@ export function ImageGalleryEditor({ images, onChange }: ImageGalleryEditorProps
             {images.length > 0 && (
                 <Reorder.Group
                     as="div"
+                    ref={listRef}
                     axis="y"
                     values={images}
                     onReorder={onChange}
@@ -69,6 +81,10 @@ export function ImageGalleryEditor({ images, onChange }: ImageGalleryEditorProps
                             key={image.id}
                             image={image}
                             order={index + 1}
+                            constraintsRef={listRef}
+                            pointerY={pointerY}
+                            onDraggingChange={onDraggingChange}
+                            scrollBoundsRef={scrollBoundsRef}
                             onUpdate={(patch) => updateById(image.id, patch)}
                             onSetHero={() => setHero(image.id)}
                             onRemove={() => remove(image.id)}
@@ -145,15 +161,29 @@ function StarIcon({ filled }: { filled: boolean }) {
 interface ImageRowProps {
     image: ImageDraft;
     order: number;
+    constraintsRef: React.RefObject<HTMLDivElement | null>;
+    pointerY: React.RefObject<number>;
+    onDraggingChange?: (dragging: boolean) => void;
+    scrollBoundsRef?: React.RefObject<HTMLElement | null>;
     onUpdate: (patch: Partial<ImageDraft>) => void;
     onSetHero: () => void;
     onRemove: () => void;
 }
 
-function ImageRow({ image, order, onUpdate, onSetHero, onRemove }: ImageRowProps) {
+function ImageRow({
+    image,
+    order,
+    constraintsRef,
+    pointerY,
+    onDraggingChange,
+    scrollBoundsRef,
+    onUpdate,
+    onSetHero,
+    onRemove,
+}: ImageRowProps) {
     const dragControls = useDragControls();
     const [isDragging, setIsDragging] = useState(false);
-    useAutoScrollWhileDragging(isDragging);
+    useAutoScrollWhileDragging(isDragging, pointerY, scrollBoundsRef);
 
     const [localPreview, setLocalPreview] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -189,8 +219,19 @@ function ImageRow({ image, order, onUpdate, onSetHero, onRemove }: ImageRowProps
             value={image}
             dragListener={false}
             dragControls={dragControls}
-            onDragStart={() => setIsDragging(true)}
-            onDragEnd={() => setIsDragging(false)}
+            dragConstraints={constraintsRef}
+            dragElastic={0}
+            dragMomentum={false}
+            dragTransition={{ bounceStiffness: 500, bounceDamping: 40 }}
+            transition={{ type: "spring", stiffness: 600, damping: 50, mass: 0.5 }}
+            onDragStart={() => {
+                setIsDragging(true);
+                onDraggingChange?.(true);
+            }}
+            onDragEnd={() => {
+                setIsDragging(false);
+                onDraggingChange?.(false);
+            }}
             className={cn(styles.row, isDragging && styles.rowDragging)}
         >
             <div className={styles.rowHeader}>

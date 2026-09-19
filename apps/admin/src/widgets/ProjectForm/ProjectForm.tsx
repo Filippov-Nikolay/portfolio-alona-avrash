@@ -273,6 +273,8 @@ export function ProjectForm({
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
     const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
     const [galleryExpanded, setGalleryExpanded] = useState(true);
+    const [galleryDragging, setGalleryDragging] = useState(false);
+    const galleryScrollBoundsRef = useRef<HTMLElement>(null);
 
     function goToProjects() {
         leftIntentionally.current = true;
@@ -564,7 +566,7 @@ export function ProjectForm({
                     />
                 </section>
 
-                <section className={styles.section}>
+                <section className={styles.section} ref={galleryScrollBoundsRef}>
                     <button
                         type="button"
                         className={styles.collapsibleHeader}
@@ -586,7 +588,14 @@ export function ProjectForm({
                             <ChevronIcon />
                         </span>
                     </button>
-                    {galleryExpanded && <ImageGalleryEditor images={images} onChange={setImages} />}
+                    {galleryExpanded && (
+                        <ImageGalleryEditor
+                            images={images}
+                            onChange={setImages}
+                            onDraggingChange={setGalleryDragging}
+                            scrollBoundsRef={galleryScrollBoundsRef}
+                        />
+                    )}
                 </section>
 
                 {error && <p className={styles.error}>{error}</p>}
@@ -605,7 +614,7 @@ export function ProjectForm({
                     </section>
                 )}
 
-                <div className={styles.actions}>
+                <div className={cn(styles.actions, galleryDragging && styles.actionsDragging)}>
                     <div className={styles.actionsLeft}>
                         <Button
                             variant="ghost"

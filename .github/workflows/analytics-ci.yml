@@ -1,0 +1,39 @@
+name: Analytics Worker CI
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - "apps/analytics-worker/**"
+            - "pnpm-lock.yaml"
+            - "pnpm-workspace.yaml"
+            - "package.json"
+            - ".github/workflows/analytics-ci.yml"
+    pull_request:
+        branches: [main]
+        paths:
+            - "apps/analytics-worker/**"
+            - "pnpm-lock.yaml"
+            - "pnpm-workspace.yaml"
+            - "package.json"
+            - ".github/workflows/analytics-ci.yml"
+
+jobs:
+    verify:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: "pnpm"
+
+            - run: pnpm install --frozen-lockfile
+
+            - run: pnpm --filter @avrash/analytics-worker run type-check
+
+            - run: pnpm --filter @avrash/analytics-worker run test

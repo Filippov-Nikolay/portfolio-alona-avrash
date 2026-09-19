@@ -66,17 +66,22 @@ export function fillDailyCounts(
     return points;
 }
 
+const TOP_BREAKDOWN_LIMIT = 5;
+
 export function toCountryBreakdown(rows: { country: string; count: number }[]): CountryBreakdown[] {
     const total = rows.reduce((sum, row) => sum + row.count, 0);
-    return rows.map((row) => ({
-        country: row.country,
-        percent: total > 0 ? row.count / total : 0,
-    }));
+    return [...rows]
+        .sort((a, b) => b.count - a.count)
+        .slice(0, TOP_BREAKDOWN_LIMIT)
+        .map((row) => ({ country: row.country, percent: total > 0 ? row.count / total : 0 }));
 }
 
 export function toLocaleBreakdown(rows: { locale: string; count: number }[]): LocaleBreakdown[] {
     const total = rows.reduce((sum, row) => sum + row.count, 0);
-    return rows.map((row) => ({ locale: row.locale, percent: total > 0 ? row.count / total : 0 }));
+    return [...rows]
+        .sort((a, b) => b.count - a.count)
+        .slice(0, TOP_BREAKDOWN_LIMIT)
+        .map((row) => ({ locale: row.locale, percent: total > 0 ? row.count / total : 0 }));
 }
 
 // Clamped so a malformed/absent ?days= query param can't turn into an
@@ -179,14 +184,15 @@ export async function getProjectDetail(
         .bind(entityId, since)
         .all<{ day: string; count: number }>();
 
+    // No LIMIT here - toCountryBreakdown/toLocaleBreakdown need every row to
+    // compute an accurate percentage denominator, and do their own top-5
+    // truncation for display after that.
     const countryRows = await db
         .prepare(
             `SELECT country, COUNT(*) as count
              FROM analytics_events
              WHERE entity_id = ? AND event_name = 'project_open' AND created_at > ? AND country IS NOT NULL
-             GROUP BY country
-             ORDER BY count DESC
-             LIMIT 5`
+             GROUP BY country`
         )
         .bind(entityId, since)
         .all<{ country: string; count: number }>();
@@ -196,9 +202,7 @@ export async function getProjectDetail(
             `SELECT locale, COUNT(*) as count
              FROM analytics_events
              WHERE entity_id = ? AND event_name = 'project_open' AND created_at > ?
-             GROUP BY locale
-             ORDER BY count DESC
-             LIMIT 5`
+             GROUP BY locale`
         )
         .bind(entityId, since)
         .all<{ locale: string; count: number }>();

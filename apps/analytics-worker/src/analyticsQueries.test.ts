@@ -79,6 +79,36 @@ describe("toCountryBreakdown / toLocaleBreakdown", () => {
             { locale: "en", percent: 0 },
         ]);
     });
+
+    it("divides by the full total, not just the top 5 shown", () => {
+        const rows = [
+            { country: "PL", count: 30 },
+            { country: "FI", count: 20 },
+            { country: "DE", count: 10 },
+            { country: "US", count: 10 },
+            { country: "GB", count: 10 },
+            { country: "FR", count: 10 },
+            { country: "UA", count: 10 },
+        ];
+
+        const result = toCountryBreakdown(rows);
+
+        expect(result).toHaveLength(5);
+        expect(result[0]).toEqual({ country: "PL", percent: 0.3 });
+        expect(result[1]).toEqual({ country: "FI", percent: 0.2 });
+    });
+
+    it("returns only the top 5 by count, dropping the rest", () => {
+        const rows = Array.from({ length: 8 }, (_, i) => ({
+            country: `C${i}`,
+            count: 8 - i,
+        }));
+
+        const result = toCountryBreakdown(rows);
+
+        expect(result).toHaveLength(5);
+        expect(result.map((row) => row.country)).toEqual(["C0", "C1", "C2", "C3", "C4"]);
+    });
 });
 
 describe("parseDays", () => {

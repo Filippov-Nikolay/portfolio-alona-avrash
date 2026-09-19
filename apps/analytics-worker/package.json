@@ -1,0 +1,21 @@
+{
+    "name": "@avrash/analytics-worker",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "type-check": "tsc --noEmit",
+        "test": "vitest run",
+        "dev": "wrangler dev",
+        "deploy": "wrangler deploy"
+    },
+    "dependencies": {
+        "zod": "^4.6.5"
+    },
+    "devDependencies": {
+        "@cloudflare/workers-types": "^5.20260919.1",
+        "typescript": "^5",
+        "vitest": "^5.0.1",
+        "wrangler": "^4.135.0"
+    }
+}

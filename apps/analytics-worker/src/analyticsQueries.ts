@@ -1,0 +1,215 @@
+import type { D1Like } from "./db";
+
+export interface TimelinePoint {
+    date: string;
+    count: number;
+}
+
+export interface DualTimelinePoint {
+    date: string;
+    projectOpens: number;
+    contacts: number;
+}
+
+export interface AnalyticsOverview {
+    projectOpens: number;
+    contacts: number;
+    timeline: DualTimelinePoint[];
+}
+
+export interface ProjectSummary {
+    entityId: string;
+    opens: number;
+    externalClicks: number;
+    ctr: number;
+}
+
+export interface CountryBreakdown {
+    country: string;
+    percent: number;
+}
+
+export interface LocaleBreakdown {
+    locale: string;
+    percent: number;
+}
+
+export interface ProjectDetail extends ProjectSummary {
+    timeline: TimelinePoint[];
+    countries: CountryBreakdown[];
+    languages: LocaleBreakdown[];
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function computeCtr(opens: number, externalClicks: number): number {
+    return opens > 0 ? externalClicks / opens : 0;
+}
+
+export function dayKey(date: Date): string {
+    return date.toISOString().slice(0, 10);
+}
+
+// D1 only returns rows for days that actually had events - this fills the
+// gaps with zeros so the chart gets one point per day in range, not a
+// timeline that silently skips quiet days.
+export function fillDailyCounts(
+    rows: { day: string; count: number }[],
+    days: number
+): TimelinePoint[] {
+    const byDay = new Map(rows.map((row) => [row.day, row.count]));
+    const points: TimelinePoint[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+        const date = dayKey(new Date(Date.now() - i * DAY_MS));
+        points.push({ date, count: byDay.get(date) ?? 0 });
+    }
+    return points;
+}
+
+export function toCountryBreakdown(rows: { country: string; count: number }[]): CountryBreakdown[] {
+    const total = rows.reduce((sum, row) => sum + row.count, 0);
+    return rows.map((row) => ({
+        country: row.country,
+        percent: total > 0 ? row.count / total : 0,
+    }));
+}
+
+export function toLocaleBreakdown(rows: { locale: string; count: number }[]): LocaleBreakdown[] {
+    const total = rows.reduce((sum, row) => sum + row.count, 0);
+    return rows.map((row) => ({ locale: row.locale, percent: total > 0 ? row.count / total : 0 }));
+}
+
+// Clamped so a malformed/absent ?days= query param can't turn into an
+// unbounded table scan.
+export function parseDays(raw: string | null): number {
+    const value = Number(raw);
+    if (!Number.isInteger(value) || value < 1) return 30;
+    return Math.min(value, 365);
+}
+
+function daysAgo(days: number): number {
+    return Date.now() - days * DAY_MS;
+}
+
+export async function getOverview(db: D1Like, days: number): Promise<AnalyticsOverview> {
+    const since = daysAgo(days);
+    const { results } = await db
+        .prepare(
+            `SELECT event_name as eventName, date(created_at / 1000, 'unixepoch') as day, COUNT(*) as count
+             FROM analytics_events
+             WHERE event_name IN ('project_open', 'contact_success') AND created_at > ?
+             GROUP BY event_name, day`
+        )
+        .bind(since)
+        .all<{ eventName: string; day: string; count: number }>();
+
+    const opensRows = results.filter((row) => row.eventName === "project_open");
+    const contactsRows = results.filter((row) => row.eventName === "contact_success");
+    const opens = fillDailyCounts(opensRows, days);
+    const contacts = fillDailyCounts(contactsRows, days);
+
+    return {
+        projectOpens: opens.reduce((sum, point) => sum + point.count, 0),
+        contacts: contacts.reduce((sum, point) => sum + point.count, 0),
+        timeline: opens.map((point, i) => ({
+            date: point.date,
+            projectOpens: point.count,
+            contacts: contacts[i]!.count,
+        })),
+    };
+}
+
+export async function getTopProjects(
+    db: D1Like,
+    days: number,
+    limit = 20
+): Promise<ProjectSummary[]> {
+    const since = daysAgo(days);
+    const { results } = await db
+        .prepare(
+            `SELECT entity_id as entityId,
+                    SUM(CASE WHEN event_name = 'project_open' THEN 1 ELSE 0 END) as opens,
+                    SUM(CASE WHEN event_name = 'project_external_click' THEN 1 ELSE 0 END) as externalClicks
+             FROM analytics_events
+             WHERE entity_id IS NOT NULL
+               AND event_name IN ('project_open', 'project_external_click')
+               AND created_at > ?
+             GROUP BY entity_id
+             ORDER BY opens DESC
+             LIMIT ?`
+        )
+        .bind(since, limit)
+        .all<{ entityId: string; opens: number; externalClicks: number }>();
+
+    return results
+        .map((row) => ({ ...row, ctr: computeCtr(row.opens, row.externalClicks) }))
+        .sort((a, b) => b.opens - a.opens);
+}
+
+export async function getProjectDetail(
+    db: D1Like,
+    entityId: string,
+    days: number
+): Promise<ProjectDetail> {
+    const since = daysAgo(days);
+
+    const totals = await db
+        .prepare(
+            `SELECT
+                SUM(CASE WHEN event_name = 'project_open' THEN 1 ELSE 0 END) as opens,
+                SUM(CASE WHEN event_name = 'project_external_click' THEN 1 ELSE 0 END) as externalClicks
+             FROM analytics_events
+             WHERE entity_id = ?
+               AND event_name IN ('project_open', 'project_external_click')
+               AND created_at > ?`
+        )
+        .bind(entityId, since)
+        .first<{ opens: number | null; externalClicks: number | null }>();
+
+    const opens = totals?.opens ?? 0;
+    const externalClicks = totals?.externalClicks ?? 0;
+
+    const timelineRows = await db
+        .prepare(
+            `SELECT date(created_at / 1000, 'unixepoch') as day, COUNT(*) as count
+             FROM analytics_events
+             WHERE entity_id = ? AND event_name = 'project_open' AND created_at > ?
+             GROUP BY day`
+        )
+        .bind(entityId, since)
+        .all<{ day: string; count: number }>();
+
+    const countryRows = await db
+        .prepare(
+            `SELECT country, COUNT(*) as count
+             FROM analytics_events
+             WHERE entity_id = ? AND event_name = 'project_open' AND created_at > ? AND country IS NOT NULL
+             GROUP BY country
+             ORDER BY count DESC
+             LIMIT 5`
+        )
+        .bind(entityId, since)
+        .all<{ country: string; count: number }>();
+
+    const localeRows = await db
+        .prepare(
+            `SELECT locale, COUNT(*) as count
+             FROM analytics_events
+             WHERE entity_id = ? AND event_name = 'project_open' AND created_at > ?
+             GROUP BY locale
+             ORDER BY count DESC
+             LIMIT 5`
+        )
+        .bind(entityId, since)
+        .all<{ locale: string; count: number }>();
+
+    return {
+        entityId,
+        opens,
+        externalClicks,
+        ctr: computeCtr(opens, externalClicks),
+        timeline: fillDailyCounts(timelineRows.results, days),
+        countries: toCountryBreakdown(countryRows.results),
+        languages: toLocaleBreakdown(localeRows.results),
+    };
+}

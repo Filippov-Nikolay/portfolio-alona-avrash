@@ -1,0 +1,28 @@
+name = "avrash-analytics-worker"
+main = "src/index.ts"
+compatibility_date = "2026-09-19"
+
+# Same-origin allowlist for the POST /event CORS check - set to the public
+# site's real origin before deploying.
+[vars]
+ALLOWED_ORIGIN = "https://your-domain.com"
+
+# ANALYTICS_READ_SECRET (the bearer token admin's GET /analytics/* reads
+# authenticate with) is NOT set here - this file is committed. Set it with:
+#   wrangler secret put ANALYTICS_READ_SECRET
+# Give apps/admin this exact same value as its ANALYTICS_READ_SECRET env var.
+
+# Created once with: wrangler d1 create avrash-analytics
+# Then paste the printed database_id below, and run migrations with:
+#   wrangler d1 migrations apply avrash-analytics --local   (dev)
+#   wrangler d1 migrations apply avrash-analytics --remote  (production)
+[[d1_databases]]
+binding = "DB"
+database_name = "avrash-analytics"
+database_id = "REPLACE_WITH_REAL_DATABASE_ID"
+migrations_dir = "migrations"
+
+# Uncomment once a route is ready to receive traffic - see README.md.
+# [[routes]]
+# pattern = "analytics.your-domain.com/event"
+# custom_domain = true

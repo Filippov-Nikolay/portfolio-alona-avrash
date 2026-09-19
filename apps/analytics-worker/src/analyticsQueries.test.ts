@@ -1,0 +1,194 @@
+import { describe, expect, it } from "vitest";
+import {
+    computeCtr,
+    dayKey,
+    fillDailyCounts,
+    getOverview,
+    getProjectDetail,
+    getTopProjects,
+    parseDays,
+    toCountryBreakdown,
+    toLocaleBreakdown,
+} from "./analyticsQueries";
+import type { D1Like } from "./db";
+
+function createSequencedDb(responses: unknown[]): D1Like {
+    let index = 0;
+    return {
+        prepare() {
+            return {
+                bind() {
+                    return {
+                        async run() {},
+                        async first<T>() {
+                            return (responses[index++] ?? null) as T | null;
+                        },
+                        async all<T>() {
+                            return (responses[index++] ?? { results: [] }) as { results: T[] };
+                        },
+                    };
+                },
+            };
+        },
+    };
+}
+
+describe("computeCtr", () => {
+    it("divides clicks by opens", () => {
+        expect(computeCtr(428, 67)).toBeCloseTo(0.1565, 4);
+    });
+
+    it("is 0 when there are no opens, not NaN or Infinity", () => {
+        expect(computeCtr(0, 0)).toBe(0);
+    });
+});
+
+describe("fillDailyCounts", () => {
+    it("returns exactly `days` points even with no rows", () => {
+        expect(fillDailyCounts([], 7)).toHaveLength(7);
+    });
+
+    it("fills gaps with 0 and keeps known days", () => {
+        const today = dayKey(new Date());
+        const points = fillDailyCounts([{ day: today, count: 5 }], 3);
+        expect(points.at(-1)).toEqual({ date: today, count: 5 });
+        expect(points[0]!.count).toBe(0);
+    });
+
+    it("orders points oldest to newest", () => {
+        const points = fillDailyCounts([], 5);
+        const dates = points.map((point) => point.date);
+        expect(dates).toEqual([...dates].sort());
+    });
+});
+
+describe("toCountryBreakdown / toLocaleBreakdown", () => {
+    it("converts counts to percentages of the total", () => {
+        const result = toCountryBreakdown([
+            { country: "PL", count: 3 },
+            { country: "FI", count: 1 },
+        ]);
+        expect(result).toEqual([
+            { country: "PL", percent: 0.75 },
+            { country: "FI", percent: 0.25 },
+        ]);
+    });
+
+    it("returns 0 percentages instead of NaN when the total is 0", () => {
+        expect(toLocaleBreakdown([{ locale: "en", count: 0 }])).toEqual([
+            { locale: "en", percent: 0 },
+        ]);
+    });
+});
+
+describe("parseDays", () => {
+    it("defaults to 30 for null/non-numeric input", () => {
+        expect(parseDays(null)).toBe(30);
+        expect(parseDays("abc")).toBe(30);
+    });
+
+    it("defaults to 30 for zero or negative input", () => {
+        expect(parseDays("0")).toBe(30);
+        expect(parseDays("-5")).toBe(30);
+    });
+
+    it("rejects a fractional value", () => {
+        expect(parseDays("7.5")).toBe(30);
+    });
+
+    it("passes through a valid value", () => {
+        expect(parseDays("90")).toBe(90);
+    });
+
+    it("clamps to 365", () => {
+        expect(parseDays("10000")).toBe(365);
+    });
+});
+
+describe("getOverview", () => {
+    it("shapes grouped rows into a filled, dual-metric timeline", async () => {
+        const today = dayKey(new Date());
+        const db = createSequencedDb([
+            {
+                results: [
+                    { eventName: "project_open", day: today, count: 3 },
+                    { eventName: "contact_success", day: today, count: 1 },
+                ],
+            },
+        ]);
+
+        const overview = await getOverview(db, 7);
+
+        expect(overview.projectOpens).toBe(3);
+        expect(overview.contacts).toBe(1);
+        expect(overview.timeline).toHaveLength(7);
+        expect(overview.timeline.at(-1)).toEqual({ date: today, projectOpens: 3, contacts: 1 });
+    });
+});
+
+describe("getTopProjects", () => {
+    it("computes CTR per project and sorts by opens desc", async () => {
+        const db = createSequencedDb([
+            {
+                results: [
+                    { entityId: "esencha", opens: 100, externalClicks: 10 },
+                    { entityId: "crusty", opens: 200, externalClicks: 40 },
+                ],
+            },
+        ]);
+
+        const projects = await getTopProjects(db, 30);
+
+        expect(projects.map((p) => p.entityId)).toEqual(["crusty", "esencha"]);
+        expect(projects[0]!.ctr).toBeCloseTo(0.2, 5);
+    });
+});
+
+describe("getProjectDetail", () => {
+    it("assembles totals, timeline and breakdowns for one project", async () => {
+        const today = dayKey(new Date());
+        const db = createSequencedDb([
+            { opens: 50, externalClicks: 5 },
+            { results: [{ day: today, count: 4 }] },
+            {
+                results: [
+                    { country: "PL", count: 3 },
+                    { country: "FI", count: 1 },
+                ],
+            },
+            {
+                results: [
+                    { locale: "en", count: 3 },
+                    { locale: "pl", count: 1 },
+                ],
+            },
+        ]);
+
+        const detail = await getProjectDetail(db, "crusty", 7);
+
+        expect(detail.entityId).toBe("crusty");
+        expect(detail.opens).toBe(50);
+        expect(detail.externalClicks).toBe(5);
+        expect(detail.ctr).toBeCloseTo(0.1, 5);
+        expect(detail.timeline).toHaveLength(7);
+        expect(detail.timeline.at(-1)).toEqual({ date: today, count: 4 });
+        expect(detail.countries).toEqual([
+            { country: "PL", percent: 0.75 },
+            { country: "FI", percent: 0.25 },
+        ]);
+        expect(detail.languages).toEqual([
+            { locale: "en", percent: 0.75 },
+            { locale: "pl", percent: 0.25 },
+        ]);
+    });
+
+    it("defaults opens/externalClicks to 0 when the project has no events", async () => {
+        const db = createSequencedDb([null, { results: [] }, { results: [] }, { results: [] }]);
+
+        const detail = await getProjectDetail(db, "unknown-project", 30);
+
+        expect(detail.opens).toBe(0);
+        expect(detail.externalClicks).toBe(0);
+        expect(detail.ctr).toBe(0);
+    });
+});

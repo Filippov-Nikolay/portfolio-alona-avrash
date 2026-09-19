@@ -15,7 +15,7 @@
         "lint": "pnpm -r --if-present run lint",
         "lint:fix": "pnpm -r --if-present run lint:fix",
         "type-check": "pnpm -r --if-present run type-check",
-        "test": "pnpm --filter @avrash/web --filter @avrash/admin --filter @avrash/content-schema run test",
+        "test": "pnpm --filter @avrash/web --filter @avrash/admin --filter @avrash/content-schema --filter @avrash/analytics-worker run test",
         "test:e2e": "pnpm --filter @avrash/e2e run test",
         "format": "prettier . --write",
         "format:check": "prettier . --check",

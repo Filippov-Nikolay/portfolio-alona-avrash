@@ -67,6 +67,12 @@ e2e/playwright-report/
 e2e/blob-report/
 
 # =========================
+# Wrangler (apps/analytics-worker)
+# =========================
+.wrangler/
+.dev.vars
+
+# =========================
 # Project gallery images (temporary local placeholders)
 # Each project's full image set lives in apps/web/public/projects/<slug>/ for
 # now, scraped from Behance ahead of the real CMS/Cloudflare-backed asset API.

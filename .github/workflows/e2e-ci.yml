@@ -1,0 +1,74 @@
+name: E2E CI
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - "apps/web/**"
+            - "apps/admin/**"
+            - "packages/ui/**"
+            - "packages/content-schema/**"
+            - "packages/content-data/**"
+            - "e2e/**"
+            - "pnpm-lock.yaml"
+            - "pnpm-workspace.yaml"
+            - "package.json"
+            - ".github/workflows/e2e-ci.yml"
+    pull_request:
+        branches: [main]
+        paths:
+            - "apps/web/**"
+            - "apps/admin/**"
+            - "packages/ui/**"
+            - "packages/content-schema/**"
+            - "packages/content-data/**"
+            - "e2e/**"
+            - "pnpm-lock.yaml"
+            - "pnpm-workspace.yaml"
+            - "package.json"
+            - ".github/workflows/e2e-ci.yml"
+
+jobs:
+    e2e:
+        runs-on: ubuntu-latest
+        # The suite spins up both apps' dev servers cold (next dev, not a
+        # prebuilt server) inside this one job - generous headroom over the
+        # ~30s a local run takes, for a colder cache/slower runner.
+        timeout-minutes: 15
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: pnpm/action-setup@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: "pnpm"
+
+            - run: pnpm install --frozen-lockfile
+
+            - name: Cache Playwright browsers
+              id: playwright-cache
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+
+            - name: Install Playwright Chromium (+ OS deps)
+              if: steps.playwright-cache.outputs.cache-hit != 'true'
+              run: pnpm --filter @avrash/e2e exec playwright install --with-deps chromium
+
+            - name: Install Playwright's OS dependencies only
+              if: steps.playwright-cache.outputs.cache-hit == 'true'
+              run: pnpm --filter @avrash/e2e exec playwright install-deps chromium
+
+            - run: pnpm --filter @avrash/e2e run test
+
+            - name: Upload Playwright report
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: playwright-report
+                  path: e2e/playwright-report/
+                  retention-days: 14

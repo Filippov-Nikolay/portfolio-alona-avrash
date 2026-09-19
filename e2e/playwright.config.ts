@@ -47,7 +47,11 @@ export default defineConfig({
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 1 : 0,
-    reporter: "list",
+    // "list" alone is fine locally (a live terminal), but leaves nothing to
+    // inspect after a CI run - "html" writes a report e2e-ci.yml uploads as
+    // an artifact, and "github" turns a failure into an inline PR
+    // annotation instead of just a line buried in the job log.
+    reporter: process.env.CI ? [["html", { open: "never" }], ["github"]] : "list",
     use: {
         trace: "on-first-retry",
     },

@@ -51,4 +51,6 @@ jobs:
 
             - run: pnpm --filter @avrash/admin run type-check
 
+            - run: pnpm --filter @avrash/admin run test
+
             - run: pnpm --filter @avrash/admin run build

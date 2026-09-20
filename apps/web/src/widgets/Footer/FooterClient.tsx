@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import type { FooterContent, Social } from "@avrash/content-schema";
+import { usePathname } from "@/i18n/navigation";
 import { SocialLinks } from "@/entities/social/ui/SocialLinks";
 import { siteConfig } from "@/shared/config/site.config";
 import { Container } from "@/shared/ui";
@@ -33,7 +34,9 @@ function LegalLinkText({ text }: { text: string }) {
 }
 
 export function FooterClient({ footer, socials }: FooterClientProps) {
-    const { sectionRef, leftRef, rightRef, brandRef } = useFooterAnimations();
+    const pathname = usePathname();
+    const playOnce = pathname === "/contact";
+    const { sectionRef, leftRef, rightRef, brandRef } = useFooterAnimations({ playOnce });
     const year = new Date().getFullYear();
 
     return (

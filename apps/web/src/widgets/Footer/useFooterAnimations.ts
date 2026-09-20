@@ -11,7 +11,11 @@ const getStart = () => (isCompact() ? "top bottom-=24px" : "top 76%");
 const PANEL_CLIP_HIDDEN = "inset(0% 0% 100% 0% round 20px 20px 0px 0px)";
 const PANEL_CLIP_VISIBLE = "inset(0% 0% 0% 0% round 20px 20px 0px 0px)";
 
-export function useFooterAnimations() {
+interface UseFooterAnimationsOptions {
+    playOnce?: boolean;
+}
+
+export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOptions = {}) {
     const reduced = useReducedMotion();
     useScrollTriggerAutoRefresh([reduced]);
 
@@ -63,8 +67,9 @@ export function useFooterAnimations() {
                 scrollTrigger: {
                     trigger: section,
                     start: getStart,
-                    toggleActions: "play none none reverse",
+                    toggleActions: playOnce ? "play none none none" : "play none none reverse",
                     invalidateOnRefresh: true,
+                    once: playOnce,
                 },
             })
                 .to(
@@ -107,7 +112,7 @@ export function useFooterAnimations() {
                     0.5
                 );
         },
-        { scope: sectionRef, dependencies: [reduced, ready], revertOnUpdate: true }
+        { scope: sectionRef, dependencies: [reduced, ready, playOnce], revertOnUpdate: true }
     );
 
     return { sectionRef, leftRef, rightRef, brandRef };

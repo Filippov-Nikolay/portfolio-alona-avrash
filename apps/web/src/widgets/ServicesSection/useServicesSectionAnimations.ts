@@ -13,6 +13,14 @@ import {
 import { getTopBandContactOffset } from "@/shared/lib/motion/servicesSceneGeometry";
 
 const FALLBACK_STACK_OFFSET = 20;
+const MAX_DESKTOP_REVEAL_DISTANCE = 520;
+const DESKTOP_REVEAL_VIEWPORT_RATIO = 0.45;
+const SCROLL_FOLLOW_TIME_MS = 150;
+const SCROLL_SETTLE_THRESHOLD_PX = 0.1;
+
+function smoothstep(progress: number) {
+    return progress * progress * (3 - 2 * progress);
+}
 
 export function useServicesSectionAnimations(services: Service[]) {
     useScrollTriggerAutoRefresh([services]);
@@ -41,10 +49,19 @@ export function useServicesSectionAnimations(services: Service[]) {
                 };
 
                 const titleStart = () => `top top+=${getContactOffset()}`;
-                const getCardRevealDistance = () =>
-                    window.matchMedia("(max-width: 767px)").matches
-                        ? SERVICES_CARD_REVEAL_DISTANCE_COMPACT
-                        : SERVICES_CARD_REVEAL_DISTANCE;
+                const getCardRevealDistance = () => {
+                    if (window.matchMedia("(max-width: 767px)").matches) {
+                        return SERVICES_CARD_REVEAL_DISTANCE_COMPACT;
+                    }
+
+                    return Math.min(
+                        MAX_DESKTOP_REVEAL_DISTANCE,
+                        Math.max(
+                            SERVICES_CARD_REVEAL_DISTANCE,
+                            window.innerHeight * DESKTOP_REVEAL_VIEWPORT_RATIO
+                        )
+                    );
+                };
 
                 gsap.set(title, {
                     autoAlpha: 0,
@@ -64,7 +81,7 @@ export function useServicesSectionAnimations(services: Service[]) {
                         trigger: sectionRef.current,
                         start: titleStart,
                         end: `+=${SERVICES_TITLE_REVEAL_DISTANCE}`,
-                        scrub: true,
+                        scrub: 0.45,
                         invalidateOnRefresh: true,
                     },
                 });
@@ -83,6 +100,10 @@ export function useServicesSectionAnimations(services: Service[]) {
                 let revealDistance = 0;
                 let stackOffset = 0;
                 let revealStarts: number[] = [];
+                let renderedScroll = window.scrollY;
+                let targetScroll = renderedScroll;
+                let followFrame = 0;
+                let previousFrameTime = 0;
 
                 const measureCards = () => {
                     const scrollY = window.scrollY;
@@ -106,9 +127,9 @@ export function useServicesSectionAnimations(services: Service[]) {
                 };
 
                 const renderCards = (scrollY: number) => {
-                    const progresses = revealStarts.map((start, index) => {
+                    const progresses = revealStarts.map((start) => {
                         const progress = gsap.utils.clamp(0, 1, (scrollY - start) / revealDistance);
-                        return index === 0 ? progress : progress * progress * (3 - 2 * progress);
+                        return smoothstep(progress);
                     });
 
                     cards.forEach((card, index) => {
@@ -118,7 +139,7 @@ export function useServicesSectionAnimations(services: Service[]) {
                         const slotOffset = index === 0 ? 0 : stackOffset * (1 - promotion);
 
                         setters[index]({
-                            autoAlpha: entry > 0 ? 1 - exit : 0,
+                            autoAlpha: entry * (1 - exit),
                             y:
                                 (1 - entry) * (index === 0 ? 30 : stackOffset * 4) +
                                 slotOffset -
@@ -130,6 +151,44 @@ export function useServicesSectionAnimations(services: Service[]) {
                     });
                 };
 
+                const stopFollowingScroll = () => {
+                    if (!followFrame) return;
+                    cancelAnimationFrame(followFrame);
+                    followFrame = 0;
+                    previousFrameTime = 0;
+                };
+
+                const followScroll = (time: number) => {
+                    const elapsed = previousFrameTime ? time - previousFrameTime : 16.67;
+                    previousFrameTime = time;
+                    const distance = targetScroll - renderedScroll;
+                    const followAmount = 1 - Math.exp(-elapsed / SCROLL_FOLLOW_TIME_MS);
+
+                    if (Math.abs(distance) <= SCROLL_SETTLE_THRESHOLD_PX) {
+                        renderedScroll = targetScroll;
+                        renderCards(renderedScroll);
+                        followFrame = 0;
+                        previousFrameTime = 0;
+                        return;
+                    }
+
+                    renderedScroll += distance * followAmount;
+                    renderCards(renderedScroll);
+                    followFrame = requestAnimationFrame(followScroll);
+                };
+
+                const renderTowards = (scrollY: number) => {
+                    targetScroll = scrollY;
+                    if (!followFrame) followFrame = requestAnimationFrame(followScroll);
+                };
+
+                const renderImmediately = (scrollY: number) => {
+                    stopFollowingScroll();
+                    renderedScroll = scrollY;
+                    targetScroll = scrollY;
+                    renderCards(scrollY);
+                };
+
                 measureCards();
 
                 const cardTrigger = ScrollTrigger.create({
@@ -138,14 +197,15 @@ export function useServicesSectionAnimations(services: Service[]) {
                     end: "bottom top",
                     onRefresh: (self) => {
                         measureCards();
-                        renderCards(self.scroll());
+                        renderImmediately(self.scroll());
                     },
-                    onUpdate: (self) => renderCards(self.scroll()),
+                    onUpdate: (self) => renderTowards(self.scroll()),
                 });
 
-                renderCards(cardTrigger.scroll());
+                renderImmediately(cardTrigger.scroll());
 
                 return () => {
+                    stopFollowingScroll();
                     cardTrigger.kill();
                     cards.forEach((card) => {
                         card.inert = false;

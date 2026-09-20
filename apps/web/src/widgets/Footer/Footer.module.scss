@@ -2,6 +2,7 @@
 
 .footer {
     position: relative;
+    isolation: isolate;
     background: var(--color-accent);
     color: #000;
     border-radius: 20px 20px 0 0;
@@ -19,6 +20,28 @@
     @include respond-to("mobile") {
         padding-top: 20px;
         border-radius: 16px 16px 0 0;
+    }
+}
+
+.revealCurtain {
+    display: none;
+}
+
+.content,
+.brandClip {
+    position: relative;
+    z-index: 1;
+}
+
+@media (max-width: 1023px), (pointer: coarse) {
+    .revealCurtain {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: block;
+        background: var(--color-bg);
+        transform-origin: bottom center;
+        pointer-events: none;
     }
 }
 
@@ -298,6 +321,10 @@
 }
 
 @include reduced-motion {
+    .revealCurtain {
+        display: none;
+    }
+
     .legal a::before,
     .legalCharTop,
     .legalCharBottom {

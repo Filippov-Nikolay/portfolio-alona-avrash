@@ -41,7 +41,9 @@ export function FooterClient({ footer, socials }: FooterClientProps) {
 
     return (
         <footer ref={sectionRef} className={styles.footer} data-site-footer>
-            <Container>
+            <div className={styles.revealCurtain} data-footer-curtain aria-hidden="true" />
+
+            <Container className={styles.content}>
                 <div className={styles.top}>
                     <div ref={leftRef} className={styles.left} data-footer-left>
                         <p className={styles.tagline}>

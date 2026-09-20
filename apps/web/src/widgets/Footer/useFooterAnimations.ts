@@ -40,12 +40,14 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
             const brand = brandRef.current;
             if (!ready || !section || !left || !right || !brand) return;
 
+            const curtain = section.querySelector<HTMLElement>("[data-footer-curtain]");
             const maskLines = gsap.utils.toArray<HTMLElement>("[data-footer-mask]", section);
             const socialItems = gsap.utils.toArray<HTMLElement>("[data-footer-social-item]", left);
             const legalItems = gsap.utils.toArray<HTMLElement>("[data-footer-legal-item]", right);
             const chars = gsap.utils.toArray<HTMLElement>("[data-footer-char]", brand);
             const allTargets = [
                 section,
+                curtain,
                 left,
                 right,
                 brand,
@@ -53,7 +55,7 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                 ...socialItems,
                 ...legalItems,
                 ...chars,
-            ];
+            ].filter((target): target is HTMLElement => Boolean(target));
 
             if (reduced) {
                 gsap.set(allTargets, { clearProps: "all" });
@@ -64,22 +66,30 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
             const toggleActions = playOnce ? "play none none none" : "play none none reverse";
 
             media.add(COMPACT_QUERY, () => {
-                const compactTargets = [left, right, brand];
-                const setLayerHint = () =>
-                    gsap.set(compactTargets, { willChange: "transform, opacity" });
-                const clearLayerHint = () => gsap.set(compactTargets, { clearProps: "willChange" });
+                if (!curtain) return;
+
+                const setLayerHint = () => gsap.set(curtain, { willChange: "transform" });
+                const clearLayerHint = () => gsap.set(curtain, { clearProps: "willChange" });
 
                 gsap.set(section, { clearProps: "clipPath" });
-                gsap.set([...maskLines, ...socialItems, ...legalItems, ...chars], {
-                    clearProps: "all",
+                gsap.set([left, right, brand], { clearProps: "all" });
+                gsap.set(curtain, {
+                    autoAlpha: 1,
+                    scaleY: 1,
+                    transformOrigin: "bottom center",
                 });
-                gsap.set(left, { autoAlpha: 0, y: 24 });
-                gsap.set(right, { autoAlpha: 0, y: 24 });
-                gsap.set(brand, { autoAlpha: 0, yPercent: 42 });
+                gsap.set(maskLines, { yPercent: 110 });
+                gsap.set(socialItems, { autoAlpha: 0, y: 12, scale: 0.6 });
+                gsap.set(legalItems, { autoAlpha: 0, y: 12 });
+                gsap.set(chars, {
+                    autoAlpha: 0,
+                    yPercent: -130,
+                    rotate: () => gsap.utils.random(-14, 14),
+                });
                 setLayerHint();
 
                 const timeline = gsap.timeline({
-                    defaults: { force3D: true },
+                    defaults: { force3D: false },
                     onComplete: clearLayerHint,
                     onReverseComplete: clearLayerHint,
                     scrollTrigger: {
@@ -94,18 +104,57 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                 });
 
                 timeline
-                    .to(left, { autoAlpha: 1, y: 0, duration: 0.64, ease: "power3.out" }, 0)
-                    .to(right, { autoAlpha: 1, y: 0, duration: 0.64, ease: "power3.out" }, 0.08)
                     .to(
-                        brand,
+                        curtain,
+                        {
+                            scaleY: 0,
+                            duration: 1.1,
+                            ease: "power3.inOut",
+                            force3D: true,
+                        },
+                        0
+                    )
+                    .to(
+                        maskLines,
+                        { yPercent: 0, duration: 0.8, ease: "power4.out", stagger: 0.08 },
+                        0.25
+                    )
+                    .to(
+                        socialItems,
+                        {
+                            autoAlpha: 1,
+                            y: 0,
+                            scale: 1,
+                            duration: 0.55,
+                            ease: "back.out(2.2)",
+                            stagger: 0.06,
+                        },
+                        0.45
+                    )
+                    .to(
+                        legalItems,
+                        {
+                            autoAlpha: 1,
+                            y: 0,
+                            duration: 0.5,
+                            ease: "power2.out",
+                            stagger: 0.06,
+                        },
+                        0.5
+                    )
+                    .to(
+                        chars,
                         {
                             autoAlpha: 1,
                             yPercent: 0,
-                            duration: 0.72,
-                            ease: "power3.out",
+                            rotate: 0,
+                            duration: 0.7,
+                            ease: "back.out(1.6)",
+                            stagger: 0.045,
                         },
-                        0.14
-                    );
+                        0.5
+                    )
+                    .set(curtain, { autoAlpha: 0 }, 1.1);
 
                 return () => timeline.kill();
             });

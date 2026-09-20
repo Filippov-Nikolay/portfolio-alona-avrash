@@ -321,10 +321,14 @@ shared with the CMS that will eventually write that same JSON.
 cp .env.example .env.local
 ```
 
-| Variable               | Required   | Description                                                                 |
-| ----------------------- | ---------- | ----------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SITE_URL`  | In production | Public base URL, used for canonical links, OpenGraph, `sitemap.xml` and `robots.txt`. Defaults to `http://localhost:3000` if unset. |
-| `CONTENT_API_URL`       | No | Base URL of an external CMS API. Content (hero, socials, projects, ...) ships as local JSON under `src/entities/*/model` and is used as-is — this is only a fallback for a resource not found there. |
+| Variable                     | Required                         | Description                                                                                                                         |
+| ---------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`       | In production                    | Public base URL, used for canonical links, OpenGraph, `sitemap.xml` and `robots.txt`. Defaults to `http://localhost:3000` if unset. |
+| `CONTENT_SOURCE`             | No                               | Set to `remote` in production to read editable JSON from R2. Defaults to bundled content.                                           |
+| `CONTENT_CDN_URL`            | With remote content or R2 images | Public custom-domain base URL for R2, for example `https://cdn-dev.avrash.com`.                                                     |
+| `CONTENT_REVALIDATE_SECONDS` | No                               | Fallback TTL for remote JSON. Defaults to `86400`; admin cache-tag invalidation still applies immediately.                          |
+| `REVALIDATE_SECRET`          | With admin webhook               | Shared secret used by the admin to invalidate changed content through `/api/revalidate`.                                            |
+| `CONTENT_API_URL`            | No                               | Base URL of a separate CMS API, used only when a resource is unavailable locally and in R2.                                         |
 
 Analytics (`@vercel/analytics`, `@vercel/speed-insights`) are wired into the layout and are safe no-ops
 outside of Vercel — remove the two components in `layout.tsx` if you don't want them.

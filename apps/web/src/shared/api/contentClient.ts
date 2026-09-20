@@ -19,7 +19,11 @@ const RESOURCE_FILE_NAMES: Record<string, string> = {
 
 export const CONTENT_RESOURCE_TAGS = new Set(Object.keys(RESOURCE_FILE_NAMES));
 
-const DEFAULT_REVALIDATE_SECONDS = 60;
+// Remote JSON changes only through the admin, which invalidates the matching
+// tag immediately. The fallback TTL mainly covers deployments where that
+// webhook is not configured, so a full day avoids needless R2 reads without
+// making content permanently stale.
+const DEFAULT_REVALIDATE_SECONDS = 24 * 60 * 60;
 
 function isRemoteSource(): boolean {
     return process.env.CONTENT_SOURCE === "remote";

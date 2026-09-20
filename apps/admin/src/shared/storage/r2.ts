@@ -5,6 +5,8 @@ import {
     S3Client,
 } from "@aws-sdk/client-s3";
 
+const IMMUTABLE_IMAGE_CACHE_CONTROL = "public, max-age=31536000, immutable";
+
 // Cloudflare R2 exposes an S3-compatible API, so the regular AWS SDK works
 // against it - only the endpoint/credentials differ. See
 // apps/admin/.env.example for what each env var below needs to be set to.
@@ -62,6 +64,7 @@ export async function writeObject(key: string, body: Buffer, contentType: string
             Key: key,
             Body: body,
             ContentType: contentType,
+            CacheControl: IMMUTABLE_IMAGE_CACHE_CONTROL,
         })
     );
 }

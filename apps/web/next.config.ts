@@ -81,6 +81,10 @@ const nextConfig: NextConfig = {
     poweredByHeader: false,
 
     images: {
+        // Uploaded image URLs are immutable (their keys include a timestamp),
+        // so keep generated Next Image variants across ordinary revisits and
+        // reduce repeat reads from the R2 origin.
+        minimumCacheTTL: 31 * 24 * 60 * 60,
         remotePatterns: cdnOrigin
             ? [
                   {

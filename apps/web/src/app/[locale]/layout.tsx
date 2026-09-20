@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Almarai, Geist_Mono, Zalando_Sans_SemiExpanded } from "next/font/google";
 import localFont from "next/font/local";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -116,26 +116,19 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         notFound();
     }
 
-    const [messages, cookieStore, requestHeaders, socials] = await Promise.all([
+    const [messages, cookieStore, socials] = await Promise.all([
         getMessages(),
         cookies(),
-        headers(),
         getSocials(),
     ]);
 
-    // Приоритет: кука (явный выбор пользователя)
-    //          → Sec-CH-Prefers-Color-Scheme (системная тема, Chrome 2й+ визит)
-    //          → "light" (абсолютный fallback - основная тема сайта; useTheme
-    //             на клиенте поправит без flash)
+    // Приоритет: кука (явный выбор пользователя через ThemeToggle)
+    //          → "light" (дефолт сайта, ВСЕГДА - системная тема пользователя
+    //             намеренно не учитывается, см. useTheme.ts на клиенте)
     const savedTheme = cookieStore.get("site-theme")?.value;
     const hasSeenPreloader = cookieStore.get("site-preloader")?.value === "1";
-    const clientHint = requestHeaders.get("sec-ch-prefers-color-scheme");
     const theme: "dark" | "light" =
-        savedTheme === "light" || savedTheme === "dark"
-            ? savedTheme
-            : clientHint === "light" || clientHint === "dark"
-              ? clientHint
-              : "light";
+        savedTheme === "light" || savedTheme === "dark" ? savedTheme : "light";
 
     // Personal-portfolio structured data — see README > Customization > SEO.
     const jsonLd = {

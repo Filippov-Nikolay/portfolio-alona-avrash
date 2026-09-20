@@ -7,17 +7,15 @@ export type Theme = "dark" | "light";
 const STORAGE_KEY = "site-theme";
 const COOKIE_KEY = "site-theme";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+// Сайт всегда светлый по умолчанию - системная тема пользователя (prefers-
+// color-scheme) намеренно не учитывается ни здесь, ни в layout.tsx на
+// сервере. Переключить может только явный клик по ThemeToggle.
 const DEFAULT_THEME: Theme = "light";
-
-function getSystemTheme(): Theme {
-    if (typeof window === "undefined") return DEFAULT_THEME;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
 
 function getInitialTheme(): Theme {
     if (typeof window === "undefined") return DEFAULT_THEME;
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    return stored ?? getSystemTheme();
+    return stored ?? DEFAULT_THEME;
 }
 
 // Временно отключает CSS transition на весь документ.

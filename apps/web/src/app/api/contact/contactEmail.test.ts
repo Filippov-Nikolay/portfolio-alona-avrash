@@ -20,9 +20,14 @@ describe("buildContactEmail", () => {
         expect(email.html).toContain("Hello Alona,<br>I have a new project.");
         expect(email.html).toContain("Phone");
         expect(email.html).toContain("+48 123 456 789");
-        expect(email.html).toContain("Use your inbox's Reply action");
-        expect(email.html).not.toContain("mailto:");
+        expect(email.html).toContain("Reply to Mykola Filippov");
+        expect(email.html).toContain(
+            "mailto:mykola@example.com?subject=Re%3A%20your%20project%20inquiry%20to%20Alona%20Avrash"
+        );
+        expect(email.html.match(/mailto:/g)).toHaveLength(1);
         expect(email.html).not.toContain("tel:");
+        expect(email.html).toContain("color:#050505!important");
+        expect(email.html).toContain("a[x-apple-data-detectors]");
         expect(email.text).toContain("Phone: +48 123 456 789");
         expect(email.text).toContain("20 Sept 2026, 12:54 UTC");
     });

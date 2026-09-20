@@ -39,8 +39,8 @@ function detailRow(label: string, value: string): string {
             <td class="detail-label" style="width:112px;padding:14px 20px 14px 0;border-bottom:1px solid #dddddd;color:#6b6b6b;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;line-height:1.4;text-transform:uppercase;letter-spacing:1.2px;vertical-align:top;">
                 ${label}
             </td>
-            <td style="padding:14px 0;border-bottom:1px solid #dddddd;color:#050505;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:600;line-height:1.45;overflow-wrap:anywhere;vertical-align:top;">
-                ${escapeHtml(value)}
+            <td class="contact-value" style="padding:14px 0;border-bottom:1px solid #dddddd;color:#050505!important;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:600;line-height:1.45;overflow-wrap:anywhere;text-decoration:none!important;vertical-align:top;">
+                <span style="color:#050505!important;text-decoration:none!important;">${escapeHtml(value)}</span>
             </td>
         </tr>
     `;
@@ -53,6 +53,8 @@ export function buildContactEmail(input: ContactEmailInput) {
     const message = escapeHtml(input.message).replace(/\r?\n/g, "<br>");
     const locale = escapeHtml(input.locale.toUpperCase());
     const submittedAt = escapeHtml(formatSubmittedAt(input.submittedAt));
+    const replySubject = encodeURIComponent("Re: your project inquiry to Alona Avrash");
+    const replyHref = escapeHtml(`mailto:${input.email}?subject=${replySubject}`);
     const phoneRow = input.phone ? detailRow("Phone", input.phone) : "";
 
     const html = `<!doctype html>
@@ -61,18 +63,28 @@ export function buildContactEmail(input: ContactEmailInput) {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="color-scheme" content="light only">
+        <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
         <title>New project inquiry from ${name}</title>
         <style>
+            .contact-value,
+            .contact-value a,
+            a[x-apple-data-detectors],
+            u + #email-body a {
+                color: #050505 !important;
+                text-decoration: none !important;
+                border-bottom: 0 !important;
+            }
             @media only screen and (max-width: 620px) {
                 .email-shell { width: 100% !important; }
                 .email-padding { padding-right: 24px !important; padding-left: 24px !important; }
                 .brand-role { display: none !important; }
                 .hero-title { font-size: 34px !important; line-height: 0.98 !important; }
                 .detail-label { width: 82px !important; }
+                .reply-button { display: block !important; text-align: center !important; }
             }
         </style>
     </head>
-    <body style="margin:0;padding:0;background:#ededed;color:#050505;">
+    <body id="email-body" style="margin:0;padding:0;background:#ededed;color:#050505;">
         <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
             ${name} sent a new project inquiry through avrash.com.
         </div>
@@ -134,18 +146,12 @@ export function buildContactEmail(input: ContactEmailInput) {
                         </tr>
                         <tr>
                             <td class="email-padding" style="padding:0 36px 44px;">
-                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:${ACCENT};border-collapse:separate;border-spacing:0;">
-                                    <tr>
-                                        <td style="padding:17px 20px;color:#050505;font-family:Arial,Helvetica,sans-serif;">
-                                            <p style="margin:0;font-size:13px;font-weight:800;line-height:1;text-transform:uppercase;">
-                                                Reply to this email &nbsp;&#8599;
-                                            </p>
-                                            <p style="margin:9px 0 0;font-size:12px;line-height:1.5;">
-                                                Use your inbox's Reply action. Your response will be delivered directly to <strong>${email}</strong>.
-                                            </p>
-                                        </td>
-                                    </tr>
-                                </table>
+                                <a href="${replyHref}" class="reply-button" style="display:inline-block;padding:15px 24px;background:${ACCENT};color:#050505!important;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:800;line-height:1;text-decoration:none!important;text-transform:uppercase;">
+                                    Reply to ${name} &nbsp;&#8599;
+                                </a>
+                                <p style="margin:18px 0 0;color:#737373;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.55;">
+                                    This button opens a new reply addressed to <strong style="color:#050505;">${email}</strong>. You can also use your inbox's Reply action.
+                                </p>
                             </td>
                         </tr>
                         <tr>

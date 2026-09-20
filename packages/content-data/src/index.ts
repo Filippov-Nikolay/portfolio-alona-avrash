@@ -5,6 +5,7 @@ import type {
     Social,
     Project,
     HomeProjectGalleryConfig,
+    IconContent,
     ServiceRaw,
     ReviewRaw,
     StatItem,
@@ -20,6 +21,7 @@ import footerJson from "./footer.json";
 import socialJson from "./social.json";
 import projectsJson from "./projects.json";
 import homeProjectGalleryJson from "./home-project-gallery.json";
+import iconJson from "./icon.json";
 import servicesJson from "./services.json";
 import reviewsJson from "./reviews.json";
 import statsJson from "./stats.json";
@@ -38,6 +40,7 @@ export const footer = footerJson as FooterContentRaw;
 export const social = socialJson as Social[];
 export const projects = projectsJson as Project[];
 export const homeProjectGallery = homeProjectGalleryJson as HomeProjectGalleryConfig;
+export const icon = iconJson as IconContent;
 export const services = servicesJson as unknown as ServiceRaw[];
 export const reviews = reviewsJson as ReviewRaw[];
 export const stats = statsJson as StatItem[];

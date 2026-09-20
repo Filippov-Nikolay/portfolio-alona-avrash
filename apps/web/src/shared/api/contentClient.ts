@@ -8,6 +8,7 @@ const RESOURCE_FILE_NAMES: Record<string, string> = {
     socials: "social.json",
     projects: "projects.json",
     "home-project-gallery": "home-project-gallery.json",
+    icon: "icon.json",
     services: "services.json",
     reviews: "reviews.json",
     stats: "stats.json",

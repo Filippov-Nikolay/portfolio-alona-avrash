@@ -15,6 +15,8 @@ import { Footer } from "@/widgets/Footer";
 import { LOCALES, isLocale, getLocaleMeta } from "@/i18n/locales";
 import { buildPageAlternates } from "@/shared/lib/seo";
 import { getSocials } from "@/entities/social/api/getSocials";
+import { getIcon } from "@/entities/icon/api/getIcon";
+import packageJson from "../../../package.json";
 import styles from "./layout.module.scss";
 
 import "@/shared/styles/globals.scss";
@@ -94,7 +96,10 @@ interface LocaleLayoutProps {
 export async function generateMetadata({ params }: LocaleLayoutProps): Promise<Metadata> {
     const { locale } = await params;
     const title = `${siteConfig.name} — ${siteConfig.title}`;
-    const description = (await getTranslations({ locale, namespace: "seo" }))("description");
+    const [description, icon] = await Promise.all([
+        getTranslations({ locale, namespace: "seo" }).then((t) => t("description")),
+        getIcon(),
+    ]);
     const { ogLocale } = getLocaleMeta(locale);
     const { canonical, languages } = buildPageAlternates(locale);
 
@@ -127,8 +132,12 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
             description,
         },
         icons: {
-            icon: [{ url: "/icon/icon.png", type: "image/png" }],
-            shortcut: "/icon/icon.png",
+            // Browsers cache favicons far more aggressively than normal HTTP
+            // cache headers allow for, so a plain file swap alone often will
+            // not show up for returning visitors. Bust it with the app
+            // version, which is already incremented on every release.
+            icon: [{ url: `${icon.src}?v=${packageJson.version}`, type: "image/png" }],
+            shortcut: `${icon.src}?v=${packageJson.version}`,
         },
         robots: { index: true, follow: true },
     };

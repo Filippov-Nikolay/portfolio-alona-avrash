@@ -7,6 +7,7 @@ const CONTENT: Record<string, unknown> = {
     socials: contentData.social,
     projects: contentData.projects,
     "home-project-gallery": contentData.homeProjectGallery,
+    icon: contentData.icon,
     services: contentData.services,
     reviews: contentData.reviews,
     stats: contentData.stats,

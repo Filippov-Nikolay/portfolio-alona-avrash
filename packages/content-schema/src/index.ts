@@ -12,3 +12,4 @@ export * from "./client";
 export * from "./tool";
 export * from "./tool-badge";
 export * from "./home-project-gallery";
+export * from "./icon";

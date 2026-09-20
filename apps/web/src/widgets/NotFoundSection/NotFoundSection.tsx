@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { m } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowIcon, Button, Container, Section } from "@/shared/ui";
@@ -46,40 +47,116 @@ export function NotFoundSection() {
     return (
         <Section as="div" className={styles.section}>
             <Container className={styles.container}>
-                <span ref={containerRef} className={styles.code}>
-                    <span className={styles.srOnly}>404</span>
-                    <span aria-hidden="true" className={styles.digits}>
-                        <MovingDigit />
-                        <span className={styles.staticDigit}>0</span>
-                        <MovingDigit />
-                    </span>
-                </span>
+                <div className={styles.stage}>
+                    <div className={styles.topRail} aria-hidden="true">
+                        <span className={styles.statusLabel} data-not-found-meta>
+                            <span className={styles.statusDot} />
+                            {t("eyebrow")}
+                        </span>
+                        <span className={styles.railLine} />
+                        <span>AA / PORTFOLIO</span>
+                    </div>
 
-                <m.div
-                    className={styles.textGroup}
-                    variants={safeStagger}
-                    initial="hidden"
-                    animate={textReady ? "visible" : "hidden"}
-                >
-                    <m.h1 className={styles.title} variants={safeReveal}>
-                        {t("title")}
-                    </m.h1>
-                    <m.p className={styles.text} variants={safeReveal}>
-                        {t("description")}
-                    </m.p>
-                    <m.div variants={safeReveal}>
-                        <Button
-                            as="a"
-                            href={`/${locale}`}
-                            variant="primary"
-                            size="lg"
-                            className={styles.button}
-                            rightIcon={<ArrowIcon className={styles.buttonArrow} />}
+                    <div className={styles.numberStage}>
+                        <div
+                            className={`${styles.fragment} ${styles.fragmentLeft}`}
+                            aria-hidden="true"
+                            data-not-found-fragment
                         >
-                            {t("button")}
-                        </Button>
+                            <Image
+                                src="/projects/image-fizzup.png"
+                                alt=""
+                                fill
+                                sizes="220px"
+                                className={styles.fragmentImage}
+                                priority
+                            />
+                            <span className={styles.fragmentIndex}>01</span>
+                        </div>
+
+                        <span ref={containerRef} className={styles.code} data-not-found-code>
+                            <span className={styles.srOnly}>404</span>
+                            <span aria-hidden="true" className={styles.digits}>
+                                <MovingDigit />
+                                <span className={styles.staticDigit}>
+                                    <span className={styles.zeroMedia}>
+                                        <Image
+                                            src="/projects/image-esencha.png"
+                                            alt=""
+                                            fill
+                                            sizes="(max-width: 767px) 90px, 210px"
+                                            className={styles.zeroImage}
+                                            priority
+                                        />
+                                        <span className={styles.zeroLabel}>LOST</span>
+                                    </span>
+                                </span>
+                                <MovingDigit />
+                            </span>
+                        </span>
+
+                        <div
+                            className={`${styles.fragment} ${styles.fragmentRight}`}
+                            aria-hidden="true"
+                            data-not-found-fragment
+                        >
+                            <Image
+                                src="/projects/image-logofolio.png"
+                                alt=""
+                                fill
+                                sizes="220px"
+                                className={styles.fragmentImage}
+                                priority
+                            />
+                            <span className={styles.fragmentIndex}>02</span>
+                        </div>
+                    </div>
+
+                    <m.div
+                        className={styles.textGroup}
+                        variants={safeStagger}
+                        initial="hidden"
+                        animate={textReady ? "visible" : "hidden"}
+                    >
+                        <m.div className={styles.titleGroup} variants={safeReveal}>
+                            <span className={styles.sectionIndex} data-not-found-meta>
+                                01 / ERROR
+                            </span>
+                            <h1 className={styles.title}>{t("title")}</h1>
+                        </m.div>
+
+                        <m.div className={styles.copyGroup} variants={safeReveal}>
+                            <p className={styles.text}>{t("description")}</p>
+                            <div className={styles.actions}>
+                                <Button
+                                    as="a"
+                                    href={`/${locale}`}
+                                    variant="primary"
+                                    size="lg"
+                                    className={`${styles.button} ${styles.primaryButton}`}
+                                    rightIcon={<ArrowIcon className={styles.buttonArrow} />}
+                                >
+                                    {t("button")}
+                                </Button>
+                                <Button
+                                    as="a"
+                                    href={`/${locale}/works`}
+                                    variant="outline"
+                                    size="lg"
+                                    className={`${styles.button} ${styles.worksButton}`}
+                                    rightIcon={<ArrowIcon className={styles.buttonArrow} />}
+                                >
+                                    {t("worksButton")}
+                                </Button>
+                            </div>
+                        </m.div>
                     </m.div>
-                </m.div>
+
+                    <div className={styles.bottomRail} aria-hidden="true">
+                        <span>AVRASH.COM</span>
+                        <span>PAGE INDEX / 404</span>
+                    </div>
+                </div>
             </Container>
         </Section>
     );

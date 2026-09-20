@@ -89,9 +89,11 @@
         "title": "Reviews"
     },
     "notFound": {
+        "eyebrow": "Error 404 / Page not found",
         "title": "This page went off-brand",
         "description": "The page you're looking for doesn't exist, was moved, or never launched. Let's get you back to the work that does.",
-        "button": "Back to home"
+        "button": "Back to home",
+        "worksButton": "View projects"
     },
     "seo": {
         "description": "Brand identity, packaging and logo design for growing brands."

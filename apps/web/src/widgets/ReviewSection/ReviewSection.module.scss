@@ -389,8 +389,8 @@
     }
 
     .viewport {
-        width: calc(100% - var(--reviews-gutter));
-        margin-left: var(--reviews-gutter);
+        width: 100%;
+        margin-left: 0;
     }
 
     .card {

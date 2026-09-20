@@ -39,9 +39,6 @@ export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
             loop: true,
             align: "center",
             startIndex: middleStartIndex,
-            breakpoints: {
-                "(max-width: 767px)": { align: "start" },
-            },
         },
         emblaPlugins
     );

@@ -331,6 +331,10 @@ function ModalContent({
 
     const modalInner = (
         <>
+            <button className={styles.close} onClick={onClose} aria-label="Close" autoFocus>
+                <CloseIcon className={styles.closeIcon} />
+            </button>
+
             <div ref={bodyRef} className={styles.body}>
                 <div className={styles.banner}>
                     {item.src && (
@@ -347,10 +351,6 @@ function ModalContent({
                             />
                         </div>
                     )}
-
-                    <button className={styles.close} onClick={onClose} aria-label="Close" autoFocus>
-                        <CloseIcon className={styles.closeIcon} />
-                    </button>
 
                     <h2 className={styles.bannerTitle}>{item.title}</h2>
 

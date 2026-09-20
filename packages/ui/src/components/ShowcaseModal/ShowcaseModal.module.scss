@@ -207,6 +207,10 @@
         width: 32px;
         height: 32px;
         font-size: 17px;
+        background: rgba(0 0 0 / 0.48);
+        box-shadow: 0 4px 16px rgba(0 0 0 / 0.18);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
     }
 
     @media (max-height: 480px) {
@@ -285,6 +289,10 @@
     padding-bottom: 30px;
     margin-top: -10px;
     background: var(--color-surface);
+
+    @include respond-to("mobile") {
+        padding-right: 44px;
+    }
 }
 
 .tabsRow {
@@ -300,6 +308,10 @@
         width: 50%;
         height: 2px;
         background: var(--color-border);
+
+        @include respond-to("mobile") {
+            width: 100%;
+        }
     }
 }
 

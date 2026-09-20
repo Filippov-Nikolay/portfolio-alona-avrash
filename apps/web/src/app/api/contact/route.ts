@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { getClientIp, isRateLimited } from "@/shared/lib/rateLimit";
+import { buildContactEmail } from "./contactEmail";
 
 interface ContactRequestBody {
     name?: unknown;
@@ -21,15 +22,6 @@ const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 
 function asTrimmedString(value: unknown): string {
     return typeof value === "string" ? value.trim() : "";
-}
-
-function escapeHtml(value: string): string {
-    return value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
 }
 
 export async function POST(request: Request) {
@@ -79,25 +71,25 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Email sending is not configured." }, { status: 500 });
     }
 
-    const html = `
-        <h2>New message from the portfolio contact form</h2>
-        <p><strong>Name:</strong> ${escapeHtml(name)}</p>
-        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
-        ${phone ? `<p><strong>Phone:</strong> ${escapeHtml(phone)}</p>` : ""}
-        <p><strong>Message:</strong><br>${escapeHtml(message).replace(/\n/g, "<br>")}</p>
-        <hr>
-        <p style="color:#888;font-size:12px;">Locale: ${escapeHtml(locale)} - Submitted: ${escapeHtml(submittedAt)}</p>
-    `;
+    const contactEmail = buildContactEmail({
+        name,
+        email,
+        phone,
+        message,
+        locale,
+        submittedAt,
+    });
 
     const resend = new Resend(apiKey);
 
     try {
         const { error } = await resend.emails.send({
-            from: `Portfolio contact form <${from}>`,
+            from: `Alona Avrash Portfolio <${from}>`,
             to,
             replyTo: email,
-            subject: `New message from ${name}`,
-            html,
+            subject: contactEmail.subject,
+            html: contactEmail.html,
+            text: contactEmail.text,
         });
 
         if (error) {

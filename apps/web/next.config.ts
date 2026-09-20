@@ -5,6 +5,16 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const isDev = process.env.NODE_ENV === "development";
+const isVercel = process.env.VERCEL === "1";
+
+// Preview deployments inject the Vercel Toolbar from vercel.live. Keep the
+// production CSP strict everywhere else while allowing the toolbar's own
+// scripts, iframe, assets and feedback connection when Vercel adds it.
+const vercelScriptSource = isVercel ? " https://vercel.live" : "";
+const vercelStyleSource = isVercel ? " https://vercel.live" : "";
+const vercelFontSources = isVercel ? " https://vercel.live https://assets.vercel.com" : "";
+const vercelImageSources = isVercel ? " https://vercel.live https://vercel.com" : "";
+const vercelConnectSources = isVercel ? " https://vercel.live wss://ws-us3.pusher.com" : "";
 
 // Single source of truth for the R2/CDN origin admin's uploaded images (and,
 // via CONTENT_SOURCE=remote, JSON content) are served from - see
@@ -133,11 +143,12 @@ const nextConfig: NextConfig = {
                         key: "Content-Security-Policy",
                         value: [
                             "default-src 'self'",
-                            `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
-                            "style-src 'self' 'unsafe-inline'",
-                            "font-src 'self' https://fonts.gstatic.com",
-                            `img-src 'self' data: blob:${cdnOrigin ? ` ${cdnOrigin.origin}` : ""}`,
-                            "connect-src 'self'",
+                            `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}${vercelScriptSource}`,
+                            `style-src 'self' 'unsafe-inline'${vercelStyleSource}`,
+                            `font-src 'self' https://fonts.gstatic.com${vercelFontSources}`,
+                            `img-src 'self' data: blob:${cdnOrigin ? ` ${cdnOrigin.origin}` : ""}${vercelImageSources}`,
+                            `connect-src 'self'${vercelConnectSources}`,
+                            ...(isVercel ? ["frame-src https://vercel.live"] : []),
                             "frame-ancestors 'none'",
                         ].join("; "),
                     },

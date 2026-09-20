@@ -427,6 +427,59 @@
 .tileImages {
     position: absolute;
     inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    isolation: isolate;
+    background: var(--color-visual-bg);
+    background: color-mix(
+        in srgb,
+        var(--color-visual-bg) 92%,
+        var(--accent-color-modal, var(--c-hex)) 8%
+    );
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+
+    &::before,
+    &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        transition: opacity 0.35s ease;
+    }
+
+    &::before {
+        background: rgba(255 255 255 / 0.025);
+    }
+
+    &::after {
+        width: 55%;
+        background: linear-gradient(
+            100deg,
+            transparent 0%,
+            rgba(255 255 255 / 0.5) 48%,
+            transparent 100%
+        );
+        transform: translateX(-190%);
+        animation: gallery-tile-sweep 1.45s cubic-bezier(0.55, 0, 0.25, 1) infinite;
+    }
+
+    &[data-load-state="loaded"]::before,
+    &[data-load-state="loaded"]::after {
+        opacity: 0;
+        animation: none;
+    }
+
+    &[data-load-state="error"]::after {
+        opacity: 0;
+        animation: none;
+    }
+
+    @include can-hover {
+        .previewItem:hover & {
+            transform: scale(1.04);
+        }
+    }
 }
 
 .previewImage {
@@ -436,13 +489,17 @@
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 1;
+    opacity: 0;
+    filter: blur(10px);
+    transition:
+        opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
 
-    @include can-hover {
-        .previewItem:hover & {
-            transform: scale(1.04);
-        }
-    }
+.previewImageLoaded {
+    opacity: 1;
+    filter: blur(0);
 }
 
 .previewImagePoster {
@@ -455,7 +512,7 @@
         transition: none;
     }
 
-    .previewImage {
+    .tileImages {
         transform: none;
         transition: none;
     }
@@ -466,6 +523,30 @@
 
     .previewImagePoster {
         display: block;
+    }
+}
+
+@keyframes gallery-tile-sweep {
+    0% {
+        transform: translateX(-190%);
+    }
+
+    58%,
+    100% {
+        transform: translateX(280%);
+    }
+}
+
+@include reduced-motion {
+    .tileImages::after {
+        animation: none;
+        transform: none;
+        opacity: 0.24;
+    }
+
+    .previewImage {
+        transition: opacity 0.15s ease;
+        filter: none;
     }
 }
 

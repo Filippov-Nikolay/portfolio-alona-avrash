@@ -16,6 +16,8 @@ import { useGalleryTilt } from "./useGalleryTilt";
 import styles from "./ShowcaseModal.module.scss";
 
 const GALLERY_PREVIEW_COUNT = 3;
+const STATIC_IMAGE_PRELOAD_MARGIN = "1200px 0px";
+const ANIMATED_IMAGE_PRELOAD_MARGIN = "500px 0px";
 
 export type Tab = "overview" | "gallery";
 
@@ -54,8 +56,13 @@ function TileImage({
 }) {
     const imageRef = useRef<HTMLDivElement>(null);
     const [poster, setPoster] = useState<string>();
-    const inView = useInView(imageRef, { root: scrollRoot, margin: "200px 0px" });
+    const [loadState, setLoadState] = useState<"loading" | "loaded" | "error">("loading");
     const animated = /\.gif(?:[?#]|$)/i.test(src);
+    const inView = useInView(imageRef, {
+        root: scrollRoot,
+        margin: animated ? ANIMATED_IMAGE_PRELOAD_MARGIN : STATIC_IMAGE_PRELOAD_MARGIN,
+        once: true,
+    });
 
     const handleImageLoad = (image: HTMLImageElement) => {
         if (!image.naturalWidth || !image.naturalHeight) return;
@@ -76,10 +83,17 @@ function TileImage({
                 setPoster(canvas.toDataURL("image/webp", 0.85));
             } catch {}
         }
+
+        setLoadState("loaded");
     };
 
     return (
-        <div ref={imageRef} className={styles.tileImages}>
+        <div
+            ref={imageRef}
+            className={styles.tileImages}
+            data-load-state={loadState}
+            aria-busy={loadState === "loading"}
+        >
             {enabled && inView && (
                 <>
                     {poster && (
@@ -89,7 +103,11 @@ function TileImage({
                             aria-hidden="true"
                             fill
                             unoptimized
-                            className={cn(styles.previewImage, styles.previewImagePoster)}
+                            className={cn(
+                                styles.previewImage,
+                                styles.previewImageLoaded,
+                                styles.previewImagePoster
+                            )}
                             draggable={false}
                         />
                     )}
@@ -97,14 +115,16 @@ function TileImage({
                         src={src}
                         alt={alt}
                         fill
-                        sizes="50vw"
+                        sizes="(max-width: 1023px) 50vw, 33vw"
                         loading="eager"
                         unoptimized={animated}
                         className={cn(
                             styles.previewImage,
+                            loadState === "loaded" && styles.previewImageLoaded,
                             animated && poster && styles.previewImageAnimated
                         )}
                         onLoad={(event) => handleImageLoad(event.currentTarget)}
+                        onError={() => setLoadState("error")}
                         draggable={false}
                     />
                 </>
@@ -585,7 +605,7 @@ export function ShowcaseModal({
                     className={styles.overlay}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    exit={{ opacity: 0, pointerEvents: "none" }}
                     transition={{ duration: 0.22 }}
                 >
                     <div

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Almarai, Geist_Mono, Zalando_Sans_SemiExpanded } from "next/font/google";
 import localFont from "next/font/local";
+import Script from "next/script";
 import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
@@ -47,6 +48,29 @@ const countryFlags = localFont({
     display: "swap",
     preload: false,
 });
+
+const DEV_PERFORMANCE_MEASURE_GUARD = `
+(() => {
+    if (window.__avrashPerformanceMeasureGuard) return;
+    window.__avrashPerformanceMeasureGuard = true;
+
+    const nativeMeasure = performance.measure.bind(performance);
+    performance.measure = (...args) => {
+        try {
+            return nativeMeasure(...args);
+        } catch (error) {
+            if (
+                error instanceof TypeError &&
+                error.message.includes("cannot have a negative time stamp")
+            ) {
+                return nativeMeasure(String(args[0]), { start: 0, duration: 0 });
+            }
+
+            throw error;
+        }
+    };
+})();
+`;
 
 export function generateStaticParams() {
     return LOCALES.map(({ code }) => ({ locale: code }));
@@ -149,6 +173,11 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             className={`${almarai.variable} ${zalandoSansSemiExpanded.variable} ${geistMono.variable} ${countryFlags.variable}`}
         >
             <body>
+                {process.env.NODE_ENV === "development" && (
+                    <Script id="dev-performance-measure-guard" strategy="beforeInteractive">
+                        {DEV_PERFORMANCE_MEASURE_GUARD}
+                    </Script>
+                )}
                 <NextIntlClientProvider messages={messages}>
                     <AppProviders initialHasSeenPreloader={hasSeenPreloader}>
                         <Header />

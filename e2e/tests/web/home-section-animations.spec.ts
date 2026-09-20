@@ -15,13 +15,14 @@ async function placeSectionAt(page: Page, section: Locator, viewportRatio: numbe
 }
 
 for (const viewport of viewports) {
-    test(`home sections animate after Projects on ${viewport.name}`, async ({ page }) => {
+    test(`home sections animate after Projects on ${viewport.name}`, async ({ page }, testInfo) => {
         await page.setViewportSize(viewport);
+        const baseURL = String(testInfo.project.use.baseURL);
         await page.context().addCookies([
             {
                 name: "site-preloader",
                 value: "1",
-                url: "http://localhost:3100",
+                url: baseURL,
             },
         ]);
         await page.goto("/en");
@@ -32,6 +33,7 @@ for (const viewport of viewports) {
         const cta = page.locator("#cta");
         const firstClientRow = clients.locator("[data-direction]").first();
         const toolsTitle = tools.locator("h2");
+        const reviewCarousel = reviews.locator("[data-review-carousel]");
         const firstReviewCard = reviews.locator("[data-review-card]").first();
         const ctaTitle = cta.locator("h2");
 
@@ -47,7 +49,9 @@ for (const viewport of viewports) {
 
         await expect(firstClientRow).not.toHaveCSS("transform", "none");
         await expect(toolsTitle).toHaveCSS("opacity", "0");
-        await expect(firstReviewCard).toHaveCSS("opacity", "0");
+        await expect(reviewCarousel).toHaveCSS("opacity", "0");
+        await expect(firstReviewCard).toHaveCSS("opacity", "1");
+        await expect(firstReviewCard).toHaveCSS("transform", "none");
         await expect(ctaTitle).toHaveCSS("opacity", "0");
 
         await placeSectionAt(page, clients, 0.7);
@@ -59,7 +63,7 @@ for (const viewport of viewports) {
         await expect(toolsTitle).toHaveCSS("opacity", "1");
 
         await placeSectionAt(page, reviews, 0.5);
-        await expect(firstReviewCard).toHaveCSS("opacity", "1");
+        await expect(reviewCarousel).toHaveCSS("opacity", "1");
 
         await placeSectionAt(page, cta, 0.65);
         await expect(ctaTitle).toHaveCSS("opacity", "1");

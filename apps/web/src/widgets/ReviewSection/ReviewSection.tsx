@@ -122,7 +122,7 @@ export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
                 </div>
             </Container>
 
-            <div ref={trackRef} className={styles.carouselWrap}>
+            <div ref={trackRef} className={styles.carouselWrap} data-review-carousel>
                 <div
                     ref={viewportRef}
                     className={styles.viewport}

@@ -40,10 +40,10 @@ export function FooterClient({ footer, socials }: FooterClientProps) {
     const year = new Date().getFullYear();
 
     return (
-        <footer ref={sectionRef} className={styles.footer}>
+        <footer ref={sectionRef} className={styles.footer} data-site-footer>
             <Container>
                 <div className={styles.top}>
-                    <div ref={leftRef} className={styles.left}>
+                    <div ref={leftRef} className={styles.left} data-footer-left>
                         <p className={styles.tagline}>
                             <span className={styles.maskLineInner} data-footer-mask>
                                 {footer.tagline}
@@ -58,7 +58,7 @@ export function FooterClient({ footer, socials }: FooterClientProps) {
                         />
                     </div>
 
-                    <div ref={rightRef} className={styles.right}>
+                    <div ref={rightRef} className={styles.right} data-footer-right>
                         <p className={styles.copyright}>
                             <span className={styles.maskLineInner} data-footer-mask>
                                 &copy;{year} {siteConfig.name}
@@ -84,7 +84,7 @@ export function FooterClient({ footer, socials }: FooterClientProps) {
             </Container>
 
             <div className={styles.brandClip} aria-hidden="true">
-                <p ref={brandRef} className={styles.brand}>
+                <p ref={brandRef} className={styles.brand} data-footer-brand>
                     {[...footer.brandMark].map((char, index) => (
                         <span key={index} className={styles.brandChar} data-footer-char>
                             {char}

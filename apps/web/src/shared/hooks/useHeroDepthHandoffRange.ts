@@ -19,12 +19,14 @@ interface UseHeroDepthHandoffRangeOptions {
     stageId?: string;
     heroTrackId?: string;
     cameraTrackId?: string;
+    viewportId?: string;
 }
 
 export function useHeroDepthHandoffRange({
     stageId = "hero-transition-track",
     heroTrackId = "hero-scroll-track",
     cameraTrackId = "stats-camera-track",
+    viewportId = "hero-sticky-stage",
 }: UseHeroDepthHandoffRangeOptions = {}) {
     const [range, setRange] = useState(DEFAULT_RANGE);
 
@@ -32,8 +34,9 @@ export function useHeroDepthHandoffRange({
         const stageRoot = document.getElementById(stageId);
         const heroTrack = document.getElementById(heroTrackId);
         const cameraTrack = document.getElementById(cameraTrackId);
+        const viewport = document.getElementById(viewportId);
 
-        if (!stageRoot || !heroTrack || !cameraTrack) {
+        if (!stageRoot || !heroTrack || !cameraTrack || !viewport) {
             return;
         }
 
@@ -41,9 +44,10 @@ export function useHeroDepthHandoffRange({
             const stageRect = stageRoot.getBoundingClientRect();
             const heroTrackRect = heroTrack.getBoundingClientRect();
             const cameraTrackRect = cameraTrack.getBoundingClientRect();
+            const viewportHeight = viewport.getBoundingClientRect().height;
             const stageTop = stageRect.top + window.scrollY;
-            const heroScrollableRange = Math.max(heroTrackRect.height - window.innerHeight, 1);
-            const cameraScrollableRange = Math.max(cameraTrackRect.height - window.innerHeight, 1);
+            const heroScrollableRange = Math.max(heroTrackRect.height - viewportHeight, 1);
+            const cameraScrollableRange = Math.max(cameraTrackRect.height - viewportHeight, 1);
             const nextEntry = stageTop + heroScrollableRange;
             const nextStart = stageTop + heroScrollableRange * HERO_DEPTH_TRANSITION_START;
             const nextEnd = stageTop + cameraScrollableRange;
@@ -69,6 +73,7 @@ export function useHeroDepthHandoffRange({
         resizeObserver?.observe(stageRoot);
         resizeObserver?.observe(heroTrack);
         resizeObserver?.observe(cameraTrack);
+        resizeObserver?.observe(viewport);
         window.addEventListener("resize", measure);
 
         return () => {
@@ -76,7 +81,7 @@ export function useHeroDepthHandoffRange({
             resizeObserver?.disconnect();
             window.removeEventListener("resize", measure);
         };
-    }, [cameraTrackId, heroTrackId, stageId]);
+    }, [cameraTrackId, heroTrackId, stageId, viewportId]);
 
     return range;
 }

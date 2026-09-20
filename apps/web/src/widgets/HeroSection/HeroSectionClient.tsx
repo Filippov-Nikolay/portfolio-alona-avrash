@@ -121,6 +121,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const reduced = useReducedMotion();
     const isCompact = useCompactViewport();
     const isNarrow = useNarrowViewport();
+    const stageRef = useRef<HTMLDivElement>(null);
     const scrollTrackRef = useRef<HTMLDivElement>(null);
     const nameFirstRef = useRef<HTMLSpanElement>(null);
     const nameLastRef = useRef<HTMLSpanElement>(null);
@@ -207,14 +208,17 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     useLayoutEffect(() => {
         const selectedGeometryProbe = selectedGeometryProbeRef.current;
         const selectedMotionLayer = selectedMotionLayerRef.current;
+        const stage = stageRef.current;
         const header = document.querySelector("header");
 
-        if (!selectedGeometryProbe || !selectedMotionLayer) {
+        if (!selectedGeometryProbe || !selectedMotionLayer || !stage) {
             return;
         }
 
         const measure = () => {
-            const viewportHeight = window.innerHeight;
+            // The sticky scene uses 100svh. Reading that same box keeps the
+            // choreography stable when mobile browser chrome changes innerHeight.
+            const viewportHeight = stage.getBoundingClientRect().height;
             const headerHeight = header?.getBoundingClientRect().height ?? 0;
             const selectedFinalOffset = Math.abs(
                 Number.parseFloat(getComputedStyle(selectedGeometryProbe).marginTop) || 0
@@ -238,6 +242,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
 
         resizeObserver?.observe(selectedGeometryProbe);
         resizeObserver?.observe(selectedMotionLayer);
+        resizeObserver?.observe(stage);
         if (header instanceof HTMLElement) {
             resizeObserver?.observe(header);
         }
@@ -425,7 +430,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                     aria-hidden="true"
                 />
 
-                <div className={styles.stage}>
+                <div ref={stageRef} id="hero-sticky-stage" className={styles.stage}>
                     <m.div
                         className={styles.heroLayer}
                         style={{ opacity: heroOpacity, pointerEvents: heroPointerEvents }}

@@ -17,9 +17,37 @@ const MAX_DESKTOP_REVEAL_DISTANCE = 520;
 const DESKTOP_REVEAL_VIEWPORT_RATIO = 0.45;
 const SCROLL_FOLLOW_TIME_MS = 150;
 const SCROLL_SETTLE_THRESHOLD_PX = 0.1;
+const MAX_FRAME_DELTA_MS = 34;
+const COMPACT_REVEAL_DURATION_MS = 420;
 
 function smoothstep(progress: number) {
     return progress * progress * (3 - 2 * progress);
+}
+
+function limitScrollStepThroughReveals(
+    from: number,
+    to: number,
+    revealStarts: number[],
+    revealDistance: number,
+    maxStep: number
+) {
+    if (to === from) return to;
+
+    if (to > from) {
+        const revealStart = revealStarts.findLast(
+            (start) => from < start + revealDistance && to > start
+        );
+
+        if (revealStart === undefined) return to;
+
+        return Math.min(to, Math.max(from, revealStart) + maxStep);
+    }
+
+    const revealStart = revealStarts.find((start) => from > start && to < start + revealDistance);
+
+    if (revealStart === undefined) return to;
+
+    return Math.max(to, Math.min(from, revealStart + revealDistance) - maxStep);
 }
 
 export function useServicesSectionAnimations(services: Service[]) {
@@ -104,10 +132,12 @@ export function useServicesSectionAnimations(services: Service[]) {
                 let targetScroll = renderedScroll;
                 let followFrame = 0;
                 let previousFrameTime = 0;
+                let capRevealSpeed = false;
 
                 const measureCards = () => {
                     const scrollY = window.scrollY;
                     revealDistance = getCardRevealDistance();
+                    capRevealSpeed = window.matchMedia("(max-width: 767px)").matches;
                     stackOffset =
                         Number.parseFloat(
                             getComputedStyle(grid).getPropertyValue("--_stack-offset")
@@ -159,7 +189,10 @@ export function useServicesSectionAnimations(services: Service[]) {
                 };
 
                 const followScroll = (time: number) => {
-                    const elapsed = previousFrameTime ? time - previousFrameTime : 16.67;
+                    const elapsed = Math.min(
+                        previousFrameTime ? time - previousFrameTime : 16.67,
+                        MAX_FRAME_DELTA_MS
+                    );
                     previousFrameTime = time;
                     const distance = targetScroll - renderedScroll;
                     const followAmount = 1 - Math.exp(-elapsed / SCROLL_FOLLOW_TIME_MS);
@@ -172,7 +205,17 @@ export function useServicesSectionAnimations(services: Service[]) {
                         return;
                     }
 
-                    renderedScroll += distance * followAmount;
+                    const nextScroll = renderedScroll + distance * followAmount;
+
+                    renderedScroll = capRevealSpeed
+                        ? limitScrollStepThroughReveals(
+                              renderedScroll,
+                              nextScroll,
+                              revealStarts,
+                              revealDistance,
+                              (revealDistance * elapsed) / COMPACT_REVEAL_DURATION_MS
+                          )
+                        : nextScroll;
                     renderCards(renderedScroll);
                     followFrame = requestAnimationFrame(followScroll);
                 };

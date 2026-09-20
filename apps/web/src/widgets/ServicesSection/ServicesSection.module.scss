@@ -69,8 +69,6 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
     display: flex;
     flex-direction: column;
     margin-top: clamp(24px, 3vw, 48px);
-    will-change: transform, filter;
-    backface-visibility: hidden;
 
     &::after {
         content: "";
@@ -95,6 +93,8 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
+    backface-visibility: hidden;
+    will-change: transform, opacity, filter;
 
     @include respond-to("tablet") {
         grid-template-columns: 1fr;
@@ -205,7 +205,6 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
 @include reduced-motion {
     .grid {
         gap: 24px;
-        will-change: auto;
 
         &::after {
             display: none;
@@ -215,6 +214,7 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
     .card {
         position: relative;
         top: auto;
+        will-change: auto;
     }
 
     .stackRunway {

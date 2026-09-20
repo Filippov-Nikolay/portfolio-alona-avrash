@@ -33,18 +33,14 @@ function formatSubmittedAt(value: string): string {
     }).format(date)} UTC`;
 }
 
-function detailRow(label: string, value: string, href?: string): string {
-    const content = href
-        ? `<a href="${escapeHtml(href)}" style="color:#050505;text-decoration:underline;text-decoration-color:#aebd00;text-underline-offset:3px;">${escapeHtml(value)}</a>`
-        : escapeHtml(value);
-
+function detailRow(label: string, value: string): string {
     return `
         <tr>
             <td class="detail-label" style="width:112px;padding:14px 20px 14px 0;border-bottom:1px solid #dddddd;color:#6b6b6b;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;line-height:1.4;text-transform:uppercase;letter-spacing:1.2px;vertical-align:top;">
                 ${label}
             </td>
             <td style="padding:14px 0;border-bottom:1px solid #dddddd;color:#050505;font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:600;line-height:1.45;overflow-wrap:anywhere;vertical-align:top;">
-                ${content}
+                ${escapeHtml(value)}
             </td>
         </tr>
     `;
@@ -57,10 +53,7 @@ export function buildContactEmail(input: ContactEmailInput) {
     const message = escapeHtml(input.message).replace(/\r?\n/g, "<br>");
     const locale = escapeHtml(input.locale.toUpperCase());
     const submittedAt = escapeHtml(formatSubmittedAt(input.submittedAt));
-    const replySubject = encodeURIComponent(`Re: your project inquiry to Alona Avrash`);
-    const replyHref = `mailto:${input.email}?subject=${replySubject}`;
-    const phoneHref = input.phone ? `tel:${input.phone.replace(/[^\d+]/g, "")}` : undefined;
-    const phoneRow = input.phone ? detailRow("Phone", input.phone, phoneHref) : "";
+    const phoneRow = input.phone ? detailRow("Phone", input.phone) : "";
 
     const html = `<!doctype html>
 <html lang="en">
@@ -76,7 +69,6 @@ export function buildContactEmail(input: ContactEmailInput) {
                 .brand-role { display: none !important; }
                 .hero-title { font-size: 34px !important; line-height: 0.98 !important; }
                 .detail-label { width: 82px !important; }
-                .reply-button { display: block !important; text-align: center !important; }
             }
         </style>
     </head>
@@ -119,7 +111,7 @@ export function buildContactEmail(input: ContactEmailInput) {
                             <td class="email-padding" style="padding:0 36px 32px;">
                                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-top:1px solid #050505;border-collapse:collapse;">
                                     ${detailRow("Name", input.name)}
-                                    ${detailRow("Email", input.email, `mailto:${input.email}`)}
+                                    ${detailRow("Email", input.email)}
                                     ${phoneRow}
                                 </table>
                             </td>
@@ -142,12 +134,18 @@ export function buildContactEmail(input: ContactEmailInput) {
                         </tr>
                         <tr>
                             <td class="email-padding" style="padding:0 36px 44px;">
-                                <a href="${escapeHtml(replyHref)}" class="reply-button" style="display:inline-block;padding:15px 24px;background:${ACCENT};color:#050505;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:800;line-height:1;text-decoration:none;text-transform:uppercase;">
-                                    Reply to ${name} &nbsp;&#8599;
-                                </a>
-                                <p style="margin:18px 0 0;color:#737373;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.55;">
-                                    Replying to this email also sends your response directly to<br style="display:none;"> <a href="mailto:${email}" style="color:#050505;text-decoration:underline;">${email}</a>.
-                                </p>
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:${ACCENT};border-collapse:separate;border-spacing:0;">
+                                    <tr>
+                                        <td style="padding:17px 20px;color:#050505;font-family:Arial,Helvetica,sans-serif;">
+                                            <p style="margin:0;font-size:13px;font-weight:800;line-height:1;text-transform:uppercase;">
+                                                Reply to this email &nbsp;&#8599;
+                                            </p>
+                                            <p style="margin:9px 0 0;font-size:12px;line-height:1.5;">
+                                                Use your inbox's Reply action. Your response will be delivered directly to <strong>${email}</strong>.
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
                             </td>
                         </tr>
                         <tr>

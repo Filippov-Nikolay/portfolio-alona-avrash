@@ -18,7 +18,11 @@ describe("buildContactEmail", () => {
         expect(email.html).toContain("ALONA<br>AVRASH");
         expect(email.html).toContain("#eafd27");
         expect(email.html).toContain("Hello Alona,<br>I have a new project.");
-        expect(email.html).toContain("tel:+48123456789");
+        expect(email.html).toContain("Phone");
+        expect(email.html).toContain("+48 123 456 789");
+        expect(email.html).toContain("Use your inbox's Reply action");
+        expect(email.html).not.toContain("mailto:");
+        expect(email.html).not.toContain("tel:");
         expect(email.text).toContain("Phone: +48 123 456 789");
         expect(email.text).toContain("20 Sept 2026, 12:54 UTC");
     });

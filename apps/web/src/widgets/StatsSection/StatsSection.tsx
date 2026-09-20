@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import { type MotionValue } from "framer-motion";
 import type { StatItem } from "@avrash/content-schema";
 import { Container, Section } from "@/shared/ui";
@@ -58,7 +58,15 @@ export function StatsSection({
         <Section as={as} id={id} className={cn(styles.section, className)}>
             <Container>
                 <div ref={sectionRef} className={styles.content}>
-                    <div ref={gridRef} className={styles.grid}>
+                    <div
+                        ref={gridRef}
+                        className={styles.grid}
+                        style={
+                            {
+                                "--stats-count": Math.max(items.length, 1),
+                            } as CSSProperties
+                        }
+                    >
                         {items.map(({ id: itemId, value, label }, index) => {
                             const parsed = parsedValues[index];
 

@@ -1,13 +1,15 @@
 "use client";
 
 import {
+    useCallback,
     useEffect,
     useLayoutEffect,
+    useMemo,
     useRef,
     useState,
-    type CSSProperties,
     type PointerEvent,
 } from "react";
+import Image from "next/image";
 import type { Tool } from "@avrash/content-schema";
 import { Container, Section } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
@@ -26,32 +28,66 @@ interface ToolsSectionProps {
     labels: ToolsSectionLabels;
 }
 
-interface OverlayRect {
-    left: number;
-    top: number;
-    width: number;
-    height: number;
-}
-
 const AUTO_SCROLL_SPEED = 100;
 const AUTO_SCROLL_RESUME_DELAY = 1_500;
 const MARQUEE_CYCLES = 4;
+const PEEK_IMAGE_SIZE = 264;
+const PEEK_IMAGE_QUALITY = 72;
+const PEEK_PRELOAD_MARGIN = "1200px 0px";
+const PEEK_PRELOAD_FALLBACK_DELAY = 2_500;
+const MOMENTUM_MAX_SPEED = 1.1;
+const MOMENTUM_DAMPING = 0.88;
+const MOMENTUM_STOP_SPEED = 0.018;
+const MOMENTUM_MAX_DURATION = 520;
 
 export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     const [hoveredId, setHoveredId] = useState<number | null>(null);
     const [pinnedId, setPinnedId] = useState<number | null>(null);
     const [overlayTool, setOverlayTool] = useState<Tool | null>(null);
-    const [overlayRect, setOverlayRect] = useState<OverlayRect | null>(null);
     const [isOverlayActive, setIsOverlayActive] = useState(false);
+    const [shouldPreloadPeekImages, setShouldPreloadPeekImages] = useState(false);
+    const [readyPeekImages, setReadyPeekImages] = useState<Set<string>>(() => new Set());
     const pointerTypeRef = useRef<string>("mouse");
     const { sectionRef, titleRef, descriptionRef, trackRef } = useToolsSectionAnimations();
     const sequenceRef = useRef<HTMLDivElement>(null);
+    const peekOverlayRef = useRef<HTMLDivElement>(null);
     const activeCardElRef = useRef<HTMLButtonElement | null>(null);
-    const dragRef = useRef({ active: false, startX: 0, scrollLeft: 0, didDrag: false });
+    const dragRef = useRef({
+        active: false,
+        startX: 0,
+        scrollLeft: 0,
+        didDrag: false,
+        pointerType: "mouse",
+        lastX: 0,
+        lastTimestamp: 0,
+        velocity: 0,
+    });
+    const momentumFrameRef = useRef(0);
     const isTrackHoveredRef = useRef(false);
     const pauseAutoScrollRef = useRef<() => void>(() => undefined);
     const activeId = hoveredId ?? pinnedId;
     const isPeeking = activeId !== null;
+    const peekSources = useMemo(
+        () =>
+            Array.from(
+                new Set(
+                    tools.flatMap((tool) => tool.images.map((image) => peekBlendSrc(image.src)))
+                )
+            ),
+        [tools]
+    );
+    const overlayImagesReady =
+        overlayTool?.images.every((image) => readyPeekImages.has(peekBlendSrc(image.src))) ?? false;
+
+    const markPeekImageReady = useCallback((src: string) => {
+        setReadyPeekImages((current) => {
+            if (current.has(src)) return current;
+
+            const next = new Set(current);
+            next.add(src);
+            return next;
+        });
+    }, []);
 
     useLayoutEffect(() => {
         const track = trackRef.current;
@@ -60,6 +96,34 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
         track.scrollLeft = sequence.offsetWidth;
     }, [tools.length, trackRef]);
+
+    useEffect(() => {
+        const section = sectionRef.current;
+        if (!section || shouldPreloadPeekImages) return;
+
+        let didStart = false;
+        const startPreloading = () => {
+            if (didStart) return;
+            didStart = true;
+            setShouldPreloadPeekImages(true);
+        };
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (!entry.isIntersecting) return;
+
+                startPreloading();
+                observer.disconnect();
+            },
+            { rootMargin: PEEK_PRELOAD_MARGIN }
+        );
+        const fallbackTimer = window.setTimeout(startPreloading, PEEK_PRELOAD_FALLBACK_DELAY);
+
+        observer.observe(section);
+        return () => {
+            observer.disconnect();
+            window.clearTimeout(fallbackTimer);
+        };
+    }, [sectionRef, shouldPreloadPeekImages]);
 
     useEffect(() => {
         const track = trackRef.current;
@@ -173,48 +237,105 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     }
 
     useLayoutEffect(() => {
-        if (!isPeeking) return;
+        if (!isPeeking || !overlayImagesReady) return;
 
         const frameId = requestAnimationFrame(() => {
             setIsOverlayActive(true);
         });
 
         return () => cancelAnimationFrame(frameId);
-    }, [activeId, isPeeking]);
+    }, [activeId, isPeeking, overlayImagesReady]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!isPeeking) return;
 
         let frameId = 0;
         const syncRect = () => {
             const card = activeCardElRef.current;
             const section = sectionRef.current;
-            if (card && section) {
+            const overlay = peekOverlayRef.current;
+            if (card && section && overlay) {
                 const cardRect = card.getBoundingClientRect();
                 const sectionRect = section.getBoundingClientRect();
-                setOverlayRect({
-                    left: cardRect.left - sectionRect.left,
-                    top: cardRect.top - sectionRect.top,
-                    width: cardRect.width,
-                    height: cardRect.height,
-                });
+                overlay.style.setProperty(
+                    "--overlay-left",
+                    `${cardRect.left - sectionRect.left}px`
+                );
+                overlay.style.setProperty("--overlay-top", `${cardRect.top - sectionRect.top}px`);
+                overlay.style.setProperty("--overlay-width", `${cardRect.width}px`);
+                overlay.style.setProperty("--overlay-height", `${cardRect.height}px`);
             }
             frameId = requestAnimationFrame(syncRect);
         };
-        frameId = requestAnimationFrame(syncRect);
+        syncRect();
 
         return () => cancelAnimationFrame(frameId);
     }, [isPeeking, sectionRef]);
 
+    useEffect(
+        () => () => {
+            cancelAnimationFrame(momentumFrameRef.current);
+        },
+        []
+    );
+
+    function stopMomentum() {
+        cancelAnimationFrame(momentumFrameRef.current);
+        momentumFrameRef.current = 0;
+    }
+
+    function keepInsideMarqueeLoop(track: HTMLDivElement, position: number) {
+        const loopWidth = sequenceRef.current?.offsetWidth ?? 0;
+        if (loopWidth <= 0) return position;
+        if (position < loopWidth * 0.5) return position + loopWidth;
+        if (position > loopWidth * 2.5) return position - loopWidth;
+        return position;
+    }
+
+    function startMomentum(track: HTMLDivElement, initialVelocity: number) {
+        stopMomentum();
+
+        let velocity = Math.max(-MOMENTUM_MAX_SPEED, Math.min(MOMENTUM_MAX_SPEED, initialVelocity));
+        if (Math.abs(velocity) < MOMENTUM_STOP_SPEED) return;
+
+        let previousTimestamp = performance.now();
+        const startedAt = previousTimestamp;
+
+        const glide = (timestamp: number) => {
+            const elapsed = Math.min(32, timestamp - previousTimestamp);
+            previousTimestamp = timestamp;
+            track.scrollLeft = keepInsideMarqueeLoop(track, track.scrollLeft + velocity * elapsed);
+            velocity *= Math.pow(MOMENTUM_DAMPING, elapsed / (1000 / 60));
+
+            if (
+                Math.abs(velocity) < MOMENTUM_STOP_SPEED ||
+                timestamp - startedAt >= MOMENTUM_MAX_DURATION
+            ) {
+                momentumFrameRef.current = 0;
+                return;
+            }
+
+            momentumFrameRef.current = requestAnimationFrame(glide);
+        };
+
+        momentumFrameRef.current = requestAnimationFrame(glide);
+    }
+
     function startDrag(event: PointerEvent<HTMLDivElement>) {
         if (event.pointerType === "mouse" && event.button !== 0) return;
 
+        stopMomentum();
+        pauseAutoScrollRef.current();
         const track = event.currentTarget;
         dragRef.current = {
             active: true,
             startX: event.clientX,
             scrollLeft: track.scrollLeft,
             didDrag: false,
+            pointerType: event.pointerType,
+            lastX: event.clientX,
+            lastTimestamp: event.timeStamp,
+            velocity: 0,
         };
         track.setPointerCapture(event.pointerId);
     }
@@ -228,14 +349,37 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             state.didDrag = true;
             pauseAutoScrollRef.current();
         }
+        const elapsed = event.timeStamp - state.lastTimestamp;
+        if (elapsed > 0) {
+            const instantVelocity = -(event.clientX - state.lastX) / elapsed;
+            state.velocity = state.velocity * 0.58 + instantVelocity * 0.42;
+            state.lastX = event.clientX;
+            state.lastTimestamp = event.timeStamp;
+        }
         event.currentTarget.scrollLeft = state.scrollLeft - deltaX;
     }
 
     function endDrag(event: PointerEvent<HTMLDivElement>) {
         if (!dragRef.current.active) return;
 
+        const state = dragRef.current;
+        state.active = false;
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+
+        if (state.didDrag && state.pointerType !== "mouse") {
+            startMomentum(event.currentTarget, state.velocity);
+        }
+    }
+
+    function cancelDrag(event: PointerEvent<HTMLDivElement>) {
+        if (!dragRef.current.active) return;
+
         dragRef.current.active = false;
-        event.currentTarget.releasePointerCapture(event.pointerId);
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }
     }
 
     function pauseOnTrackHover() {
@@ -252,15 +396,6 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         return null;
     }
 
-    const overlayStyle = overlayRect
-        ? ({
-              "--overlay-left": `${overlayRect.left}px`,
-              "--overlay-top": `${overlayRect.top}px`,
-              "--overlay-width": `${overlayRect.width}px`,
-              "--overlay-height": `${overlayRect.height}px`,
-          } as CSSProperties)
-        : undefined;
-
     return (
         <Section id="tools" ref={sectionRef} className={styles.section}>
             <Container className={styles.header}>
@@ -275,10 +410,11 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             <div
                 ref={trackRef}
                 className={styles.track}
+                data-tools-track
                 onPointerDown={startDrag}
                 onPointerMove={drag}
                 onPointerUp={endDrag}
-                onPointerCancel={endDrag}
+                onPointerCancel={cancelDrag}
                 onPointerEnter={pauseOnTrackHover}
                 onPointerLeave={resumeAfterTrackHover}
             >
@@ -327,23 +463,58 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                 </div>
             </div>
 
+            {shouldPreloadPeekImages && (
+                <div className={styles.peekPreloader} data-tools-peek-preloader aria-hidden="true">
+                    {peekSources.map((src) => (
+                        <Image
+                            key={src}
+                            src={src}
+                            alt=""
+                            width={PEEK_IMAGE_SIZE}
+                            height={PEEK_IMAGE_SIZE}
+                            sizes={`${PEEK_IMAGE_SIZE}px`}
+                            quality={PEEK_IMAGE_QUALITY}
+                            loading="eager"
+                            fetchPriority="low"
+                            onLoad={() => markPeekImageReady(src)}
+                            onError={() => markPeekImageReady(src)}
+                        />
+                    ))}
+                </div>
+            )}
+
             {overlayTool && (
                 <div
+                    ref={peekOverlayRef}
                     className={cn(styles.peekOverlay, isOverlayActive && styles.peekOverlayActive)}
-                    style={overlayStyle}
+                    data-tools-peek-overlay
+                    data-active={isOverlayActive || undefined}
                     aria-hidden="true"
                 >
-                    {overlayTool.images.map((image, index) => (
-                        <span key={image.src} className={styles.cardItem} style={peekStyle(index)}>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                                src={peekBlendSrc(image.src)}
-                                alt=""
-                                className={styles.cardItemImg}
-                                draggable={false}
-                            />
-                        </span>
-                    ))}
+                    {overlayTool.images.map((image, index) => {
+                        const src = peekBlendSrc(image.src);
+
+                        return (
+                            <span
+                                key={image.src}
+                                className={styles.cardItem}
+                                style={peekStyle(index)}
+                            >
+                                <Image
+                                    src={src}
+                                    alt=""
+                                    width={PEEK_IMAGE_SIZE}
+                                    height={PEEK_IMAGE_SIZE}
+                                    sizes={`${PEEK_IMAGE_SIZE}px`}
+                                    quality={PEEK_IMAGE_QUALITY}
+                                    className={styles.cardItemImg}
+                                    onLoad={() => markPeekImageReady(src)}
+                                    onError={() => markPeekImageReady(src)}
+                                    draggable={false}
+                                />
+                            </span>
+                        );
+                    })}
                 </div>
             )}
         </Section>

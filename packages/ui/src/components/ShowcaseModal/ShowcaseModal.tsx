@@ -33,6 +33,7 @@ interface LightboxState {
     index: number;
     launchRect: LightboxRect;
     fillRect: LightboxRect;
+    transitionSrc?: string;
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
@@ -47,12 +48,10 @@ function TileImage({
     src,
     alt,
     scrollRoot,
-    enabled,
 }: {
     src: string;
     alt: string;
     scrollRoot: RefObject<HTMLDivElement | null>;
-    enabled: boolean;
 }) {
     const imageRef = useRef<HTMLDivElement>(null);
     const [poster, setPoster] = useState<string>();
@@ -94,7 +93,7 @@ function TileImage({
             data-load-state={loadState}
             aria-busy={loadState === "loading"}
         >
-            {enabled && inView && (
+            {inView && (
                 <>
                     {poster && (
                         <Image
@@ -171,7 +170,6 @@ function ModalContent({
     const tabsRef = useRef<HTMLDivElement>(null);
     const galleryElRefs = useRef<Map<number, HTMLElement>>(new Map());
     const [lightbox, setLightbox] = useState<LightboxState | null>(null);
-    const [lightboxClosing, setLightboxClosing] = useState(false);
     const registerTile = useGalleryTilt(bodyRef, tabsRef);
     const [modalEntranceDone, setModalEntranceDone] = useState(false);
     const autoOpenedLightboxRef = useRef(false);
@@ -248,11 +246,17 @@ function ModalContent({
         const tileRect = measureRect(el);
         if (!modalEl || !tileRect) return;
 
-        setLightboxClosing(false);
+        const poster = el.querySelector<HTMLImageElement>('img[aria-hidden="true"]');
+        const loadedImage = Array.from(el.querySelectorAll<HTMLImageElement>("img")).find(
+            (image) => image.complete && image.naturalWidth > 0
+        );
+        const transitionSrc = poster?.currentSrc || loadedImage?.currentSrc || undefined;
+
         setLightbox({
             index,
             launchRect: tileRect,
             fillRect: { top: 0, left: 0, width: modalEl.clientWidth, height: modalEl.clientHeight },
+            transitionSrc,
         });
         onLightboxChange?.(index);
     };
@@ -290,6 +294,22 @@ function ModalContent({
         );
 
         const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const compactPointer = window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+
+        if (compactPointer) {
+            // The lightbox is still fully opaque here, so position the hidden gallery once
+            // instead of repainting the entire modal alongside every closing frame.
+            body.scrollTop = targetScrollTop;
+            const settledRect = el.getBoundingClientRect();
+            const modalRect = modalEl.getBoundingClientRect();
+            return {
+                top: settledRect.top - modalRect.top,
+                left: settledRect.left - modalRect.left,
+                width: settledRect.width,
+                height: settledRect.height,
+            };
+        }
+
         animate(body.scrollTop, targetScrollTop, {
             duration: reducedMotion ? 0 : CLOSE_TRANSITION.duration,
             ease: CLOSE_TRANSITION.ease,
@@ -335,7 +355,11 @@ function ModalContent({
                 <CloseIcon className={styles.closeIcon} />
             </button>
 
-            <div ref={bodyRef} className={styles.body}>
+            <div
+                ref={bodyRef}
+                className={styles.body}
+                data-lightbox-open={lightbox ? "" : undefined}
+            >
                 <div className={styles.banner}>
                     {item.src && (
                         <div className={styles.bannerImageWrap}>
@@ -438,7 +462,6 @@ function ModalContent({
                                                         src={image.src}
                                                         alt={image.alt}
                                                         scrollRoot={bodyRef}
-                                                        enabled={!lightbox || lightboxClosing}
                                                     />
                                                 </button>
                                             ))}
@@ -494,7 +517,6 @@ function ModalContent({
                                                             src={image.src}
                                                             alt={image.alt}
                                                             scrollRoot={bodyRef}
-                                                            enabled={!lightbox || lightboxClosing}
                                                         />
                                                     </button>
                                                 ))}
@@ -514,11 +536,10 @@ function ModalContent({
                     initialIndex={lightbox.index}
                     launchRect={lightbox.launchRect}
                     fillRect={lightbox.fillRect}
+                    transitionSrc={lightbox.transitionSrc}
                     getCloseRect={getCloseRect}
-                    onCloseStart={() => setLightboxClosing(true)}
                     onClose={() => {
                         setLightbox(null);
-                        setLightboxClosing(false);
                         onLightboxChange?.(null);
                     }}
                 />

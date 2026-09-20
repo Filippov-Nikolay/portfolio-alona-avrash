@@ -518,7 +518,8 @@
     display: none;
 }
 
-.body[data-scrolling] {
+.body[data-scrolling],
+.body[data-lightbox-open] {
     .overviewPreview .previewItem {
         flex-grow: 1;
         transition: none;

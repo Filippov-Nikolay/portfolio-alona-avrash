@@ -5,7 +5,11 @@
     z-index: 30;
     overflow: hidden;
     background: var(--accent-color-modal, #000);
-    will-change: top, left, width, height;
+    transform-origin: 0 0;
+    will-change: transform, border-radius;
+    contain: layout paint style;
+    isolation: isolate;
+    backface-visibility: hidden;
 }
 
 .close {
@@ -112,6 +116,7 @@
     height: 100%;
     object-fit: contain;
     display: block;
+    backface-visibility: hidden;
 }
 
 .imageCover {

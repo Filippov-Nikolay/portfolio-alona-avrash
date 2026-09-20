@@ -28,9 +28,9 @@ interface GalleryLightboxProps {
     initialIndex: number;
     launchRect: LightboxRect;
     fillRect: LightboxRect;
+    transitionSrc?: string;
 
     getCloseRect: (index: number) => LightboxRect | null;
-    onCloseStart?: () => void;
     onClose: () => void;
 }
 
@@ -150,14 +150,22 @@ function TransitionSlotContent({
     slot,
     anchorIndex,
     phase,
+    transitionSrc,
 }: {
     slot: GallerySlot;
     anchorIndex: number;
     phase: "opening" | "closing";
+    transitionSrc?: string;
 }) {
     if (slot.type === "single") {
         const { image } = slot.images[0];
-        return <FitMorphImage src={image.src} alt={image.alt} phase={phase} />;
+        return (
+            <FitMorphImage
+                src={phase === "opening" ? (transitionSrc ?? image.src) : image.src}
+                alt={image.alt}
+                phase={phase}
+            />
+        );
     }
 
     const anchorPosition = Math.max(
@@ -203,7 +211,15 @@ function TransitionSlotContent({
                             }
                         >
                             {anchor ? (
-                                <FitMorphImage src={image.src} alt={image.alt} phase={phase} />
+                                <FitMorphImage
+                                    src={
+                                        phase === "opening"
+                                            ? (transitionSrc ?? image.src)
+                                            : image.src
+                                    }
+                                    alt={image.alt}
+                                    phase={phase}
+                                />
                             ) : (
                                 <FramedImage src={image.src} alt={image.alt} eager />
                             )}
@@ -418,8 +434,8 @@ export function GalleryLightbox({
     initialIndex,
     launchRect,
     fillRect,
+    transitionSrc,
     getCloseRect,
-    onCloseStart,
     onClose,
 }: GalleryLightboxProps) {
     const [phase, setPhase] = useState<"opening" | "open" | "closing">("opening");
@@ -449,7 +465,6 @@ export function GalleryLightbox({
         setCloseIndex(index);
         setCloseRect(getCloseRect(index) ?? launchRect);
         setPhase("closing");
-        onCloseStart?.();
     };
 
     const requestCloseRef = useRef(requestClose);
@@ -471,7 +486,17 @@ export function GalleryLightbox({
         return () => document.removeEventListener("keydown", handler);
     }, []);
 
-    const rect = phase === "closing" ? (closeRect ?? launchRect) : fillRect;
+    const toTransform = (rect: LightboxRect) => ({
+        x: rect.left - fillRect.left,
+        y: rect.top - fillRect.top,
+        scaleX: rect.width / fillRect.width,
+        scaleY: rect.height / fillRect.height,
+    });
+    const launchTransform = toTransform(launchRect);
+    const targetTransform =
+        phase === "closing"
+            ? toTransform(closeRect ?? launchRect)
+            : { x: 0, y: 0, scaleX: 1, scaleY: 1 };
     const transitionSlot =
         slots[phase === "closing" ? closeSlotIndex : initialSlotIndex] ?? slots[0];
     const transitionAnchorIndex = phase === "closing" ? closeIndex : initialIndex;
@@ -479,18 +504,18 @@ export function GalleryLightbox({
     return (
         <m.div
             className={styles.lightbox}
+            style={{
+                top: fillRect.top,
+                left: fillRect.left,
+                width: fillRect.width,
+                height: fillRect.height,
+            }}
             initial={{
-                top: launchRect.top,
-                left: launchRect.left,
-                width: launchRect.width,
-                height: launchRect.height,
+                ...launchTransform,
                 borderRadius: TILE_RADIUS_PX,
             }}
             animate={{
-                top: rect.top,
-                left: rect.left,
-                width: rect.width,
-                height: rect.height,
+                ...targetTransform,
                 borderRadius: phase === "closing" ? TILE_RADIUS_PX : 0,
             }}
             transition={phase === "closing" ? CLOSE_TRANSITION : OPEN_TRANSITION}
@@ -518,6 +543,7 @@ export function GalleryLightbox({
                     slot={transitionSlot}
                     anchorIndex={transitionAnchorIndex}
                     phase={phase}
+                    transitionSrc={transitionSrc}
                 />
             ) : (
                 <FramedImage

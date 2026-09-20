@@ -28,6 +28,7 @@ const FINAL_TAIL_TRACK_ADVANCE = 0.25;
 const FINAL_COMPOSITION_VISUAL_OFFSET = 20;
 const FINAL_STOP_VELOCITY = 1400;
 const FINAL_HOLD_SCROLL_DISTANCE = 0.9;
+const COMPACT_MEDIA_QUERY = "(max-width: 479px)";
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(Math.max(value, min), max);
 const lerp = (from: number, to: number, progress: number) => from + (to - from) * progress;
@@ -39,10 +40,12 @@ const smoothstep = (value: number) => {
 };
 
 function useCompactViewport() {
-    const [compact, setCompact] = useState(false);
+    const [compact, setCompact] = useState(
+        () => typeof window !== "undefined" && window.matchMedia(COMPACT_MEDIA_QUERY).matches
+    );
 
     useEffect(() => {
-        const media = window.matchMedia("(max-width: 479px)");
+        const media = window.matchMedia(COMPACT_MEDIA_QUERY);
         const update = () => setCompact(media.matches);
 
         update();
@@ -439,6 +442,7 @@ export function useProjectsSectionAnimations() {
                 pinSpacing: true,
                 scrub: true,
                 anticipatePin: 1,
+                refreshPriority: 1,
                 invalidateOnRefresh: true,
                 snap: {
                     delay: 0.02,

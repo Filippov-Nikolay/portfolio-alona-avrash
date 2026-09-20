@@ -6,7 +6,7 @@ import type { ClientsRow, MarqueeDirection } from "@avrash/content-schema";
 import { useArrayRefs, useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
-const isCompact = () => window.matchMedia("(max-width: 767px)").matches;
+const isCompact = () => window.matchMedia("(max-width: 768px)").matches;
 const getStart = () => (isCompact() ? "top 92%" : "top 82%");
 
 interface RowRefPair {

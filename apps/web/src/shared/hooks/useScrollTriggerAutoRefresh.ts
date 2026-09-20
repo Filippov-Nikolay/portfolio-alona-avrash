@@ -12,6 +12,7 @@ let refreshTimers: number[] = [];
 function queueRefresh() {
     cancelAnimationFrame(refreshRaf);
     refreshRaf = requestAnimationFrame(() => {
+        ScrollTrigger.sort();
         ScrollTrigger.refresh();
     });
 }

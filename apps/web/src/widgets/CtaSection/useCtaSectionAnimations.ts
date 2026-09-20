@@ -5,7 +5,7 @@ import { useReducedMotion } from "framer-motion";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
-const isCompact = () => window.matchMedia("(max-width: 767px)").matches;
+const isCompact = () => window.matchMedia("(max-width: 768px)").matches;
 const getStart = () => (isCompact() ? "top 88%" : "top 68%");
 
 export function useCtaSectionAnimations() {

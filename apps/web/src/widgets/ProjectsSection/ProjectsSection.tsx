@@ -45,6 +45,7 @@ export function ProjectsSection({
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [pinnedIndex, setPinnedIndex] = useState<number | null>(null);
+    const [shouldPreloadImages, setShouldPreloadImages] = useState(false);
     const pointerTypeRef = useRef<string>("mouse");
     const {
         sectionRef,
@@ -84,6 +85,24 @@ export function ProjectsSection({
     useEffect(() => {
         setGalleryActiveIndex(activeIndex);
     }, [activeIndex, setGalleryActiveIndex]);
+
+    useEffect(() => {
+        const section = sectionRef.current;
+        if (!section || shouldPreloadImages) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (!entry.isIntersecting) return;
+
+                setShouldPreloadImages(true);
+                observer.disconnect();
+            },
+            { rootMargin: "200% 0px" }
+        );
+
+        observer.observe(section);
+        return () => observer.disconnect();
+    }, [sectionRef, shouldPreloadImages]);
 
     if (cards.length === 0) {
         return null;
@@ -147,6 +166,8 @@ export function ProjectsSection({
                                                 fill
                                                 className={styles.image}
                                                 sizes="(max-width: 479px) 260px, 278px"
+                                                loading={shouldPreloadImages ? "eager" : "lazy"}
+                                                fetchPriority="low"
                                                 draggable={false}
                                             />
                                         )}

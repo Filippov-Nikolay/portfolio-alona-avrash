@@ -143,6 +143,13 @@
     display: none;
 }
 
+@media (hover: none) and (pointer: coarse) {
+    .interactionLayer {
+        transition: none;
+        will-change: auto;
+    }
+}
+
 .viewAll {
     position: absolute;
     top: 0;

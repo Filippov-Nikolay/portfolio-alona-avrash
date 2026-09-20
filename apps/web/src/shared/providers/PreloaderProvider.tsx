@@ -6,6 +6,7 @@ const STORAGE_KEY = "site:preloader";
 const COOKIE_KEY = "site-preloader";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const DISMISS_DELAY_MS = 2250;
+const REDUCED_MOTION_DISMISS_DELAY_MS = 250;
 
 interface PreloaderContextValue {
     isShown: boolean;
@@ -26,16 +27,21 @@ export function PreloaderProvider({ children, initialHasSeenPreloader }: Preload
     const [didExit, setDidExit] = useState(false);
 
     const isShown = !hasSeenPreloader && !shouldHide;
-    const isReady = hasSeenPreloader || didExit;
+    // Start the page choreography underneath the outgoing preloader so its
+    // upward wipe reveals an already-living scene instead of an empty page.
+    const isReady = hasSeenPreloader || shouldHide || didExit;
 
     useEffect(() => {
         if (hasSeenPreloader || shouldHide) {
             return;
         }
 
+        const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? REDUCED_MOTION_DISMISS_DELAY_MS
+            : DISMISS_DELAY_MS;
         const timer = window.setTimeout(() => {
             setShouldHide(true);
-        }, DISMISS_DELAY_MS);
+        }, delay);
 
         return () => {
             window.clearTimeout(timer);

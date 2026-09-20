@@ -14,6 +14,7 @@ import { Footer } from "@/widgets/Footer";
 import { LOCALES, isLocale, getLocaleMeta } from "@/i18n/locales";
 import { buildPageAlternates } from "@/shared/lib/seo";
 import { getSocials } from "@/entities/social/api/getSocials";
+import styles from "./layout.module.scss";
 
 import "@/shared/styles/globals.scss";
 
@@ -151,7 +152,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                 <NextIntlClientProvider messages={messages}>
                     <AppProviders initialHasSeenPreloader={hasSeenPreloader}>
                         <Header />
-                        {children}
+                        <div className={styles.pageSlot}>{children}</div>
                         <Footer locale={locale} />
                     </AppProviders>
                     <SpeedInsights />

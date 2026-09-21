@@ -158,8 +158,13 @@
     }
 
     .sequence {
-        gap: 16px;
-        padding-right: 16px;
+        gap: 12px;
+        padding-right: 12px;
+    }
+
+    .cardItem {
+        width: 180px;
+        height: 180px;
     }
 }
 

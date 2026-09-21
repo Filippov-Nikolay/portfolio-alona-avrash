@@ -152,6 +152,43 @@
     @include transition(color, transform);
 }
 
+@include respond-to("mobile") {
+    .card {
+        width: 220px;
+        height: 200px;
+        padding: 10px;
+    }
+
+    .cardFolderActive {
+        inset: -9px;
+        width: calc(100% + 18px);
+        height: calc(100% + 18px);
+    }
+
+    .cardBody {
+        margin-top: 22px;
+    }
+
+    .cardIconTool {
+        margin-bottom: 14px;
+        width: 100px;
+        height: 100px;
+    }
+
+    .cardLabelTool {
+        font-size: 17px;
+    }
+
+    .cardArrow {
+        right: 14px;
+        bottom: 14px;
+    }
+
+    .cardArrowIcon {
+        width: 11px;
+    }
+}
+
 @include reduced-motion {
     .cardFolder,
     .cardFolderActive,

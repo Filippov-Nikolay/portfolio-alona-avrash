@@ -14,6 +14,7 @@ const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 export function ColorField({ label, value, onChange, allowEmpty }: ColorFieldProps) {
     const swatchValue = HEX_PATTERN.test(value) ? value : "#000000";
+    const invalid = value.length > 0 && !HEX_PATTERN.test(value);
     const swatchId = useId();
 
     return (
@@ -34,6 +35,7 @@ export function ColorField({ label, value, onChange, allowEmpty }: ColorFieldPro
                     className={styles.hex}
                     value={value}
                     aria-label={label}
+                    aria-invalid={invalid}
                     placeholder={allowEmpty ? "unset" : "#000000"}
                     onChange={(e) => onChange(e.target.value)}
                 />

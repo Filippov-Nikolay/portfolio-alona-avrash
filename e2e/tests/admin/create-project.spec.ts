@@ -13,7 +13,7 @@ test.describe("create project", () => {
 
         await page.waitForURL("/works/projects");
         await expect(
-            page.locator("table").getByRole("link", { name: "E2E Create Project" })
+            page.locator("table").getByRole("link", { name: "E2E Create Project", exact: true })
         ).toBeVisible();
     });
 

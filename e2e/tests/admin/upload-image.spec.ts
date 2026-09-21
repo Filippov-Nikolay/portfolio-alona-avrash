@@ -11,7 +11,7 @@ test.describe("upload image", () => {
         await page.getByLabel("Name").fill("E2E Upload Project");
         await page.getByRole("button", { name: "Branding" }).click();
 
-        await page.getByRole("button", { name: "Add item" }).click();
+        await page.getByRole("button", { name: "Add image" }).click();
         await expect(page.getByText("Click to upload")).toBeVisible();
 
         await page.locator('input[type="file"]').setInputFiles(FIXTURE_IMAGE);

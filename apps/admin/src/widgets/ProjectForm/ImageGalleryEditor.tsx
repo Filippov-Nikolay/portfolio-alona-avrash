@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Reorder, useDragControls } from "framer-motion";
+import { GripVertical, ImagePlus, Plus, Star, Trash2, Upload } from "lucide-react";
 import { ASSET_BASE_URL, assetUrl } from "@/shared/config/assets";
 import { Button } from "@/shared/ui/Button";
 import { ConfirmDialog } from "@/shared/ui/ConfirmDialog";
@@ -65,7 +66,15 @@ export function ImageGalleryEditor({
 
     return (
         <div className={styles.list}>
-            {images.length === 0 && <p className={styles.empty}>No images yet.</p>}
+            {images.length === 0 && (
+                <div className={styles.empty}>
+                    <ImagePlus size={22} strokeWidth={1.6} aria-hidden="true" />
+                    <div>
+                        <strong>No gallery images</strong>
+                        <span>Add the first image to build the project story.</span>
+                    </div>
+                </div>
+            )}
 
             {images.length > 0 && (
                 <Reorder.Group
@@ -94,67 +103,14 @@ export function ImageGalleryEditor({
             )}
 
             <Button variant="secondary" onClick={add} className={styles.addButton}>
-                Add item
+                <Plus size={15} strokeWidth={1.8} aria-hidden="true" />
+                Add image
             </Button>
 
             <p className={styles.hint}>
-                Previews resolve against {ASSET_BASE_URL} - make sure the site&apos;s dev server is
-                running to see them.
+                Asset source: <span>{ASSET_BASE_URL}</span>
             </p>
         </div>
-    );
-}
-
-function DragHandleIcon() {
-    return (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <circle cx="9" cy="5" r="1.75" />
-            <circle cx="9" cy="12" r="1.75" />
-            <circle cx="9" cy="19" r="1.75" />
-            <circle cx="15" cy="5" r="1.75" />
-            <circle cx="15" cy="12" r="1.75" />
-            <circle cx="15" cy="19" r="1.75" />
-        </svg>
-    );
-}
-
-function TrashIcon() {
-    return (
-        <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-        >
-            <path d="M4 7h16" />
-            <path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7" />
-            <path d="M18.5 7 17.7 19a2 2 0 0 1-2 1.9H8.3a2 2 0 0 1-2-1.9L5.5 7" />
-            <path d="M10 11v6" />
-            <path d="M14 11v6" />
-        </svg>
-    );
-}
-
-function StarIcon({ filled }: { filled: boolean }) {
-    return (
-        <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill={filled ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-        >
-            <path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" />
-        </svg>
     );
 }
 
@@ -235,20 +191,29 @@ function ImageRow({
             className={cn(styles.row, isDragging && styles.rowDragging)}
         >
             <div className={styles.rowHeader}>
-                <label
-                    className={cn(styles.heroToggle, image.isHero && styles.heroToggleActive)}
-                    title={image.isHero ? "Hero image" : "Set as hero image"}
-                >
-                    <input
-                        type="radio"
-                        name="hero-image"
-                        className={styles.heroInput}
-                        checked={image.isHero}
-                        onChange={onSetHero}
-                    />
-                    <StarIcon filled={image.isHero} />
-                </label>
+                <div className={styles.rowIdentity}>
+                    <strong>Image {String(order).padStart(2, "0")}</strong>
+                    {image.isHero && <span className={styles.heroBadge}>Hero</span>}
+                </div>
                 <div className={styles.headerActions}>
+                    <label
+                        className={cn(styles.heroToggle, image.isHero && styles.heroToggleActive)}
+                        title={image.isHero ? "Hero image" : "Set as hero image"}
+                    >
+                        <input
+                            type="radio"
+                            name="hero-image"
+                            className={styles.heroInput}
+                            checked={image.isHero}
+                            onChange={onSetHero}
+                        />
+                        <Star
+                            size={15}
+                            strokeWidth={1.8}
+                            fill={image.isHero ? "currentColor" : "none"}
+                            aria-hidden="true"
+                        />
+                    </label>
                     <button
                         type="button"
                         className={styles.removeButton}
@@ -256,7 +221,7 @@ function ImageRow({
                         aria-label="Remove image"
                         title="Remove image"
                     >
-                        <TrashIcon />
+                        <Trash2 size={15} strokeWidth={1.8} aria-hidden="true" />
                     </button>
                     <button
                         type="button"
@@ -265,7 +230,7 @@ function ImageRow({
                         aria-label={`Drag to reorder, currently position ${order}`}
                         title="Drag to reorder"
                     >
-                        <DragHandleIcon />
+                        <GripVertical size={16} strokeWidth={1.8} aria-hidden="true" />
                     </button>
                 </div>
             </div>
@@ -277,6 +242,7 @@ function ImageRow({
                         accept="image/*"
                         className={styles.fileInput}
                         onChange={handleFileSelected}
+                        aria-label={`Upload image ${order}`}
                     />
                     <span className={styles.orderOverlay}>{order}</span>
                     {previewSrc ? (
@@ -284,7 +250,8 @@ function ImageRow({
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={previewSrc} alt="" className={styles.thumb} />
                             <span className={styles.changeOverlay} aria-hidden="true">
-                                Change
+                                <Upload size={15} strokeWidth={1.8} />
+                                Replace
                             </span>
                         </>
                     ) : (
@@ -294,33 +261,42 @@ function ImageRow({
                 </label>
 
                 <div className={styles.fields}>
-                    <input
-                        className={styles.inputReadOnly}
-                        readOnly
-                        tabIndex={-1}
-                        value={image.src}
-                        placeholder="No file uploaded yet"
-                        title={image.src || undefined}
-                    />
-                    <input
-                        className={styles.input}
-                        placeholder="Alt text (optional)"
-                        value={image.alt}
-                        onChange={(e) => onUpdate({ alt: e.target.value })}
-                    />
-                    <select
-                        className={styles.select}
-                        value={image.pairMode}
-                        onChange={(e) =>
-                            onUpdate({ pairMode: e.target.value as ImageDraft["pairMode"] })
-                        }
-                    >
-                        {PAIR_MODE_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
+                    <label className={styles.field}>
+                        <span>Source</span>
+                        <input
+                            className={styles.inputReadOnly}
+                            readOnly
+                            tabIndex={-1}
+                            value={image.src}
+                            placeholder="No file uploaded yet"
+                            title={image.src || undefined}
+                        />
+                    </label>
+                    <label className={styles.field}>
+                        <span>Alt text</span>
+                        <input
+                            className={styles.input}
+                            placeholder="Describe the image"
+                            value={image.alt}
+                            onChange={(e) => onUpdate({ alt: e.target.value })}
+                        />
+                    </label>
+                    <label className={styles.field}>
+                        <span>Gallery layout</span>
+                        <select
+                            className={styles.select}
+                            value={image.pairMode}
+                            onChange={(e) =>
+                                onUpdate({ pairMode: e.target.value as ImageDraft["pairMode"] })
+                            }
+                        >
+                            {PAIR_MODE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
                     {uploadError && <span className={styles.fieldError}>{uploadError}</span>}
                 </div>
             </div>

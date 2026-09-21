@@ -8,7 +8,10 @@ test.describe("edit project", () => {
         await page.getByRole("button", { name: "Create project" }).click();
         await page.waitForURL("/works/projects");
 
-        await page.locator("table").getByRole("link", { name: "E2E Edit Before" }).click();
+        await page
+            .locator("table")
+            .getByRole("link", { name: "E2E Edit Before", exact: true })
+            .click();
         await page.waitForURL(/\/works\/projects\/\d+$/);
 
         await page.getByLabel("Name").fill("E2E Edit After");
@@ -19,10 +22,12 @@ test.describe("edit project", () => {
         await saveButton.click();
 
         await page.waitForURL("/works/projects");
-        const row = page.locator("table").getByRole("link", { name: "E2E Edit After" });
+        const row = page
+            .locator("table")
+            .getByRole("link", { name: "E2E Edit After", exact: true });
         await expect(row).toBeVisible();
         await expect(
-            page.locator("table").getByRole("link", { name: "E2E Edit Before" })
+            page.locator("table").getByRole("link", { name: "E2E Edit Before", exact: true })
         ).toHaveCount(0);
     });
 
@@ -33,7 +38,10 @@ test.describe("edit project", () => {
         await page.getByRole("button", { name: "Create project" }).click();
         await page.waitForURL("/works/projects");
 
-        await page.locator("table").getByRole("link", { name: "E2E Delete Me" }).click();
+        await page
+            .locator("table")
+            .getByRole("link", { name: "E2E Delete Me", exact: true })
+            .click();
         await page.waitForURL(/\/works\/projects\/\d+$/);
 
         await page.getByRole("button", { name: "Delete project" }).click();
@@ -41,7 +49,7 @@ test.describe("edit project", () => {
 
         await page.waitForURL("/works/projects");
         await expect(
-            page.locator("table").getByRole("link", { name: "E2E Delete Me" })
+            page.locator("table").getByRole("link", { name: "E2E Delete Me", exact: true })
         ).toHaveCount(0);
     });
 });

@@ -8,6 +8,7 @@ import { ProjectAnalytics } from "@/widgets/ProjectAnalytics";
 import { AnalyticsNotice } from "@/widgets/AnalyticsNotice";
 import { PeriodSwitcher } from "@/widgets/PeriodSwitcher";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import styles from "../analytics.module.css";
 
 interface ProjectAnalyticsPageProps {
     params: Promise<{ id: string }>;
@@ -31,7 +32,7 @@ export default async function ProjectAnalyticsPage({
 
     if (!isAnalyticsConfigured()) {
         return (
-            <div>
+            <div className={styles.page}>
                 <PageHeader title={title} backHref={backHref} backLabel="Analytics" />
                 <AnalyticsNotice>
                     Not connected yet - set <code>ANALYTICS_WORKER_URL</code> and{" "}
@@ -45,7 +46,7 @@ export default async function ProjectAnalyticsPage({
 
     if (!detail) {
         return (
-            <div>
+            <div className={styles.page}>
                 <PageHeader title={title} backHref={backHref} backLabel="Analytics" />
                 <AnalyticsNotice>
                     Couldn&apos;t reach the analytics worker - check it&apos;s deployed and
@@ -56,7 +57,7 @@ export default async function ProjectAnalyticsPage({
     }
 
     return (
-        <div>
+        <div className={styles.page}>
             <PageHeader
                 title={title}
                 backHref={backHref}

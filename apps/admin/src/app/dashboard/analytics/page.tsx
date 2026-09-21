@@ -12,6 +12,7 @@ import { AnalyticsOverview } from "@/widgets/AnalyticsOverview";
 import { AnalyticsNotice } from "@/widgets/AnalyticsNotice";
 import { PeriodSwitcher } from "@/widgets/PeriodSwitcher";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import styles from "./analytics.module.css";
 
 interface AnalyticsOverviewPageProps {
     searchParams: Promise<{ days?: string | string[] }>;
@@ -23,7 +24,7 @@ export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsO
 
     if (!isAnalyticsConfigured()) {
         return (
-            <div>
+            <div className={styles.page}>
                 <PageHeader title="Analytics" />
                 <AnalyticsNotice>
                     Not connected yet - set <code>ANALYTICS_WORKER_URL</code> and{" "}
@@ -44,7 +45,7 @@ export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsO
 
     if (!overview || !projects || !categories) {
         return (
-            <div>
+            <div className={styles.page}>
                 <PageHeader title="Analytics" />
                 <AnalyticsNotice>
                     Couldn&apos;t reach the analytics worker - check it&apos;s deployed and that
@@ -66,7 +67,7 @@ export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsO
     );
 
     return (
-        <div>
+        <div className={styles.page}>
             <PageHeader
                 title="Analytics"
                 actions={<PeriodSwitcher basePath="/dashboard/analytics" days={days} />}

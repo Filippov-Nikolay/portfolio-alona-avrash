@@ -1,57 +1,541 @@
+.toolbar {
+    display: grid;
+    grid-template-columns: minmax(220px, 320px) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e4e4e7;
+    background: #fff;
+}
+
+.searchField,
+.selectControl {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    height: 38px;
+    border: 1px solid #dcdce1;
+    border-radius: 6px;
+    background: #fff;
+    color: #71717a;
+    transition:
+        border-color 150ms ease,
+        box-shadow 150ms ease,
+        color 150ms ease;
+}
+
+.searchField {
+    padding-left: 11px;
+}
+
+.searchField:focus-within,
+.selectControl:focus-within {
+    border-color: #2563eb;
+    color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.searchField input,
+.selectControl select {
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #18181b;
+    font: inherit;
+    font-size: 12px;
+}
+
+.searchField input {
+    flex: 1;
+    padding: 0 8px;
+}
+
+.searchField input::-webkit-search-cancel-button {
+    display: none;
+}
+
+.searchField input::placeholder {
+    color: #a1a1aa;
+}
+
+.clearButton,
+.directionButton,
+.resetFiltersButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #71717a;
+    cursor: pointer;
+    transition:
+        color 150ms ease,
+        background-color 150ms ease,
+        transform 150ms ease;
+}
+
+.clearButton {
+    width: 30px;
+    height: 30px;
+    margin-right: 3px;
+}
+
+.filterControls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 0;
+}
+
+.selectControl {
+    gap: 7px;
+    padding-left: 10px;
+}
+
+.selectControl select {
+    padding: 0 30px 0 0;
+    cursor: pointer;
+}
+
+.directionButton {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #dcdce1;
+    background: #fff;
+}
+
+.resetFiltersButton {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #dcdce1;
+    background: #fff;
+}
+
+.resultsCount {
+    color: #71717a;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+@media (hover: hover) {
+    .clearButton:hover,
+    .directionButton:hover,
+    .resetFiltersButton:not(:disabled):hover {
+        color: #1d4ed8;
+        background: #eff6ff;
+    }
+
+    .directionButton:hover,
+    .resetFiltersButton:not(:disabled):hover {
+        border-color: #93c5fd;
+        transform: translateY(-1px);
+    }
+}
+
+.clearButton:focus-visible,
+.directionButton:focus-visible,
+.resetFiltersButton:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.resetFiltersButton:disabled {
+    color: #c4c4ca;
+    background: #f7f7f8;
+    cursor: not-allowed;
+}
+
+.tableWrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
 .table {
     width: 100%;
+    min-width: 720px;
     border-collapse: collapse;
     background: #fff;
-    border: 1px solid #e4e4e7;
-    border-radius: 10px;
-    overflow: hidden;
 }
 
 .table th {
-    padding: 10px 14px;
+    padding: 11px 16px;
     text-align: left;
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 750;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #71717a;
+    letter-spacing: 0.07em;
+    color: #8b8b94;
     background: #fafafa;
     border-bottom: 1px solid #e4e4e7;
 }
 
+.sortButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-align: left;
+    text-transform: inherit;
+    cursor: pointer;
+    transition: color 150ms ease;
+}
+
+.sortButton svg {
+    flex: 0 0 auto;
+    opacity: 0.48;
+    transition:
+        opacity 150ms ease,
+        transform 150ms ease;
+}
+
+.sortButtonActive {
+    color: #1d4ed8;
+}
+
+.sortButtonActive svg {
+    opacity: 1;
+}
+
+@media (hover: hover) {
+    .sortButton:hover {
+        color: #1d4ed8;
+    }
+
+    .sortButton:hover svg {
+        opacity: 1;
+        transform: translateY(-1px);
+    }
+}
+
+.sortButton:focus-visible {
+    border-radius: 3px;
+    outline: 2px solid #2563eb;
+    outline-offset: 3px;
+}
+
 .table td {
-    padding: 10px 14px;
-    border-bottom: 1px solid #f4f4f5;
-    font-size: 14px;
+    height: 68px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #eeeeef;
+    font-size: 13px;
     vertical-align: middle;
+}
+
+.table tbody tr {
+    transition:
+        background-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.table tbody tr:hover {
+    background: #f8fbff;
+    box-shadow: inset 3px 0 0 #2563eb;
 }
 
 .table tr:last-child td {
     border-bottom: none;
 }
 
-.name {
-    font-weight: 600;
+.rankCol {
+    width: 64px;
+    color: #a1a1aa;
+    font-size: 10px !important;
+    font-variant-numeric: tabular-nums;
+}
+
+.metricCol {
+    width: 18%;
+    font-variant-numeric: tabular-nums;
+}
+
+.metricCol strong {
+    display: block;
     color: #18181b;
+    font-size: 14px;
+}
+
+.name {
+    display: inline-block;
+    max-width: 260px;
+    overflow: hidden;
+    color: #18181b;
+    font-size: 14px;
+    font-weight: 650;
     text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .name:hover {
-    text-decoration: underline;
+    color: #1d4ed8;
+}
+
+.name:focus-visible,
+.openLink:focus-visible,
+.card:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.metricNote {
+    display: block;
+    margin-top: 3px;
+    color: #8b8b94;
+    font-size: 10px;
+}
+
+.opensCell {
+    min-width: 92px;
+}
+
+.opensTrack {
+    display: block;
+    width: 72px;
+    height: 3px;
+    margin-top: 7px;
+    overflow: hidden;
+    background: #eeeeef;
+}
+
+.opensFill {
+    display: block;
+    width: var(--opens-width);
+    height: 100%;
+    background: #2563eb;
+}
+
+.openCol {
+    width: 54px;
+    padding-right: 12px !important;
+    text-align: right !important;
+}
+
+.openLink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid #e4e4e7;
+    border-radius: 6px;
+    color: #18181b;
+    text-decoration: none;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.openLink:hover {
+    border-color: #2563eb;
+    background: #2563eb;
+    color: #fff;
+}
+
+.cards {
+    display: none;
 }
 
 .empty {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    min-height: 180px;
     padding: 40px 20px;
-    border: 1px dashed #d4d4d8;
-    border-radius: 10px;
-    color: #71717a;
+    color: #8b8b94;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .empty p {
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
+}
+
+.resetButton {
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid #dcdce1;
+    border-radius: 6px;
+    background: #fff;
+    color: #18181b;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 650;
+    cursor: pointer;
+    transition:
+        color 150ms ease,
+        border-color 150ms ease,
+        background-color 150ms ease;
+}
+
+.resetButton:hover {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.resetButton:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 760px) {
+    .toolbar {
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding: 12px;
+    }
+
+    .searchField {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    .filterControls {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) repeat(2, 38px);
+        justify-content: stretch;
+    }
+
+    .selectControl select {
+        width: 100%;
+    }
+
+    .tableWrap {
+        display: none;
+    }
+
+    .cards {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .card {
+        display: block;
+        padding: 16px;
+        border-bottom: 1px solid #e4e4e7;
+        color: #18181b;
+        text-decoration: none;
+        transition: background-color 150ms ease;
+    }
+
+    .card:hover {
+        background: #f8fbff;
+    }
+
+    .card:last-child {
+        border-bottom: 0;
+    }
+
+    .cardHeader {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .cardRank {
+        color: #a1a1aa;
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cardName {
+        overflow: hidden;
+        font-size: 14px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .cardArrow {
+        display: inline-flex;
+        font-size: 16px;
+        transition: transform 150ms ease;
+    }
+
+    .card:hover .cardArrow {
+        transform: translateX(3px);
+    }
+
+    .cardMetrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 16px;
+        padding: 12px;
+        background: #f7f8fa;
+    }
+
+    .cardMetrics div {
+        min-width: 0;
+        border-right: 1px solid #e4e4e7;
+    }
+
+    .cardMetrics div:last-child {
+        border-right: 0;
+    }
+
+    .cardMetrics span,
+    .cardMetrics small {
+        display: block;
+        color: #8b8b94;
+        font-size: 9px;
+        line-height: 1.3;
+    }
+
+    .cardMetrics strong {
+        display: block;
+        margin: 5px 0 2px;
+        font-size: 16px;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+@media (max-width: 420px) {
+    .toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .filterControls {
+        width: 100%;
+        gap: 6px;
+    }
+
+    .selectControl {
+        gap: 4px;
+        padding-left: 8px;
+    }
+
+    .selectControl select {
+        padding-right: 18px;
+    }
+
+    .resultsCount {
+        justify-self: end;
+    }
 }

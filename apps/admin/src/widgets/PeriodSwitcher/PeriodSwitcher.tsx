@@ -16,6 +16,7 @@ export function PeriodSwitcher({ basePath, days }: PeriodSwitcherProps) {
                     key={option.days}
                     href={`${basePath}?days=${option.days}`}
                     className={cn(styles.option, option.days === days && styles.optionActive)}
+                    aria-current={option.days === days ? "page" : undefined}
                 >
                     {option.label}
                 </Link>

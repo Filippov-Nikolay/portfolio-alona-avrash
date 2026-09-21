@@ -181,17 +181,18 @@ export function ProjectsSection({
                         );
                     })}
 
-                    <Button
-                        as="a"
-                        ref={viewAllRef}
-                        href={`/${locale}/works`}
-                        variant="primary"
-                        size="lg"
-                        className={styles.viewAll}
-                        rightIcon={<ArrowIcon className={styles.viewAllArrow} />}
-                    >
-                        {labels.viewAll}
-                    </Button>
+                    <div ref={viewAllRef} className={styles.viewAllMotion}>
+                        <Button
+                            as="a"
+                            href={`/${locale}/works`}
+                            variant="primary"
+                            size="lg"
+                            className={styles.viewAll}
+                            rightIcon={<ArrowIcon className={styles.viewAllArrow} />}
+                        >
+                            {labels.viewAll}
+                        </Button>
+                    </div>
                 </div>
             </Container>
 

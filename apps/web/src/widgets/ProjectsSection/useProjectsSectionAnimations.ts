@@ -87,7 +87,7 @@ export function useProjectsSectionAnimations() {
     const sectionRef = useRef<HTMLElement>(null);
     const sceneRef = useRef<HTMLDivElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null);
-    const viewAllRef = useRef<HTMLAnchorElement>(null);
+    const viewAllRef = useRef<HTMLDivElement>(null);
 
     useScrollTriggerAutoRefresh([reduced, compact]);
 

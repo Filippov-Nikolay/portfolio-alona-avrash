@@ -150,12 +150,26 @@
     }
 }
 
-.viewAll {
+.viewAllMotion {
     position: absolute;
     top: 0;
     left: 0;
     z-index: 12;
+    display: inline-flex;
     margin: 0;
+    transform-style: flat;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform, opacity;
+}
+
+.viewAll {
+    position: relative;
+    isolation: isolate;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    background-clip: padding-box;
     text-decoration: none;
 
     @include focus-ring;
@@ -188,7 +202,7 @@
         height: 208px;
     }
 
-    .viewAll {
+    .viewAllMotion {
         z-index: 500;
     }
 }

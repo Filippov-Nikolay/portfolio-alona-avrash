@@ -35,10 +35,6 @@ const PEEK_IMAGE_SIZE = 264;
 const PEEK_IMAGE_QUALITY = 72;
 const PEEK_PRELOAD_MARGIN = "1200px 0px";
 const PEEK_PRELOAD_FALLBACK_DELAY = 2_500;
-const MOMENTUM_MAX_SPEED = 1.1;
-const MOMENTUM_DAMPING = 0.88;
-const MOMENTUM_STOP_SPEED = 0.018;
-const MOMENTUM_MAX_DURATION = 520;
 
 export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     const [hoveredId, setHoveredId] = useState<number | null>(null);
@@ -58,11 +54,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         scrollLeft: 0,
         didDrag: false,
         pointerType: "mouse",
-        lastX: 0,
-        lastTimestamp: 0,
-        velocity: 0,
     });
-    const momentumFrameRef = useRef(0);
     const isTrackHoveredRef = useRef(false);
     const pauseAutoScrollRef = useRef<() => void>(() => undefined);
     const activeId = hoveredId ?? pinnedId;
@@ -272,59 +264,9 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         return () => cancelAnimationFrame(frameId);
     }, [isPeeking, sectionRef]);
 
-    useEffect(
-        () => () => {
-            cancelAnimationFrame(momentumFrameRef.current);
-        },
-        []
-    );
-
-    function stopMomentum() {
-        cancelAnimationFrame(momentumFrameRef.current);
-        momentumFrameRef.current = 0;
-    }
-
-    function keepInsideMarqueeLoop(track: HTMLDivElement, position: number) {
-        const loopWidth = sequenceRef.current?.offsetWidth ?? 0;
-        if (loopWidth <= 0) return position;
-        if (position < loopWidth * 0.5) return position + loopWidth;
-        if (position > loopWidth * 2.5) return position - loopWidth;
-        return position;
-    }
-
-    function startMomentum(track: HTMLDivElement, initialVelocity: number) {
-        stopMomentum();
-
-        let velocity = Math.max(-MOMENTUM_MAX_SPEED, Math.min(MOMENTUM_MAX_SPEED, initialVelocity));
-        if (Math.abs(velocity) < MOMENTUM_STOP_SPEED) return;
-
-        let previousTimestamp = performance.now();
-        const startedAt = previousTimestamp;
-
-        const glide = (timestamp: number) => {
-            const elapsed = Math.min(32, timestamp - previousTimestamp);
-            previousTimestamp = timestamp;
-            track.scrollLeft = keepInsideMarqueeLoop(track, track.scrollLeft + velocity * elapsed);
-            velocity *= Math.pow(MOMENTUM_DAMPING, elapsed / (1000 / 60));
-
-            if (
-                Math.abs(velocity) < MOMENTUM_STOP_SPEED ||
-                timestamp - startedAt >= MOMENTUM_MAX_DURATION
-            ) {
-                momentumFrameRef.current = 0;
-                return;
-            }
-
-            momentumFrameRef.current = requestAnimationFrame(glide);
-        };
-
-        momentumFrameRef.current = requestAnimationFrame(glide);
-    }
-
     function startDrag(event: PointerEvent<HTMLDivElement>) {
         if (event.pointerType === "mouse" && event.button !== 0) return;
 
-        stopMomentum();
         pauseAutoScrollRef.current();
         const track = event.currentTarget;
         dragRef.current = {
@@ -333,11 +275,11 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             scrollLeft: track.scrollLeft,
             didDrag: false,
             pointerType: event.pointerType,
-            lastX: event.clientX,
-            lastTimestamp: event.timeStamp,
-            velocity: 0,
         };
-        track.setPointerCapture(event.pointerId);
+
+        if (event.pointerType === "mouse") {
+            track.setPointerCapture(event.pointerId);
+        }
     }
 
     function drag(event: PointerEvent<HTMLDivElement>) {
@@ -349,13 +291,9 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             state.didDrag = true;
             pauseAutoScrollRef.current();
         }
-        const elapsed = event.timeStamp - state.lastTimestamp;
-        if (elapsed > 0) {
-            const instantVelocity = -(event.clientX - state.lastX) / elapsed;
-            state.velocity = state.velocity * 0.58 + instantVelocity * 0.42;
-            state.lastX = event.clientX;
-            state.lastTimestamp = event.timeStamp;
-        }
+
+        if (state.pointerType !== "mouse") return;
+
         event.currentTarget.scrollLeft = state.scrollLeft - deltaX;
     }
 
@@ -367,10 +305,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
         }
-
-        if (state.didDrag && state.pointerType !== "mouse") {
-            startMomentum(event.currentTarget, state.velocity);
-        }
+        pauseAutoScrollRef.current();
     }
 
     function cancelDrag(event: PointerEvent<HTMLDivElement>) {
@@ -380,14 +315,19 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
         }
+        pauseAutoScrollRef.current();
     }
 
-    function pauseOnTrackHover() {
+    function pauseOnTrackHover(event: PointerEvent<HTMLDivElement>) {
+        if (event.pointerType !== "mouse") return;
+
         isTrackHoveredRef.current = true;
         pauseAutoScrollRef.current();
     }
 
-    function resumeAfterTrackHover() {
+    function resumeAfterTrackHover(event: PointerEvent<HTMLDivElement>) {
+        if (event.pointerType !== "mouse") return;
+
         isTrackHoveredRef.current = false;
         pauseAutoScrollRef.current();
     }

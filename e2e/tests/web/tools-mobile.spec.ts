@@ -11,7 +11,7 @@ test.beforeEach(async ({ context }) => {
     ]);
 });
 
-test("mobile tools carousel keeps momentum and prepares peek images before interaction", async ({
+test("mobile tools carousel uses native momentum and prepares peek images before interaction", async ({
     page,
 }) => {
     await page.setViewportSize({ width: 390, height: 844 });

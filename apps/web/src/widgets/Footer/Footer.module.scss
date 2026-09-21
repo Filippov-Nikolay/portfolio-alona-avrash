@@ -61,6 +61,7 @@
 
     @media (max-width: 599px) {
         flex-direction: column;
+        align-items: center;
     }
 
     @include respond-to("mobile") {
@@ -75,6 +76,7 @@
 
     @media (max-width: 599px) {
         width: 100%;
+        align-items: center;
     }
 }
 
@@ -87,6 +89,10 @@
 
     @include respond-to("mobile") {
         font-size: 18px;
+    }
+
+    @media (max-width: 599px) {
+        text-align: center;
     }
 }
 
@@ -102,7 +108,7 @@
 
     @media (max-width: 599px) {
         width: 100%;
-        align-items: flex-start;
+        align-items: center;
         gap: 14px;
     }
 }
@@ -117,6 +123,10 @@
 
     @include respond-to("mobile") {
         font-size: 14px;
+    }
+
+    @media (max-width: 599px) {
+        text-align: center;
     }
 }
 
@@ -134,13 +144,17 @@
         gap: 18px 24px;
     }
 
+    @media (max-width: 599px) {
+        justify-content: center;
+    }
+
     @include respond-to("mobile") {
         gap: 14px 20px;
     }
 
     @media (max-width: 359px) {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         gap: 12px;
     }
 

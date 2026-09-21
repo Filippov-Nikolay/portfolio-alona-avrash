@@ -68,12 +68,28 @@ export function useServicesSectionAnimations(services: Service[]) {
                 if (!title || !grid) return;
 
                 const cards = gsap.utils.toArray<HTMLElement>(":scope > article", grid);
+                const stabilizeViewportHeight = window.matchMedia(
+                    "(hover: none) and (pointer: coarse)"
+                ).matches;
+                let sceneViewportWidth = window.innerWidth;
+                let sceneViewportHeight = window.innerHeight;
+
+                const getSceneViewportHeight = () => {
+                    const nextWidth = window.innerWidth;
+
+                    if (!stabilizeViewportHeight || Math.abs(nextWidth - sceneViewportWidth) > 1) {
+                        sceneViewportWidth = nextWidth;
+                        sceneViewportHeight = window.innerHeight;
+                    }
+
+                    return sceneViewportHeight;
+                };
 
                 const getContactOffset = () => {
                     const headerHeight =
                         document.querySelector("header")?.getBoundingClientRect().height ?? 96;
 
-                    return getTopBandContactOffset(window.innerHeight, headerHeight);
+                    return getTopBandContactOffset(getSceneViewportHeight(), headerHeight);
                 };
 
                 const titleStart = () => `top top+=${getContactOffset()}`;
@@ -86,7 +102,7 @@ export function useServicesSectionAnimations(services: Service[]) {
                         MAX_DESKTOP_REVEAL_DISTANCE,
                         Math.max(
                             SERVICES_CARD_REVEAL_DISTANCE,
-                            window.innerHeight * DESKTOP_REVEAL_VIEWPORT_RATIO
+                            getSceneViewportHeight() * DESKTOP_REVEAL_VIEWPORT_RATIO
                         )
                     );
                 };
@@ -189,6 +205,7 @@ export function useServicesSectionAnimations(services: Service[]) {
                 };
 
                 const followScroll = (time: number) => {
+                    targetScroll = window.scrollY;
                     const elapsed = Math.min(
                         previousFrameTime ? time - previousFrameTime : 16.67,
                         MAX_FRAME_DELTA_MS
@@ -232,6 +249,8 @@ export function useServicesSectionAnimations(services: Service[]) {
                     renderCards(scrollY);
                 };
 
+                const handleNativeScroll = () => renderTowards(window.scrollY);
+
                 measureCards();
 
                 const cardTrigger = ScrollTrigger.create({
@@ -245,10 +264,12 @@ export function useServicesSectionAnimations(services: Service[]) {
                     onUpdate: (self) => renderTowards(self.scroll()),
                 });
 
+                window.addEventListener("scroll", handleNativeScroll, { passive: true });
                 renderImmediately(cardTrigger.scroll());
 
                 return () => {
                     stopFollowingScroll();
+                    window.removeEventListener("scroll", handleNativeScroll);
                     cardTrigger.kill();
                     cards.forEach((card) => {
                         card.inert = false;

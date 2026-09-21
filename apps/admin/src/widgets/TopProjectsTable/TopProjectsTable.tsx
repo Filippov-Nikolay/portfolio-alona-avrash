@@ -30,6 +30,8 @@ export function TopProjectsTable({ projects, projectNames, days }: TopProjectsTa
                     <th>Views</th>
                     <th>Website clicks</th>
                     <th>CTR</th>
+                    <th>Gallery views</th>
+                    <th>Gallery rate</th>
                 </tr>
             </thead>
             <tbody>
@@ -46,6 +48,8 @@ export function TopProjectsTable({ projects, projectNames, days }: TopProjectsTa
                         <td>{project.opens}</td>
                         <td>{project.externalClicks}</td>
                         <td>{formatPercent(project.ctr)}</td>
+                        <td>{project.galleryViews}</td>
+                        <td>{formatPercent(project.galleryViewRate)}</td>
                     </tr>
                 ))}
             </tbody>

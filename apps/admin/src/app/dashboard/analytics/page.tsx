@@ -1,10 +1,13 @@
 import {
     getOverview,
+    getTopCategories,
     getTopProjects,
     isAnalyticsConfigured,
 } from "@/entities/analytics/api/analyticsRepository";
 import { parseDaysParam } from "@/entities/analytics/lib/period";
 import { listProjects } from "@/entities/project/api/projectsRepository";
+import { listOptions } from "@/entities/optionList/api/optionListRepository";
+import type { CategoryOption } from "@avrash/content-schema";
 import { AnalyticsOverview } from "@/widgets/AnalyticsOverview";
 import { AnalyticsNotice } from "@/widgets/AnalyticsNotice";
 import { PeriodSwitcher } from "@/widgets/PeriodSwitcher";
@@ -31,13 +34,15 @@ export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsO
         );
     }
 
-    const [overview, projects, allProjects] = await Promise.all([
+    const [overview, projects, categories, allProjects, categoryOptions] = await Promise.all([
         getOverview(days),
         getTopProjects(days),
+        getTopCategories(days),
         listProjects(),
+        listOptions("categories.json") as Promise<CategoryOption[]>,
     ]);
 
-    if (!overview || !projects) {
+    if (!overview || !projects || !categories) {
         return (
             <div>
                 <PageHeader title="Analytics" />
@@ -56,6 +61,9 @@ export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsO
     const projectNames = Object.fromEntries(
         allProjects.map((project) => [String(project.id), project.name])
     );
+    const categoryLabels = Object.fromEntries(
+        categoryOptions.map((category) => [category.key, category.label])
+    );
 
     return (
         <div>
@@ -67,6 +75,8 @@ export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsO
                 overview={overview}
                 projects={projects}
                 projectNames={projectNames}
+                categories={categories}
+                categoryLabels={categoryLabels}
                 days={days}
             />
         </div>

@@ -1,4 +1,9 @@
-import type { AnalyticsOverview, ProjectDetail, ProjectSummary } from "../model/types";
+import type {
+    AnalyticsOverview,
+    CategoryBreakdown,
+    ProjectDetail,
+    ProjectSummary,
+} from "../model/types";
 
 export function isAnalyticsConfigured(): boolean {
     return Boolean(process.env.ANALYTICS_WORKER_URL && process.env.ANALYTICS_READ_SECRET);
@@ -43,4 +48,8 @@ export async function getProjectDetail(
     return fetchFromWorker<ProjectDetail>(
         `/analytics/projects/${encodeURIComponent(entityId)}?days=${days}`
     );
+}
+
+export async function getTopCategories(days: number): Promise<CategoryBreakdown[] | null> {
+    return fetchFromWorker<CategoryBreakdown[]>(`/analytics/categories?days=${days}`);
 }

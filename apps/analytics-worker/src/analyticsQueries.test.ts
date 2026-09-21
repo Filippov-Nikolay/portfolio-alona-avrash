@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-    computeCtr,
+    computeRate,
     dayKey,
     fillDailyCounts,
     getOverview,
     getProjectDetail,
+    getTopCategories,
     getTopProjects,
     parseDays,
+    toCategoryBreakdown,
     toCountryBreakdown,
     toLocaleBreakdown,
 } from "./analyticsQueries";
@@ -33,13 +35,13 @@ function createSequencedDb(responses: unknown[]): D1Like {
     };
 }
 
-describe("computeCtr", () => {
-    it("divides clicks by opens", () => {
-        expect(computeCtr(428, 67)).toBeCloseTo(0.1565, 4);
+describe("computeRate", () => {
+    it("divides count by total", () => {
+        expect(computeRate(67, 428)).toBeCloseTo(0.1565, 4);
     });
 
-    it("is 0 when there are no opens, not NaN or Infinity", () => {
-        expect(computeCtr(0, 0)).toBe(0);
+    it("is 0 when total is 0, not NaN or Infinity", () => {
+        expect(computeRate(0, 0)).toBe(0);
     });
 });
 
@@ -111,6 +113,28 @@ describe("toCountryBreakdown / toLocaleBreakdown", () => {
     });
 });
 
+describe("toCategoryBreakdown", () => {
+    it("converts counts to percentages of the total", () => {
+        const result = toCategoryBreakdown([
+            { category: "branding", count: 3 },
+            { category: "packaging", count: 1 },
+        ]);
+        expect(result).toEqual([
+            { category: "branding", percent: 0.75 },
+            { category: "packaging", percent: 0.25 },
+        ]);
+    });
+
+    it("keeps up to the top 10, unlike the top-5 country/locale breakdowns", () => {
+        const rows = Array.from({ length: 12 }, (_, i) => ({
+            category: `cat-${i}`,
+            count: 12 - i,
+        }));
+
+        expect(toCategoryBreakdown(rows)).toHaveLength(10);
+    });
+});
+
 describe("parseDays", () => {
     it("defaults to 30 for null/non-numeric input", () => {
         expect(parseDays(null)).toBe(30);
@@ -136,12 +160,13 @@ describe("parseDays", () => {
 });
 
 describe("getOverview", () => {
-    it("shapes grouped rows into a filled, dual-metric timeline", async () => {
+    it("shapes grouped rows into a filled, triple-metric timeline", async () => {
         const today = dayKey(new Date());
         const db = createSequencedDb([
             {
                 results: [
                     { eventName: "project_open", day: today, count: 3 },
+                    { eventName: "contact_started", day: today, count: 2 },
                     { eventName: "contact_success", day: today, count: 1 },
                 ],
             },
@@ -150,19 +175,32 @@ describe("getOverview", () => {
         const overview = await getOverview(db, 7);
 
         expect(overview.projectOpens).toBe(3);
+        expect(overview.contactStarts).toBe(2);
         expect(overview.contacts).toBe(1);
+        expect(overview.contactConversionRate).toBeCloseTo(0.5, 5);
         expect(overview.timeline).toHaveLength(7);
-        expect(overview.timeline.at(-1)).toEqual({ date: today, projectOpens: 3, contacts: 1 });
+        expect(overview.timeline.at(-1)).toEqual({
+            date: today,
+            projectOpens: 3,
+            contactStarts: 2,
+            contacts: 1,
+        });
+    });
+
+    it("reports a 0 conversion rate instead of NaN when nobody started the form", async () => {
+        const db = createSequencedDb([{ results: [] }]);
+        const overview = await getOverview(db, 7);
+        expect(overview.contactConversionRate).toBe(0);
     });
 });
 
 describe("getTopProjects", () => {
-    it("computes CTR per project and sorts by opens desc", async () => {
+    it("computes CTR and gallery view rate per project, sorted by opens desc", async () => {
         const db = createSequencedDb([
             {
                 results: [
-                    { entityId: "esencha", opens: 100, externalClicks: 10 },
-                    { entityId: "crusty", opens: 200, externalClicks: 40 },
+                    { entityId: "esencha", opens: 100, externalClicks: 10, galleryViews: 30 },
+                    { entityId: "crusty", opens: 200, externalClicks: 40, galleryViews: 20 },
                 ],
             },
         ]);
@@ -171,6 +209,7 @@ describe("getTopProjects", () => {
 
         expect(projects.map((p) => p.entityId)).toEqual(["crusty", "esencha"]);
         expect(projects[0]!.ctr).toBeCloseTo(0.2, 5);
+        expect(projects[1]!.galleryViewRate).toBeCloseTo(0.3, 5);
     });
 });
 
@@ -178,7 +217,7 @@ describe("getProjectDetail", () => {
     it("assembles totals, timeline and breakdowns for one project", async () => {
         const today = dayKey(new Date());
         const db = createSequencedDb([
-            { opens: 50, externalClicks: 5 },
+            { opens: 50, externalClicks: 5, galleryViews: 20 },
             { results: [{ day: today, count: 4 }] },
             {
                 results: [
@@ -200,6 +239,8 @@ describe("getProjectDetail", () => {
         expect(detail.opens).toBe(50);
         expect(detail.externalClicks).toBe(5);
         expect(detail.ctr).toBeCloseTo(0.1, 5);
+        expect(detail.galleryViews).toBe(20);
+        expect(detail.galleryViewRate).toBeCloseTo(0.4, 5);
         expect(detail.timeline).toHaveLength(7);
         expect(detail.timeline.at(-1)).toEqual({ date: today, count: 4 });
         expect(detail.countries).toEqual([
@@ -212,7 +253,7 @@ describe("getProjectDetail", () => {
         ]);
     });
 
-    it("defaults opens/externalClicks to 0 when the project has no events", async () => {
+    it("defaults opens/externalClicks/galleryViews to 0 when the project has no events", async () => {
         const db = createSequencedDb([null, { results: [] }, { results: [] }, { results: [] }]);
 
         const detail = await getProjectDetail(db, "unknown-project", 30);
@@ -220,5 +261,27 @@ describe("getProjectDetail", () => {
         expect(detail.opens).toBe(0);
         expect(detail.externalClicks).toBe(0);
         expect(detail.ctr).toBe(0);
+        expect(detail.galleryViews).toBe(0);
+        expect(detail.galleryViewRate).toBe(0);
+    });
+});
+
+describe("getTopCategories", () => {
+    it("converts works_filter counts into a percentage breakdown", async () => {
+        const db = createSequencedDb([
+            {
+                results: [
+                    { category: "branding", count: 6 },
+                    { category: "packaging", count: 2 },
+                ],
+            },
+        ]);
+
+        const categories = await getTopCategories(db, 30);
+
+        expect(categories).toEqual([
+            { category: "branding", percent: 0.75 },
+            { category: "packaging", percent: 0.25 },
+        ]);
     });
 });

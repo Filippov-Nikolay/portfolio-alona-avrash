@@ -26,6 +26,16 @@ export function ProjectAnalytics({ detail }: ProjectAnalyticsProps) {
                     <span className={styles.statValue}>{formatPercent(detail.ctr)}</span>
                     <span className={styles.statLabel}>External CTR</span>
                 </div>
+                <div className={styles.stat}>
+                    <span className={styles.statValue}>{detail.galleryViews}</span>
+                    <span className={styles.statLabel}>Gallery views</span>
+                </div>
+                <div className={styles.stat}>
+                    <span className={styles.statValue}>
+                        {formatPercent(detail.galleryViewRate)}
+                    </span>
+                    <span className={styles.statLabel}>Gallery view rate</span>
+                </div>
             </div>
 
             <div className={styles.chartCard}>

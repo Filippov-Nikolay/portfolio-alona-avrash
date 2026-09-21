@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
     getOverview,
     getProjectDetail,
+    getTopCategories,
     getTopProjects,
     isAnalyticsConfigured,
 } from "./analyticsRepository";
@@ -74,6 +75,19 @@ describe("analyticsRepository", () => {
 
             expect(fetchMock.mock.calls[0]![0]).toBe(
                 "https://analytics.example.com/analytics/projects?days=7"
+            );
+        });
+    });
+
+    describe("getTopCategories", () => {
+        it("requests the /analytics/categories path", async () => {
+            const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
+            vi.stubGlobal("fetch", fetchMock);
+
+            await getTopCategories(7);
+
+            expect(fetchMock.mock.calls[0]![0]).toBe(
+                "https://analytics.example.com/analytics/categories?days=7"
             );
         });
     });

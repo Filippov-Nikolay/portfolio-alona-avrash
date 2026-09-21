@@ -3,16 +3,19 @@ export interface TimelinePoint {
     count: number;
 }
 
-export interface DualTimelinePoint {
+export interface OverviewTimelinePoint {
     date: string;
     projectOpens: number;
+    contactStarts: number;
     contacts: number;
 }
 
 export interface AnalyticsOverview {
     projectOpens: number;
+    contactStarts: number;
     contacts: number;
-    timeline: DualTimelinePoint[];
+    contactConversionRate: number;
+    timeline: OverviewTimelinePoint[];
 }
 
 export interface ProjectSummary {
@@ -20,6 +23,8 @@ export interface ProjectSummary {
     opens: number;
     externalClicks: number;
     ctr: number;
+    galleryViews: number;
+    galleryViewRate: number;
 }
 
 export interface CountryBreakdown {
@@ -29,6 +34,11 @@ export interface CountryBreakdown {
 
 export interface LocaleBreakdown {
     locale: string;
+    percent: number;
+}
+
+export interface CategoryBreakdown {
+    category: string;
     percent: number;
 }
 

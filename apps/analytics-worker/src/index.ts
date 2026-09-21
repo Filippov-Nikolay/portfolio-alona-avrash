@@ -1,5 +1,11 @@
 import { handleEvent } from "./handleEvent";
-import { getOverview, getProjectDetail, getTopProjects, parseDays } from "./analyticsQueries";
+import {
+    getOverview,
+    getProjectDetail,
+    getTopCategories,
+    getTopProjects,
+    parseDays,
+} from "./analyticsQueries";
 import { isAllowedOrigin, isAuthorizedRead } from "./security";
 
 export interface Env {
@@ -53,6 +59,10 @@ async function handleAnalyticsRead(
 
     if (url.pathname === "/analytics/projects") {
         return Response.json(await getTopProjects(env.DB, days), { headers: jsonHeaders });
+    }
+
+    if (url.pathname === "/analytics/categories") {
+        return Response.json(await getTopCategories(env.DB, days), { headers: jsonHeaders });
     }
 
     const projectMatch = /^\/analytics\/projects\/([^/]+)$/.exec(url.pathname);

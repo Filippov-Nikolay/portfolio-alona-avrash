@@ -5,16 +5,21 @@ export interface TimelinePoint {
     count: number;
 }
 
-export interface DualTimelinePoint {
+export interface OverviewTimelinePoint {
     date: string;
     projectOpens: number;
+    contactStarts: number;
     contacts: number;
 }
 
 export interface AnalyticsOverview {
     projectOpens: number;
+    contactStarts: number;
     contacts: number;
-    timeline: DualTimelinePoint[];
+    // contacts / contactStarts - how many visitors who started the contact
+    // form actually sent it, not just opens/clicks on the button around it.
+    contactConversionRate: number;
+    timeline: OverviewTimelinePoint[];
 }
 
 export interface ProjectSummary {
@@ -22,6 +27,10 @@ export interface ProjectSummary {
     opens: number;
     externalClicks: number;
     ctr: number;
+    galleryViews: number;
+    // galleryViews / opens - how many visitors who opened this project went
+    // on to look at its gallery, a deeper-engagement signal than open alone.
+    galleryViewRate: number;
 }
 
 export interface CountryBreakdown {
@@ -34,6 +43,11 @@ export interface LocaleBreakdown {
     percent: number;
 }
 
+export interface CategoryBreakdown {
+    category: string;
+    percent: number;
+}
+
 export interface ProjectDetail extends ProjectSummary {
     timeline: TimelinePoint[];
     countries: CountryBreakdown[];
@@ -42,8 +56,11 @@ export interface ProjectDetail extends ProjectSummary {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export function computeCtr(opens: number, externalClicks: number): number {
-    return opens > 0 ? externalClicks / opens : 0;
+// Shared by every ratio this module reports (external-click CTR, gallery-
+// view rate, contact conversion rate) - all the same shape: how many of a
+// larger group went on to do a smaller, more specific thing.
+export function computeRate(count: number, total: number): number {
+    return total > 0 ? count / total : 0;
 }
 
 export function dayKey(date: Date): string {
@@ -84,6 +101,18 @@ export function toLocaleBreakdown(rows: { locale: string; count: number }[]): Lo
         .map((row) => ({ locale: row.locale, percent: total > 0 ? row.count / total : 0 }));
 }
 
+const TOP_CATEGORY_LIMIT = 10;
+
+export function toCategoryBreakdown(
+    rows: { category: string; count: number }[]
+): CategoryBreakdown[] {
+    const total = rows.reduce((sum, row) => sum + row.count, 0);
+    return [...rows]
+        .sort((a, b) => b.count - a.count)
+        .slice(0, TOP_CATEGORY_LIMIT)
+        .map((row) => ({ category: row.category, percent: total > 0 ? row.count / total : 0 }));
+}
+
 // Clamped so a malformed/absent ?days= query param can't turn into an
 // unbounded table scan.
 export function parseDays(raw: string | null): number {
@@ -102,23 +131,32 @@ export async function getOverview(db: D1Like, days: number): Promise<AnalyticsOv
         .prepare(
             `SELECT event_name as eventName, date(created_at / 1000, 'unixepoch') as day, COUNT(*) as count
              FROM analytics_events
-             WHERE event_name IN ('project_open', 'contact_success') AND created_at > ?
+             WHERE event_name IN ('project_open', 'contact_started', 'contact_success') AND created_at > ?
              GROUP BY event_name, day`
         )
         .bind(since)
         .all<{ eventName: string; day: string; count: number }>();
 
     const opensRows = results.filter((row) => row.eventName === "project_open");
+    const contactStartsRows = results.filter((row) => row.eventName === "contact_started");
     const contactsRows = results.filter((row) => row.eventName === "contact_success");
     const opens = fillDailyCounts(opensRows, days);
+    const contactStarts = fillDailyCounts(contactStartsRows, days);
     const contacts = fillDailyCounts(contactsRows, days);
 
+    const totalProjectOpens = opens.reduce((sum, point) => sum + point.count, 0);
+    const totalContactStarts = contactStarts.reduce((sum, point) => sum + point.count, 0);
+    const totalContacts = contacts.reduce((sum, point) => sum + point.count, 0);
+
     return {
-        projectOpens: opens.reduce((sum, point) => sum + point.count, 0),
-        contacts: contacts.reduce((sum, point) => sum + point.count, 0),
+        projectOpens: totalProjectOpens,
+        contactStarts: totalContactStarts,
+        contacts: totalContacts,
+        contactConversionRate: computeRate(totalContacts, totalContactStarts),
         timeline: opens.map((point, i) => ({
             date: point.date,
             projectOpens: point.count,
+            contactStarts: contactStarts[i]!.count,
             contacts: contacts[i]!.count,
         })),
     };
@@ -134,20 +172,25 @@ export async function getTopProjects(
         .prepare(
             `SELECT entity_id as entityId,
                     SUM(CASE WHEN event_name = 'project_open' THEN 1 ELSE 0 END) as opens,
-                    SUM(CASE WHEN event_name = 'project_external_click' THEN 1 ELSE 0 END) as externalClicks
+                    SUM(CASE WHEN event_name = 'project_external_click' THEN 1 ELSE 0 END) as externalClicks,
+                    SUM(CASE WHEN event_name = 'project_gallery_view' THEN 1 ELSE 0 END) as galleryViews
              FROM analytics_events
              WHERE entity_id IS NOT NULL
-               AND event_name IN ('project_open', 'project_external_click')
+               AND event_name IN ('project_open', 'project_external_click', 'project_gallery_view')
                AND created_at > ?
              GROUP BY entity_id
              ORDER BY opens DESC
              LIMIT ?`
         )
         .bind(since, limit)
-        .all<{ entityId: string; opens: number; externalClicks: number }>();
+        .all<{ entityId: string; opens: number; externalClicks: number; galleryViews: number }>();
 
     return results
-        .map((row) => ({ ...row, ctr: computeCtr(row.opens, row.externalClicks) }))
+        .map((row) => ({
+            ...row,
+            ctr: computeRate(row.externalClicks, row.opens),
+            galleryViewRate: computeRate(row.galleryViews, row.opens),
+        }))
         .sort((a, b) => b.opens - a.opens);
 }
 
@@ -162,17 +205,23 @@ export async function getProjectDetail(
         .prepare(
             `SELECT
                 SUM(CASE WHEN event_name = 'project_open' THEN 1 ELSE 0 END) as opens,
-                SUM(CASE WHEN event_name = 'project_external_click' THEN 1 ELSE 0 END) as externalClicks
+                SUM(CASE WHEN event_name = 'project_external_click' THEN 1 ELSE 0 END) as externalClicks,
+                SUM(CASE WHEN event_name = 'project_gallery_view' THEN 1 ELSE 0 END) as galleryViews
              FROM analytics_events
              WHERE entity_id = ?
-               AND event_name IN ('project_open', 'project_external_click')
+               AND event_name IN ('project_open', 'project_external_click', 'project_gallery_view')
                AND created_at > ?`
         )
         .bind(entityId, since)
-        .first<{ opens: number | null; externalClicks: number | null }>();
+        .first<{
+            opens: number | null;
+            externalClicks: number | null;
+            galleryViews: number | null;
+        }>();
 
     const opens = totals?.opens ?? 0;
     const externalClicks = totals?.externalClicks ?? 0;
+    const galleryViews = totals?.galleryViews ?? 0;
 
     const timelineRows = await db
         .prepare(
@@ -211,9 +260,26 @@ export async function getProjectDetail(
         entityId,
         opens,
         externalClicks,
-        ctr: computeCtr(opens, externalClicks),
+        ctr: computeRate(externalClicks, opens),
+        galleryViews,
+        galleryViewRate: computeRate(galleryViews, opens),
         timeline: fillDailyCounts(timelineRows.results, days),
         countries: toCountryBreakdown(countryRows.results),
         languages: toLocaleBreakdown(localeRows.results),
     };
+}
+
+export async function getTopCategories(db: D1Like, days: number): Promise<CategoryBreakdown[]> {
+    const since = daysAgo(days);
+    const { results } = await db
+        .prepare(
+            `SELECT entity_id as category, COUNT(*) as count
+             FROM analytics_events
+             WHERE event_name = 'works_filter' AND entity_id IS NOT NULL AND created_at > ?
+             GROUP BY entity_id`
+        )
+        .bind(since)
+        .all<{ category: string; count: number }>();
+
+    return toCategoryBreakdown(results);
 }

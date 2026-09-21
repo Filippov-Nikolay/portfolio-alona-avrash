@@ -23,12 +23,16 @@ its Analytics page shows a "not connected" state until `ANALYTICS_WORKER_URL` /
   but it stops a random third-party site's own visitors' browsers from posting events here.
   Validated against the event allowlist, rate-limited and deduped per session too - see
   `src/handleEvent.ts`.
-- `GET /analytics/overview?days=30` - daily `project_open`/`contact_success` counts.
-- `GET /analytics/projects?days=30` - per-project opens/external clicks/CTR, sorted by opens desc.
+- `GET /analytics/overview?days=30` - daily `project_open`/`contact_started`/`contact_success`
+  counts, plus the contact form's start-to-send conversion rate.
+- `GET /analytics/projects?days=30` - per-project opens/external clicks/CTR/gallery views/gallery
+  view rate, sorted by opens desc.
 - `GET /analytics/projects/:entityId?days=30` - one project's totals, daily timeline, top
   countries and languages.
+- `GET /analytics/categories?days=30` - `works_filter` counts by category, as percentages of the
+  total (top 10).
 
-The three `GET /analytics/*` routes require `Authorization: Bearer <ANALYTICS_READ_SECRET>` -
+The four `GET /analytics/*` routes require `Authorization: Bearer <ANALYTICS_READ_SECRET>` -
 they're read access to real (if anonymized) visitor behavior, not a public API.
 
 ## Status

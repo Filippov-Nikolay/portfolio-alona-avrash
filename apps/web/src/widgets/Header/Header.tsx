@@ -195,7 +195,10 @@ export function Header() {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                         aria-hidden="true"
-                    />
+                        data-menu-overlay
+                    >
+                        <div className={styles.menuOverlayBlur} data-menu-overlay-blur />
+                    </m.div>
                 )}
             </AnimatePresence>
 
@@ -306,53 +309,69 @@ export function Header() {
                                 animate="visible"
                                 exit="hidden"
                                 style={{ transformOrigin: "top" }}
+                                data-menu-panel
                             >
-                                <nav aria-label="Mobile navigation">
-                                    <ul className={styles.menuNavList}>
-                                        {navigation.map((item) => {
-                                            const isActive = isActiveLink(pathname, item);
+                                <div
+                                    className={styles.menuPanelSurface}
+                                    aria-hidden="true"
+                                    data-menu-panel-surface
+                                />
+                                <div className={styles.menuPanelContent}>
+                                    <nav aria-label="Mobile navigation">
+                                        <ul className={styles.menuNavList}>
+                                            {navigation.map((item) => {
+                                                const isActive = isActiveLink(pathname, item);
 
-                                            return (
-                                                <m.li key={item.href} variants={menuItemVariants}>
-                                                    <Link
-                                                        href={item.href}
-                                                        onClick={(e) => {
-                                                            setMenuOpen(false);
-                                                            if (
-                                                                !isHomeLink(item) ||
-                                                                pathname !== "/"
-                                                            ) {
-                                                                return;
-                                                            }
-                                                            e.preventDefault();
-                                                            scrollToTop();
-                                                        }}
-                                                        className={cn(
-                                                            styles.menuNavLink,
-                                                            isActive && styles.menuNavLinkActive
-                                                        )}
+                                                return (
+                                                    <m.li
+                                                        key={item.href}
+                                                        variants={menuItemVariants}
                                                     >
-                                                        <span>{t(item.key)}</span>
-                                                    </Link>
-                                                </m.li>
-                                            );
-                                        })}
-                                    </ul>
-                                </nav>
+                                                        <Link
+                                                            href={item.href}
+                                                            onClick={(e) => {
+                                                                setMenuOpen(false);
+                                                                if (
+                                                                    !isHomeLink(item) ||
+                                                                    pathname !== "/"
+                                                                ) {
+                                                                    return;
+                                                                }
+                                                                e.preventDefault();
+                                                                scrollToTop();
+                                                            }}
+                                                            className={cn(
+                                                                styles.menuNavLink,
+                                                                isActive && styles.menuNavLinkActive
+                                                            )}
+                                                        >
+                                                            <span>{t(item.key)}</span>
+                                                        </Link>
+                                                    </m.li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </nav>
 
-                                <m.a
-                                    href={siteConfig.links.cv}
-                                    download
-                                    className={cn(styles.menuCv, cvClicked && styles.cvPillClicked)}
-                                    variants={menuItemVariants}
-                                    onClick={(e) => handleCvClick(e, { closeMenu: true })}
-                                    onAnimationEnd={() => setCvClicked(false)}
-                                >
-                                    <span className={styles.menuCvLabel}>{t("downloadCv")}</span>
-                                    <span className={styles.menuCvIcon} aria-hidden="true">
-                                        <DownloadIcon />
-                                    </span>
-                                </m.a>
+                                    <m.a
+                                        href={siteConfig.links.cv}
+                                        download
+                                        className={cn(
+                                            styles.menuCv,
+                                            cvClicked && styles.cvPillClicked
+                                        )}
+                                        variants={menuItemVariants}
+                                        onClick={(e) => handleCvClick(e, { closeMenu: true })}
+                                        onAnimationEnd={() => setCvClicked(false)}
+                                    >
+                                        <span className={styles.menuCvLabel}>
+                                            {t("downloadCv")}
+                                        </span>
+                                        <span className={styles.menuCvIcon} aria-hidden="true">
+                                            <DownloadIcon />
+                                        </span>
+                                    </m.a>
+                                </div>
                             </m.div>
                         )}
                     </AnimatePresence>

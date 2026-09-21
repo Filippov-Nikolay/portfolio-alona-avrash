@@ -78,6 +78,13 @@ export default defineConfig({
             testDir: "./tests/web",
             use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:3100" },
         },
+        {
+            name: "web-ios",
+            testDir: "./tests/web",
+            testMatch:
+                /(footer-ios-overscroll|projects-ios-button|services-ios-resize|tools-ios-scroll|works-filter-ios-tap)\.spec\.ts/,
+            use: { ...devices["iPhone 13"], baseURL: "http://localhost:3100" },
+        },
     ],
     // Dedicated ports, deliberately different from the app's normal 3000/
     // 3001 dev ports - so this suite never attaches to (or fights over a

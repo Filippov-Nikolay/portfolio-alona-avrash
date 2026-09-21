@@ -55,13 +55,13 @@ jobs:
                   path: ~/.cache/ms-playwright
                   key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
 
-            - name: Install Playwright Chromium (+ OS deps)
+            - name: Install Playwright browsers (+ OS deps)
               if: steps.playwright-cache.outputs.cache-hit != 'true'
-              run: pnpm --filter @avrash/e2e exec playwright install --with-deps chromium
+              run: pnpm --filter @avrash/e2e exec playwright install --with-deps chromium webkit
 
             - name: Install Playwright's OS dependencies only
               if: steps.playwright-cache.outputs.cache-hit == 'true'
-              run: pnpm --filter @avrash/e2e exec playwright install-deps chromium
+              run: pnpm --filter @avrash/e2e exec playwright install-deps chromium webkit
 
             - run: pnpm --filter @avrash/e2e run test
 

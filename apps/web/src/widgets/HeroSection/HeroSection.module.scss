@@ -720,48 +720,58 @@
 
     .nameStage {
         width: 100%;
-        margin-top: var(--hero-title-gap);
+        margin-top: calc(var(--hero-title-gap) + 25px);
         margin-inline-start: 0;
     }
 
     .name {
-        font-size: clamp(62px, 17.5vw, 84px);
+        font-size: clamp(68px, 21vw, 104px);
         line-height: 0.82;
         letter-spacing: -0.045em;
     }
 
+    .nameLine,
     .nameLineEnd {
-        align-self: flex-start;
+        align-self: center;
     }
 
     .titleFloaters {
         position: relative;
         inset: auto;
-        display: flex;
-        align-items: flex-start;
-        justify-content: flex-end;
-        gap: 12px;
-        min-height: clamp(100px, 27vw, 112px);
+        display: block;
+        min-height: clamp(184px, 50vw, 224px);
         margin-top: calc(var(--hero-project-gap) + 16px);
     }
 
     .floaterVariantA,
-    .floaterVariantB {
-        position: relative;
-        right: auto;
-        left: auto;
-        width: clamp(120px, 26vw, 115px);
+    .floaterVariantB,
+    .floaterVariantC {
+        position: absolute;
         height: auto;
-        aspect-ratio: 1;
     }
 
     .floaterVariantA {
-        top: -10px;
-        left: -15px;
+        top: 0;
+        left: 48%;
+        width: clamp(132px, 35vw, 160px);
+        aspect-ratio: 1;
+        transform: rotate(-3deg);
     }
 
     .floaterVariantB {
-        top: -15px;
+        top: -265px;
+        right: -5px;
+        width: clamp(96px, 25vw, 118px);
+        aspect-ratio: 1;
+        transform: rotate(6deg);
+    }
+
+    .floaterVariantC {
+        top: clamp(30px, 9vw, 46px);
+        left: 10px;
+        width: clamp(104px, 27vw, 128px);
+        aspect-ratio: 1;
+        transform: rotate(-6deg);
     }
 
     .lowerArea {

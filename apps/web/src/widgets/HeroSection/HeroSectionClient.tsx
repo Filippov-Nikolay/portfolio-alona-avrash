@@ -49,6 +49,12 @@ const FLOATER_LAYER_CLASSES = [
     styles.floaterFront,
 ];
 
+const TITLE_FLOATER_VARIANT_CLASSES = [
+    styles.floaterVariantA,
+    styles.floaterVariantB,
+    styles.floaterVariantC,
+];
+
 function clamp01(value: number) {
     return Math.max(0, Math.min(1, value));
 }
@@ -396,7 +402,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
 
     const floaterYValues = [floaterOneY, floaterTwoY, floaterThreeY, floaterFourY];
     const [pinkFloater, crustyFloater, ogofoliFloater, olvaFloater] = hero.floatingImages;
-    const titleFloaters = [pinkFloater, crustyFloater].filter(
+    const titleFloaters = [pinkFloater, crustyFloater, isCompact ? ogofoliFloater : null].filter(
         (floater): floater is (typeof hero.floatingImages)[number] => Boolean(floater)
     );
 
@@ -505,9 +511,8 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                                     key={floater.id}
                                                     className={cn(
                                                         styles.floater,
-                                                        index === 0
-                                                            ? styles.floaterVariantA
-                                                            : styles.floaterVariantB,
+                                                        TITLE_FLOATER_VARIANT_CLASSES[index] ??
+                                                            styles.floaterVariantC,
                                                         FLOATER_LAYER_CLASSES[index] ??
                                                             styles.floaterFront
                                                     )}

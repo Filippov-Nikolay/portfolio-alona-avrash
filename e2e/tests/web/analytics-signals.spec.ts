@@ -19,21 +19,27 @@ test("choosing a category filter fires works_filter, clearing it does not", asyn
     const beacons = await captureBeacons(page);
 
     await page.goto("/en/works");
-    const filterGroup = page.getByRole("group", { name: "Sort by" });
+    const filterGroup = page.getByRole("radiogroup", { name: "Sort by" });
     // Index 0 is the "All" clear-filters pill - the first real category
     // starts at 1.
-    const firstCategory = filterGroup.getByRole("button").nth(1);
-    await expect(firstCategory).toHaveAttribute("aria-pressed", "false");
+    const firstCategory = filterGroup.getByRole("radio").nth(1);
+    await expect(firstCategory).toHaveAttribute("aria-checked", "false");
 
     await firstCategory.click();
     await expect.poll(() => beacons.some((b) => b.eventName === "works_filter")).toBe(true);
     const filterBeacon = beacons.find((b) => b.eventName === "works_filter")!;
     expect(filterBeacon.entityId).toBeTruthy();
 
-    // Turning the same filter back off is the opposite signal, not a repeat -
-    // it must not add a second works_filter beacon.
+    // Picking the same category again within the dedupe window is a repeat,
+    // not a new signal - trackEvent()'s own session dedupe is what enforces
+    // this now (WorksCatalog no longer has its own pre-check).
     beacons.length = 0;
     await firstCategory.click();
+    await page.waitForTimeout(300);
+    expect(beacons.some((b) => b.eventName === "works_filter")).toBe(false);
+
+    // Clearing back to "All" isn't interest in a category either.
+    await filterGroup.getByRole("radio", { name: "All", exact: true }).click();
     await page.waitForTimeout(300);
     expect(beacons.some((b) => b.eventName === "works_filter")).toBe(false);
 });

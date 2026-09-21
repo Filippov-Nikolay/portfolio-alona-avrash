@@ -17,7 +17,7 @@ test.describe("works filtering", () => {
         const totalCount = await cards.count();
         expect(totalCount).toBeGreaterThan(0);
 
-        await page.getByRole("button", { name: "Branding", exact: true }).click();
+        await page.getByRole("radio", { name: "Branding", exact: true }).click();
         await expect(page).toHaveURL(/filter=branding/);
 
         await expect(async () => {
@@ -31,7 +31,15 @@ test.describe("works filtering", () => {
         );
         expect(categories.every((category) => category === "Branding")).toBe(true);
 
-        await page.getByRole("button", { name: "All", exact: true }).click();
+        await page.getByRole("radio", { name: "Packaging", exact: true }).click();
+        await expect(page).toHaveURL(/filter=packaging/);
+        await expect(page).not.toHaveURL(/filter=branding/);
+        const packagingCategories = await cards.evaluateAll((elements) =>
+            elements.map((element) => element.getAttribute("data-category"))
+        );
+        expect(packagingCategories.every((category) => category === "Packaging")).toBe(true);
+
+        await page.getByRole("radio", { name: "All", exact: true }).click();
         await expect(cards).toHaveCount(totalCount);
     });
 });

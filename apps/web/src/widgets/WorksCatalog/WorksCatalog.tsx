@@ -61,9 +61,9 @@ const SORT_PARAM = "sort";
 const TAB_PARAM = "tab";
 const IMAGE_PARAM = "image";
 
-function parseFilterParam(raw: string | null, validKeys: Set<string>): CategoryKey[] {
-    if (!raw) return [];
-    return raw.split(",").filter((value) => validKeys.has(value));
+function parseFilterParam(raw: string | null, validKeys: Set<string>): CategoryKey | null {
+    if (!raw || !validKeys.has(raw)) return null;
+    return raw as CategoryKey;
 }
 
 function parseSortParam(raw: string | null): SortOrder {
@@ -132,7 +132,7 @@ export function WorksCatalog({
         parseSortParam(searchParams.get(SORT_PARAM))
     );
     const validCategoryKeys = useMemo(() => new Set(categoryKeys), [categoryKeys]);
-    const [selectedCategories, setSelectedCategories] = useState<CategoryKey[]>(() =>
+    const [selectedCategory, setSelectedCategory] = useState<CategoryKey | null>(() =>
         parseFilterParam(searchParams.get(FILTER_PARAM), validCategoryKeys)
     );
 
@@ -170,7 +170,7 @@ export function WorksCatalog({
 
     useEffect(() => {
         const params = new URLSearchParams();
-        if (selectedCategories.length > 0) params.set(FILTER_PARAM, selectedCategories.join(","));
+        if (selectedCategory) params.set(FILTER_PARAM, selectedCategory);
         if (sortOrder !== "latest") params.set(SORT_PARAM, sortOrder);
 
         let path = worksBasePath;
@@ -185,7 +185,7 @@ export function WorksCatalog({
         window.history.replaceState(window.history.state, "", url);
         // selectedItem is read for its (stable) slug - see selectedSlug above.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedCategories, sortOrder, selectedSlug, activeTab, lightboxIndex, worksBasePath]);
+    }, [selectedCategory, sortOrder, selectedSlug, activeTab, lightboxIndex, worksBasePath]);
 
     useEffect(() => {
         if (!selectedItem) return;
@@ -205,23 +205,13 @@ export function WorksCatalog({
         [selectedItem]
     );
 
-    const toggleCategory = useCallback(
-        (key: CategoryKey) => {
-            // Only the add direction signals interest in a category - removing
-            // one is the opposite, and firing on both would just double-count
-            // a visitor flipping the same filter on and off.
-            if (!selectedCategories.includes(key)) {
-                trackEvent("works_filter", { entityId: key });
-            }
-            setSelectedCategories((prev) =>
-                prev.includes(key) ? prev.filter((value) => value !== key) : [...prev, key]
-            );
-        },
-        [selectedCategories]
-    );
+    const selectCategory = useCallback((key: CategoryKey) => {
+        trackEvent("works_filter", { entityId: key });
+        setSelectedCategory(key);
+    }, []);
 
     const clearCategories = useCallback(() => {
-        setSelectedCategories([]);
+        setSelectedCategory(null);
     }, []);
 
     const sortedProjects = useMemo(() => {
@@ -233,14 +223,13 @@ export function WorksCatalog({
 
     const visibleProjects = useMemo(
         () =>
-            selectedCategories.length === 0
+            selectedCategory === null
                 ? sortedProjects
-                : sortedProjects.filter((project) =>
-                      selectedCategories.includes(
-                          getPrimaryCategory(project.categories, categoryKeys)
-                      )
+                : sortedProjects.filter(
+                      (project) =>
+                          getPrimaryCategory(project.categories, categoryKeys) === selectedCategory
                   ),
-        [sortedProjects, selectedCategories, categoryKeys]
+        [sortedProjects, selectedCategory, categoryKeys]
     );
 
     const groups = useMemo(
@@ -268,13 +257,14 @@ export function WorksCatalog({
                 </m.header>
 
                 <m.div className={styles.controls} variants={safeFadeIn}>
-                    <div className={styles.filters} role="group" aria-label={labels.sortLabel}>
+                    <div className={styles.filters} role="radiogroup" aria-label={labels.sortLabel}>
                         <button
                             type="button"
-                            aria-pressed={selectedCategories.length === 0}
+                            role="radio"
+                            aria-checked={selectedCategory === null}
                             className={cn(
                                 styles.filterPill,
-                                selectedCategories.length === 0 && styles.filterPillActive
+                                selectedCategory === null && styles.filterPillActive
                             )}
                             onClick={clearCategories}
                         >
@@ -284,12 +274,13 @@ export function WorksCatalog({
                             <button
                                 key={key}
                                 type="button"
-                                aria-pressed={selectedCategories.includes(key)}
+                                role="radio"
+                                aria-checked={selectedCategory === key}
                                 className={cn(
                                     styles.filterPill,
-                                    selectedCategories.includes(key) && styles.filterPillActive
+                                    selectedCategory === key && styles.filterPillActive
                                 )}
-                                onClick={() => toggleCategory(key)}
+                                onClick={() => selectCategory(key)}
                             >
                                 {categoryLabels[key]}
                             </button>

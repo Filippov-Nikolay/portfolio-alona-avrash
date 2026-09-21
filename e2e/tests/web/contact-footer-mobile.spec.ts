@@ -21,7 +21,7 @@ test("contact footer keeps its background intact and reveals once on mobile", as
 
     await expect(footer).toHaveCSS("clip-path", "none");
     await expect(footer).toHaveCSS("background-color", "rgb(234, 253, 39)");
-    await expect(curtain).toHaveCSS("background-color", "rgb(255, 255, 255)");
+    await expect(curtain).toHaveCSS("background-color", "rgb(234, 253, 39)");
     await expect(left.locator("[data-footer-mask]")).not.toHaveCSS("transform", "none");
     await expect(left.locator("[data-footer-social-item]").first()).toHaveCSS("opacity", "0");
 

@@ -3,6 +3,16 @@
 @use "./typography";
 
 html {
+    // iOS paints the root canvas during elastic overscroll. Keep the top
+    // bounce aligned with the page and the bottom bounce aligned with Footer.
+    background-color: var(--color-bg);
+    background-image: linear-gradient(
+        to bottom,
+        var(--color-bg) 0 50%,
+        var(--color-accent) 50% 100%
+    );
+    background-attachment: fixed;
+    background-repeat: no-repeat;
     // Clip horizontal overflow from GSAP x-transforms without creating
     // a new scroll container (clip preserves normal vertical scrolling).
     overflow-x: clip;

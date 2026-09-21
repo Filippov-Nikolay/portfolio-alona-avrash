@@ -53,5 +53,8 @@ by `tsc --noEmit` so far, not by a live request.
    domain (e.g. `analytics.avrash.com`) or use the `*.workers.dev` URL Wrangler prints.
 6. Set `apps/web`'s `NEXT_PUBLIC_ANALYTICS_ENDPOINT` to that URL + `/event`.
 
-Local dev without deploying: `pnpm --filter @avrash/analytics-worker run dev` runs `wrangler dev`,
-which emulates D1 locally (`--local` migrations from step 3 target that emulated database).
+Local dev without deploying: copy `.dev.vars.example` to `.dev.vars` (gitignored) and pick any
+value for `ANALYTICS_READ_SECRET` - just make sure `apps/admin/.env`'s own
+`ANALYTICS_READ_SECRET` matches it. `pnpm --filter @avrash/analytics-worker run dev` (or the root
+`pnpm dev`, which now runs web/admin/this worker together) runs `wrangler dev`, which emulates D1
+locally (`--local` migrations from step 3 target that emulated database, not the real one).

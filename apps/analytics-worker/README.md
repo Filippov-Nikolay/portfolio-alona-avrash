@@ -1,10 +1,11 @@
 # Analytics Worker
 
 A small Cloudflare Worker that collects the site's custom product events - `project_open`,
-`project_external_click`, `cv_download`, `contact_success`, `social_click` - into a Cloudflare D1
-database, and serves aggregated reads of them back to the Admin dashboard. General traffic
-(visitors, pageviews, countries, referrers) is intentionally **not** duplicated here - that already
-lives in Vercel Analytics.
+`project_gallery_view`, `project_external_click`, `works_filter`, `cv_download`,
+`contact_started`, `contact_success`, `social_click` - into a Cloudflare D1 database, and serves
+aggregated reads of them back to the Admin dashboard. General traffic (visitors, pageviews,
+countries, referrers) is intentionally **not** duplicated here - that already lives in Vercel
+Analytics.
 
 `apps/web`'s `shared/analytics/analytics.ts` (`trackEvent(...)`) is the only writer. It's a no-op
 until `NEXT_PUBLIC_ANALYTICS_ENDPOINT` is set, so nothing here needs to exist for the site to work.

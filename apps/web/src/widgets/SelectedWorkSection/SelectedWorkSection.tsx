@@ -167,6 +167,15 @@ export function SelectedWorkSection({
                 item={selectedItem}
                 onClose={() => setSelectedIndex(null)}
                 labels={modalLabels}
+                onTabChange={(tab) => {
+                    // Only the switch-to-gallery direction is a deeper-
+                    // engagement signal - going back to overview isn't.
+                    if (tab === "gallery" && selectedItem) {
+                        trackEvent("project_gallery_view", {
+                            entityId: String(selectedItem.id),
+                        });
+                    }
+                }}
                 onVisitWebsite={() =>
                     trackEvent("project_external_click", {
                         entityId: selectedItem ? String(selectedItem.id) : undefined,

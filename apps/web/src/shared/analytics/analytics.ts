@@ -4,7 +4,14 @@
 // the server-side copy of this same list, which is the one that actually
 // gets enforced.
 export type AnalyticsEvent =
-    "project_open" | "project_external_click" | "cv_download" | "contact_success" | "social_click";
+    | "project_open"
+    | "project_gallery_view"
+    | "project_external_click"
+    | "works_filter"
+    | "cv_download"
+    | "contact_started"
+    | "contact_success"
+    | "social_click";
 
 export interface TrackOptions {
     entityId?: string;
@@ -21,9 +28,16 @@ export interface AnalyticsEventPayload {
 
 const DEDUPE_WINDOW_MS = 30 * 60 * 1000;
 
-// Re-opening the same project within the window doesn't count as another
-// view - otherwise a visitor clicking one card open/closed a few times would
-// inflate "Views" far past how many people actually looked at it.
+// Events where re-triggering the same entityId within the window doesn't
+// count as a new signal - a visitor opening/closing one project a few times,
+// flipping to its gallery tab and back, or toggling one filter on and off
+// shouldn't inflate that entity's count past how many people actually did it.
+const DEDUPED_EVENTS = new Set<AnalyticsEvent>([
+    "project_open",
+    "project_gallery_view",
+    "works_filter",
+]);
+
 export function shouldDedupe(now: number, lastTrackedAt: number | undefined): boolean {
     return typeof lastTrackedAt === "number" && now - lastTrackedAt < DEDUPE_WINDOW_MS;
 }
@@ -85,7 +99,7 @@ export function trackEvent(eventName: AnalyticsEvent, options: TrackOptions = {}
     if (!endpoint) return;
 
     let dedupeKey: string | undefined;
-    if (eventName === "project_open" && options.entityId) {
+    if (DEDUPED_EVENTS.has(eventName) && options.entityId) {
         dedupeKey = `${eventName}:${options.entityId}`;
         if (shouldDedupe(Date.now(), readSeen()[dedupeKey])) return;
     }
@@ -98,9 +112,9 @@ export function trackEvent(eventName: AnalyticsEvent, options: TrackOptions = {}
     });
 
     // Only mark it seen once the browser actually accepted the beacon - if
-    // sendBeacon() returns false (e.g. its queue is full), the next
-    // project_open should still get a real chance to be sent instead of
-    // silently staying "deduped" for the rest of the 30-minute window.
+    // sendBeacon() returns false (e.g. its queue is full), the next attempt
+    // should still get a real chance to be sent instead of silently staying
+    // "deduped" for the rest of the 30-minute window.
     const queued = navigator.sendBeacon(endpoint, JSON.stringify(payload));
     if (queued && dedupeKey) markTracked(dedupeKey);
 }

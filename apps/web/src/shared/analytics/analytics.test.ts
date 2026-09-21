@@ -108,4 +108,25 @@ describe("trackEvent", () => {
 
         expect(navigator.sendBeacon).not.toHaveBeenCalled();
     });
+
+    it.each(["project_gallery_view", "works_filter"] as const)(
+        "also dedupes repeated %s for the same entityId",
+        (eventName) => {
+            vi.stubGlobal("navigator", { sendBeacon: vi.fn().mockReturnValue(true) });
+
+            trackEvent(eventName, { entityId: "17" });
+            trackEvent(eventName, { entityId: "17" });
+
+            expect(navigator.sendBeacon).toHaveBeenCalledTimes(1);
+        }
+    );
+
+    it("does not dedupe contact_started - it has no entityId to key on and only fires once per form anyway", () => {
+        vi.stubGlobal("navigator", { sendBeacon: vi.fn().mockReturnValue(true) });
+
+        trackEvent("contact_started");
+        trackEvent("contact_started");
+
+        expect(navigator.sendBeacon).toHaveBeenCalledTimes(2);
+    });
 });

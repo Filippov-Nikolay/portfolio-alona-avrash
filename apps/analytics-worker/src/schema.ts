@@ -2,8 +2,11 @@ import { z } from "zod";
 
 export const ANALYTICS_EVENTS = [
     "project_open",
+    "project_gallery_view",
     "project_external_click",
+    "works_filter",
     "cv_download",
+    "contact_started",
     "contact_success",
     "social_click",
 ] as const;

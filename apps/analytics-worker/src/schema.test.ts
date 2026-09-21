@@ -28,6 +28,15 @@ describe("AnalyticsEventBodySchema", () => {
         expect(result.success).toBe(false);
     });
 
+    it.each(["project_gallery_view", "works_filter", "contact_started"])(
+        "accepts the %s event name",
+        (eventName) => {
+            expect(AnalyticsEventBodySchema.safeParse({ ...VALID_BODY, eventName }).success).toBe(
+                true
+            );
+        }
+    );
+
     it("rejects a sessionId that isn't a UUID", () => {
         const result = AnalyticsEventBodySchema.safeParse({
             ...VALID_BODY,

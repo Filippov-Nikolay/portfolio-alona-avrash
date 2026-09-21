@@ -193,11 +193,32 @@ export function WorksCatalog({
         trackEvent("project_open", { entityId: String(selectedItem.id) });
     }, [selectedItem]);
 
-    const toggleCategory = useCallback((key: CategoryKey) => {
-        setSelectedCategories((prev) =>
-            prev.includes(key) ? prev.filter((value) => value !== key) : [...prev, key]
-        );
-    }, []);
+    const handleTabChange = useCallback(
+        (tab: ShowcaseModalTab) => {
+            setActiveTab(tab);
+            // Only the switch-to-gallery direction is a deeper-engagement
+            // signal - going back to overview isn't.
+            if (tab === "gallery" && selectedItem) {
+                trackEvent("project_gallery_view", { entityId: String(selectedItem.id) });
+            }
+        },
+        [selectedItem]
+    );
+
+    const toggleCategory = useCallback(
+        (key: CategoryKey) => {
+            // Only the add direction signals interest in a category - removing
+            // one is the opposite, and firing on both would just double-count
+            // a visitor flipping the same filter on and off.
+            if (!selectedCategories.includes(key)) {
+                trackEvent("works_filter", { entityId: key });
+            }
+            setSelectedCategories((prev) =>
+                prev.includes(key) ? prev.filter((value) => value !== key) : [...prev, key]
+            );
+        },
+        [selectedCategories]
+    );
 
     const clearCategories = useCallback(() => {
         setSelectedCategories([]);
@@ -333,7 +354,7 @@ export function WorksCatalog({
                 item={selectedItem}
                 onClose={closeProject}
                 initialTab={activeTab}
-                onTabChange={setActiveTab}
+                onTabChange={handleTabChange}
                 initialLightboxIndex={lightboxIndex}
                 onLightboxChange={setLightboxIndex}
                 labels={modalLabels}

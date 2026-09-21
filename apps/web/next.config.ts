@@ -16,6 +16,10 @@ const vercelFontSources = isVercel ? " https://vercel.live https://assets.vercel
 const vercelImageSources = isVercel ? " https://vercel.live https://vercel.com" : "";
 const vercelConnectSources = isVercel ? " https://vercel.live wss://ws-us3.pusher.com" : "";
 
+const analyticsEndpoint = process.env.NEXT_PUBLIC_ANALYTICS_ENDPOINT;
+
+const analyticsConnectSource = analyticsEndpoint ? ` ${new URL(analyticsEndpoint).origin}` : "";
+
 // Single source of truth for the R2/CDN origin admin's uploaded images (and,
 // via CONTENT_SOURCE=remote, JSON content) are served from - see
 // shared/api/contentClient.ts and apps/admin's R2_PUBLIC_URL_BASE. Deriving
@@ -149,7 +153,7 @@ const nextConfig: NextConfig = {
                             `style-src 'self' 'unsafe-inline'${vercelStyleSource}`,
                             `font-src 'self' https://fonts.gstatic.com${vercelFontSources}`,
                             `img-src 'self' data: blob:${cdnOrigin ? ` ${cdnOrigin.origin}` : ""}${vercelImageSources}`,
-                            `connect-src 'self'${vercelConnectSources}`,
+                            `connect-src 'self'${vercelConnectSources}${analyticsConnectSource}`,
                             ...(isVercel ? ["frame-src https://vercel.live"] : []),
                             "frame-ancestors 'none'",
                         ].join("; "),

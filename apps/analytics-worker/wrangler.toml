@@ -6,7 +6,7 @@ compatibility_date = "2026-09-19"
 # in the CORS response header - a request whose Origin doesn't match this
 # gets a 403. Set to the public site's real origin before deploying.
 [vars]
-ALLOWED_ORIGIN = "https://your-domain.com"
+ALLOWED_ORIGIN = "https://dev.avrash.com"
 
 # ANALYTICS_READ_SECRET (the bearer token admin's GET /analytics/* reads
 # authenticate with) is NOT set here - this file is committed. Set it with:
@@ -19,11 +19,11 @@ ALLOWED_ORIGIN = "https://your-domain.com"
 #   wrangler d1 migrations apply avrash-analytics --remote  (production)
 [[d1_databases]]
 binding = "DB"
-database_name = "avrash-analytics"
-database_id = "REPLACE_WITH_REAL_DATABASE_ID"
+database_name = "avrash-analytics-dev"
+database_id = "d4fad309-f0c3-4c81-a83c-360ab929fa92"
 migrations_dir = "migrations"
 
 # Uncomment once a route is ready to receive traffic - see README.md.
-# [[routes]]
-# pattern = "analytics.your-domain.com/event"
-# custom_domain = true
+[[routes]]
+pattern = "analytics-dev.avrash.com"
+custom_domain = true

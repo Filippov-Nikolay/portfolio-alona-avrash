@@ -457,6 +457,12 @@
     }
 }
 
+:global(.vt-running) .root,
+:global(.vt-running) .lens {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .root {
         background:

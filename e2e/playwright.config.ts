@@ -90,6 +90,13 @@ export default defineConfig({
             url: "http://localhost:3100",
             reuseExistingServer: false,
             timeout: 120_000,
+            env: {
+                // Not a real service - specs that care intercept this exact
+                // URL with page.route() before it ever leaves the browser.
+                // Set unconditionally so the CSP connect-src it also drives
+                // (see next.config.ts) matches what analytics specs expect.
+                NEXT_PUBLIC_ANALYTICS_ENDPOINT: "https://analytics.e2e.test/event",
+            },
         },
         {
             command: "pnpm exec next dev -p 3101",

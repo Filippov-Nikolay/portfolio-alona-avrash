@@ -160,10 +160,6 @@ export function WorksCatalog({
         setSelectedId(id);
         setActiveTab("overview");
         setLightboxIndex(null);
-        // The project's own numeric id, not its slug - a slug changes if the
-        // project is ever renamed, which would silently split that
-        // project's analytics history in two.
-        trackEvent("project_open", { entityId: String(id) });
     }, []);
 
     const closeProject = useCallback(() => {
@@ -190,6 +186,12 @@ export function WorksCatalog({
         // selectedItem is read for its (stable) slug - see selectedSlug above.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedCategories, sortOrder, selectedSlug, activeTab, lightboxIndex, worksBasePath]);
+
+    useEffect(() => {
+        if (!selectedItem) return;
+
+        trackEvent("project_open", { entityId: String(selectedItem.id) });
+    }, [selectedItem]);
 
     const toggleCategory = useCallback((key: CategoryKey) => {
         setSelectedCategories((prev) =>

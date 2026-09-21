@@ -56,6 +56,11 @@ export function ProjectsSection({
     } = useProjectsSectionAnimations();
     const selectedItem = selectedIndex === null ? null : (modalItems[selectedIndex] ?? null);
     const activeIndex = pinnedIndex ?? hoveredIndex;
+
+    useEffect(() => {
+        if (!selectedItem) return;
+        trackEvent("project_open", { entityId: String(selectedItem.id) });
+    }, [selectedItem]);
     const finalCards = cards.slice(0, Math.max(0, Math.floor(visibleCardCount)));
     const getSourceIndex = (image: HomeProjectGalleryCard["image"]) =>
         projects.findIndex((project) => {
@@ -151,10 +156,6 @@ export function ProjectsSection({
                                     }
 
                                     setSelectedIndex(sourceIndex);
-                                    const openedItem = modalItems[sourceIndex];
-                                    trackEvent("project_open", {
-                                        entityId: openedItem ? String(openedItem.id) : undefined,
-                                    });
                                 }}
                             >
                                 <span className={styles.interactionLayer} data-project-interaction>

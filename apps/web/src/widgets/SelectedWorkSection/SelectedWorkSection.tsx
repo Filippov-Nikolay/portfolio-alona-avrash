@@ -67,19 +67,20 @@ export function SelectedWorkSection({
         return unsubscribe;
     }, [choreographyProgress, isContentRevealed]);
 
+    const selectedItem = selectedIndex === null ? null : (modalItems[selectedIndex] ?? null);
+
+    useEffect(() => {
+        if (!selectedItem) return;
+
+        trackEvent("project_open", { entityId: String(selectedItem.id) });
+    }, [selectedItem]);
+
     if (projects.length === 0) {
         return null;
     }
 
-    const selectedItem = selectedIndex === null ? null : (modalItems[selectedIndex] ?? null);
-
     const openProject = (index: number) => {
         setSelectedIndex(index);
-        // The project's own numeric id, not its slug - a slug changes if the
-        // project is ever renamed, which would silently split that
-        // project's analytics history in two.
-        const item = modalItems[index];
-        trackEvent("project_open", { entityId: item ? String(item.id) : undefined });
     };
 
     return (

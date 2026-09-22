@@ -194,6 +194,12 @@
     backface-visibility: hidden;
 }
 
+@media (hover: none) and (pointer: coarse) {
+    .statsDepthPlane {
+        transform-style: flat;
+    }
+}
+
 .statsSection {
     width: 100%;
 }
@@ -270,6 +276,13 @@
         right: -24%;
         width: 320px;
         height: 320px;
+    }
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .glow,
+    .glowSecondary {
+        filter: none;
     }
 }
 

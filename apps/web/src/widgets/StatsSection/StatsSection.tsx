@@ -81,6 +81,7 @@ export function StatsSection({
                                             <span
                                                 ref={setValueRef(index)}
                                                 className={styles.digits}
+                                                data-stat-index={index}
                                                 aria-hidden="true"
                                             >
                                                 {parsed.prefix}

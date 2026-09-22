@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { m, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { m, useMotionValue, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { HeroContent, Social, StatItem } from "@avrash/content-schema";
@@ -17,6 +17,7 @@ import {
 } from "@/shared/hooks";
 import { cn } from "@/shared/lib/cn";
 import { fadeIn } from "@/shared/lib/motion/fade-in";
+import { createViewportResizeGuard } from "@/shared/lib/motion/mobileViewport";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { StatsSelectedChoreographyProvider } from "@/shared/lib/motion/StatsSelectedChoreographyContext";
 import { usePreloader } from "@/shared/providers";
@@ -62,6 +63,25 @@ function clamp01(value: number) {
 function smoothstep(value: number) {
     const clamped = clamp01(value);
     return clamped * clamped * (3 - 2 * clamped);
+}
+
+function interpolateNumber(value: number, input: number[], output: number[]) {
+    if (value <= input[0]) return output[0];
+
+    const lastIndex = input.length - 1;
+    if (value >= input[lastIndex]) return output[lastIndex];
+
+    for (let index = 1; index < input.length; index += 1) {
+        if (value > input[index]) continue;
+
+        const start = input[index - 1];
+        const end = input[index];
+        const progress = end === start ? 1 : (value - start) / (end - start);
+
+        return output[index - 1] + (output[index] - output[index - 1]) * progress;
+    }
+
+    return output[lastIndex];
 }
 
 function readTranslateX(node: HTMLElement) {
@@ -148,6 +168,14 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         handoffProgress: selectedHandoffProgress,
         handoffRunway: selectedHandoffRunway,
     } = useStatsSelectedProgress();
+    const motionConfig = useMotionValue({
+        reduced: Boolean(reduced),
+        isCompact,
+        isNarrow,
+        titleExitX,
+        choreographyMetrics,
+        selectedHandoffRunway,
+    });
 
     const { scrollYProgress } = useScroll({
         target: scrollTrackRef,
@@ -167,7 +195,14 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
             return;
         }
 
+        let disposed = false;
+        let measureFrame = 0;
+        const shouldMeasureViewportResize = createViewportResizeGuard();
+
         const measure = () => {
+            measureFrame = 0;
+            if (disposed) return;
+
             const firstX = readTranslateX(nameFirst);
             const lastX = readTranslateX(nameLast);
             const firstRect = nameFirst.getBoundingClientRect();
@@ -191,23 +226,29 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
             );
         };
 
-        const rafId = requestAnimationFrame(measure);
+        const scheduleMeasure = () => {
+            if (measureFrame || disposed) return;
+            measureFrame = requestAnimationFrame(measure);
+        };
+
+        const handleResize = () => {
+            if (shouldMeasureViewportResize()) scheduleMeasure();
+        };
+
         const resizeObserver =
-            typeof ResizeObserver === "undefined"
-                ? null
-                : new ResizeObserver(() => {
-                      measure();
-                  });
+            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleMeasure);
 
         resizeObserver?.observe(nameFirst);
         resizeObserver?.observe(nameLast);
-        void document.fonts?.ready.then(measure);
-        window.addEventListener("resize", measure);
+        scheduleMeasure();
+        void document.fonts?.ready.then(scheduleMeasure);
+        window.addEventListener("resize", handleResize);
 
         return () => {
-            cancelAnimationFrame(rafId);
+            disposed = true;
+            cancelAnimationFrame(measureFrame);
             resizeObserver?.disconnect();
-            window.removeEventListener("resize", measure);
+            window.removeEventListener("resize", handleResize);
         };
     }, [reduced]);
 
@@ -221,7 +262,11 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
             return;
         }
 
+        let measureFrame = 0;
+        const shouldMeasureViewportResize = createViewportResizeGuard();
+
         const measure = () => {
+            measureFrame = 0;
             // The sticky scene uses 100svh. Reading that same box keeps the
             // choreography stable when mobile browser chrome changes innerHeight.
             const viewportHeight = stage.getBoundingClientRect().height;
@@ -242,9 +287,17 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
             );
         };
 
+        const scheduleMeasure = () => {
+            if (measureFrame) return;
+            measureFrame = requestAnimationFrame(measure);
+        };
+
+        const handleResize = () => {
+            if (shouldMeasureViewportResize()) scheduleMeasure();
+        };
+
         const resizeObserver =
-            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-        const frame = requestAnimationFrame(measure);
+            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleMeasure);
 
         resizeObserver?.observe(selectedGeometryProbe);
         resizeObserver?.observe(selectedMotionLayer);
@@ -252,12 +305,13 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         if (header instanceof HTMLElement) {
             resizeObserver?.observe(header);
         }
-        window.addEventListener("resize", measure);
+        scheduleMeasure();
+        window.addEventListener("resize", handleResize);
 
         return () => {
-            cancelAnimationFrame(frame);
+            cancelAnimationFrame(measureFrame);
             resizeObserver?.disconnect();
-            window.removeEventListener("resize", measure);
+            window.removeEventListener("resize", handleResize);
         };
     }, [selectedWork]);
 
@@ -265,13 +319,17 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     // made the scene continue moving after input stopped, then catch up abruptly.
     const parallaxProgress = scrollYProgress;
 
-    const heroOpacity = useTransform(
-        scrollYProgress,
-        reduced ? [0, 1] : [0, HERO_DEPTH_TRANSITION_START, 1],
-        reduced ? [1, 0] : [1, 1, 0]
-    );
+    const heroOpacity = useTransform(() => {
+        const latest = scrollYProgress.get();
+        if (motionConfig.get().reduced) return 1 - clamp01(latest);
+        if (latest <= HERO_DEPTH_TRANSITION_START) return 1;
+
+        return (
+            1 - clamp01((latest - HERO_DEPTH_TRANSITION_START) / (1 - HERO_DEPTH_TRANSITION_START))
+        );
+    });
     const heroPointerEvents = useTransform(() =>
-        depthProgress.get() >= (reduced ? 0.995 : 0.5) ? "none" : "auto"
+        depthProgress.get() >= (motionConfig.get().reduced ? 0.995 : 0.5) ? "none" : "auto"
     );
     const statsCameraProgress = useTransform(
         depthProgress,
@@ -284,121 +342,177 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         CAMERA_PROGRESS_OUTPUT
     );
 
-    const depthStartZ = reduced ? 0 : isCompact ? 220 : 420;
-    const depthMidZ = reduced ? 0 : isCompact ? 92 : 172;
-    const depthStartScale = reduced ? 1 : isCompact ? 2.15 : 2.9;
-    const depthNearScale = reduced ? 1 : isCompact ? 1.72 : 2.08;
-    const depthMidScale = reduced ? 1 : isCompact ? 1.38 : 1.52;
-    const depthLateScale = reduced ? 1 : isCompact ? 1.12 : 1.16;
-    const depthStartY = reduced ? 0 : isCompact ? -240 : -430;
-    const depthMidY = reduced ? 0 : isCompact ? -96 : -170;
-    const statsOpacity = useTransform(
-        cameraProgress,
-        reduced ? [0, 1] : [0, 0.04, 0.1, 0.22, 0.42, 1],
-        reduced ? [0, 1] : [0, 0.18, 0.52, 0.82, 1, 1]
-    );
-    const statsZ = useTransform(
-        cameraProgress,
-        [0, 0.52, CAMERA_SETTLE_END, 1],
-        [depthStartZ, depthMidZ, 0, 0]
-    );
-    const statsScale = useTransform(
-        cameraProgress,
-        [0, 0.24, 0.52, 0.8, CAMERA_SETTLE_END, 1],
-        [depthStartScale, depthNearScale, depthMidScale, depthLateScale, 1, 1]
-    );
-    const statsY = useTransform(
-        cameraProgress,
-        [0, 0.55, CAMERA_SETTLE_END, 1],
-        [depthStartY, depthMidY, 0, 0]
-    );
+    const statsOpacity = useTransform(() => {
+        const latest = cameraProgress.get();
+        return motionConfig.get().reduced
+            ? clamp01(latest)
+            : interpolateNumber(latest, [0, 0.04, 0.1, 0.22, 0.42, 1], [0, 0.18, 0.52, 0.82, 1, 1]);
+    });
+    const statsZ = useTransform(() => {
+        const latest = cameraProgress.get();
+        const { reduced: prefersReduced, isCompact: compact } = motionConfig.get();
+        const depthStartZ = prefersReduced ? 0 : compact ? 220 : 420;
+        const depthMidZ = prefersReduced ? 0 : compact ? 92 : 172;
+
+        return interpolateNumber(
+            latest,
+            [0, 0.52, CAMERA_SETTLE_END, 1],
+            [depthStartZ, depthMidZ, 0, 0]
+        );
+    });
+    const statsScale = useTransform(() => {
+        const latest = cameraProgress.get();
+        const { reduced: prefersReduced, isCompact: compact } = motionConfig.get();
+        const depthStartScale = prefersReduced ? 1 : compact ? 2.15 : 2.9;
+        const depthNearScale = prefersReduced ? 1 : compact ? 1.72 : 2.08;
+        const depthMidScale = prefersReduced ? 1 : compact ? 1.38 : 1.52;
+        const depthLateScale = prefersReduced ? 1 : compact ? 1.12 : 1.16;
+
+        return interpolateNumber(
+            latest,
+            [0, 0.24, 0.52, 0.8, CAMERA_SETTLE_END, 1],
+            [depthStartScale, depthNearScale, depthMidScale, depthLateScale, 1, 1]
+        );
+    });
+    const statsY = useTransform(() => {
+        const latest = cameraProgress.get();
+        const { reduced: prefersReduced, isCompact: compact } = motionConfig.get();
+        const depthStartY = prefersReduced ? 0 : compact ? -240 : -430;
+        const depthMidY = prefersReduced ? 0 : compact ? -96 : -170;
+
+        return interpolateNumber(
+            latest,
+            [0, 0.55, CAMERA_SETTLE_END, 1],
+            [depthStartY, depthMidY, 0, 0]
+        );
+    });
     const statsPointerEvents = useTransform(() =>
-        cameraProgress.get() <= (reduced ? 0.02 : 0.08) ? "none" : "auto"
+        cameraProgress.get() <= (motionConfig.get().reduced ? 0.02 : 0.08) ? "none" : "auto"
     );
     const selectedEntryProgress = useTransform(statsSelectedRawProgress, (latest) => {
         return clamp01(latest);
     });
-    const statsLiftY = useTransform(statsSelectedProgress, (latest) => {
+    const statsLiftY = useTransform(() => {
+        const latest = statsSelectedProgress.get();
+        const { choreographyMetrics: metrics } = motionConfig.get();
         const liftProgress = clamp01(
             (latest - STATS_PICKUP_PROGRESS) / (1 - STATS_PICKUP_PROGRESS)
         );
-        const finalLift = Math.max(
-            choreographyMetrics.viewportHeight / 2 - choreographyMetrics.headerClearance,
-            0
-        );
+        const finalLift = Math.max(metrics.viewportHeight / 2 - metrics.headerClearance, 0);
 
         return -finalLift * liftProgress;
     });
-    const selectedMotionY = useTransform(selectedEntryProgress, (latest) => {
-        const viewportHeight = choreographyMetrics.viewportHeight;
+    const selectedMotionY = useTransform(() => {
+        const latest = selectedEntryProgress.get();
+        const { choreographyMetrics: metrics } = motionConfig.get();
+        const viewportHeight = metrics.viewportHeight;
         const initialTop = viewportHeight * SELECTED_ENTRY_VIEWPORT_RATIO;
-        const finalTop = viewportHeight - choreographyMetrics.selectedFinalOffset;
+        const finalTop = viewportHeight - metrics.selectedFinalOffset;
 
         return initialTop + (finalTop - initialTop) * clamp01(latest);
     });
     const selectedFlowAdjustment =
         choreographyMetrics.selectedHeight - choreographyMetrics.selectedFinalOffset;
-    const selectedFocusDriftY = useTransform(
-        selectedFocusProgress,
-        (latest) =>
-            -(isCompact ? SELECTED_FOCUS_DRIFT * 0.66 : SELECTED_FOCUS_DRIFT) * smoothstep(latest)
-    );
-    const selectedHandoffY = useTransform(
-        selectedHandoffProgress,
-        (latest) => -(selectedHandoffRunway / 2) * latest * latest
-    );
+    const selectedFocusDriftY = useTransform(() => {
+        const latest = selectedFocusProgress.get();
+        return (
+            -(motionConfig.get().isCompact ? SELECTED_FOCUS_DRIFT * 0.66 : SELECTED_FOCUS_DRIFT) *
+            smoothstep(latest)
+        );
+    });
+    const selectedHandoffY = useTransform(() => {
+        const latest = selectedHandoffProgress.get();
+        return -(motionConfig.get().selectedHandoffRunway / 2) * latest * latest;
+    });
     const selectedLayerY = useTransform(
         () => selectedMotionY.get() + selectedFocusDriftY.get() + selectedHandoffY.get()
     );
 
     const nameFirstX = useTransform(
-        scrollYProgress,
-        [0, TITLE_TRAVEL_END, 1],
-        [0, titleExitX.first, titleExitX.first]
+        () =>
+            motionConfig.get().titleExitX.first * clamp01(scrollYProgress.get() / TITLE_TRAVEL_END)
     );
     const nameLastX = useTransform(
-        scrollYProgress,
-        [0, TITLE_TRAVEL_END, 1],
-        [0, titleExitX.last, titleExitX.last]
+        () => motionConfig.get().titleExitX.last * clamp01(scrollYProgress.get() / TITLE_TRAVEL_END)
     );
-    const floaterOneY = useTransform(
-        parallaxProgress,
-        [0, IMAGE_TRAVEL_END, 1],
-        reduced ? ["0vh", "0vh", "0vh"] : ["0vh", "-36vh", "-36vh"]
-    );
-    const floaterTwoY = useTransform(
-        parallaxProgress,
-        [0, IMAGE_TRAVEL_END, 1],
-        reduced
-            ? ["0vh", "0vh", "0vh"]
-            : isNarrow
-              ? ["0vh", "-22vh", "-22vh"]
-              : ["2vh", "-48vh", "-48vh"]
-    );
-    const floaterThreeY = useTransform(
-        parallaxProgress,
-        [0, IMAGE_TRAVEL_END, 1],
-        reduced
-            ? ["0vh", "0vh", "0vh"]
-            : isNarrow
-              ? ["0vh", "-24vh", "-24vh"]
-              : ["12vh", "-32vh", "-32vh"]
-    );
-    const floaterFourY = useTransform(
-        parallaxProgress,
-        [0, IMAGE_TRAVEL_END, 1],
-        reduced ? ["0vh", "0vh", "0vh"] : ["16vh", "-58vh", "-58vh"]
-    );
-    const introY = useTransform(
-        scrollYProgress,
-        [0, IMAGE_TRAVEL_END, 1],
-        reduced ? ["0vh", "0vh", "0vh"] : ["0vh", "-14vh", "-14vh"]
-    );
-    const availabilityY = useTransform(
-        scrollYProgress,
-        [0, IMAGE_TRAVEL_END, 1],
-        reduced ? ["0vh", "0vh", "0vh"] : ["0vh", "-10vh", "-10vh"]
-    );
+    const floaterOneY = useTransform(() => {
+        const latest = parallaxProgress.get();
+        const { reduced: prefersReduced, choreographyMetrics: metrics } = motionConfig.get();
+        return prefersReduced
+            ? 0
+            : -metrics.viewportHeight * 0.36 * clamp01(latest / IMAGE_TRAVEL_END);
+    });
+    const floaterTwoY = useTransform(() => {
+        const latest = parallaxProgress.get();
+        const {
+            reduced: prefersReduced,
+            isNarrow: narrow,
+            choreographyMetrics: metrics,
+        } = motionConfig.get();
+        if (prefersReduced) return 0;
+
+        const progress = clamp01(latest / IMAGE_TRAVEL_END);
+        const start = narrow ? 0 : metrics.viewportHeight * 0.02;
+        const end = metrics.viewportHeight * (narrow ? -0.22 : -0.48);
+        return start + (end - start) * progress;
+    });
+    const floaterThreeY = useTransform(() => {
+        const latest = parallaxProgress.get();
+        const {
+            reduced: prefersReduced,
+            isNarrow: narrow,
+            choreographyMetrics: metrics,
+        } = motionConfig.get();
+        if (prefersReduced) return 0;
+
+        const progress = clamp01(latest / IMAGE_TRAVEL_END);
+        const start = metrics.viewportHeight * (narrow ? 0 : 0.12);
+        const end = metrics.viewportHeight * (narrow ? -0.24 : -0.32);
+        return start + (end - start) * progress;
+    });
+    const floaterFourY = useTransform(() => {
+        const latest = parallaxProgress.get();
+        const { reduced: prefersReduced, choreographyMetrics: metrics } = motionConfig.get();
+        if (prefersReduced) return 0;
+
+        const progress = clamp01(latest / IMAGE_TRAVEL_END);
+        const start = metrics.viewportHeight * 0.16;
+        const end = metrics.viewportHeight * -0.58;
+        return start + (end - start) * progress;
+    });
+    const introY = useTransform(() => {
+        const latest = scrollYProgress.get();
+        const { reduced: prefersReduced, choreographyMetrics: metrics } = motionConfig.get();
+        return prefersReduced
+            ? 0
+            : -metrics.viewportHeight * 0.14 * clamp01(latest / IMAGE_TRAVEL_END);
+    });
+    const availabilityY = useTransform(() => {
+        const latest = scrollYProgress.get();
+        const { reduced: prefersReduced, choreographyMetrics: metrics } = motionConfig.get();
+        return prefersReduced
+            ? 0
+            : -metrics.viewportHeight * 0.1 * clamp01(latest / IMAGE_TRAVEL_END);
+    });
+
+    useLayoutEffect(() => {
+        motionConfig.set({
+            reduced: Boolean(reduced),
+            isCompact,
+            isNarrow,
+            titleExitX,
+            choreographyMetrics,
+            selectedHandoffRunway,
+        });
+    }, [
+        choreographyMetrics,
+        isCompact,
+        isNarrow,
+        motionConfig,
+        reduced,
+        selectedHandoffRunway,
+        titleExitX,
+    ]);
 
     const floaterYValues = [floaterOneY, floaterTwoY, floaterThreeY, floaterFourY];
     const [pinkFloater, crustyFloater, ogofoliFloater, olvaFloater] = hero.floatingImages;

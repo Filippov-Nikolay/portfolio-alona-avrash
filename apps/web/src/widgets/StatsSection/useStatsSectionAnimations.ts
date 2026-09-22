@@ -13,15 +13,30 @@ import {
 } from "@/shared/config/heroDepthHandoff";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
+import { isTouchViewport } from "@/shared/lib/motion/mobileViewport";
 import { digitWheelPosition, type ParsedStatValue } from "./lib/parseStatValue";
 
 const GRID_REVEAL_START = NEXT_SECTION_INTERNAL_ANIMATION_TRIGGER;
 const GRID_REVEAL_END = NEXT_SECTION_COUNTER_TRIGGER;
 const COUNTER_START = NEXT_SECTION_COUNTER_TRIGGER;
 const COUNTER_END = 0.98;
+const PROGRESS_UPDATE_EPSILON = 0.0005;
 
 const revealEase = gsap.parseEase("power2.out");
 const counterEase = gsap.parseEase("power1.out");
+
+interface ReelTarget {
+    element: HTMLElement;
+    place: number;
+    continuous: boolean;
+    lastPosition: number;
+}
+
+interface CounterTarget {
+    element: HTMLSpanElement | null;
+    parsed: ParsedStatValue;
+    reels: ReelTarget[];
+}
 
 function windowProgress(value: number, start: number, end: number, ease: (t: number) => number) {
     if (end <= start) return value >= end ? 1 : 0;
@@ -29,12 +44,41 @@ function windowProgress(value: number, start: number, end: number, ease: (t: num
     return ease(t);
 }
 
-function updateReels(container: HTMLElement, value: number) {
-    const reels = container.querySelectorAll<HTMLElement>("[data-reel-place]");
-    reels.forEach((reel) => {
-        const place = Number(reel.dataset.reelPlace);
-        const continuous = reel.dataset.reelContinuous === "true";
-        reel.style.transform = `translateY(${-digitWheelPosition(value, place, continuous)}em)`;
+function shouldApplyProgress(next: number, previous: number) {
+    if (!Number.isFinite(previous)) return true;
+
+    // Reel boundaries are discrete. Even a tiny final progress delta can
+    // change a leading digit (for example 899.6 -> 900), so endpoints must
+    // never be discarded by the frame deduplication threshold.
+    if (next <= 0 || next >= 1) return next !== previous;
+
+    return Math.abs(next - previous) >= PROGRESS_UPDATE_EPSILON;
+}
+
+function createCounterTarget(
+    element: HTMLSpanElement | null,
+    parsed: ParsedStatValue
+): CounterTarget {
+    const reels = element
+        ? Array.from(element.querySelectorAll<HTMLElement>("[data-reel-place]"), (reel) => ({
+              element: reel,
+              place: Number(reel.dataset.reelPlace),
+              continuous: reel.dataset.reelContinuous === "true",
+              lastPosition: Number.NaN,
+          }))
+        : [];
+
+    return { element, parsed, reels };
+}
+
+function updateReels(target: CounterTarget, value: number, force = false) {
+    target.reels.forEach((reel) => {
+        const position = digitWheelPosition(value, reel.place, reel.continuous);
+
+        if (!force && Math.abs(position - reel.lastPosition) < 0.001) return;
+
+        reel.lastPosition = position;
+        reel.element.style.transform = `translate3d(0, ${-position}em, 0)`;
     });
 }
 
@@ -51,7 +95,11 @@ export function useStatsSectionAnimations(
     const sectionRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<HTMLDivElement>(null);
     const valueRefs = useRef<(HTMLSpanElement | null)[]>([]);
-    const countersRef = useRef<{ el: HTMLSpanElement | null; parsed: ParsedStatValue }[]>([]);
+    const countersRef = useRef<CounterTarget[]>([]);
+    const gridYSetterRef = useRef<ReturnType<typeof gsap.quickSetter> | null>(null);
+    const gridFilterSetterRef = useRef<ReturnType<typeof gsap.quickSetter> | null>(null);
+    const avoidDynamicBlurRef = useRef(false);
+    const renderedProgressRef = useRef({ reveal: Number.NaN, counter: Number.NaN });
 
     const setValueRef = (index: number) => (el: HTMLSpanElement | null) => {
         valueRefs.current[index] = el;
@@ -97,38 +145,40 @@ export function useStatsSectionAnimations(
             const grid = gridRef.current;
             if (!grid) return;
 
-            const counters = parsedValues.map((parsed, index) => ({
-                el: valueRefs.current[index],
-                parsed,
-            }));
+            const counters = parsedValues.map((parsed, index) =>
+                createCounterTarget(valueRefs.current[index], parsed)
+            );
 
             if (reduced) {
-                counters.forEach(({ el, parsed }) => {
-                    if (el && parsed.isAnimatable) updateReels(el, parsed.target);
+                counters.forEach((counter) => {
+                    if (counter.element && counter.parsed.isAnimatable) {
+                        updateReels(counter, counter.parsed.target);
+                    }
                 });
                 return;
             }
 
-            counters.forEach(({ el, parsed }) => {
-                if (el && parsed.isAnimatable) updateReels(el, 0);
+            counters.forEach((counter) => {
+                if (counter.element && counter.parsed.isAnimatable) updateReels(counter, 0);
             });
 
-            const state = { current: 0 };
             const observer = new IntersectionObserver(
                 ([entry]) => {
                     if (!entry.isIntersecting) return;
                     observer.disconnect();
 
-                    counters.forEach(({ el, parsed }) => {
-                        if (!el || !parsed.isAnimatable) return;
+                    counters.forEach((counter) => {
+                        if (!counter.element || !counter.parsed.isAnimatable) return;
+                        const state = { current: 0 };
+
                         gsap.fromTo(
                             state,
                             { current: 0 },
                             {
-                                current: parsed.target,
+                                current: counter.parsed.target,
                                 duration: 1.1,
                                 ease: "power1.out",
-                                onUpdate: () => updateReels(el, state.current),
+                                onUpdate: () => updateReels(counter, state.current),
                             }
                         );
                     });
@@ -152,17 +202,35 @@ export function useStatsSectionAnimations(
             const grid = gridRef.current;
             if (!grid) return;
 
-            countersRef.current = parsedValues.map((parsed, index) => ({
-                el: valueRefs.current[index],
-                parsed,
-            }));
+            countersRef.current = parsedValues.map((parsed, index) =>
+                createCounterTarget(valueRefs.current[index], parsed)
+            );
+            avoidDynamicBlurRef.current = isTouchViewport();
+            renderedProgressRef.current = { reveal: Number.NaN, counter: Number.NaN };
 
             if (reduced) {
                 gsap.set(grid, { clearProps: "all" });
-                countersRef.current.forEach(({ el, parsed }) => {
-                    if (el && parsed.isAnimatable) updateReels(el, parsed.target);
+                countersRef.current.forEach((counter) => {
+                    if (counter.element && counter.parsed.isAnimatable) {
+                        updateReels(counter, counter.parsed.target);
+                    }
                 });
+                return;
             }
+
+            gridYSetterRef.current = gsap.quickSetter(grid, "y", "px");
+            gridFilterSetterRef.current = avoidDynamicBlurRef.current
+                ? null
+                : gsap.quickSetter(grid, "filter");
+
+            if (avoidDynamicBlurRef.current) {
+                gsap.set(grid, { filter: "none", force3D: true });
+            }
+
+            return () => {
+                gridYSetterRef.current = null;
+                gridFilterSetterRef.current = null;
+            };
         },
         {
             scope: sectionRef,
@@ -178,16 +246,36 @@ export function useStatsSectionAnimations(
             if (!grid) return;
 
             const revealT = windowProgress(latest, GRID_REVEAL_START, GRID_REVEAL_END, revealEase);
-            gsap.set(grid, {
-                y: gsap.utils.interpolate(28, 0, revealT),
-                filter: `blur(${gsap.utils.interpolate(10, 0, revealT)}px)`,
-            });
+            const rendered = renderedProgressRef.current;
+
+            if (shouldApplyProgress(revealT, rendered.reveal)) {
+                gridYSetterRef.current?.(gsap.utils.interpolate(28, 0, revealT));
+
+                if (!avoidDynamicBlurRef.current) {
+                    gridFilterSetterRef.current?.(
+                        `blur(${gsap.utils.interpolate(10, 0, revealT)}px)`
+                    );
+                }
+
+                rendered.reveal = revealT;
+            }
 
             const counterT = windowProgress(latest, COUNTER_START, COUNTER_END, counterEase);
-            countersRef.current.forEach(({ el, parsed }) => {
-                if (!el || !parsed.isAnimatable) return;
-                updateReels(el, gsap.utils.interpolate(0, parsed.target, counterT));
-            });
+
+            if (shouldApplyProgress(counterT, rendered.counter)) {
+                const isEndpoint = counterT <= 0 || counterT >= 1;
+                countersRef.current.forEach((counter) => {
+                    if (!counter.element || !counter.parsed.isAnimatable) return;
+                    updateReels(
+                        counter,
+                        isEndpoint && counterT >= 1
+                            ? counter.parsed.target
+                            : gsap.utils.interpolate(0, counter.parsed.target, counterT),
+                        isEndpoint
+                    );
+                });
+                rendered.counter = counterT;
+            }
         },
         [depthProgress, reduced]
     );

@@ -349,6 +349,12 @@
     }
 
     @include focus-ring;
+
+    @include respond-to("tablet") {
+        &::after {
+            height: 3px;
+        }
+    }
 }
 
 .tabActive {

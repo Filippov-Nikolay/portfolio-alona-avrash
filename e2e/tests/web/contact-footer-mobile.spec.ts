@@ -25,17 +25,23 @@ test("contact footer keeps its background intact and reveals once on mobile", as
     await expect(left.locator("[data-footer-mask]")).not.toHaveCSS("transform", "none");
     await expect(left.locator("[data-footer-social-item]").first()).toHaveCSS("opacity", "0");
 
-    await footer.scrollIntoViewIfNeeded();
+    await page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)");
     await expect(left).toHaveCSS("opacity", "1");
     await expect(right).toHaveCSS("opacity", "1");
     await expect(brand).toHaveCSS("opacity", "1");
-    await expect(brand.locator("[data-footer-char]").first()).toHaveCSS("opacity", "1");
+    const brandChars = brand.locator("[data-footer-char]");
+    await expect(brandChars.first()).toHaveCSS("opacity", "1");
+    await expect(brandChars.first()).toHaveCSS("transform", "none");
+    await expect(brandChars.last()).toHaveCSS("transform", "none");
+    await expect(left.locator("[data-footer-mask]").first()).toHaveCSS("transform", "none");
+    await expect(right.locator("[data-footer-mask]").first()).toHaveCSS("transform", "none");
     await expect(curtain).toHaveCSS("visibility", "hidden");
 
     await page.evaluate("window.scrollTo(0, 0)");
     await page.waitForTimeout(150);
     await footer.scrollIntoViewIfNeeded();
     await expect(left).toHaveCSS("opacity", "1");
+    await expect(brandChars.first()).toHaveCSS("transform", "none");
 });
 
 test("contact footer stays visible with reduced motion", async ({ page }, testInfo) => {

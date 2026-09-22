@@ -68,8 +68,17 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
             media.add(COMPACT_QUERY, () => {
                 if (!curtain) return;
 
+                const revealTargets = [...maskLines, ...socialItems, ...legalItems, ...chars];
+
                 const setLayerHint = () => gsap.set(curtain, { willChange: "transform" });
                 const clearLayerHint = () => gsap.set(curtain, { clearProps: "willChange" });
+                const settleVisibleState = () => {
+                    gsap.set(revealTargets, {
+                        clearProps: "opacity,visibility,transform",
+                    });
+                    gsap.set(curtain, { autoAlpha: 0 });
+                    clearLayerHint();
+                };
 
                 gsap.set(section, { clearProps: "clipPath" });
                 gsap.set([left, right, brand], { clearProps: "all" });
@@ -86,21 +95,12 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                     yPercent: -130,
                     rotate: () => gsap.utils.random(-14, 14),
                 });
-                setLayerHint();
 
                 const timeline = gsap.timeline({
+                    paused: true,
                     defaults: { force3D: false },
-                    onComplete: clearLayerHint,
-                    onReverseComplete: clearLayerHint,
-                    scrollTrigger: {
-                        trigger: section,
-                        start: "top 94%",
-                        toggleActions,
-                        invalidateOnRefresh: true,
-                        once: playOnce,
-                        onEnter: setLayerHint,
-                        onLeaveBack: setLayerHint,
-                    },
+                    onStart: setLayerHint,
+                    onComplete: settleVisibleState,
                 });
 
                 timeline
@@ -156,7 +156,34 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                     )
                     .set(curtain, { autoAlpha: 0 }, 1.1);
 
-                return () => timeline.kill();
+                const reveal = () => {
+                    if (timeline.progress() === 0) timeline.play();
+                };
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        if (!entries.some((entry) => entry.isIntersecting)) return;
+                        observer.disconnect();
+                        reveal();
+                    },
+                    { rootMargin: "0px 0px -6% 0px" }
+                );
+                observer.observe(section);
+
+                // Covers restored scroll positions and very fast swipes that reach
+                // the Footer before the observer delivers its first callback.
+                const initialCheck = requestAnimationFrame(() => {
+                    const rect = section.getBoundingClientRect();
+                    if (rect.top <= window.innerHeight * 0.94 && rect.bottom >= 0) {
+                        observer.disconnect();
+                        reveal();
+                    }
+                });
+
+                return () => {
+                    cancelAnimationFrame(initialCheck);
+                    observer.disconnect();
+                    timeline.kill();
+                };
             });
 
             media.add(DESKTOP_QUERY, () => {

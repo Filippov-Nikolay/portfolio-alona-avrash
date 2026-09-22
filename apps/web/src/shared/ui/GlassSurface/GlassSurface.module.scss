@@ -347,69 +347,38 @@
 }
 
 .root[data-preset="hero"] {
+    isolation: isolate;
     --glass-radius: var(--radius-md);
-    --glass-base-color: rgba(6, 20, 48, 0.24);
-    --glass-blur: 28px;
-    --glass-lens-blur: 38px;
-    --glass-saturate: 190%;
-    --glass-brightness: 0.76;
-    --glass-contrast: 1.22;
-    --glass-fill-top: rgba(88, 124, 188, 0.2);
-    --glass-fill-bottom: rgba(6, 18, 44, 0.3);
-    --glass-fill-core: rgba(255, 255, 255, 0.08);
-    --glass-border: rgba(255, 255, 255, 0.32);
-    --glass-surface-opacity: 0.3;
-    --glass-depth-opacity: 0.98;
-    --glass-lens-opacity: 0.94;
-    --glass-caustic-opacity: 0.78;
-    --glass-sheen-opacity: 0.68;
-    --glass-prism-opacity: 0.16;
+    --glass-base-color: rgba(10, 14, 22, 0.22);
+    --glass-blur: 10px;
+    --glass-lens-blur: 12px;
+    --glass-saturate: 104%;
+    --glass-brightness: 1;
+    --glass-contrast: 1;
+    --glass-fill-top: rgba(255, 255, 255, 0.02);
+    --glass-fill-bottom: rgba(6, 10, 18, 0.14);
+    --glass-fill-core: rgba(255, 255, 255, 0.01);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-surface-opacity: 0.04;
+    --glass-depth-opacity: 0.18;
+    --glass-lens-opacity: 0.08;
+    --glass-caustic-opacity: 0.04;
+    --glass-sheen-opacity: 0.04;
+    --glass-prism-opacity: 0.01;
     --glass-shadow:
-        0 30px 70px rgba(2, 10, 26, 0.28), 0 12px 28px rgba(2, 10, 26, 0.16),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
+        0 10px 24px rgba(2, 6, 16, 0.12), 0 4px 10px rgba(2, 6, 16, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
-[data-theme="dark"] .root[data-preset="hero"] {
-    --glass-base-color: rgba(3, 6, 12, 0.76);
-    --glass-fill-top: rgba(25, 34, 50, 0.42);
-    --glass-fill-bottom: rgba(2, 4, 9, 0.84);
-    --glass-fill-core: rgba(120, 145, 180, 0.045);
-    --glass-border: rgba(255, 255, 255, 0.22);
-    --glass-brightness: 0.56;
-    --glass-contrast: 1.12;
-    --glass-surface-opacity: 0.18;
-    --glass-depth-opacity: 0.72;
-    --glass-lens-opacity: 0.58;
-    --glass-caustic-opacity: 0.3;
-    --glass-sheen-opacity: 0.26;
-    --glass-prism-opacity: 0.05;
-    --glass-shadow:
-        0 30px 70px rgba(0, 0, 0, 0.58), 0 12px 28px rgba(0, 0, 0, 0.36),
-        inset 0 1px 0 rgba(255, 255, 255, 0.14);
-}
-
-[data-theme="light"] .root[data-preset="hero"] {
-    --glass-base-color: rgba(6, 20, 48, 0.22);
-    --glass-fill-top: rgba(88, 124, 188, 0.2);
-    --glass-fill-bottom: rgba(6, 18, 44, 0.28);
-    --glass-fill-core: rgba(255, 255, 255, 0.08);
+    .lens {
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
 }
 
 @media (max-width: 767px) {
     .root[data-preset="hero"] {
-        --glass-base-color: rgba(6, 20, 48, 0.1);
-        --glass-blur: 16px;
-        --glass-saturate: 160%;
-        --glass-brightness: 0.92;
-        --glass-contrast: 1.06;
-        --glass-fill-top: rgba(88, 124, 188, 0.1);
-        --glass-fill-bottom: rgba(6, 18, 44, 0.12);
-        --glass-surface-opacity: 0.16;
-        --glass-depth-opacity: 0.55;
-        --glass-lens-opacity: 0.46;
-        --glass-caustic-opacity: 0.38;
-        --glass-sheen-opacity: 0.3;
-        --glass-prism-opacity: 0.06;
+        --glass-blur: 8px;
+        --glass-saturate: 102%;
     }
 }
 
@@ -455,12 +424,6 @@
         --glass-fill-core: rgba(234, 253, 39, 0.12);
         --glass-border: rgba(234, 253, 39, 0.28);
     }
-}
-
-:global(.vt-running) .root,
-:global(.vt-running) .lens {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

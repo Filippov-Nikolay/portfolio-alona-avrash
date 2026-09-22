@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { m } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -52,19 +52,36 @@ export function SelectedWorkSection({
     const [isContentRevealed, setIsContentRevealed] = useState(
         () => !choreographyProgress || choreographyProgress.get() >= CONTENT_REVEAL_PROGRESS
     );
+    const revealFrameRef = useRef(0);
 
     useEffect(() => {
         if (!choreographyProgress || isContentRevealed) {
             return;
         }
 
+        const revealContent = () => {
+            if (revealFrameRef.current) return;
+
+            revealFrameRef.current = requestAnimationFrame(() => {
+                revealFrameRef.current = 0;
+                setIsContentRevealed(true);
+            });
+        };
         const unsubscribe = choreographyProgress.on("change", (latest) => {
             if (latest >= CONTENT_REVEAL_PROGRESS) {
-                setIsContentRevealed(true);
+                revealContent();
             }
         });
 
-        return unsubscribe;
+        if (choreographyProgress.get() >= CONTENT_REVEAL_PROGRESS) {
+            revealContent();
+        }
+
+        return () => {
+            unsubscribe();
+            cancelAnimationFrame(revealFrameRef.current);
+            revealFrameRef.current = 0;
+        };
     }, [choreographyProgress, isContentRevealed]);
 
     const selectedItem = selectedIndex === null ? null : (modalItems[selectedIndex] ?? null);

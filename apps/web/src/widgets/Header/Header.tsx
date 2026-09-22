@@ -103,7 +103,7 @@ export function Header() {
     const pathname = usePathname();
     const [cvClicked, setCvClicked] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
-    const [menuPathname, setMenuPathname] = useState(pathname);
+    const previousPathnameRef = useRef(pathname);
     const headerRef = useRef<HTMLElement>(null);
     const sceneBackdropRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -131,10 +131,14 @@ export function Header() {
         };
     }, [isReady]);
 
-    if (pathname !== menuPathname) {
-        setMenuPathname(pathname);
+    useEffect(() => {
+        if (previousPathnameRef.current === pathname) return;
+
+        previousPathnameRef.current = pathname;
+        // Route changes are an external navigation event. Closing here keeps
+        // the render phase pure and avoids a delayed reset racing the first tap.
         setMenuOpen(false);
-    }
+    }, [pathname]);
 
     useEffect(() => {
         if (!menuOpen) return;

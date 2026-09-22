@@ -1,13 +1,7 @@
 @use "../../styles/mixins" as *;
 
-$card-reveal-rise: 24px;
-$card-reveal-min-scale: 0.9;
 $card-hover-lift-scale: 1.015;
 $card-transition: 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-
-@function card-reveal-scale() {
-    @return calc(#{$card-reveal-min-scale} + var(--reveal, 1) * #{1 - $card-reveal-min-scale});
-}
 
 .card {
     display: flex;
@@ -20,8 +14,7 @@ $card-transition: 0.45s cubic-bezier(0.22, 1, 0.36, 1);
     background: var(--color-surface);
     cursor: pointer;
     text-align: left;
-    transform: translateY(calc((1 - var(--reveal, 1)) * #{$card-reveal-rise}))
-        scale(card-reveal-scale());
+    transform: translateY(var(--reveal-y, 0px)) scale(var(--reveal-scale, 1));
     box-shadow: 0 20px 40px -12px transparent;
 
     transition:
@@ -36,8 +29,8 @@ $card-transition: 0.45s cubic-bezier(0.22, 1, 0.36, 1);
             background: var(--hover-bg, var(--color-surface));
             box-shadow: 0 20px 40px -12px
                 color-mix(in srgb, var(--hover-bg, var(--color-primary)) 55%, transparent);
-            transform: translateY(calc((1 - var(--reveal, 1)) * #{$card-reveal-rise}))
-                scale(calc(#{card-reveal-scale()} * #{$card-hover-lift-scale}));
+            transform: translateY(var(--reveal-y, 0px))
+                scale(var(--reveal-hover-scale, #{$card-hover-lift-scale}));
 
             .image {
                 transform: scale(1.06);
@@ -63,6 +56,18 @@ $card-transition: 0.45s cubic-bezier(0.22, 1, 0.36, 1);
     @include respond-to("tablet") {
         flex-direction: column;
         min-height: 0;
+    }
+}
+
+.card[data-works-reveal-active] {
+    filter: blur(var(--reveal-blur, 0px));
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .card {
+        transition:
+            background-color $card-transition,
+            box-shadow $card-transition;
     }
 }
 

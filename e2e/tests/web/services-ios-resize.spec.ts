@@ -47,6 +47,7 @@ test("Services stays anchored during an iOS-style height-only resize", async ({ 
             value: originalHeight + 86,
         });
         view.dispatchEvent(new Event("resize"));
+        card.ownerDocument.body.style.paddingBottom = "12px";
     });
     await page.waitForTimeout(500);
 

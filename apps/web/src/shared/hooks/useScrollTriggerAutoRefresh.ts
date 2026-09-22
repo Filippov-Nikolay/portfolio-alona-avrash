@@ -9,6 +9,9 @@ let refreshRaf = 0;
 let resizeObserver: ResizeObserver | null = null;
 let refreshTimers: number[] = [];
 let layoutSnapshot: LayoutSnapshot | null = null;
+let suppressTouchDocumentResizeUntil = 0;
+
+const TOUCH_CHROME_RESIZE_SETTLE_MS = 1_200;
 
 interface LayoutSnapshot {
     viewportWidth: number;
@@ -30,6 +33,10 @@ function isTouchOnlyViewport() {
     return window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 }
 
+function suppressHeightDrivenDocumentResize() {
+    suppressTouchDocumentResizeUntil = performance.now() + TOUCH_CHROME_RESIZE_SETTLE_MS;
+}
+
 function handleViewportResize() {
     const next = readLayoutSnapshot();
     const previous = layoutSnapshot;
@@ -40,10 +47,15 @@ function handleViewportResize() {
     const widthChanged = Math.abs(next.viewportWidth - previous.viewportWidth) > 1;
     const heightChanged = Math.abs(next.viewportHeight - previous.viewportHeight) > 1;
 
+    if (widthChanged) suppressTouchDocumentResizeUntil = 0;
+
     // Mobile Safari changes only the viewport height while its browser chrome
     // collapses/expands. Refreshing ScrollTrigger during that gesture moves
     // trigger boundaries and produces a visible page jump.
-    if (isTouchOnlyViewport() && heightChanged && !widthChanged) return;
+    if (isTouchOnlyViewport() && heightChanged && !widthChanged) {
+        suppressHeightDrivenDocumentResize();
+        return;
+    }
 
     queueRefresh();
 }
@@ -59,8 +71,13 @@ function handleDocumentResize() {
     const heightChanged = Math.abs(next.viewportHeight - previous.viewportHeight) > 1;
     const documentHeightChanged = Math.abs(next.documentHeight - previous.documentHeight) > 1;
 
+    if (widthChanged) suppressTouchDocumentResizeUntil = 0;
+
     if (!widthChanged && !documentHeightChanged) return;
-    if (isTouchOnlyViewport() && heightChanged && !widthChanged) return;
+    if (isTouchOnlyViewport() && !widthChanged) {
+        if (heightChanged) suppressHeightDrivenDocumentResize();
+        if (heightChanged || performance.now() < suppressTouchDocumentResizeUntil) return;
+    }
 
     queueRefresh();
 }
@@ -101,6 +118,7 @@ function detachSharedWatchers() {
     resizeObserver?.disconnect();
     resizeObserver = null;
     layoutSnapshot = null;
+    suppressTouchDocumentResizeUntil = 0;
 }
 
 export function useScrollTriggerAutoRefresh(dependencies: DependencyList = []) {

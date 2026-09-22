@@ -349,25 +349,26 @@
 .root[data-preset="hero"] {
     isolation: isolate;
     --glass-radius: var(--radius-md);
-    --glass-base-color: rgba(10, 14, 22, 0.22);
+    --glass-base-color: rgba(10, 14, 22, 0.14);
     --glass-blur: 10px;
     --glass-lens-blur: 12px;
     --glass-saturate: 104%;
     --glass-brightness: 1;
     --glass-contrast: 1;
-    --glass-fill-top: rgba(255, 255, 255, 0.02);
-    --glass-fill-bottom: rgba(6, 10, 18, 0.14);
-    --glass-fill-core: rgba(255, 255, 255, 0.01);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-surface-opacity: 0.04;
-    --glass-depth-opacity: 0.18;
-    --glass-lens-opacity: 0.08;
-    --glass-caustic-opacity: 0.04;
-    --glass-sheen-opacity: 0.04;
-    --glass-prism-opacity: 0.01;
+    --glass-fill-top: rgba(255, 255, 255, 0.015);
+    --glass-fill-bottom: rgba(6, 10, 18, 0.08);
+    --glass-fill-core: rgba(255, 255, 255, 0.008);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-surface-opacity: 0.025;
+    --glass-depth-opacity: 0.1;
+    --glass-lens-opacity: 0.04;
+    --glass-caustic-opacity: 0.025;
+    --glass-sheen-opacity: 0.025;
+    --glass-prism-opacity: 0.008;
+    --glass-rim-opacity: 0.5;
     --glass-shadow:
-        0 10px 24px rgba(2, 6, 16, 0.12), 0 4px 10px rgba(2, 6, 16, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 8px 20px rgba(2, 6, 16, 0.08), 0 3px 8px rgba(2, 6, 16, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
     .lens {
         -webkit-backdrop-filter: none;

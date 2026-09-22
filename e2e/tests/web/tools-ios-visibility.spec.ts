@@ -49,3 +49,25 @@ test("Tools stays visible after its first reveal on iOS", async ({ page }) => {
         expect(state.opacity).toBeGreaterThan(0.99);
     }
 });
+
+test("Tools auto-scroll only runs near the section", async ({ page }) => {
+    await page.goto("/en");
+
+    const section = page.locator("#tools");
+    const track = section.locator("[data-tools-track]");
+    await expect(track).toBeAttached();
+    await page.waitForTimeout(300);
+
+    const offscreenStart = await track.evaluate((element) => element.scrollLeft);
+    await page.waitForTimeout(350);
+    const offscreenEnd = await track.evaluate((element) => element.scrollLeft);
+
+    expect(Math.abs(offscreenEnd - offscreenStart)).toBeLessThanOrEqual(1);
+
+    await section.scrollIntoViewIfNeeded();
+    await expect
+        .poll(async () => track.evaluate((element) => element.scrollLeft), {
+            timeout: 2_000,
+        })
+        .toBeGreaterThan(offscreenEnd + 5);
+});

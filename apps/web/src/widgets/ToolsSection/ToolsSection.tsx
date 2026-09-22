@@ -33,8 +33,8 @@ const AUTO_SCROLL_RESUME_DELAY = 1_500;
 const MARQUEE_CYCLES = 4;
 const PEEK_IMAGE_SIZE = 264;
 const PEEK_IMAGE_QUALITY = 72;
-const PEEK_PRELOAD_MARGIN = "1200px 0px";
-const PEEK_PRELOAD_FALLBACK_DELAY = 2_500;
+const PEEK_PRELOAD_MARGIN = "800px 0px";
+const AUTO_SCROLL_VISIBILITY_MARGIN = "200px 0px";
 
 export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     const [hoveredId, setHoveredId] = useState<number | null>(null);
@@ -108,24 +108,23 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             },
             { rootMargin: PEEK_PRELOAD_MARGIN }
         );
-        const fallbackTimer = window.setTimeout(startPreloading, PEEK_PRELOAD_FALLBACK_DELAY);
-
         observer.observe(section);
         return () => {
             observer.disconnect();
-            window.clearTimeout(fallbackTimer);
         };
     }, [sectionRef, shouldPreloadPeekImages]);
 
     useEffect(() => {
+        const section = sectionRef.current;
         const track = trackRef.current;
         const sequence = sequenceRef.current;
         const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-        if (!track || !sequence || reduceMotion.matches) return;
+        if (!section || !track || !sequence || reduceMotion.matches) return;
 
         let animationFrameId = 0;
         let resumeTimeoutId: ReturnType<typeof setTimeout> | undefined;
         let isPaused = false;
+        let isSectionVisible = false;
         let previousTimestamp = 0;
         let autoScrollPosition = track.scrollLeft;
 
@@ -143,17 +142,22 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             }, AUTO_SCROLL_RESUME_DELAY);
         };
 
-        const resetAnimationTimestamp = () => {
+        const stopAnimation = () => {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = 0;
+            }
             previousTimestamp = 0;
         };
 
         const animate = (timestamp: number) => {
-            if (
-                !isPaused &&
-                !dragRef.current.active &&
-                !isTrackHoveredRef.current &&
-                document.visibilityState === "visible"
-            ) {
+            animationFrameId = 0;
+            if (!isSectionVisible || document.visibilityState !== "visible") {
+                previousTimestamp = 0;
+                return;
+            }
+
+            if (!isPaused && !dragRef.current.active && !isTrackHoveredRef.current) {
                 const elapsed = previousTimestamp ? timestamp - previousTimestamp : 0;
                 const loopWidth = sequence.offsetWidth;
 
@@ -178,20 +182,52 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             animationFrameId = requestAnimationFrame(animate);
         };
 
+        const startAnimation = () => {
+            if (animationFrameId || !isSectionVisible || document.visibilityState !== "visible") {
+                return;
+            }
+
+            autoScrollPosition = track.scrollLeft;
+            previousTimestamp = 0;
+            animationFrameId = requestAnimationFrame(animate);
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "visible") {
+                startAnimation();
+            } else {
+                stopAnimation();
+            }
+        };
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                isSectionVisible = entry.isIntersecting;
+
+                if (isSectionVisible) {
+                    startAnimation();
+                } else {
+                    stopAnimation();
+                }
+            },
+            { rootMargin: AUTO_SCROLL_VISIBILITY_MARGIN }
+        );
+
         pauseAutoScrollRef.current = pauseAutoScroll;
-        document.addEventListener("visibilitychange", resetAnimationTimestamp);
-        animationFrameId = requestAnimationFrame(animate);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        observer.observe(section);
 
         return () => {
             pauseAutoScrollRef.current = () => undefined;
-            document.removeEventListener("visibilitychange", resetAnimationTimestamp);
-            cancelAnimationFrame(animationFrameId);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            observer.disconnect();
+            stopAnimation();
 
             if (resumeTimeoutId) {
                 clearTimeout(resumeTimeoutId);
             }
         };
-    }, [tools.length, trackRef]);
+    }, [sectionRef, tools.length, trackRef]);
 
     useEffect(() => {
         const track = trackRef.current;
@@ -416,6 +452,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                             quality={PEEK_IMAGE_QUALITY}
                             loading="eager"
                             fetchPriority="low"
+                            className={styles.peekPreloaderImage}
                             onLoad={() => markPeekImageReady(src)}
                             onError={() => markPeekImageReady(src)}
                         />

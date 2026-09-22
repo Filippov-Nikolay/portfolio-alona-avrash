@@ -74,6 +74,13 @@
     pointer-events: none;
 }
 
+.peekPreloaderImage {
+    display: block;
+    width: 264px;
+    height: 264px;
+    max-width: none;
+}
+
 .marquee,
 .sequence {
     display: flex;

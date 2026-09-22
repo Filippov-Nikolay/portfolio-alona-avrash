@@ -2,8 +2,10 @@
 
 import { Fragment, type CSSProperties } from "react";
 import Image from "next/image";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import type { Service } from "@avrash/content-schema";
+import { Link } from "@/i18n/navigation";
+import { trackEvent } from "@/shared/analytics/analytics";
 import { Container, Section, ArrowIcon } from "@/shared/ui";
 import { useServicesSectionAnimations } from "./useServicesSectionAnimations";
 import styles from "./ServicesSection.module.scss";
@@ -14,7 +16,6 @@ interface ServicesSectionProps {
 
 export function ServicesSection({ services }: ServicesSectionProps) {
     const t = useTranslations("categories");
-    const locale = useLocale();
     const { sectionRef, titleRef, gridRef } = useServicesSectionAnimations(services);
 
     return (
@@ -31,31 +32,51 @@ export function ServicesSection({ services }: ServicesSectionProps) {
                                 <article
                                     className={styles.card}
                                     style={{ "--index": index } as CSSProperties}
+                                    data-service-card={service.title}
                                 >
-                                    <div className={styles.textCol}>
-                                        <h3 className={styles.title}>{t(service.title)}</h3>
-                                        <p className={styles.description}>{service.description}</p>
+                                    <Link
+                                        href={`/works?filter=${service.title}`}
+                                        className={styles.cardLink}
+                                        data-service-link={service.title}
+                                        onClick={() =>
+                                            trackEvent("works_filter", {
+                                                entityId: service.title,
+                                            })
+                                        }
+                                    >
+                                        <div className={styles.textCol}>
+                                            <h3 className={styles.title}>{t(service.title)}</h3>
+                                            <p className={styles.description}>
+                                                {service.description}
+                                            </p>
 
-                                        <a
-                                            href={`/${locale}/contact`}
-                                            className={styles.approachLink}
-                                        >
-                                            {service.approachLabel}
-                                            <ArrowIcon className={styles.approachArrow} />
-                                        </a>
-                                    </div>
+                                            <span
+                                                className={styles.approachLink}
+                                                data-service-approach
+                                            >
+                                                {service.approachLabel}
+                                                <ArrowIcon className={styles.approachArrow} />
+                                            </span>
+                                        </div>
 
-                                    <div className={styles.visual}>
-                                        {service.image.src && (
-                                            <Image
-                                                src={service.image.src}
-                                                alt={service.image.alt ?? t(service.title)}
-                                                fill
-                                                className={styles.image}
-                                                sizes="(max-width: 900px) 92vw, 420px"
-                                            />
-                                        )}
-                                    </div>
+                                        <div className={styles.visual}>
+                                            {service.image.src && (
+                                                <Image
+                                                    src={service.image.src}
+                                                    alt={service.image.alt ?? t(service.title)}
+                                                    fill
+                                                    className={styles.image}
+                                                    sizes="(max-width: 900px) 92vw, 420px"
+                                                />
+                                            )}
+                                        </div>
+                                    </Link>
+                                    <span
+                                        className={styles.softener}
+                                        data-service-softener
+                                        hidden
+                                        aria-hidden="true"
+                                    />
                                 </article>
                                 {index < services.length - 1 && (
                                     <div className={styles.stackRunway} aria-hidden="true" />

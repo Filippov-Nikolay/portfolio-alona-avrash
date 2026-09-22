@@ -52,7 +52,6 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 0 18px rgba(234, 253, 39, 0.12));
     pointer-events: none;
     user-select: none;
 
@@ -85,16 +84,26 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
     position: sticky;
     top: $stack-base-offset;
     z-index: calc(var(--index) + 1);
-    display: grid;
-    grid-template-columns: 1fr minmax(280px, 380px);
-    gap: 32px;
-    padding: 40px;
     background: #000;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
-    backface-visibility: hidden;
-    will-change: transform, opacity, filter;
+
+    @include respond-to("mobile") {
+        top: calc(var(--_header-clearance) + var(--_title-stack-offset));
+    }
+}
+
+.cardLink {
+    display: grid;
+    grid-template-columns: 1fr minmax(280px, 380px);
+    gap: 32px;
+    padding: 40px;
+    border-radius: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    @include focus-ring;
 
     @include respond-to("tablet") {
         grid-template-columns: 1fr;
@@ -103,9 +112,27 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
     }
 
     @include respond-to("mobile") {
-        top: calc(var(--_header-clearance) + var(--_title-stack-offset));
         padding: 22px;
     }
+
+    @include can-hover {
+        &:hover .approachLink {
+            opacity: 0.7;
+        }
+    }
+
+    &:focus-visible .approachLink {
+        opacity: 0.7;
+    }
+}
+
+.softener {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    background: rgba(0, 0, 0, 0.22);
+    pointer-events: none;
 }
 
 .stackRunway {
@@ -169,13 +196,6 @@ $stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
     color: var(--color-primary);
 
     @include transition(opacity);
-    @include focus-ring;
-
-    @include can-hover {
-        &:hover {
-            opacity: 0.7;
-        }
-    }
 }
 
 .approachArrow {

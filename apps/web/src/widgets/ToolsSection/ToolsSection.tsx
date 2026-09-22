@@ -33,7 +33,6 @@ const AUTO_SCROLL_RESUME_DELAY = 1_500;
 const MARQUEE_CYCLES = 4;
 const PEEK_IMAGE_SIZE = 264;
 const PEEK_IMAGE_QUALITY = 72;
-const PEEK_PRELOAD_MARGIN = "800px 0px";
 const AUTO_SCROLL_VISIBILITY_MARGIN = "200px 0px";
 
 export function ToolsSection({ tools, labels }: ToolsSectionProps) {
@@ -41,7 +40,6 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     const [pinnedId, setPinnedId] = useState<number | null>(null);
     const [overlayTool, setOverlayTool] = useState<Tool | null>(null);
     const [isOverlayActive, setIsOverlayActive] = useState(false);
-    const [shouldPreloadPeekImages, setShouldPreloadPeekImages] = useState(false);
     const [readyPeekImages, setReadyPeekImages] = useState<Set<string>>(() => new Set());
     const pointerTypeRef = useRef<string>("mouse");
     const { sectionRef, titleRef, descriptionRef, trackRef } = useToolsSectionAnimations();
@@ -88,31 +86,6 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
         track.scrollLeft = sequence.offsetWidth;
     }, [tools.length, trackRef]);
-
-    useEffect(() => {
-        const section = sectionRef.current;
-        if (!section || shouldPreloadPeekImages) return;
-
-        let didStart = false;
-        const startPreloading = () => {
-            if (didStart) return;
-            didStart = true;
-            setShouldPreloadPeekImages(true);
-        };
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (!entry.isIntersecting) return;
-
-                startPreloading();
-                observer.disconnect();
-            },
-            { rootMargin: PEEK_PRELOAD_MARGIN }
-        );
-        observer.observe(section);
-        return () => {
-            observer.disconnect();
-        };
-    }, [sectionRef, shouldPreloadPeekImages]);
 
     useEffect(() => {
         const section = sectionRef.current;
@@ -439,26 +412,24 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                 </div>
             </div>
 
-            {shouldPreloadPeekImages && (
-                <div className={styles.peekPreloader} data-tools-peek-preloader aria-hidden="true">
-                    {peekSources.map((src) => (
-                        <Image
-                            key={src}
-                            src={src}
-                            alt=""
-                            width={PEEK_IMAGE_SIZE}
-                            height={PEEK_IMAGE_SIZE}
-                            sizes={`${PEEK_IMAGE_SIZE}px`}
-                            quality={PEEK_IMAGE_QUALITY}
-                            loading="eager"
-                            fetchPriority="low"
-                            className={styles.peekPreloaderImage}
-                            onLoad={() => markPeekImageReady(src)}
-                            onError={() => markPeekImageReady(src)}
-                        />
-                    ))}
-                </div>
-            )}
+            <div className={styles.peekPreloader} data-tools-peek-preloader aria-hidden="true">
+                {peekSources.map((src) => (
+                    <Image
+                        key={src}
+                        src={src}
+                        alt=""
+                        width={PEEK_IMAGE_SIZE}
+                        height={PEEK_IMAGE_SIZE}
+                        sizes={`${PEEK_IMAGE_SIZE}px`}
+                        quality={PEEK_IMAGE_QUALITY}
+                        loading="lazy"
+                        fetchPriority="low"
+                        className={styles.peekPreloaderImage}
+                        onLoad={() => markPeekImageReady(src)}
+                        onError={() => markPeekImageReady(src)}
+                    />
+                ))}
+            </div>
 
             {overlayTool && (
                 <div

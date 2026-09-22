@@ -67,14 +67,18 @@
 
 .peekPreloader {
     position: absolute;
-    width: 1px;
-    height: 1px;
+    top: 0;
+    left: 0;
+    width: 264px;
+    height: 264px;
     overflow: hidden;
-    opacity: 0;
+    opacity: 0.001;
     pointer-events: none;
 }
 
 .peekPreloaderImage {
+    position: absolute;
+    inset: 0;
     display: block;
     width: 264px;
     height: 264px;

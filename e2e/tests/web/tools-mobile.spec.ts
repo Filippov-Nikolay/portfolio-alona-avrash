@@ -19,7 +19,12 @@ test("mobile tools carousel uses native momentum and prepares peek images before
 
     const section = page.locator("#tools");
     await page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)");
-    await section.scrollIntoViewIfNeeded();
+    await section.evaluate((element) => {
+        const view = element.ownerDocument.defaultView!;
+        const absoluteTop = element.getBoundingClientRect().top + view.scrollY;
+        view.scrollTo(0, absoluteTop - view.innerHeight * 0.25);
+    });
+    await expect(section).toBeInViewport();
 
     const preloadedImages = section.locator("[data-tools-peek-preloader] img");
     await expect(preloadedImages).toHaveCount(7);
@@ -43,6 +48,7 @@ test("mobile tools carousel uses native momentum and prepares peek images before
     expect(optimizedSource).toContain("/_next/image?");
 
     const track = section.locator("[data-tools-track]");
+    await track.scrollIntoViewIfNeeded();
     const box = await track.boundingBox();
     expect(box).not.toBeNull();
 

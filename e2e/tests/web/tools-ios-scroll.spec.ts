@@ -33,6 +33,10 @@ test("Tools leaves horizontal swipes to native iOS scrolling", async ({ page }) 
     expect(initialState.scrollRange).toBeGreaterThan(1_000);
     expect(initialState.touchAction).toBe("pan-x pan-y");
 
+    await expect
+        .poll(async () => track.evaluate((element) => element.scrollLeft))
+        .toBeGreaterThan(1_000);
+
     const before = await track.evaluate((element) => element.scrollLeft);
     await track.dispatchEvent("pointerdown", {
         pointerId: 7,

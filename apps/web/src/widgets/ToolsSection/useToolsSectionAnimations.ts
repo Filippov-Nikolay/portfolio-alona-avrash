@@ -33,27 +33,31 @@ export function useToolsSectionAnimations() {
                 return;
             }
 
-            const lockReveal = shouldLockReveal();
+            const playRevealOnce = shouldLockReveal();
             gsap.set(track, { willChange: "opacity" });
 
             gsap.timeline({
                 defaults: { ease: "none", force3D: true },
-                onComplete: () => gsap.set(track, { clearProps: "willChange" }),
+                onComplete: () => {
+                    if (playRevealOnce) {
+                        gsap.set([title, description, track], {
+                            clearProps: "transform,opacity,visibility,willChange",
+                        });
+                        return;
+                    }
+
+                    gsap.set(track, { clearProps: "willChange" });
+                },
                 onReverseComplete: () => gsap.set(track, { clearProps: "willChange" }),
                 scrollTrigger: {
                     trigger: section,
                     start: getStart,
                     end: getEnd,
-                    scrub: 0.9,
+                    scrub: playRevealOnce ? false : 0.9,
+                    once: playRevealOnce,
+                    toggleActions: playRevealOnce ? "play none none none" : undefined,
                     invalidateOnRefresh: true,
-                    fastScrollEnd: !lockReveal,
-                    onLeave: (trigger) => {
-                        if (!lockReveal) return;
-
-                        trigger.animation?.progress(1);
-                        trigger.kill(false, true);
-                        gsap.set(track, { clearProps: "willChange" });
-                    },
+                    fastScrollEnd: !playRevealOnce,
                 },
             })
                 .fromTo(title, { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 1 }, 0)

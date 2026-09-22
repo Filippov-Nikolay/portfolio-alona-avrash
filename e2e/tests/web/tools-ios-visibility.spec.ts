@@ -50,6 +50,58 @@ test("Tools stays visible after its first reveal on iOS", async ({ page }) => {
     }
 });
 
+test("Tools finishes its reveal when an iOS scroll reverses at the boundary", async ({ page }) => {
+    await page.goto("/en");
+
+    const section = page.locator("#tools");
+    const track = section.locator("[data-tools-track]");
+    await expect(track).toBeAttached();
+    await page.waitForTimeout(1_200);
+
+    const placeSectionAt = (viewportOffset: number) =>
+        section.evaluate((element, offset) => {
+            const view = element.ownerDocument.defaultView!;
+            const absoluteTop = element.getBoundingClientRect().top + view.scrollY;
+            view.scrollTo(0, absoluteTop - view.innerHeight * offset);
+        }, viewportOffset);
+
+    await placeSectionAt(0.75);
+    await page.waitForTimeout(100);
+    await placeSectionAt(0.75);
+    await page.waitForTimeout(100);
+    await placeSectionAt(0.93);
+    await page.waitForTimeout(1_400);
+
+    await expect(track).toHaveCSS("opacity", "1");
+    const settledStyles = await section.evaluate((element) => {
+        type StyledElement = { style: Record<string, string> };
+        const title = element.querySelector("h2") as unknown as StyledElement;
+        const description = element.querySelector("p") as unknown as StyledElement;
+        const toolsTrack = element.querySelector("[data-tools-track]") as unknown as StyledElement;
+
+        return [title, description, toolsTrack].map((item) => ({
+            opacity: item.style.opacity,
+            transform: item.style.transform,
+            visibility: item.style.visibility,
+            willChange: item.style.willChange,
+        }));
+    });
+    expect(settledStyles).toEqual([
+        { opacity: "", transform: "", visibility: "", willChange: "" },
+        { opacity: "", transform: "", visibility: "", willChange: "" },
+        { opacity: "", transform: "", visibility: "", willChange: "" },
+    ]);
+
+    await track.evaluate((element) => {
+        element.scrollLeft += 180;
+    });
+    await placeSectionAt(0.76);
+    await page.waitForTimeout(250);
+    await placeSectionAt(0.9);
+
+    await expect(track).toHaveCSS("opacity", "1");
+});
+
 test("Tools auto-scroll only runs near the section", async ({ page }) => {
     await page.goto("/en");
 

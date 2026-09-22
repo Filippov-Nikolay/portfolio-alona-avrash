@@ -108,7 +108,9 @@ test("Tools auto-scroll only runs near the section", async ({ page }) => {
     const section = page.locator("#tools");
     const track = section.locator("[data-tools-track]");
     await expect(track).toBeAttached();
-    await page.waitForTimeout(300);
+    await expect
+        .poll(async () => track.evaluate((element) => element.scrollLeft))
+        .toBeGreaterThan(1_000);
 
     const offscreenStart = await track.evaluate((element) => element.scrollLeft);
     await page.waitForTimeout(350);

@@ -30,10 +30,20 @@ interface ToolsSectionProps {
 
 const AUTO_SCROLL_SPEED = 100;
 const AUTO_SCROLL_RESUME_DELAY = 1_500;
-const MARQUEE_CYCLES = 4;
+const SCROLL_IDLE_DELAY = 180;
+const PROGRAMMATIC_SCROLL_TOLERANCE = 1.5;
+const MARQUEE_CYCLES = 5;
+const MARQUEE_HOME_CYCLE = 2;
 const PEEK_IMAGE_SIZE = 264;
 const PEEK_IMAGE_QUALITY = 72;
 const AUTO_SCROLL_VISIBILITY_MARGIN = "200px 0px";
+
+function wrapScrollPosition(position: number, loopWidth: number) {
+    if (loopWidth <= 0) return position;
+
+    const loopOffset = ((position % loopWidth) + loopWidth) % loopWidth;
+    return loopWidth * MARQUEE_HOME_CYCLE + loopOffset;
+}
 
 export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     const [hoveredId, setHoveredId] = useState<number | null>(null);
@@ -84,7 +94,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         const sequence = sequenceRef.current;
         if (!track || !sequence) return;
 
-        track.scrollLeft = sequence.offsetWidth;
+        track.scrollLeft = sequence.offsetWidth * MARQUEE_HOME_CYCLE;
     }, [tools.length, trackRef]);
 
     useEffect(() => {
@@ -96,10 +106,34 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
         let animationFrameId = 0;
         let resumeTimeoutId: ReturnType<typeof setTimeout> | undefined;
+        let scrollIdleTimeoutId: ReturnType<typeof setTimeout> | undefined;
         let isPaused = false;
+        let isUserScrolling = false;
         let isSectionVisible = false;
         let previousTimestamp = 0;
         let autoScrollPosition = track.scrollLeft;
+        let programmaticScrollPosition: number | null = track.scrollLeft;
+
+        const writeScrollPosition = (position: number) => {
+            autoScrollPosition = position;
+            programmaticScrollPosition = position;
+            track.scrollLeft = position;
+        };
+
+        const recenterTrack = () => {
+            const loopWidth = sequence.offsetWidth;
+            if (loopWidth <= 0) return;
+
+            const homeStart = loopWidth * MARQUEE_HOME_CYCLE;
+            const homeEnd = homeStart + loopWidth;
+            const position = track.scrollLeft;
+            if (position >= homeStart && position < homeEnd) {
+                autoScrollPosition = position;
+                return;
+            }
+
+            writeScrollPosition(wrapScrollPosition(position, loopWidth));
+        };
 
         const pauseAutoScroll = () => {
             isPaused = true;
@@ -110,9 +144,72 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             }
 
             resumeTimeoutId = setTimeout(() => {
+                if (dragRef.current.active || isUserScrolling) return;
+
+                recenterTrack();
                 autoScrollPosition = track.scrollLeft;
                 isPaused = false;
             }, AUTO_SCROLL_RESUME_DELAY);
+        };
+
+        const finishUserScroll = () => {
+            if (dragRef.current.active) {
+                scrollIdleTimeoutId = setTimeout(finishUserScroll, SCROLL_IDLE_DELAY);
+                return;
+            }
+
+            isUserScrolling = false;
+            recenterTrack();
+            pauseAutoScroll();
+        };
+
+        const scheduleUserScrollEnd = (delay = SCROLL_IDLE_DELAY) => {
+            if (scrollIdleTimeoutId) clearTimeout(scrollIdleTimeoutId);
+            scrollIdleTimeoutId = setTimeout(finishUserScroll, delay);
+        };
+
+        const handlePointerDown = () => {
+            programmaticScrollPosition = null;
+            isUserScrolling = true;
+            if (scrollIdleTimeoutId) clearTimeout(scrollIdleTimeoutId);
+            pauseAutoScroll();
+        };
+
+        const handlePointerEnd = () => {
+            if (isUserScrolling) scheduleUserScrollEnd(AUTO_SCROLL_RESUME_DELAY);
+        };
+
+        const handleScroll = () => {
+            autoScrollPosition = track.scrollLeft;
+
+            if (
+                programmaticScrollPosition !== null &&
+                Math.abs(track.scrollLeft - programmaticScrollPosition) <=
+                    PROGRAMMATIC_SCROLL_TOLERANCE
+            ) {
+                return;
+            }
+
+            programmaticScrollPosition = null;
+            isUserScrolling = true;
+            pauseAutoScroll();
+            scheduleUserScrollEnd();
+        };
+
+        const handleHorizontalWheel = (event: globalThis.WheelEvent) => {
+            if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+
+            programmaticScrollPosition = null;
+            isUserScrolling = true;
+            pauseAutoScroll();
+            scheduleUserScrollEnd();
+        };
+
+        const handleScrollEnd = () => {
+            if (!isUserScrolling || dragRef.current.active) return;
+
+            if (scrollIdleTimeoutId) clearTimeout(scrollIdleTimeoutId);
+            finishUserScroll();
         };
 
         const stopAnimation = () => {
@@ -130,24 +227,24 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                 return;
             }
 
-            if (!isPaused && !dragRef.current.active && !isTrackHoveredRef.current) {
-                const elapsed = previousTimestamp ? timestamp - previousTimestamp : 0;
+            if (
+                !isPaused &&
+                !isUserScrolling &&
+                !dragRef.current.active &&
+                !isTrackHoveredRef.current
+            ) {
+                const elapsed = previousTimestamp ? Math.min(timestamp - previousTimestamp, 64) : 0;
                 const loopWidth = sequence.offsetWidth;
 
                 if (loopWidth > 0 && elapsed > 0) {
-                    if (track.scrollLeft >= loopWidth * 2) {
-                        track.scrollLeft -= loopWidth;
-                        autoScrollPosition = track.scrollLeft;
+                    let nextScrollLeft = autoScrollPosition + (AUTO_SCROLL_SPEED * elapsed) / 1000;
+                    const homeEnd = loopWidth * (MARQUEE_HOME_CYCLE + 1);
+
+                    if (nextScrollLeft >= homeEnd) {
+                        nextScrollLeft = wrapScrollPosition(nextScrollLeft, loopWidth);
                     }
 
-                    const nextScrollLeft =
-                        autoScrollPosition + (AUTO_SCROLL_SPEED * elapsed) / 1000;
-
-                    autoScrollPosition =
-                        nextScrollLeft >= loopWidth * 2
-                            ? nextScrollLeft - loopWidth
-                            : nextScrollLeft;
-                    track.scrollLeft = autoScrollPosition;
+                    writeScrollPosition(nextScrollLeft);
                 }
             }
 
@@ -188,16 +285,31 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
         pauseAutoScrollRef.current = pauseAutoScroll;
         document.addEventListener("visibilitychange", handleVisibilityChange);
+        track.addEventListener("pointerdown", handlePointerDown);
+        track.addEventListener("pointerup", handlePointerEnd);
+        track.addEventListener("pointercancel", handlePointerEnd);
+        track.addEventListener("scroll", handleScroll, { passive: true });
+        track.addEventListener("scrollend", handleScrollEnd);
+        track.addEventListener("wheel", handleHorizontalWheel, { passive: true });
         observer.observe(section);
 
         return () => {
             pauseAutoScrollRef.current = () => undefined;
             document.removeEventListener("visibilitychange", handleVisibilityChange);
+            track.removeEventListener("pointerdown", handlePointerDown);
+            track.removeEventListener("pointerup", handlePointerEnd);
+            track.removeEventListener("pointercancel", handlePointerEnd);
+            track.removeEventListener("scroll", handleScroll);
+            track.removeEventListener("scrollend", handleScrollEnd);
+            track.removeEventListener("wheel", handleHorizontalWheel);
             observer.disconnect();
             stopAnimation();
 
             if (resumeTimeoutId) {
                 clearTimeout(resumeTimeoutId);
+            }
+            if (scrollIdleTimeoutId) {
+                clearTimeout(scrollIdleTimeoutId);
             }
         };
     }, [sectionRef, tools.length, trackRef]);
@@ -228,15 +340,6 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         return () => track.removeEventListener("wheel", handleWheel);
     }, [trackRef]);
 
-    const [lastActiveId, setLastActiveId] = useState<number | null>(null);
-    if (activeId !== lastActiveId) {
-        setLastActiveId(activeId);
-        setIsOverlayActive(false);
-        if (activeId !== null) {
-            setOverlayTool(tools.find((tool) => tool.id === activeId) ?? null);
-        }
-    }
-
     useLayoutEffect(() => {
         if (!isPeeking || !overlayImagesReady) return;
 
@@ -251,32 +354,50 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         if (!isPeeking) return;
 
         let frameId = 0;
-        const syncRect = () => {
-            const card = activeCardElRef.current;
-            const section = sectionRef.current;
-            const overlay = peekOverlayRef.current;
-            if (card && section && overlay) {
-                const cardRect = card.getBoundingClientRect();
-                const sectionRect = section.getBoundingClientRect();
-                overlay.style.setProperty(
-                    "--overlay-left",
-                    `${cardRect.left - sectionRect.left}px`
-                );
-                overlay.style.setProperty("--overlay-top", `${cardRect.top - sectionRect.top}px`);
-                overlay.style.setProperty("--overlay-width", `${cardRect.width}px`);
-                overlay.style.setProperty("--overlay-height", `${cardRect.height}px`);
-            }
-            frameId = requestAnimationFrame(syncRect);
-        };
-        syncRect();
+        const card = activeCardElRef.current;
+        const section = sectionRef.current;
+        const track = trackRef.current;
+        const overlay = peekOverlayRef.current;
 
-        return () => cancelAnimationFrame(frameId);
-    }, [isPeeking, sectionRef]);
+        if (!card || !section || !overlay) return;
+
+        const syncRect = () => {
+            frameId = 0;
+            const cardRect = card.getBoundingClientRect();
+            const sectionRect = section.getBoundingClientRect();
+            overlay.style.setProperty("--overlay-left", `${cardRect.left - sectionRect.left}px`);
+            overlay.style.setProperty("--overlay-top", `${cardRect.top - sectionRect.top}px`);
+            overlay.style.setProperty("--overlay-width", `${cardRect.width}px`);
+            overlay.style.setProperty("--overlay-height", `${cardRect.height}px`);
+        };
+
+        const scheduleSync = () => {
+            if (!frameId) frameId = requestAnimationFrame(syncRect);
+        };
+
+        const resizeObserver = new ResizeObserver(scheduleSync);
+        resizeObserver.observe(card);
+        resizeObserver.observe(section);
+        track?.addEventListener("scroll", scheduleSync, { passive: true });
+        window.addEventListener("resize", scheduleSync, { passive: true });
+        scheduleSync();
+
+        return () => {
+            if (frameId) cancelAnimationFrame(frameId);
+            resizeObserver.disconnect();
+            track?.removeEventListener("scroll", scheduleSync);
+            window.removeEventListener("resize", scheduleSync);
+        };
+    }, [activeId, isPeeking, sectionRef, trackRef]);
 
     function startDrag(event: PointerEvent<HTMLDivElement>) {
         if (event.pointerType === "mouse" && event.button !== 0) return;
 
         pauseAutoScrollRef.current();
+        if (event.pointerType !== "mouse") {
+            setIsOverlayActive(false);
+            setPinnedId(null);
+        }
         const track = event.currentTarget;
         dragRef.current = {
             active: true,
@@ -373,21 +494,25 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                             key={cycle}
                             ref={cycle === 0 ? sequenceRef : undefined}
                             className={styles.sequence}
-                            aria-hidden={cycle !== 1}
+                            aria-hidden={cycle !== MARQUEE_HOME_CYCLE}
                         >
                             {tools.map((tool) => (
                                 <Card
                                     key={`${cycle}-${tool.id}`}
                                     tool={tool}
                                     isActive={activeId === tool.id}
-                                    tabIndex={cycle !== 1 ? -1 : undefined}
+                                    tabIndex={cycle !== MARQUEE_HOME_CYCLE ? -1 : undefined}
                                     onPointerEnter={(event) => {
                                         if (event.pointerType !== "mouse") return;
                                         activeCardElRef.current = event.currentTarget;
+                                        setIsOverlayActive(false);
+                                        setOverlayTool(tool);
                                         setHoveredId(tool.id);
                                     }}
                                     onPointerLeave={(event) => {
-                                        if (event.pointerType === "mouse") setHoveredId(null);
+                                        if (event.pointerType !== "mouse") return;
+                                        setIsOverlayActive(false);
+                                        setHoveredId(null);
                                     }}
                                     onPointerDown={(event) => {
                                         pointerTypeRef.current = event.pointerType;
@@ -400,9 +525,9 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
                                         if (pointerTypeRef.current !== "mouse") {
                                             activeCardElRef.current = event.currentTarget;
-                                            setPinnedId((current) =>
-                                                current === tool.id ? null : tool.id
-                                            );
+                                            setIsOverlayActive(false);
+                                            if (pinnedId !== tool.id) setOverlayTool(tool);
+                                            setPinnedId(pinnedId === tool.id ? null : tool.id);
                                         }
                                     }}
                                 />

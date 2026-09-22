@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useState } from "react";
 import { useScroll, useTransform } from "framer-motion";
+import { createViewportResizeGuard } from "@/shared/lib/motion";
 
 interface StatsSelectedRange {
     start: number;
@@ -44,7 +45,11 @@ export function useStatsSelectedProgress(
             return;
         }
 
+        let measureFrame = 0;
+        const shouldMeasureViewportResize = createViewportResizeGuard();
+
         const measure = () => {
+            measureFrame = 0;
             const stageRect = stage.getBoundingClientRect();
             const cameraTrackRect = cameraTrack.getBoundingClientRect();
             const selectedMotionTrackRect = selectedMotionTrack.getBoundingClientRect();
@@ -78,21 +83,30 @@ export function useStatsSelectedProgress(
             );
         };
 
+        const scheduleMeasure = () => {
+            if (measureFrame) return;
+            measureFrame = requestAnimationFrame(measure);
+        };
+
+        const handleResize = () => {
+            if (shouldMeasureViewportResize()) scheduleMeasure();
+        };
+
         const resizeObserver =
-            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-        const frame = requestAnimationFrame(measure);
+            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleMeasure);
+        scheduleMeasure();
 
         resizeObserver?.observe(stage);
         resizeObserver?.observe(cameraTrack);
         resizeObserver?.observe(selectedMotionTrack);
         resizeObserver?.observe(selectedFocusTrack);
         resizeObserver?.observe(viewport);
-        window.addEventListener("resize", measure);
+        window.addEventListener("resize", handleResize);
 
         return () => {
-            cancelAnimationFrame(frame);
+            cancelAnimationFrame(measureFrame);
             resizeObserver?.disconnect();
-            window.removeEventListener("resize", measure);
+            window.removeEventListener("resize", handleResize);
         };
     }, [cameraTrackId, selectedFocusTrackId, selectedMotionTrackId, stageId, viewportId]);
 

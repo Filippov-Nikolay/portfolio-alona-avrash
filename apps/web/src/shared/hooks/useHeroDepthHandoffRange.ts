@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useState } from "react";
 import { HERO_DEPTH_TRANSITION_START } from "@/shared/config/heroDepthHandoff";
+import { createViewportResizeGuard } from "@/shared/lib/motion";
 
 interface HeroDepthHandoffRange {
     entry: number;
@@ -40,7 +41,11 @@ export function useHeroDepthHandoffRange({
             return;
         }
 
+        let measureFrame = 0;
+        const shouldMeasureViewportResize = createViewportResizeGuard();
+
         const measure = () => {
+            measureFrame = 0;
             const stageRect = stageRoot.getBoundingClientRect();
             const heroTrackRect = heroTrack.getBoundingClientRect();
             const cameraTrackRect = cameraTrack.getBoundingClientRect();
@@ -61,25 +66,30 @@ export function useHeroDepthHandoffRange({
             );
         };
 
-        const resizeObserver =
-            typeof ResizeObserver === "undefined"
-                ? null
-                : new ResizeObserver(() => {
-                      measure();
-                  });
+        const scheduleMeasure = () => {
+            if (measureFrame) return;
+            measureFrame = requestAnimationFrame(measure);
+        };
 
-        const rafId = requestAnimationFrame(measure);
+        const handleResize = () => {
+            if (shouldMeasureViewportResize()) scheduleMeasure();
+        };
+
+        const resizeObserver =
+            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleMeasure);
+
+        scheduleMeasure();
 
         resizeObserver?.observe(stageRoot);
         resizeObserver?.observe(heroTrack);
         resizeObserver?.observe(cameraTrack);
         resizeObserver?.observe(viewport);
-        window.addEventListener("resize", measure);
+        window.addEventListener("resize", handleResize);
 
         return () => {
-            cancelAnimationFrame(rafId);
+            cancelAnimationFrame(measureFrame);
             resizeObserver?.disconnect();
-            window.removeEventListener("resize", measure);
+            window.removeEventListener("resize", handleResize);
         };
     }, [cameraTrackId, heroTrackId, stageId, viewportId]);
 

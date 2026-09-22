@@ -23,7 +23,14 @@ export const Card = forwardRef<HTMLButtonElement, CardProps>(function Card(
             aria-pressed={isActive}
             {...buttonProps}
         >
-            <span className={styles.cardFolder} aria-hidden="true" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+                src="/assets/tools/v2/Rectangle-tool.svg"
+                alt=""
+                aria-hidden="true"
+                className={styles.cardFolder}
+                draggable={false}
+            />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
                 src="/assets/tools/v2/Rectangle-tool-active.svg"

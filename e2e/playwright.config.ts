@@ -82,7 +82,7 @@ export default defineConfig({
             name: "web-ios",
             testDir: "./tests/web",
             testMatch:
-                /(contact-footer-mobile|footer-ios-overscroll|header-menu-ios|hero-selected-work-state|hero-theme-transition|projects-ios-button|services-ios-resize|services-mobile|tools-ios-scroll|tools-ios-visibility|works-filter-ios-tap|works-scroll-performance)\.spec\.ts/,
+                /(contact-footer-mobile|footer-ios-overscroll|header-menu-ios|hero-selected-work-state|hero-theme-transition|projects-ios-button|reviews-ios-reveal|services-ios-resize|services-mobile|tools-ios-scroll|tools-ios-visibility|works-filter-ios-tap|works-scroll-performance)\.spec\.ts/,
             use: { ...devices["iPhone 13"], baseURL: "http://localhost:3100" },
         },
     ],

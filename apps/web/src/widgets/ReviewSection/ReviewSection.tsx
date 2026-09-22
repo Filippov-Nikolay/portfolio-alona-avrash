@@ -166,6 +166,9 @@ export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
                                     <blockquote
                                         className={cn(styles.card, isActive && styles.cardActive)}
                                         data-review-card
+                                        data-review-reveal-card={
+                                            Math.abs(index - middleStartIndex) <= 2 ? "" : undefined
+                                        }
                                     >
                                         <div className={styles.cardTop}>
                                             <QuoteIcon className={styles.quoteIcon} />

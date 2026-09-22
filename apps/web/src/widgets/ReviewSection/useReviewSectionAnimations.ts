@@ -12,6 +12,7 @@ const TITLE_CLIP_HIDDEN = "inset(0% 100% 0% 0%)";
 const TITLE_CLIP_VISIBLE = "inset(0% 0% 0% 0%)";
 const COMPACT_QUERY = "(max-width: 1024px), (pointer: coarse)";
 const DESKTOP_QUERY = "(min-width: 1025px) and (pointer: fine)";
+const COMPACT_REVEAL_ROOT_MARGIN = "0px 0px -40% 0px";
 
 export function useReviewSectionAnimations(totalItems: number) {
     const reduced = useReducedMotion();
@@ -53,41 +54,49 @@ export function useReviewSectionAnimations(totalItems: number) {
             const media = gsap.matchMedia();
 
             media.add(COMPACT_QUERY, () => {
-                const compactTargets = [title, aside, track];
+                const revealCards = gsap.utils.toArray<HTMLElement>(
+                    "[data-review-reveal-card]",
+                    track
+                );
+                const compactTargets = [title, aside, ...revealCards];
+
+                if (section.dataset.reviewRevealed === "true") {
+                    gsap.set(allTargets, {
+                        clearProps: "transform,transformOrigin,opacity,visibility,willChange",
+                    });
+                    return;
+                }
+
                 const setLayerHint = () =>
                     gsap.set(compactTargets, { willChange: "transform, opacity" });
-                const clearLayerHint = () => gsap.set(compactTargets, { clearProps: "willChange" });
+                const clearAnimatedProps = () =>
+                    gsap.set(compactTargets, {
+                        clearProps: "transform,transformOrigin,opacity,visibility,willChange",
+                    });
 
                 gsap.set([decorBack, decorFront, ...navItems, ...cards], { clearProps: "all" });
                 gsap.set(title, { autoAlpha: 0, y: 24 });
                 gsap.set(aside, { autoAlpha: 0, y: 18 });
-                gsap.set(track, {
+                gsap.set(revealCards, {
                     autoAlpha: 0,
                     y: 42,
                     scale: 0.965,
                     transformOrigin: "50% 20%",
                 });
                 setLayerHint();
+                section.dataset.reviewRevealReady = "true";
 
                 const timeline = gsap.timeline({
+                    paused: true,
                     defaults: { force3D: true },
-                    onComplete: clearLayerHint,
-                    onReverseComplete: clearLayerHint,
-                    scrollTrigger: {
-                        trigger: section,
-                        start: getStart,
-                        toggleActions: "play none none reverse",
-                        invalidateOnRefresh: true,
-                        onEnter: setLayerHint,
-                        onLeaveBack: setLayerHint,
-                    },
+                    onComplete: clearAnimatedProps,
                 });
 
                 timeline
                     .to(title, { autoAlpha: 1, y: 0, duration: 0.68, ease: "power3.out" }, 0)
                     .to(aside, { autoAlpha: 1, y: 0, duration: 0.62, ease: "power3.out" }, 0.1)
                     .to(
-                        track,
+                        revealCards,
                         {
                             autoAlpha: 1,
                             y: 0,
@@ -98,7 +107,38 @@ export function useReviewSectionAnimations(totalItems: number) {
                         0.16
                     );
 
-                return () => timeline.kill();
+                let hasRevealed = false;
+                const reveal = () => {
+                    if (hasRevealed) return;
+                    hasRevealed = true;
+                    section.dataset.reviewRevealed = "true";
+                    observer?.disconnect();
+                    timeline.play(0);
+                };
+
+                const observer =
+                    typeof IntersectionObserver === "undefined"
+                        ? null
+                        : new IntersectionObserver(
+                              ([entry]) => {
+                                  if (entry?.isIntersecting) reveal();
+                              },
+                              {
+                                  rootMargin: COMPACT_REVEAL_ROOT_MARGIN,
+                                  threshold: 0,
+                              }
+                          );
+
+                if (observer) {
+                    observer.observe(section);
+                } else {
+                    reveal();
+                }
+
+                return () => {
+                    observer?.disconnect();
+                    timeline.kill();
+                };
             });
 
             media.add(DESKTOP_QUERY, () => {

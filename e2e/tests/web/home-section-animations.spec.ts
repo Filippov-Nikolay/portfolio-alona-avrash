@@ -35,6 +35,7 @@ for (const viewport of viewports) {
         const toolsTitle = tools.locator("h2");
         const reviewCarousel = reviews.locator("[data-review-carousel]");
         const firstReviewCard = reviews.locator("[data-review-card]").first();
+        const revealReviewCard = reviews.locator("[data-review-reveal-card]").first();
         const ctaTitle = cta.locator("h2");
 
         await expect(clients).toBeAttached();
@@ -49,7 +50,8 @@ for (const viewport of viewports) {
 
         await expect(firstClientRow).not.toHaveCSS("transform", "none");
         await expect(toolsTitle).toHaveCSS("opacity", "0");
-        await expect(reviewCarousel).toHaveCSS("opacity", "0");
+        await expect(reviewCarousel).toHaveCSS("opacity", "1");
+        await expect(revealReviewCard).toHaveCSS("opacity", "0");
         await expect(firstReviewCard).toHaveCSS("opacity", "1");
         await expect(firstReviewCard).toHaveCSS("transform", "none");
         await expect(ctaTitle).toHaveCSS("opacity", "0");
@@ -63,7 +65,7 @@ for (const viewport of viewports) {
         await expect(toolsTitle).toHaveCSS("opacity", "1");
 
         await placeSectionAt(page, reviews, 0.5);
-        await expect(reviewCarousel).toHaveCSS("opacity", "1");
+        await expect(revealReviewCard).toHaveCSS("opacity", "1");
 
         await placeSectionAt(page, cta, 0.65);
         await expect(ctaTitle).toHaveCSS("opacity", "1");

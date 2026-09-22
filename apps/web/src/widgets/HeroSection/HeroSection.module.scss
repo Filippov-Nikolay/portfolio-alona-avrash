@@ -567,6 +567,11 @@
     color: #080808;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.22);
 
+    [data-theme="dark"] & {
+        color: rgba(255, 255, 255, 0.94);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.26);
+    }
+
     @include respond-from("tablet") {
         max-width: 290px;
     }
@@ -727,6 +732,9 @@
     }
 
     .titleArea {
+        --hero-mobile-name-size: clamp(68px, 21vw, 104px);
+        --hero-mobile-name-block-size: clamp(111.52px, 34.44vw, 170.56px);
+
         display: block;
         width: 100%;
     }
@@ -738,7 +746,7 @@
     }
 
     .name {
-        font-size: clamp(68px, 21vw, 104px);
+        font-size: var(--hero-mobile-name-size);
         line-height: 0.82;
         letter-spacing: -0.045em;
     }
@@ -749,11 +757,13 @@
     }
 
     .titleFloaters {
+        --title-floaters-gap: calc(var(--hero-project-gap) + 16px);
+
         position: relative;
         inset: auto;
         display: block;
         min-height: clamp(184px, 50vw, 224px);
-        margin-top: calc(var(--hero-project-gap) + 16px);
+        margin-top: var(--title-floaters-gap);
     }
 
     .floaterVariantA,
@@ -772,8 +782,12 @@
     }
 
     .floaterVariantB {
-        top: -265px;
-        right: -5px;
+        top: auto;
+        right: 0;
+        bottom: calc(
+            100% + var(--title-floaters-gap) +
+                max(140px, calc(var(--hero-mobile-name-block-size) + 12px))
+        );
         width: clamp(62px, 25vw, 118px);
         aspect-ratio: 1;
         transform: rotate(6deg);

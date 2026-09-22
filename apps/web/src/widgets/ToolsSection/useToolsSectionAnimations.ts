@@ -6,6 +6,7 @@ import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
 const isCompact = () => window.matchMedia("(max-width: 768px)").matches;
+const shouldLockReveal = () => window.matchMedia("(max-width: 1024px), (pointer: coarse)").matches;
 const getStart = () => (isCompact() ? "top 88%" : "top 72%");
 const getEnd = () => (isCompact() ? "top 62%" : "top 38%");
 
@@ -32,15 +33,27 @@ export function useToolsSectionAnimations() {
                 return;
             }
 
+            const lockReveal = shouldLockReveal();
+            gsap.set(track, { willChange: "opacity" });
+
             gsap.timeline({
                 defaults: { ease: "none", force3D: true },
+                onComplete: () => gsap.set(track, { clearProps: "willChange" }),
+                onReverseComplete: () => gsap.set(track, { clearProps: "willChange" }),
                 scrollTrigger: {
                     trigger: section,
                     start: getStart,
                     end: getEnd,
                     scrub: 0.9,
                     invalidateOnRefresh: true,
-                    fastScrollEnd: true,
+                    fastScrollEnd: !lockReveal,
+                    onLeave: (trigger) => {
+                        if (!lockReveal) return;
+
+                        trigger.animation?.progress(1);
+                        trigger.kill(false, true);
+                        gsap.set(track, { clearProps: "willChange" });
+                    },
                 },
             })
                 .fromTo(title, { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 1 }, 0)
@@ -50,7 +63,7 @@ export function useToolsSectionAnimations() {
                     { autoAlpha: 1, y: 0, duration: 1 },
                     0.12
                 )
-                .fromTo(track, { autoAlpha: 0 }, { autoAlpha: 1, duration: 1 }, 0.22);
+                .fromTo(track, { opacity: 0 }, { opacity: 1, duration: 1 }, 0.22);
         },
         { scope: sectionRef, dependencies: [reduced], revertOnUpdate: true }
     );

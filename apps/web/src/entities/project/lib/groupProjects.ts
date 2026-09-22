@@ -3,7 +3,7 @@ import type { Project } from "@avrash/content-schema";
 
 // `categoryPriority` is the order categories.json lists categories in -
 // the first one a project has, in that order, wins as its "primary"
-// category for grouping/filtering. Was a fixed array here; now passed in
+// category for grouping the unfiltered catalog. Was a fixed array here; now passed in
 // since the admin's Global > Categories page can add more at runtime.
 export function getPrimaryCategory(
     categories: CategoryKey[],

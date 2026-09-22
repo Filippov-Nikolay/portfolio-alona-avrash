@@ -50,6 +50,7 @@ test("tapping a second filter replaces the first instead of combining with it", 
     await expect(packagingPill).toHaveAttribute("aria-checked", "true");
 
     const cards = page.getByTestId("works-card");
+    await expect(cards.first()).toBeVisible();
     await expect
         .poll(() =>
             cards.evaluateAll((elements) =>

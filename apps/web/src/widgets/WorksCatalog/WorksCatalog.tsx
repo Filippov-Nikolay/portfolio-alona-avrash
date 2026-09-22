@@ -225,16 +225,16 @@ export function WorksCatalog({
         () =>
             selectedCategory === null
                 ? sortedProjects
-                : sortedProjects.filter(
-                      (project) =>
-                          getPrimaryCategory(project.categories, categoryKeys) === selectedCategory
-                  ),
-        [sortedProjects, selectedCategory, categoryKeys]
+                : sortedProjects.filter((project) => project.categories.includes(selectedCategory)),
+        [sortedProjects, selectedCategory]
     );
 
     const groups = useMemo(
-        () => groupProjectsByPrimaryCategory(visibleProjects, categoryKeys),
-        [visibleProjects, categoryKeys]
+        () =>
+            selectedCategory === null
+                ? groupProjectsByPrimaryCategory(visibleProjects, categoryKeys)
+                : [{ category: selectedCategory, projects: visibleProjects }],
+        [visibleProjects, selectedCategory, categoryKeys]
     );
 
     // The very first card on the page sits above the reveal effect's own
@@ -323,7 +323,11 @@ export function WorksCatalog({
                                         rank={i + 1}
                                         categoryLabel={
                                             categoryLabels[
-                                                getPrimaryCategory(project.categories, categoryKeys)
+                                                selectedCategory ??
+                                                    getPrimaryCategory(
+                                                        project.categories,
+                                                        categoryKeys
+                                                    )
                                             ]
                                         }
                                         viewLabel={labels.viewProject}

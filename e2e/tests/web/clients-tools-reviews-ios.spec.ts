@@ -11,7 +11,7 @@ async function placeSectionAt(page: Page, section: Locator, viewportRatio: numbe
     }
 }
 
-async function expectNoClippedPillsDuringReveal(clients: Locator) {
+async function expectVisiblePillsToStayOpaque(clients: Locator) {
     const geometry = await clients.evaluate((section) => {
         type MeasurableNode = {
             ownerDocument: {
@@ -39,10 +39,12 @@ async function expectNoClippedPillsDuringReveal(clients: Locator) {
         const visiblePills = Array.from(root.querySelectorAll("[data-client-pill]"))
             .map((pill) => {
                 const rect = pill.getBoundingClientRect();
-                const rowRect = pill.closest("[data-direction]")?.getBoundingClientRect();
+                const row = pill.closest("[data-direction]");
+                const rowRect = row?.getBoundingClientRect();
                 const style = root.ownerDocument.defaultView.getComputedStyle(pill);
                 return {
                     name: pill.textContent?.trim() || "spacer",
+                    direction: row?.dataset.direction,
                     left: rect.left,
                     right: rect.right,
                     opacity: Number(style.opacity),
@@ -52,22 +54,21 @@ async function expectNoClippedPillsDuringReveal(clients: Locator) {
                 };
             })
             .filter(
-                ({ left, right, opacity, visibility }) =>
-                    visibility !== "hidden" && opacity > 0.05 && right > 0 && left < viewportWidth
+                ({ left, right, clipLeft, clipRight }) =>
+                    clipRight > clipLeft && right > clipLeft && left < clipRight
             );
 
         return {
             revealing: root.dataset.clientsRevealing === "true",
             visibleCount: visiblePills.length,
-            clipped: visiblePills.filter(
-                ({ left, right, clipLeft, clipRight }) =>
-                    left < clipLeft - 0.75 || right > clipRight + 0.75
+            faded: visiblePills.filter(
+                ({ opacity, visibility }) => visibility === "hidden" || opacity < 0.999
             ),
         };
     });
 
     if (geometry.revealing) {
-        expect(geometry.clipped).toEqual([]);
+        expect(geometry.faded).toEqual([]);
     }
     return geometry;
 }
@@ -88,7 +89,7 @@ test("Clients, Tools and Reviews remain stable through repeated iOS scrolling", 
     await page.goto("/en");
 
     const clients = page.locator("#clients");
-    const clientRows = clients.locator("[data-direction]");
+    const clientRows = clients.locator("[data-clients-reveal-row]");
     const clientTracks = clients.locator("[data-clients-marquee]");
     const tools = page.locator("#tools");
     const toolsTrack = tools.locator("[data-tools-track]");
@@ -184,26 +185,31 @@ test("Clients, Tools and Reviews remain stable through repeated iOS scrolling", 
     });
 });
 
-test("Clients reveal shows only complete pills while the marquee keeps moving", async ({
-    page,
-}) => {
+test("Clients rows slide in without fading while the marquee keeps moving", async ({ page }) => {
     for (const width of [243, 390, 820, 1440]) {
         await page.setViewportSize({ width, height: 900 });
         await page.goto("/en");
 
         const clients = page.locator("#clients");
+        const rows = clients.locator("[data-direction]");
+        const revealRows = clients.locator("[data-clients-reveal-row]");
         const tracks = clients.locator("[data-clients-marquee]");
         await expect(clients).toHaveAttribute("data-clients-reveal-ready", "true");
         await expect(clients).toHaveAttribute("data-clients-revealing", "true");
 
         await placeSectionAt(page, clients, 0.75);
 
+        await expect(rows).toHaveCount(2);
+        await expect(revealRows).toHaveCount(2);
+        await expect(rows.first()).toHaveCSS("overflow-x", "hidden");
+        await expect(revealRows.first()).toHaveCSS("overflow-x", "visible");
+
         let sawVisiblePill = false;
         for (let sample = 0; sample < 20; sample += 1) {
             const revealing = await clients.getAttribute("data-clients-revealing");
             if (revealing !== "true") break;
 
-            const revealState = await expectNoClippedPillsDuringReveal(clients);
+            const revealState = await expectVisiblePillsToStayOpaque(clients);
             if (!revealState.revealing) break;
 
             const visiblePillCount = revealState.visibleCount;
@@ -217,8 +223,9 @@ test("Clients reveal shows only complete pills while the marquee keeps moving", 
             await page.waitForTimeout(50);
         }
 
-        expect(sawVisiblePill, `No complete pill appeared during reveal at ${width}px`).toBe(true);
+        expect(sawVisiblePill, `No pill appeared during reveal at ${width}px`).toBe(true);
         await expect(clients).not.toHaveAttribute("data-clients-revealing", "true");
+        await expect(revealRows.first()).toHaveCSS("transform", "none");
         await expect(clients).toHaveAttribute("data-clients-marquee-running", "true");
         await expect(tracks).toHaveCount(2);
         await expect(clients.locator("[data-clients-sequence]")).toHaveCount(12);

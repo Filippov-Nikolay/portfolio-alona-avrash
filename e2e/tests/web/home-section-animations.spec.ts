@@ -31,7 +31,7 @@ for (const viewport of viewports) {
         const tools = page.locator("#tools");
         const reviews = page.locator("#reviews");
         const cta = page.locator("#cta");
-        const firstClientRow = clients.locator("[data-direction]").first();
+        const firstClientRow = clients.locator("[data-clients-reveal-row]").first();
         const toolsTitle = tools.locator("h2");
         const reviewCarousel = reviews.locator("[data-review-carousel]");
         const firstReviewCard = reviews.locator("[data-review-card]").first();
@@ -48,7 +48,7 @@ for (const viewport of viewports) {
         });
         await page.waitForTimeout(250);
 
-        await expect(firstClientRow).not.toHaveCSS("clip-path", "none");
+        await expect(firstClientRow).not.toHaveCSS("transform", "none");
         await expect(toolsTitle).toHaveCSS("opacity", "0");
         await expect(reviewCarousel).toHaveCSS("opacity", "1");
         await expect(revealReviewCard).toHaveCSS("opacity", "0");
@@ -57,7 +57,7 @@ for (const viewport of viewports) {
         await expect(ctaTitle).toHaveCSS("opacity", "0");
 
         await placeSectionAt(page, clients, 0.7);
-        await expect(firstClientRow).toHaveCSS("clip-path", "none");
+        await expect(firstClientRow).toHaveCSS("transform", "none");
 
         await placeSectionAt(page, tools, 0.5);
         await expect(toolsTitle).toHaveCSS("opacity", "1");

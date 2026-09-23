@@ -49,39 +49,43 @@ function ClientsRow({
     trackRef: Ref<HTMLDivElement>;
 }) {
     return (
-        <div ref={rowRef} className={styles.row} data-direction={direction}>
-            <div ref={trackRef} className={styles.track} data-clients-marquee>
-                {Array.from({ length: 6 }, (_, cycle) => (
-                    <div
-                        key={cycle}
-                        className={styles.sequence}
-                        data-clients-sequence
-                        aria-hidden={cycle > 0}
-                    >
-                        {slots.map((slot) =>
-                            slot.kind === "client" ? (
-                                <span
-                                    key={`${cycle}-${slot.key}`}
-                                    className={cn(styles.pill, styles[slot.client.variant])}
-                                    data-client-pill
-                                >
-                                    {slot.client.name}
-                                </span>
-                            ) : (
-                                <span
-                                    key={`${cycle}-${slot.key}`}
-                                    className={cn(
-                                        styles.pill,
-                                        styles.pillEmpty,
-                                        styles[slot.width]
-                                    )}
-                                    data-client-pill
-                                    aria-hidden="true"
-                                />
-                            )
-                        )}
+        <div className={styles.row} data-direction={direction}>
+            <div ref={rowRef} className={styles.revealTrack} data-clients-reveal-row>
+                <div className={styles.trackAnchor}>
+                    <div ref={trackRef} className={styles.track} data-clients-marquee>
+                        {Array.from({ length: 6 }, (_, cycle) => (
+                            <div
+                                key={cycle}
+                                className={styles.sequence}
+                                data-clients-sequence
+                                aria-hidden={cycle > 0}
+                            >
+                                {slots.map((slot) =>
+                                    slot.kind === "client" ? (
+                                        <span
+                                            key={`${cycle}-${slot.key}`}
+                                            className={cn(styles.pill, styles[slot.client.variant])}
+                                            data-client-pill
+                                        >
+                                            {slot.client.name}
+                                        </span>
+                                    ) : (
+                                        <span
+                                            key={`${cycle}-${slot.key}`}
+                                            className={cn(
+                                                styles.pill,
+                                                styles.pillEmpty,
+                                                styles[slot.width]
+                                            )}
+                                            data-client-pill
+                                            aria-hidden="true"
+                                        />
+                                    )
+                                )}
+                            </div>
+                        ))}
                     </div>
-                ))}
+                </div>
             </div>
         </div>
     );

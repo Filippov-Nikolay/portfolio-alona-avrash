@@ -13,7 +13,6 @@ const DESKTOP_QUERY = "(min-width: 1025px) and (pointer: fine)";
 const COMPACT_REVEAL_ROOT_MARGIN = "0px 0px -8% 0px";
 const MARQUEE_VISIBILITY_MARGIN = "120px 0px";
 const REVEAL_DURATION = 0.7;
-const REVEAL_STAGGER = 0.1;
 const REVEAL_START = 0.08;
 
 interface RowRefPair {
@@ -53,10 +52,6 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
             if (pairs.length === 0) return;
 
             const rowTargets = pairs.map((pair) => pair.row);
-            const pills = Array.from(section.querySelectorAll<HTMLElement>("[data-client-pill]"));
-            const sequences = Array.from(
-                section.querySelectorAll<HTMLElement>("[data-clients-sequence]")
-            );
 
             if (reduced) {
                 gsap.set([...rowTargets, ...pairs.map((pair) => pair.track)], {
@@ -64,7 +59,6 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                 });
                 section.dataset.clientsMarqueeRunning = "false";
                 delete section.dataset.clientsRevealing;
-                delete section.dataset.clientsWholePillGate;
                 return;
             }
 
@@ -86,9 +80,9 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                       )
                     : gsap.fromTo(
                           pair.track,
-                          { xPercent: -50 },
+                          { xPercent: 0 },
                           {
-                              xPercent: 0,
+                              xPercent: 50,
                               duration,
                               ease: "none",
                               repeat: -1,
@@ -129,103 +123,6 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                 syncMarqueePlayback();
             };
 
-            const revealVisiblePills = new Set<HTMLElement>();
-            const revealProgress = pairs.map(() => 0);
-
-            const syncCompletePills = () => {
-                if (section.dataset.clientsWholePillGate !== "true") return;
-
-                const viewportWidth = document.documentElement.clientWidth;
-                const edgeInset = 1;
-                const nextVisiblePills = new Set<HTMLElement>();
-
-                sequences.forEach((sequence) => {
-                    const sequenceRect = sequence.getBoundingClientRect();
-                    const row = sequence.closest<HTMLElement>("[data-direction]");
-                    if (!row) return;
-
-                    const rowIndex = rowTargets.indexOf(row as HTMLDivElement);
-                    if (rowIndex < 0) return;
-
-                    const rowRect = row.getBoundingClientRect();
-                    const progress = revealProgress[rowIndex] ?? 0;
-                    const direction = pairs[rowIndex]?.direction;
-                    const revealLeft =
-                        direction === "left"
-                            ? rowRect.right - rowRect.width * progress
-                            : rowRect.left;
-                    const revealRight =
-                        direction === "right"
-                            ? rowRect.left + rowRect.width * progress
-                            : rowRect.right;
-                    const visibleLeft = Math.max(0, revealLeft) + edgeInset;
-                    const visibleRight = Math.min(viewportWidth, revealRight) - edgeInset;
-                    if (
-                        visibleRight <= visibleLeft ||
-                        sequenceRect.right < visibleLeft ||
-                        sequenceRect.left > visibleRight
-                    ) {
-                        return;
-                    }
-
-                    sequence.querySelectorAll<HTMLElement>("[data-client-pill]").forEach((pill) => {
-                        const rect = pill.getBoundingClientRect();
-                        if (rect.left >= visibleLeft && rect.right <= visibleRight) {
-                            nextVisiblePills.add(pill);
-                        }
-                    });
-                });
-
-                nextVisiblePills.forEach((pill) => {
-                    if (!revealVisiblePills.has(pill)) {
-                        pill.dataset.clientFullyVisible = "true";
-                        revealVisiblePills.add(pill);
-                    }
-                });
-            };
-
-            const stopCompletePillReveal = () => {
-                delete section.dataset.clientsRevealing;
-                delete section.dataset.clientsWholePillGate;
-                pills.forEach((pill) => {
-                    delete pill.dataset.clientFullyVisible;
-                    gsap.set(pill, { clearProps: "opacity" });
-                });
-                revealVisiblePills.clear();
-            };
-
-            const startCompletePillReveal = () => {
-                stopCompletePillReveal();
-                revealProgress.fill(0);
-                section.dataset.clientsRevealing = "true";
-                section.dataset.clientsWholePillGate = "true";
-                syncCompletePills();
-            };
-
-            const releaseCompletePillReveal = () => {
-                revealProgress.fill(1);
-                syncCompletePills();
-
-                const currentOpacities = pills.map((pill) =>
-                    Number.parseFloat(window.getComputedStyle(pill).opacity)
-                );
-                gsap.set(pills, {
-                    opacity: (index) => currentOpacities[index] ?? 0,
-                });
-                delete section.dataset.clientsRevealing;
-                delete section.dataset.clientsWholePillGate;
-                pills.forEach((pill) => delete pill.dataset.clientFullyVisible);
-                revealVisiblePills.clear();
-
-                gsap.to(pills, {
-                    opacity: 1,
-                    duration: 0.28,
-                    ease: "power1.out",
-                    clearProps: "opacity",
-                    overwrite: true,
-                });
-            };
-
             const visibilityObserver =
                 typeof IntersectionObserver === "undefined"
                     ? null
@@ -246,24 +143,12 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
             const handleVisibilityChange = () => syncMarqueePlayback();
             document.addEventListener("visibilitychange", handleVisibilityChange);
 
-            const syncRevealProgress = (time: number) => {
-                pairs.forEach((_, index) => {
-                    const start = REVEAL_START + index * REVEAL_STAGGER;
-                    revealProgress[index] = gsap.utils.clamp(
-                        0,
-                        1,
-                        (time - start) / REVEAL_DURATION
-                    );
-                });
-                syncCompletePills();
-            };
-
             const media = gsap.matchMedia();
 
             media.add(COMPACT_QUERY, () => {
                 if (section.dataset.clientsRevealed === "true") {
                     gsap.set(rowTargets, {
-                        clearProps: "clipPath,transform,opacity,visibility,willChange",
+                        clearProps: "transform,opacity,visibility,willChange",
                     });
                     marqueeStarted.fill(true);
                     syncMarqueePlayback();
@@ -272,25 +157,21 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                 }
 
                 gsap.set(rowTargets, {
-                    clipPath: (index) =>
-                        pairs[index]?.direction === "left"
-                            ? "inset(0 0 0 100%)"
-                            : "inset(0 100% 0 0)",
-                    willChange: "clip-path",
+                    xPercent: (index) => (pairs[index]?.direction === "left" ? 100 : -100),
+                    willChange: "transform",
                 });
-                startCompletePillReveal();
+                section.dataset.clientsRevealing = "true";
                 section.dataset.clientsRevealReady = "true";
 
                 const timeline = gsap.timeline({
                     paused: true,
                     defaults: { force3D: true },
-                    onUpdate: () => syncRevealProgress(timeline.time()),
                     onComplete: () => {
                         gsap.set(rowTargets, {
-                            clearProps: "clipPath,transform,opacity,visibility,willChange",
+                            clearProps: "transform,opacity,visibility,willChange",
                         });
                         section.dataset.clientsRevealed = "true";
-                        releaseCompletePillReveal();
+                        delete section.dataset.clientsRevealing;
                         syncMarqueePlayback();
                     },
                 });
@@ -299,12 +180,12 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                     timeline.to(
                         row,
                         {
-                            clipPath: "inset(0 0% 0 0%)",
+                            xPercent: 0,
                             duration: REVEAL_DURATION,
                             ease: "power3.out",
                             onStart: () => startMarquee(index),
                         },
-                        REVEAL_START + index * REVEAL_STAGGER
+                        REVEAL_START
                     );
                 });
 
@@ -332,14 +213,14 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                 return () => {
                     revealObserver?.disconnect();
                     timeline.kill();
-                    stopCompletePillReveal();
+                    delete section.dataset.clientsRevealing;
                 };
             });
 
             media.add(DESKTOP_QUERY, () => {
                 if (section.dataset.clientsRevealed === "true") {
                     gsap.set(rowTargets, {
-                        clearProps: "clipPath,transform,opacity,visibility,willChange",
+                        clearProps: "transform,opacity,visibility,willChange",
                     });
                     marqueeStarted.fill(true);
                     syncMarqueePlayback();
@@ -348,24 +229,20 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                 }
 
                 gsap.set(rowTargets, {
-                    clipPath: (index) =>
-                        pairs[index]?.direction === "left"
-                            ? "inset(0 0 0 100%)"
-                            : "inset(0 100% 0 0)",
-                    willChange: "clip-path",
+                    xPercent: (index) => (pairs[index]?.direction === "left" ? 100 : -100),
+                    willChange: "transform",
                 });
-                startCompletePillReveal();
+                section.dataset.clientsRevealing = "true";
                 section.dataset.clientsRevealReady = "true";
 
                 const timeline = gsap.timeline({
                     defaults: { force3D: true },
-                    onUpdate: () => syncRevealProgress(timeline.time()),
                     onComplete: () => {
                         gsap.set(rowTargets, {
-                            clearProps: "clipPath,transform,opacity,visibility,willChange",
+                            clearProps: "transform,opacity,visibility,willChange",
                         });
                         section.dataset.clientsRevealed = "true";
-                        releaseCompletePillReveal();
+                        delete section.dataset.clientsRevealing;
                         syncMarqueePlayback();
                     },
                     scrollTrigger: {
@@ -380,18 +257,18 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                     timeline.to(
                         row,
                         {
-                            clipPath: "inset(0 0% 0 0%)",
+                            xPercent: 0,
                             duration: REVEAL_DURATION,
                             ease: "power3.out",
                             onStart: () => startMarquee(index),
                         },
-                        REVEAL_START + index * REVEAL_STAGGER
+                        REVEAL_START
                     );
                 });
 
                 return () => {
                     timeline.kill();
-                    stopCompletePillReveal();
+                    delete section.dataset.clientsRevealing;
                 };
             });
 
@@ -404,8 +281,6 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                 document.removeEventListener("visibilitychange", handleVisibilityChange);
                 section.dataset.clientsMarqueeRunning = "false";
                 delete section.dataset.clientsRevealing;
-                delete section.dataset.clientsWholePillGate;
-                pills.forEach((pill) => delete pill.dataset.clientFullyVisible);
             };
         },
         { scope: sectionRef, dependencies: [reduced, rows.length], revertOnUpdate: true }

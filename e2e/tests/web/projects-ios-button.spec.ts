@@ -70,3 +70,46 @@ test("Projects CTA keeps its painted layer while the iOS scene is pinned", async
         expect(state.motionVisibility).toBe("visible");
     }
 });
+
+test("Projects does not change the iOS scroll position after touch scrolling stops", async ({
+    page,
+}) => {
+    await page.goto("/en");
+    await page.waitForTimeout(800);
+
+    const section = page.locator("#projects");
+    const range = await section.evaluate((element) => {
+        const view = element.ownerDocument.defaultView!;
+        const scene = element.querySelector("[class*='stage']")!;
+        const spacer = scene.parentElement!;
+        const start = spacer.getBoundingClientRect().top + view.scrollY;
+
+        return {
+            start,
+            distance: spacer.getBoundingClientRect().height - scene.getBoundingClientRect().height,
+        };
+    });
+
+    await section.evaluate(
+        (element, { start, distance }) =>
+            element.ownerDocument.defaultView!.scrollTo(0, start + distance * 0.78),
+        range
+    );
+    await page.waitForTimeout(60);
+    await section.evaluate(
+        (element, { start, distance }) =>
+            element.ownerDocument.defaultView!.scrollTo(0, start + distance * 0.85),
+        range
+    );
+    await page.waitForTimeout(80);
+
+    const stoppedAt = await section.evaluate(
+        (element) => element.ownerDocument.defaultView!.scrollY
+    );
+    await page.waitForTimeout(500);
+    const remainedAt = await section.evaluate(
+        (element) => element.ownerDocument.defaultView!.scrollY
+    );
+
+    expect(Math.abs(remainedAt - stoppedAt)).toBeLessThanOrEqual(1);
+});

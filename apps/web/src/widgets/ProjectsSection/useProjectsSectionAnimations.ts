@@ -113,18 +113,22 @@ export function useProjectsSectionAnimations() {
             const galleryCorridorY = compact
                 ? MOBILE_GALLERY_CORRIDOR_Y
                 : DESKTOP_GALLERY_CORRIDOR_Y;
+            const allowVelocitySnap = window.matchMedia(
+                "(hover: hover) and (pointer: fine)"
+            ).matches;
             let viewportWidth = window.innerWidth;
-            let viewportHeight = window.innerHeight;
+            let viewportHeight = scene.clientHeight;
 
             const getSceneDistance = () => {
                 const logicalSteps = Math.max(finalTailStart + 2.6, 6);
+                const sceneHeight = scene.clientHeight || viewportHeight;
 
                 return (
                     Math.max(
-                        window.innerHeight * 4.5,
+                        sceneHeight * 4.5,
                         logicalSteps * cardWidth * 0.84 + window.innerWidth * 0.35
                     ) +
-                    window.innerHeight * FINAL_HOLD_SCROLL_DISTANCE
+                    sceneHeight * FINAL_HOLD_SCROLL_DISTANCE
                 );
             };
             const getFocusInfluence = (relative: number) =>
@@ -331,7 +335,7 @@ export function useProjectsSectionAnimations() {
 
             const measureScene = () => {
                 viewportWidth = window.innerWidth;
-                viewportHeight = window.innerHeight;
+                viewportHeight = scene.clientHeight;
                 finalLayout = getFinalCompositionLayout();
                 finalTransforms = Array.from({ length: finalCount }, (_, index) =>
                     getFinalTransform(index, finalCount, finalLayout)
@@ -518,20 +522,27 @@ export function useProjectsSectionAnimations() {
                 anticipatePin: 1,
                 refreshPriority: 1,
                 invalidateOnRefresh: true,
-                snap: {
-                    delay: 0.02,
-                    duration: { min: 0.1, max: 0.22 },
-                    ease: "power1.out",
-                    inertia: false,
-                    snapTo: (progress) => {
-                        if (!fastFinalApproach || finalStopConsumed) return progress;
+                snap: allowVelocitySnap
+                    ? {
+                          delay: 0.02,
+                          duration: { min: 0.1, max: 0.22 },
+                          ease: "power1.out",
+                          inertia: false,
+                          snapTo: (progress: number) => {
+                              if (!fastFinalApproach || finalStopConsumed) return progress;
 
-                        fastFinalApproach = false;
-                        finalStopConsumed = true;
-                        return FINAL_HOLD_START;
-                    },
-                },
+                              fastFinalApproach = false;
+                              finalStopConsumed = true;
+                              return FINAL_HOLD_START;
+                          },
+                      }
+                    : undefined,
                 onUpdate: (self) => {
+                    if (!allowVelocitySnap) {
+                        render(self.progress);
+                        return;
+                    }
+
                     const hasReachedFinalPhase = self.progress >= FINAL_MORPH_START;
 
                     if (!hasReachedFinalPhase || self.direction < 0) {

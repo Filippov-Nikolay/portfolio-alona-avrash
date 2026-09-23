@@ -63,7 +63,9 @@ test("a Services category click is tracked and opens the matching filtered catal
         view.scrollTo(0, gridTop - contactOffset + revealDistance + 8);
         view.dispatchEvent(new Event("scroll"));
     });
-    await expect.poll(async () => uiUxCard.evaluate((card) => card.inert)).toBe(false);
+    await expect
+        .poll(async () => uiUxCard.evaluate((card) => (card as HTMLElement).inert))
+        .toBe(false);
     await expect(uiUxCard).toHaveCSS("pointer-events", "auto");
     await uiUxLink.hover();
     await expect(uiUxLink.locator("[data-service-approach]")).toHaveCSS("opacity", "0.7");

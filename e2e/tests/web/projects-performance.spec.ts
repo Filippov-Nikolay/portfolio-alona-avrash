@@ -30,7 +30,11 @@ test("project images are ready before the pinned animation enters the viewport",
         .poll(() =>
             images.evaluateAll(
                 (elements) =>
-                    elements.filter((image) => image.complete && image.naturalWidth > 0).length
+                    elements.filter(
+                        (image) =>
+                            (image as HTMLImageElement).complete &&
+                            (image as HTMLImageElement).naturalWidth > 0
+                    ).length
             )
         )
         .toBe(await images.count());

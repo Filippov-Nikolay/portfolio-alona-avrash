@@ -473,12 +473,6 @@ export function GalleryLightbox({
     });
 
     useEffect(() => {
-        if (phase !== "closing") return;
-        const id = window.setTimeout(onClose, CLOSE_TRANSITION.duration * 1000);
-        return () => window.clearTimeout(id);
-    }, [phase, onClose]);
-
-    useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (e.key === "Escape") requestCloseRef.current();
         };
@@ -486,17 +480,7 @@ export function GalleryLightbox({
         return () => document.removeEventListener("keydown", handler);
     }, []);
 
-    const toTransform = (rect: LightboxRect) => ({
-        x: rect.left - fillRect.left,
-        y: rect.top - fillRect.top,
-        scaleX: rect.width / fillRect.width,
-        scaleY: rect.height / fillRect.height,
-    });
-    const launchTransform = toTransform(launchRect);
-    const targetTransform =
-        phase === "closing"
-            ? toTransform(closeRect ?? launchRect)
-            : { x: 0, y: 0, scaleX: 1, scaleY: 1 };
+    const targetRect = phase === "closing" ? (closeRect ?? launchRect) : fillRect;
     const transitionSlot =
         slots[phase === "closing" ? closeSlotIndex : initialSlotIndex] ?? slots[0];
     const transitionAnchorIndex = phase === "closing" ? closeIndex : initialIndex;
@@ -504,23 +488,18 @@ export function GalleryLightbox({
     return (
         <m.div
             className={styles.lightbox}
-            style={{
-                top: fillRect.top,
-                left: fillRect.left,
-                width: fillRect.width,
-                height: fillRect.height,
-            }}
             initial={{
-                ...launchTransform,
+                ...launchRect,
                 borderRadius: TILE_RADIUS_PX,
             }}
             animate={{
-                ...targetTransform,
+                ...targetRect,
                 borderRadius: phase === "closing" ? TILE_RADIUS_PX : 0,
             }}
             transition={phase === "closing" ? CLOSE_TRANSITION : OPEN_TRANSITION}
             onAnimationComplete={() => {
                 if (phase === "opening") setPhase("open");
+                if (phase === "closing") onClose();
             }}
         >
             <button

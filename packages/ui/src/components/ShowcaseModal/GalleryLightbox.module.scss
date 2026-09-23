@@ -5,8 +5,7 @@
     z-index: 30;
     overflow: hidden;
     background: var(--accent-color-modal, #000);
-    transform-origin: 0 0;
-    will-change: transform, border-radius;
+    will-change: top, left, width, height, border-radius;
     contain: layout paint style;
     isolation: isolate;
     backface-visibility: hidden;

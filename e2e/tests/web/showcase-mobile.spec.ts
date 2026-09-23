@@ -46,7 +46,7 @@ test("mobile showcase keeps its full tab rule and close button visible while scr
     expect(Math.abs(afterScroll!.y - beforeScroll!.y)).toBeLessThanOrEqual(1);
 });
 
-test("mobile gallery lightbox keeps images warm and animates its frame with transforms", async ({
+test("mobile gallery lightbox preserves image geometry while opening and closing", async ({
     page,
 }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -69,26 +69,50 @@ test("mobile gallery lightbox keeps images warm and animates its frame with tran
             parentElement: { clientWidth: number } | null;
             ownerDocument: {
                 defaultView: {
-                    getComputedStyle: (node: unknown) => { willChange: string };
+                    getComputedStyle: (node: unknown) => {
+                        transform: string;
+                        willChange: string;
+                    };
                 } | null;
             };
         };
 
+        const style = target.ownerDocument.defaultView?.getComputedStyle(target);
+
         return {
             layoutWidth: target.offsetWidth,
             containerWidth: target.parentElement?.clientWidth ?? 0,
-            willChange: target.ownerDocument.defaultView?.getComputedStyle(target).willChange ?? "",
+            transform: style?.transform ?? "",
+            willChange: style?.willChange ?? "",
         };
     });
 
-    expect(openingFrame.layoutWidth).toBe(openingFrame.containerWidth);
-    expect(openingFrame.willChange).toContain("transform");
-    expect(openingFrame.willChange).not.toContain("width");
-    expect(openingFrame.willChange).not.toContain("height");
+    expect(openingFrame.layoutWidth).toBeLessThanOrEqual(openingFrame.containerWidth);
+    expect(openingFrame.transform).toBe("none");
+    expect(openingFrame.willChange).not.toContain("transform");
+    expect(openingFrame.willChange).toContain("width");
+    expect(openingFrame.willChange).toContain("height");
     expect(await firstTile.locator("img").count()).toBeGreaterThanOrEqual(tileImageCount);
     await expect(firstTile.locator('img:not([aria-hidden="true"])')).toHaveCount(1);
 
+    await page.waitForTimeout(700);
     await closeButtons.last().click();
+
+    await page.waitForTimeout(100);
+    const closingFrame = await lightbox.evaluate((element) => {
+        const view = element.ownerDocument.defaultView;
+        if (!view) throw new Error("Gallery lightbox window is unavailable");
+        const style = view.getComputedStyle(element);
+        const images = Array.from(element.querySelectorAll("img"));
+        return {
+            transform: style.transform,
+            imageFits: images.map((image) => view.getComputedStyle(image).objectFit),
+        };
+    });
+
+    expect(closingFrame.transform).toBe("none");
+    expect(closingFrame.imageFits).toContain("cover");
+    expect(closingFrame.imageFits).toContain("contain");
     await expect(closeButtons).toHaveCount(1);
     expect(await firstTile.locator("img").count()).toBeGreaterThanOrEqual(tileImageCount);
     await expect(firstTile.locator('img:not([aria-hidden="true"])')).toHaveCount(1);

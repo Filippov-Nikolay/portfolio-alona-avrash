@@ -18,6 +18,12 @@ test("mobile tools carousel uses native momentum and prepares peek images before
     await page.goto("/en");
 
     const section = page.locator("#tools");
+    const loadedToolPeekDuringHero = await page.evaluate(() =>
+        performance
+            .getEntriesByType("resource")
+            .some(({ name }) => name.includes("image-patelscience"))
+    );
+    expect(loadedToolPeekDuringHero).toBe(false);
     await page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)");
     await section.evaluate((element) => {
         const view = element.ownerDocument.defaultView!;

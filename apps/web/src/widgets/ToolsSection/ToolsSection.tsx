@@ -590,7 +590,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                         height={PEEK_IMAGE_SIZE}
                         sizes={`${PEEK_IMAGE_SIZE}px`}
                         quality={PEEK_IMAGE_QUALITY}
-                        loading="eager"
+                        loading="lazy"
                         fetchPriority="low"
                         className={styles.peekPreloaderImage}
                         onLoad={() => markPeekImageReady(src)}

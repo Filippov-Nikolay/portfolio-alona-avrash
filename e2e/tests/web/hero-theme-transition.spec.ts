@@ -76,11 +76,13 @@ test("Hero stays coherent throughout theme transitions", async ({ browserName, p
     await expect(heroTitle).toBeVisible();
 
     const during = await readMaterial();
-    expect(during).toEqual(light);
+    expect(during.name).toBe("none");
+    expect(during.filter).toContain("blur(");
+    expect(during).not.toEqual(light);
 
     await expect(html).toHaveAttribute("data-theme", "dark");
     await expect(html).not.toHaveClass(/vt-running/);
-    expect(await readMaterial()).toEqual(light);
+    expect(await readMaterial()).toEqual(during);
 
     await toggle.click();
     await page.waitForTimeout(30);

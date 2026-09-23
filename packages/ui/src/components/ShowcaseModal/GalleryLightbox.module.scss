@@ -136,6 +136,25 @@
     will-change: opacity;
 }
 
+.stackStage,
+.transitionStage {
+    position: absolute;
+    inset: 0;
+}
+
+.stackStage {
+    z-index: 1;
+
+    &[data-preparing] {
+        pointer-events: none;
+    }
+}
+
+.transitionStage {
+    z-index: 2;
+    pointer-events: none;
+}
+
 .transitionPair,
 .transitionImage {
     position: absolute;

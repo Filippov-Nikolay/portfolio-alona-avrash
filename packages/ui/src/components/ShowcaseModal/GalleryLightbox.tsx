@@ -82,22 +82,18 @@ function FitMorphImage({
 
     return (
         <div className={styles.fitMorph}>
+            <div className={styles.fitLayer} data-fit-layer="contain">
+                <FramedImage src={src} alt={alt} eager />
+            </div>
             <m.div
                 className={styles.fitLayer}
+                data-fit-layer="cover"
                 initial={{ opacity: opening ? 1 : 0 }}
                 animate={{ opacity: opening ? 0 : 1 }}
                 transition={transition}
                 aria-hidden="true"
             >
                 <FramedImage src={src} alt="" eager fit="cover" />
-            </m.div>
-            <m.div
-                className={styles.fitLayer}
-                initial={{ opacity: opening ? 0 : 1 }}
-                animate={{ opacity: opening ? 1 : 0 }}
-                transition={transition}
-            >
-                <FramedImage src={src} alt={alt} eager />
             </m.div>
         </div>
     );
@@ -242,17 +238,17 @@ function TransitionSlotContent({
     );
 }
 
-function SlotContent({ slot }: { slot: GallerySlot }) {
+function SlotContent({ slot, eager = false }: { slot: GallerySlot; eager?: boolean }) {
     if (slot.type === "single") {
         const { image } = slot.images[0];
-        return <FramedImage src={image.src} alt={image.alt} />;
+        return <FramedImage src={image.src} alt={image.alt} eager={eager} />;
     }
 
     return (
         <div className={slot.type === "row" ? styles.pairRow : styles.pairStack}>
             {slot.images.map(({ image, originalIndex }) => (
                 <div key={originalIndex} className={styles.pairHalf}>
-                    <FramedImage src={image.src} alt={image.alt} />
+                    <FramedImage src={image.src} alt={image.alt} eager={eager} />
                 </div>
             ))}
         </div>
@@ -273,12 +269,14 @@ function StackSlot({
     total,
     scrollYProgress,
     render,
+    eager,
 }: {
     slot: GallerySlot;
     index: number;
     total: number;
     scrollYProgress: MotionValue<number>;
     render: boolean;
+    eager: boolean;
 }) {
     const scrollSegments = Math.max(total - 1, 1);
     const ownSlotStart = index / scrollSegments;
@@ -292,7 +290,7 @@ function StackSlot({
     return (
         <div className={styles.slot}>
             <m.div className={styles.sticky} style={{ scale, opacity, zIndex: index + 1 }}>
-                {render && <SlotContent slot={slot} />}
+                {render && <SlotContent slot={slot} eager={eager} />}
             </m.div>
         </div>
     );
@@ -350,10 +348,12 @@ function LightboxStack({
     slots,
     initialSlotIndex,
     scrollRef,
+    preparing = false,
 }: {
     slots: GallerySlot[];
     initialSlotIndex: number;
     scrollRef: React.RefObject<HTMLDivElement | null>;
+    preparing?: boolean;
 }) {
     const total = slots.length;
     const { scrollYProgress } = useScroll({ container: scrollRef });
@@ -390,12 +390,13 @@ function LightboxStack({
                         index={index}
                         total={total}
                         scrollYProgress={scrollYProgress}
-                        render={Math.abs(index - centerIndex) <= RENDER_WINDOW}
+                        render={Math.abs(index - centerIndex) <= (preparing ? 0 : RENDER_WINDOW)}
+                        eager={index === initialSlotIndex}
                     />
                 ))}
             </div>
 
-            {total > 1 && (
+            {!preparing && total > 1 && (
                 <m.div
                     className={styles.progress}
                     data-compact={total > 22 || undefined}
@@ -511,25 +512,38 @@ export function GalleryLightbox({
                 <CloseIcon className={styles.closeIcon} />
             </button>
 
-            {phase === "open" ? (
-                <LightboxStack
-                    slots={slots}
-                    initialSlotIndex={initialSlotIndex}
-                    scrollRef={scrollRef}
-                />
-            ) : transitionSlot ? (
-                <TransitionSlotContent
-                    slot={transitionSlot}
-                    anchorIndex={transitionAnchorIndex}
-                    phase={phase}
-                    transitionSrc={transitionSrc}
-                />
-            ) : (
-                <FramedImage
-                    src={images[transitionAnchorIndex].src}
-                    alt={images[transitionAnchorIndex].alt}
-                    eager
-                />
+            {phase !== "closing" && (
+                <div
+                    className={styles.stackStage}
+                    data-preparing={phase === "opening" || undefined}
+                    aria-hidden={phase === "opening" || undefined}
+                >
+                    <LightboxStack
+                        slots={slots}
+                        initialSlotIndex={initialSlotIndex}
+                        scrollRef={scrollRef}
+                        preparing={phase === "opening"}
+                    />
+                </div>
+            )}
+
+            {phase !== "open" && (
+                <div className={styles.transitionStage}>
+                    {transitionSlot ? (
+                        <TransitionSlotContent
+                            slot={transitionSlot}
+                            anchorIndex={transitionAnchorIndex}
+                            phase={phase}
+                            transitionSrc={transitionSrc}
+                        />
+                    ) : (
+                        <FramedImage
+                            src={images[transitionAnchorIndex].src}
+                            alt={images[transitionAnchorIndex].alt}
+                            eager
+                        />
+                    )}
+                </div>
             )}
         </m.div>
     );

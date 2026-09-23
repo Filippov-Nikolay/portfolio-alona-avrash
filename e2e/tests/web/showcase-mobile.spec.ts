@@ -95,7 +95,13 @@ test("mobile gallery lightbox preserves image geometry while opening and closing
     expect(await firstTile.locator("img").count()).toBeGreaterThanOrEqual(tileImageCount);
     await expect(firstTile.locator('img:not([aria-hidden="true"])')).toHaveCount(1);
 
+    const containLayer = lightbox.locator('[data-fit-layer="contain"]');
+    await expect(containLayer).toHaveCSS("opacity", "1");
+    await expect(lightbox.locator('[data-preparing="true"]')).toHaveCount(1);
+
     await page.waitForTimeout(700);
+    await expect(lightbox.locator('[data-fit-layer="contain"]')).toHaveCount(0);
+    await expect(lightbox.locator('[data-preparing="true"]')).toHaveCount(0);
     await closeButtons.last().click();
 
     await page.waitForTimeout(100);

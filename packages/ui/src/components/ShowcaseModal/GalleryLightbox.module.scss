@@ -4,11 +4,28 @@
     position: absolute;
     z-index: 30;
     overflow: hidden;
+}
+
+.frame {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
     background: var(--accent-color-modal, #000);
-    will-change: top, left, width, height, border-radius;
-    contain: layout paint style;
-    isolation: isolate;
-    backface-visibility: hidden;
+    transform-origin: 0 0;
+    transform: translate3d(0, 0, 0) scale(1, 1);
+}
+
+.slot,
+.imageLayer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+.slot {
+    transform-origin: center center;
+}
+.imageLayer img {
+    display: block;
 }
 
 .close {
@@ -27,19 +44,7 @@
     justify-content: center;
     padding: 0;
     cursor: pointer;
-    transition:
-        background 0.2s ease,
-        border-color 0.2s ease;
-
-    @include can-hover {
-        &:hover {
-            background: rgba(255 255 255 / 0.16);
-            border-color: #fff;
-        }
-    }
-
     @include focus-ring;
-
     @include respond-to("mobile") {
         top: 14px;
         right: 14px;
@@ -47,7 +52,6 @@
         height: 32px;
     }
 }
-
 .closeIcon {
     width: 16px;
     height: 16px;
@@ -57,194 +61,66 @@
     position: absolute;
     bottom: 20px;
     left: 50%;
+    transform: translateX(-50%);
     z-index: 10;
     display: flex;
-    max-width: calc(100% - 96px);
+    max-width: calc(100% - 56px);
     align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 8px 10px;
+    gap: 4px;
+    padding: 7px 9px;
     border: 1px solid rgba(255 255 255 / 0.12);
     border-radius: 999px;
-    background: rgba(0 0 0 / 0.3);
-    box-shadow: 0 8px 28px rgba(0 0 0 / 0.18);
-    backdrop-filter: blur(10px);
-
-    &[data-compact] {
-        gap: 3px;
-    }
-
-    @include respond-to("mobile") {
-        bottom: 14px;
-        max-width: calc(100% - 56px);
-        gap: 4px;
-        padding: 7px 9px;
-
-        &[data-compact] {
-            gap: 3px;
-        }
-    }
+    background: rgba(0 0 0 / 0.65);
 }
-
 .progressSegment {
-    flex: 0 0 auto;
-    height: 3px;
+    flex: 0 1 16px;
+    width: 16px;
+    min-width: 3px;
+    height: 12px;
     padding: 0;
     border: 0;
-    border-radius: 999px;
-    outline: none;
-    background: #fff;
+    background: transparent;
     cursor: pointer;
-    will-change: width, opacity;
-
-    &:focus-visible {
-        box-shadow: 0 0 0 3px rgba(255 255 255 / 0.42);
+    @include focus-ring;
+    &::after {
+        content: "";
+        display: block;
+        height: 3px;
+        border-radius: 999px;
+        background: #fff;
+        opacity: 0.34;
+        transform: scaleX(0.4);
+        transition:
+            transform 0.18s ease,
+            opacity 0.18s ease;
     }
-
-    @include can-hover {
-        &:hover {
-            opacity: 1 !important;
+    &[aria-current]::after {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+    @media (prefers-reduced-motion: reduce) {
+        &::after {
+            transition: none;
         }
     }
 }
-
-.imageForeground {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    display: block;
-    backface-visibility: hidden;
-}
-
-.imageCover {
-    object-fit: cover;
-}
-
-.fitMorph,
-.fitLayer {
-    position: absolute;
-    inset: 0;
-}
-
-.fitMorph {
-    overflow: hidden;
-}
-
-.fitLayer {
-    will-change: opacity;
-}
-
-.stackStage,
-.transitionStage {
-    position: absolute;
-    inset: 0;
-}
-
-.stackStage {
-    z-index: 1;
-
-    &[data-preparing] {
-        pointer-events: none;
-    }
-}
-
-.transitionStage {
-    z-index: 2;
-    pointer-events: none;
-}
-
-.transitionPair,
-.transitionImage {
-    position: absolute;
-    inset: 0;
-}
-
-.transitionPair {
-    overflow: hidden;
-}
-
-.transitionPanel {
-    position: absolute;
-    overflow: hidden;
-    background: var(--accent-color-modal, #000);
-    will-change: top, left, width, height;
-}
-
-.transitionImage {
-    will-change: opacity;
-}
-
-.transitionDivider {
-    position: absolute;
-    z-index: 1;
-    background: var(--accent-color-modal, #000);
-    pointer-events: none;
-
-    &[data-orientation="row"] {
-        top: 0;
-        bottom: 0;
-        left: 50%;
-        width: 2px;
-        transform: translateX(-1px);
-    }
-
-    &[data-orientation="stack"] {
-        right: 0;
-        bottom: 50%;
-        left: 0;
-        height: 2px;
-        transform: translateY(1px);
-    }
-}
-
 .scrollArea {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    inset: 0;
+    z-index: 5;
     overflow-y: auto;
     overscroll-behavior: none;
     scrollbar-width: none;
-
     &::-webkit-scrollbar {
         display: none;
     }
 }
-
-.slot {
-    height: 100%;
-}
-
-.sticky {
-    position: sticky;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    will-change: transform, opacity;
-}
-
-.pairRow {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    gap: 2px;
-}
-
-.pairStack {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    gap: 2px;
-}
-
-.pairHalf {
-    position: relative;
-    flex: 1 1 50%;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
+.lightbox[data-phase="closing"],
+.lightbox[data-phase="preparing-close"] {
+    .progress {
+        visibility: hidden;
+    }
+    .scrollArea {
+        pointer-events: none;
+    }
 }

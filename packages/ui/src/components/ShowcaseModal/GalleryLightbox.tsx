@@ -1,550 +1,415 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import {
-    m,
-    useMotionValueEvent,
-    useReducedMotion,
-    useScroll,
-    useSpring,
-    useTransform,
-    type MotionValue,
-    type TargetAndTransition,
-} from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import type { ShowcaseGalleryImage } from "../../types/showcase";
 import { CloseIcon } from "../../icons";
-import { computeGallerySlots, type GallerySlot, type GallerySlotImage } from "./gallerySlots";
+import { computeGallerySlots, type GallerySlot } from "./gallerySlots";
+import { GalleryImages } from "./galleryImages";
+import { fitImage, flipFrames, type LightboxRect } from "./lightboxGeometry";
 import styles from "./GalleryLightbox.module.scss";
 
-export interface LightboxRect {
-    top: number;
-    left: number;
-    width: number;
-    height: number;
-}
+export type { LightboxRect } from "./lightboxGeometry";
 
 interface GalleryLightboxProps {
     images: ShowcaseGalleryImage[];
+    imagePool: GalleryImages;
     initialIndex: number;
     launchRect: LightboxRect;
     fillRect: LightboxRect;
-    transitionSrc?: string;
-
-    getCloseRect: (index: number) => LightboxRect | null;
-    onClose: () => void;
+    prepareClose: (index: number) => Promise<LightboxRect | null>;
+    onOpened: () => void;
+    onClose: (index: number) => void;
 }
 
-const TILE_RADIUS_PX = 12;
-const OPEN_TRANSITION = { duration: 0.64, ease: [0.22, 1, 0.36, 1] as const };
-export const CLOSE_TRANSITION = { duration: 0.52, ease: [0.65, 0, 0.25, 1] as const };
-const RENDER_WINDOW = 2;
-const PROGRESS_SPRING = { stiffness: 460, damping: 38, mass: 0.45 };
+const OPEN_DURATION = 640;
+const CLOSE_DURATION = 520;
+const RENDER_WINDOW = 1;
 
-function FramedImage({
-    src,
-    alt,
-    eager = false,
-    fit = "contain",
-}: {
-    src: string;
-    alt: string;
-    eager?: boolean;
-    fit?: "contain" | "cover";
-}) {
-    return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-            src={src}
-            alt={alt}
-            className={`${styles.imageForeground} ${fit === "cover" ? styles.imageCover : ""}`}
-            draggable={false}
-            loading={eager ? "eager" : "lazy"}
-            decoding="async"
-        />
-    );
-}
-
-function FitMorphImage({
-    src,
-    alt,
-    phase,
-}: {
-    src: string;
-    alt: string;
-    phase: "opening" | "closing";
-}) {
-    const opening = phase === "opening";
-    const transition = {
-        duration: opening ? 0.34 : 0.3,
-        delay: opening ? 0.1 : 0.08,
-        ease: [0.4, 0, 0.2, 1] as const,
-    };
-
-    return (
-        <div className={styles.fitMorph}>
-            <div className={styles.fitLayer} data-fit-layer="contain">
-                <FramedImage src={src} alt={alt} eager />
-            </div>
-            <m.div
-                className={styles.fitLayer}
-                data-fit-layer="cover"
-                initial={{ opacity: opening ? 1 : 0 }}
-                animate={{ opacity: opening ? 0 : 1 }}
-                transition={transition}
-                aria-hidden="true"
-            >
-                <FramedImage src={src} alt="" eager fit="cover" />
-            </m.div>
-        </div>
-    );
-}
-
-const FULL_FRAME: TargetAndTransition = {
-    top: "0%",
-    left: "0%",
-    width: "100%",
-    height: "100%",
-};
-
-function getPairFrame(type: "row" | "stack", position: number): TargetAndTransition {
-    if (type === "row") {
-        return {
-            top: "0%",
-            left: position === 0 ? "0%" : "50%",
-            width: "50%",
-            height: "100%",
-        };
+function panelRect(slot: GallerySlot, position: number, viewport: LightboxRect): LightboxRect {
+    if (slot.type === "single") return viewport;
+    const gap = 2;
+    if (slot.type === "row") {
+        const width = (viewport.width - gap) / 2;
+        return { ...viewport, left: viewport.left + position * (width + gap), width };
     }
-
-    return {
-        top: position === 0 ? "0%" : "50%",
-        left: "0%",
-        width: "100%",
-        height: "50%",
-    };
+    const height = (viewport.height - gap) / 2;
+    return { ...viewport, top: viewport.top + position * (height + gap), height };
 }
 
-function getCollapsedFrame(type: "row" | "stack", position: number): TargetAndTransition {
-    if (type === "row") {
-        return {
-            top: "0%",
-            left: position === 0 ? "0%" : "100%",
-            width: "0%",
-            height: "100%",
-        };
-    }
-
-    return {
-        top: position === 0 ? "0%" : "100%",
-        left: "0%",
-        width: "100%",
-        height: "0%",
-    };
-}
-
-function TransitionSlotContent({
-    slot,
-    anchorIndex,
-    phase,
-    transitionSrc,
-}: {
-    slot: GallerySlot;
-    anchorIndex: number;
-    phase: "opening" | "closing";
-    transitionSrc?: string;
-}) {
-    if (slot.type === "single") {
-        const { image } = slot.images[0];
-        return (
-            <FitMorphImage
-                src={phase === "opening" ? (transitionSrc ?? image.src) : image.src}
-                alt={image.alt}
-                phase={phase}
-            />
-        );
-    }
-
-    const anchorPosition = Math.max(
-        0,
-        slot.images.findIndex(({ originalIndex }) => originalIndex === anchorIndex)
-    );
-    const opening = phase === "opening";
-
-    return (
-        <div className={styles.transitionPair}>
-            {slot.images.map(({ image, originalIndex }, position) => {
-                const anchor = position === anchorPosition;
-                const pairFrame = getPairFrame(slot.type, position);
-                const hiddenFrame = anchor ? FULL_FRAME : getCollapsedFrame(slot.type, position);
-
-                return (
-                    <m.div
-                        key={originalIndex}
-                        className={styles.transitionPanel}
-                        initial={opening ? hiddenFrame : pairFrame}
-                        animate={opening ? pairFrame : hiddenFrame}
-                        transition={
-                            opening
-                                ? {
-                                      duration: anchor ? 0.5 : 0.46,
-                                      delay: anchor ? 0.08 : 0.12,
-                                      ease: [0.22, 1, 0.36, 1],
-                                  }
-                                : {
-                                      duration: anchor ? 0.36 : 0.28,
-                                      ease: [0.65, 0, 0.25, 1],
-                                  }
-                        }
-                    >
-                        <m.div
-                            className={styles.transitionImage}
-                            initial={opening && !anchor ? { opacity: 0 } : { opacity: 1 }}
-                            animate={opening || anchor ? { opacity: 1 } : { opacity: 0 }}
-                            transition={
-                                opening
-                                    ? { duration: 0.3, delay: anchor ? 0 : 0.16 }
-                                    : { duration: anchor ? 0 : 0.2 }
-                            }
-                        >
-                            {anchor ? (
-                                <FitMorphImage
-                                    src={
-                                        phase === "opening"
-                                            ? (transitionSrc ?? image.src)
-                                            : image.src
-                                    }
-                                    alt={image.alt}
-                                    phase={phase}
-                                />
-                            ) : (
-                                <FramedImage src={image.src} alt={image.alt} eager />
-                            )}
-                        </m.div>
-                    </m.div>
-                );
-            })}
-            <m.div
-                className={styles.transitionDivider}
-                data-orientation={slot.type}
-                initial={{ opacity: opening ? 0 : 1 }}
-                animate={{ opacity: opening ? 1 : 0 }}
-                transition={
-                    opening
-                        ? { duration: 0.24, delay: 0.32, ease: "easeOut" }
-                        : { duration: 0.16, ease: "easeOut" }
-                }
-            />
-        </div>
-    );
-}
-
-function SlotContent({ slot, eager = false }: { slot: GallerySlot; eager?: boolean }) {
-    if (slot.type === "single") {
-        const { image } = slot.images[0];
-        return <FramedImage src={image.src} alt={image.alt} eager={eager} />;
-    }
-
-    return (
-        <div className={slot.type === "row" ? styles.pairRow : styles.pairStack}>
-            {slot.images.map(({ image, originalIndex }) => (
-                <div key={originalIndex} className={styles.pairHalf}>
-                    <FramedImage src={image.src} alt={image.alt} eager={eager} />
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function slotKey(slot: GallerySlot) {
-    return slot.images.map((slotImage) => slotImage.image.src).join("|");
-}
-
-function slotLabel(slot: GallerySlot) {
-    return slot.images.map((slotImage) => slotImage.image.alt).join(" / ");
-}
-
-function StackSlot({
-    slot,
+function ImageLayer({
     index,
-    total,
-    scrollYProgress,
-    render,
-    eager,
+    imagePool,
+    rect,
+    viewport,
 }: {
-    slot: GallerySlot;
     index: number;
-    total: number;
-    scrollYProgress: MotionValue<number>;
-    render: boolean;
-    eager: boolean;
+    imagePool: GalleryImages;
+    rect: LightboxRect;
+    viewport: LightboxRect;
 }) {
-    const scrollSegments = Math.max(total - 1, 1);
-    const ownSlotStart = index / scrollSegments;
-    const ownSlotEnd = (index + 1) / scrollSegments;
-    const covered = useTransform(scrollYProgress, [ownSlotStart, ownSlotEnd], [0, 1], {
-        clamp: true,
-    });
-    const scale = useTransform(covered, [0, 1], [1, 0.88]);
-    const opacity = useTransform(covered, [0, 1], [1, 0.4]);
-
-    return (
-        <div className={styles.slot}>
-            <m.div className={styles.sticky} style={{ scale, opacity, zIndex: index + 1 }}>
-                {render && <SlotContent slot={slot} eager={eager} />}
-            </m.div>
-        </div>
-    );
-}
-
-function ProgressSegment({
-    slot,
-    index,
-    total,
-    active,
-    scrollYProgress,
-    onSelect,
-}: {
-    slot: GallerySlot;
-    index: number;
-    total: number;
-    active: boolean;
-    scrollYProgress: MotionValue<number>;
-    onSelect: () => void;
-}) {
-    const reduceMotion = useReducedMotion();
-    const compact = total > 22;
-    const shortWidth = compact ? 6 : total > 16 ? 7 : 9;
-    const longWidth = compact ? 24 : total > 16 ? 28 : 32;
-
-    const targetWidth = useTransform(scrollYProgress, (progress) => {
-        const visualIndex = progress * Math.max(total - 1, 1);
-        const proximity = Math.max(0, 1 - Math.abs(visualIndex - index));
-        return shortWidth + (longWidth - shortWidth) * proximity;
-    });
-    const targetOpacity = useTransform(scrollYProgress, (progress) => {
-        const visualIndex = progress * Math.max(total - 1, 1);
-        const proximity = Math.max(0, 1 - Math.abs(visualIndex - index));
-        return 0.34 + 0.66 * proximity;
-    });
-    const springWidth = useSpring(targetWidth, PROGRESS_SPRING);
-    const springOpacity = useSpring(targetOpacity, PROGRESS_SPRING);
-
-    return (
-        <m.button
-            type="button"
-            className={styles.progressSegment}
-            style={{
-                width: reduceMotion ? targetWidth : springWidth,
-                opacity: reduceMotion ? targetOpacity : springOpacity,
-            }}
-            onClick={onSelect}
-            aria-label={slotLabel(slot)}
-            aria-current={active ? "true" : undefined}
-        />
-    );
-}
-
-function LightboxStack({
-    slots,
-    initialSlotIndex,
-    scrollRef,
-    preparing = false,
-}: {
-    slots: GallerySlot[];
-    initialSlotIndex: number;
-    scrollRef: React.RefObject<HTMLDivElement | null>;
-    preparing?: boolean;
-}) {
-    const total = slots.length;
-    const { scrollYProgress } = useScroll({ container: scrollRef });
-    const [centerIndex, setCenterIndex] = useState(initialSlotIndex);
-    const reduceMotion = useReducedMotion();
-
-    useMotionValueEvent(scrollYProgress, "change", (v) => {
-        const nearest = Math.min(total - 1, Math.max(0, Math.round(v * (total - 1))));
-        setCenterIndex((prev) => (prev === nearest ? prev : nearest));
-    });
-
+    const hostRef = useRef<HTMLDivElement>(null);
+    const { left, top, width, height } = rect;
     useLayoutEffect(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-        el.scrollTop = initialSlotIndex * el.clientHeight;
-    }, [initialSlotIndex, scrollRef]);
-
-    const scrollToSlot = (index: number) => {
-        const el = scrollRef.current;
-        if (!el) return;
-        el.scrollTo({
-            top: index * el.clientHeight,
-            behavior: reduceMotion ? "auto" : "smooth",
-        });
-    };
-
-    return (
-        <>
-            <div ref={scrollRef} className={styles.scrollArea}>
-                {slots.map((slot, index) => (
-                    <StackSlot
-                        key={slotKey(slot)}
-                        slot={slot}
-                        index={index}
-                        total={total}
-                        scrollYProgress={scrollYProgress}
-                        render={Math.abs(index - centerIndex) <= (preparing ? 0 : RENDER_WINDOW)}
-                        eager={index === initialSlotIndex}
-                    />
-                ))}
-            </div>
-
-            {!preparing && total > 1 && (
-                <m.div
-                    className={styles.progress}
-                    data-compact={total > 22 || undefined}
-                    initial={reduceMotion ? false : { opacity: 0, x: "-50%", y: 8 }}
-                    animate={{ opacity: 1, x: "-50%", y: 0 }}
-                    transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-                    role="group"
-                    aria-label="Gallery images"
-                >
-                    {slots.map((slot, index) => (
-                        <ProgressSegment
-                            key={slotKey(slot)}
-                            slot={slot}
-                            index={index}
-                            total={total}
-                            active={index === centerIndex}
-                            scrollYProgress={scrollYProgress}
-                            onSelect={() => scrollToSlot(index)}
-                        />
-                    ))}
-                </m.div>
-            )}
-        </>
-    );
-}
-
-function findSlotIndex(slots: GallerySlot[], originalIndex: number) {
-    const index = slots.findIndex((slot) =>
-        slot.images.some((slotImage: GallerySlotImage) => slotImage.originalIndex === originalIndex)
-    );
-    return index === -1 ? 0 : index;
+        const host = hostRef.current!;
+        let cancelled = false;
+        const mount = () => {
+            if (cancelled) return;
+            const image = imagePool.take(index, host);
+            const fit = fitImage(image.naturalWidth, image.naturalHeight, {
+                left,
+                top,
+                width,
+                height,
+            });
+            Object.assign(image.style, {
+                position: "absolute",
+                left: "0",
+                top: "0",
+                maxWidth: "none",
+                width: `${fit.width}px`,
+                height: `${fit.height}px`,
+                transformOrigin: "0 0",
+                objectFit: "fill",
+                transform: `translate3d(${fit.left - viewport.left}px, ${fit.top - viewport.top}px, 0) scale(1, 1)`,
+            });
+        };
+        if (imagePool.get(index).decoded) mount();
+        else
+            void imagePool
+                .decode(index)
+                .then(mount)
+                .catch(() => {
+                    if (!cancelled) host.textContent = imagePool.get(index).element.alt;
+                });
+        return () => {
+            cancelled = true;
+            imagePool.release(index);
+        };
+    }, [index, imagePool, left, top, width, height, viewport.left, viewport.top]);
+    return <div ref={hostRef} className={styles.imageLayer} data-image-layer={index} />;
 }
 
 export function GalleryLightbox({
     images,
+    imagePool,
     initialIndex,
     launchRect,
     fillRect,
-    transitionSrc,
-    getCloseRect,
+    prepareClose,
+    onOpened,
     onClose,
 }: GalleryLightboxProps) {
-    const [phase, setPhase] = useState<"opening" | "open" | "closing">("opening");
-    const [closeRect, setCloseRect] = useState<LightboxRect | null>(null);
-    const [closeIndex, setCloseIndex] = useState(initialIndex);
-    const [closeSlotIndex, setCloseSlotIndex] = useState(0);
-    const scrollRef = useRef<HTMLDivElement>(null);
-
     const slots = useMemo(() => computeGallerySlots(images), [images]);
-    const initialSlotIndex = useMemo(
-        () => findSlotIndex(slots, initialIndex),
-        [slots, initialIndex]
+    const initialSlot = slots.findIndex((slot) =>
+        slot.images.some((image) => image.originalIndex === initialIndex)
     );
-
-    const requestClose = () => {
-        const el = scrollRef.current;
-        const slotIndex = el
-            ? Math.min(slots.length - 1, Math.max(0, Math.round(el.scrollTop / el.clientHeight)))
-            : initialSlotIndex;
-        const slot = slots[slotIndex];
-        const index =
-            slot?.images.find(({ originalIndex }) => originalIndex === initialIndex)
-                ?.originalIndex ??
-            slot?.images[0]?.originalIndex ??
-            initialIndex;
-        setCloseSlotIndex(slotIndex);
-        setCloseIndex(index);
-        setCloseRect(getCloseRect(index) ?? launchRect);
-        setPhase("closing");
-    };
-
-    const requestCloseRef = useRef(requestClose);
-    useEffect(() => {
-        requestCloseRef.current = requestClose;
+    const [viewport, setViewport] = useState(fillRect);
+    const [phase, setPhase] = useState<"opening" | "open" | "preparing-close" | "closing">(
+        "opening"
+    );
+    const [ready, setReady] = useState(false);
+    const [center, setCenter] = useState(initialSlot);
+    const frameRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const rootRef = useRef<HTMLDivElement>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const animations = useRef<Animation[]>([]);
+    const deferredFrame = useRef(0);
+    const closing = useRef(false);
+    const alive = useRef(true);
+    const reduceMotion = useReducedMotion();
+    const callbacks = useRef({ prepareClose, onOpened, onClose });
+    useLayoutEffect(() => {
+        callbacks.current = { prepareClose, onOpened, onClose };
     });
 
+    useLayoutEffect(() => {
+        alive.current = true;
+        const frame = frameRef.current!;
+        const image = imagePool.get(initialIndex).element;
+        const slot = slots[initialSlot];
+        const position = slot.images.findIndex((item) => item.originalIndex === initialIndex);
+        const destination = fitImage(
+            image.naturalWidth,
+            image.naturalHeight,
+            panelRect(slot, position, viewport)
+        );
+        const source = fitImage(image.naturalWidth, image.naturalHeight, launchRect, true);
+        const keyframes = flipFrames(
+            viewport,
+            launchRect,
+            viewport,
+            source,
+            destination,
+            destination.width,
+            destination.height
+        );
+        const options = {
+            duration: reduceMotion ? 0 : OPEN_DURATION,
+            easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+            fill: "both" as const,
+        };
+        const frameAnimation = frame.animate(keyframes.frame, options);
+        const imageAnimation = image.animate(keyframes.image, options);
+        animations.current = [frameAnimation, imageAnimation];
+        closeButtonRef.current?.focus({ preventScroll: true });
+        void Promise.all(animations.current.map((animation) => animation.finished))
+            .then(() => {
+                if (!alive.current || closing.current) return;
+                // CSS matches the endpoints. Keep the same frame, host and image,
+                // then leave a paint between the transition and gallery initialization.
+                frameAnimation.cancel();
+                imageAnimation.cancel();
+                setPhase("open");
+                deferredFrame.current = requestAnimationFrame(() => {
+                    deferredFrame.current = requestAnimationFrame(() => {
+                        if (closing.current) return;
+                        setReady(true);
+                        callbacks.current.onOpened();
+                    });
+                });
+            })
+            .catch(() => {
+                /* Cancelled by close or unmount. */
+            });
+        return () => {
+            alive.current = false;
+            cancelAnimationFrame(deferredFrame.current);
+            animations.current.forEach((animation) => animation.cancel());
+        };
+        // The entrance uses a snapshot of the source and launch geometry.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useLayoutEffect(() => {
+        if (ready && scrollRef.current) scrollRef.current.scrollTop = center * viewport.height;
+        // Preserve the current slot when the viewport resizes; normal scrolling
+        // must not snap whenever center changes.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ready, viewport.height]);
+
     useEffect(() => {
-        const handler = (e: KeyboardEvent) => {
-            if (e.key === "Escape") requestCloseRef.current();
+        if (phase !== "open") return;
+        const modal = rootRef.current?.parentElement;
+        if (!modal) return;
+        const observer = new ResizeObserver(() => {
+            if (closing.current) return;
+            const width = modal.clientWidth;
+            const height = modal.clientHeight;
+            setViewport((previous) =>
+                previous.width === width && previous.height === height
+                    ? previous
+                    : { ...previous, width, height }
+            );
+        });
+        observer.observe(modal);
+        return () => observer.disconnect();
+    }, [phase]);
+
+    const updateScroll = () => {
+        if (closing.current || !scrollRef.current) return;
+        const position = scrollRef.current.scrollTop / viewport.height;
+        const nearest = Math.min(slots.length - 1, Math.max(0, Math.round(position)));
+        setCenter((previous) => (previous === nearest ? previous : nearest));
+        frameRef.current?.querySelectorAll<HTMLElement>("[data-slot]").forEach((layer) => {
+            const index = Number(layer.dataset.slot);
+            const covered = Math.min(1, Math.max(0, position - index));
+            layer.style.transform = `translate3d(0, ${Math.max(0, index - position) * viewport.height}px, 0) scale(${1 - covered * 0.12})`;
+            layer.style.visibility = Math.abs(index - position) <= 1.01 ? "visible" : "hidden";
+        });
+    };
+    useLayoutEffect(() => {
+        if (ready) updateScroll();
+    });
+
+    const requestClose = async () => {
+        if (closing.current) return;
+        closing.current = true;
+        cancelAnimationFrame(deferredFrame.current);
+        setPhase("preparing-close");
+        // Interrupted opening keeps its current compositor state while the
+        // destination tile is prepared, before any closing animation starts.
+        animations.current.forEach((animation) => {
+            if (animation.playState === "running") animation.pause();
+        });
+        const slotIndex =
+            ready && scrollRef.current
+                ? Math.min(
+                      slots.length - 1,
+                      Math.max(0, Math.round(scrollRef.current.scrollTop / viewport.height))
+                  )
+                : initialSlot;
+        const slot = slots[slotIndex];
+        const index =
+            slot.images.find((item) => item.originalIndex === initialIndex)?.originalIndex ??
+            slot.images[0].originalIndex;
+        const target = (await callbacks.current.prepareClose(index)) ?? launchRect;
+        if (!alive.current) return;
+        const frame = frameRef.current!;
+        const image = imagePool.get(index).element;
+        if (!frame.contains(image)) {
+            try {
+                await imagePool.decode(index);
+            } catch {
+                callbacks.current.onClose(index);
+                return;
+            }
+            await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+            if (!alive.current) return;
+        }
+        if (!frame.contains(image)) {
+            callbacks.current.onClose(index);
+            return;
+        }
+        const rootBounds = rootRef.current!.getBoundingClientRect();
+        const relative = (rect: DOMRect): LightboxRect => ({
+            left: rect.left - rootBounds.left + viewport.left,
+            top: rect.top - rootBounds.top + viewport.top,
+            width: rect.width,
+            height: rect.height,
+        });
+        const fromFrame = relative(frame.getBoundingClientRect());
+        const fromImage = relative(image.getBoundingClientRect());
+        const width = parseFloat(image.style.width);
+        const height = parseFloat(image.style.height);
+        animations.current.forEach((animation) => animation.cancel());
+        frame.querySelectorAll<HTMLElement>("[data-slot]").forEach((layer) => {
+            layer.style.transform = "none";
+            layer.style.visibility =
+                Number(layer.dataset.slot) === slotIndex ? "visible" : "hidden";
+        });
+        frame.querySelectorAll<HTMLElement>("[data-image-layer]").forEach((layer) => {
+            layer.style.visibility =
+                Number(layer.dataset.imageLayer) === index ? "visible" : "hidden";
+        });
+        const destination = fitImage(image.naturalWidth, image.naturalHeight, target, true);
+        const keyframes = flipFrames(
+            viewport,
+            fromFrame,
+            target,
+            fromImage,
+            destination,
+            width,
+            height
+        );
+        const options = {
+            duration: reduceMotion ? 0 : CLOSE_DURATION,
+            easing: "cubic-bezier(0.65, 0, 0.25, 1)",
+            fill: "both" as const,
+        };
+        animations.current = [
+            frame.animate(keyframes.frame, options),
+            image.animate(keyframes.image, options),
+        ];
+        setPhase("closing");
+        void Promise.all(animations.current.map((animation) => animation.finished))
+            .then(() => {
+                if (alive.current) callbacks.current.onClose(index);
+            })
+            .catch(() => {
+                /* Unmounted. */
+            });
+    };
+    const closeRef = useRef(requestClose);
+    useLayoutEffect(() => {
+        closeRef.current = requestClose;
+    });
+    useEffect(() => {
+        const handler = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                event.preventDefault();
+                void closeRef.current();
+            }
         };
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
     }, []);
 
-    const targetRect = phase === "closing" ? (closeRect ?? launchRect) : fillRect;
-    const transitionSlot =
-        slots[phase === "closing" ? closeSlotIndex : initialSlotIndex] ?? slots[0];
-    const transitionAnchorIndex = phase === "closing" ? closeIndex : initialIndex;
-
     return (
-        <m.div
+        <div
+            ref={rootRef}
             className={styles.lightbox}
-            initial={{
-                ...launchRect,
-                borderRadius: TILE_RADIUS_PX,
-            }}
-            animate={{
-                ...targetRect,
-                borderRadius: phase === "closing" ? TILE_RADIUS_PX : 0,
-            }}
-            transition={phase === "closing" ? CLOSE_TRANSITION : OPEN_TRANSITION}
-            onAnimationComplete={() => {
-                if (phase === "opening") setPhase("open");
-                if (phase === "closing") onClose();
+            data-testid="gallery-lightbox"
+            data-phase={phase}
+            style={{
+                top: viewport.top,
+                left: viewport.left,
+                width: viewport.width,
+                height: viewport.height,
             }}
         >
+            <div ref={frameRef} className={styles.frame} data-lightbox-frame>
+                {slots.map((slot, slotIndex) => {
+                    if (
+                        slotIndex !== initialSlot &&
+                        (!ready || Math.abs(slotIndex - center) > RENDER_WINDOW)
+                    )
+                        return null;
+                    return (
+                        <div
+                            key={slotIndex}
+                            className={styles.slot}
+                            data-slot={slotIndex}
+                            style={{ zIndex: slotIndex + 1 }}
+                        >
+                            {slot.images.map(({ originalIndex }, position) => {
+                                if (!ready && originalIndex !== initialIndex) return null;
+                                return (
+                                    <ImageLayer
+                                        key={originalIndex}
+                                        index={originalIndex}
+                                        imagePool={imagePool}
+                                        rect={panelRect(slot, position, viewport)}
+                                        viewport={viewport}
+                                    />
+                                );
+                            })}
+                        </div>
+                    );
+                })}
+            </div>
+            {ready && (
+                <div
+                    ref={scrollRef}
+                    className={styles.scrollArea}
+                    onScroll={updateScroll}
+                    data-gallery-scroll
+                    tabIndex={0}
+                    aria-label="Gallery images"
+                    inert={phase !== "open"}
+                >
+                    <div style={{ height: slots.length * viewport.height }} />
+                </div>
+            )}
             <button
+                ref={closeButtonRef}
                 type="button"
                 className={styles.close}
-                onClick={requestClose}
+                onClick={() => void requestClose()}
                 aria-label="Close"
             >
                 <CloseIcon className={styles.closeIcon} />
             </button>
-
-            {phase !== "closing" && (
-                <div
-                    className={styles.stackStage}
-                    data-preparing={phase === "opening" || undefined}
-                    aria-hidden={phase === "opening" || undefined}
-                >
-                    <LightboxStack
-                        slots={slots}
-                        initialSlotIndex={initialSlotIndex}
-                        scrollRef={scrollRef}
-                        preparing={phase === "opening"}
-                    />
+            {ready && slots.length > 1 && (
+                <div className={styles.progress} role="group" aria-label="Gallery images">
+                    {slots.map((slot, index) => (
+                        <button
+                            key={index}
+                            type="button"
+                            className={styles.progressSegment}
+                            aria-label={slot.images.map((item) => item.image.alt).join(" / ")}
+                            aria-current={index === center ? "true" : undefined}
+                            onClick={() =>
+                                scrollRef.current?.scrollTo({
+                                    top: index * viewport.height,
+                                    behavior: reduceMotion ? "auto" : "smooth",
+                                })
+                            }
+                        />
+                    ))}
                 </div>
             )}
-
-            {phase !== "open" && (
-                <div className={styles.transitionStage}>
-                    {transitionSlot ? (
-                        <TransitionSlotContent
-                            slot={transitionSlot}
-                            anchorIndex={transitionAnchorIndex}
-                            phase={phase}
-                            transitionSrc={transitionSrc}
-                        />
-                    ) : (
-                        <FramedImage
-                            src={images[transitionAnchorIndex].src}
-                            alt={images[transitionAnchorIndex].alt}
-                            eager
-                        />
-                    )}
-                </div>
-            )}
-        </m.div>
+        </div>
     );
 }

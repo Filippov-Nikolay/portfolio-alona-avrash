@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import { useReducedMotion } from "framer-motion";
 import { getGalleryRowOffsets, projectGalleryTile } from "./galleryTiltGeometry";
 
@@ -44,13 +44,22 @@ function getLayoutTop(element: HTMLElement) {
 
 export function useGalleryTilt(
     containerRef: RefObject<HTMLElement | null>,
-    topBoundaryRef: RefObject<HTMLElement | null>
+    topBoundaryRef: RefObject<HTMLElement | null>,
+    paused = false
 ) {
     const tilesRef = useRef<Map<number, HTMLElement>>(new Map());
     const registerCallbacksRef = useRef<Map<number, (el: HTMLElement | null) => void>>(new Map());
     const scheduleUpdateRef = useRef<(() => void) | null>(null);
     const resizeObserverRef = useRef<ResizeObserver | null>(null);
     const reducedMotion = useReducedMotion();
+    const pausedRef = useRef(paused);
+    const pauseRef = useRef<(() => void) | null>(null);
+
+    useLayoutEffect(() => {
+        pausedRef.current = paused;
+        if (paused) pauseRef.current?.();
+        else scheduleUpdateRef.current?.();
+    }, [paused]);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -136,6 +145,7 @@ export function useGalleryTilt(
 
         const update = (time: number) => {
             frame = 0;
+            if (pausedRef.current) return;
             if (needsMeasure) {
                 needsMeasure = false;
                 if (!measure()) {
@@ -225,19 +235,25 @@ export function useGalleryTilt(
 
         const scheduleUpdate = () => {
             needsMeasure = true;
-            if (frame) return;
+            if (pausedRef.current || frame) return;
             frame = requestAnimationFrame(update);
         };
 
         const resizeObserver = new ResizeObserver(scheduleUpdate);
         resizeObserverRef.current = resizeObserver;
         scheduleUpdateRef.current = scheduleUpdate;
+        pauseRef.current = () => {
+            cancelAnimationFrame(frame);
+            frame = 0;
+            previousTime = 0;
+        };
         resizeObserver.observe(container);
         if (topBoundaryRef.current) resizeObserver.observe(topBoundaryRef.current);
         for (const tile of tilesMap.values()) resizeObserver.observe(tile);
 
         let lastScrollTop = container.scrollTop;
         const handleScroll = () => {
+            if (pausedRef.current) return;
             if (container.scrollTop === lastScrollTop) return;
             lastScrollTop = container.scrollTop;
             scheduleUpdate();
@@ -251,6 +267,7 @@ export function useGalleryTilt(
             resizeObserver.disconnect();
             resizeObserverRef.current = null;
             scheduleUpdateRef.current = null;
+            pauseRef.current = null;
             cancelAnimationFrame(frame);
             container.removeEventListener("scroll", handleScroll);
             window.removeEventListener("resize", scheduleUpdate);

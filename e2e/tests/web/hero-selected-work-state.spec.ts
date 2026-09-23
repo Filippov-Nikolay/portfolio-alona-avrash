@@ -98,9 +98,13 @@ test("Hero camera uses compact geometry and avoids dynamic blur on touch devices
         };
     });
 
-    expect(cameraState.scale).toBeCloseTo(cameraState.isTouch ? 2.15 : 2.9, 1);
-    expect(cameraState.translateY).toBeCloseTo(cameraState.isTouch ? -240 : -430, 0);
-    expect(cameraState.translateZ).toBeCloseTo(cameraState.isTouch ? 220 : 420, 0);
+    const compactProjection = 1320 / (1320 - 220);
+    expect(cameraState.scale).toBeCloseTo(cameraState.isTouch ? 2.15 * compactProjection : 2.9, 1);
+    expect(cameraState.translateY).toBeCloseTo(
+        cameraState.isTouch ? -240 * compactProjection : -430,
+        0
+    );
+    expect(cameraState.translateZ).toBeCloseTo(cameraState.isTouch ? 0 : 420, 0);
 
     if (cameraState.isTouch) {
         expect(cameraState.filter).toBe("none");

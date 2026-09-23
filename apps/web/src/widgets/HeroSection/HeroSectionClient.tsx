@@ -39,6 +39,7 @@ const TITLE_EXIT_SAFETY_MARGIN_RATIO = 0.04;
 const CAMERA_SETTLE_END = 0.96;
 const CAMERA_PROGRESS_INPUT = [0, 0.32, 0.62, 0.86, 1];
 const CAMERA_PROGRESS_OUTPUT = [0, 0.24, 0.52, 0.8, 1];
+const STATS_PERSPECTIVE = 1320;
 const STATS_PICKUP_PROGRESS = 0;
 const SELECTED_ENTRY_VIEWPORT_RATIO = 1.14;
 const SELECTED_FOCUS_DRIFT = 0;
@@ -347,43 +348,39 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
             ? clamp01(latest)
             : interpolateNumber(latest, [0, 0.04, 0.1, 0.22, 0.42, 1], [0, 0.18, 0.52, 0.82, 1, 1]);
     });
-    const statsZ = useTransform(() => {
+    const statsTransform = useTransform(() => {
         const latest = cameraProgress.get();
         const { reduced: prefersReduced, isCompact: compact } = motionConfig.get();
         const depthStartZ = prefersReduced ? 0 : compact ? 220 : 420;
         const depthMidZ = prefersReduced ? 0 : compact ? 92 : 172;
-
-        return interpolateNumber(
+        const z = interpolateNumber(
             latest,
             [0, 0.52, CAMERA_SETTLE_END, 1],
             [depthStartZ, depthMidZ, 0, 0]
         );
-    });
-    const statsScale = useTransform(() => {
-        const latest = cameraProgress.get();
-        const { reduced: prefersReduced, isCompact: compact } = motionConfig.get();
         const depthStartScale = prefersReduced ? 1 : compact ? 2.15 : 2.9;
         const depthNearScale = prefersReduced ? 1 : compact ? 1.72 : 2.08;
         const depthMidScale = prefersReduced ? 1 : compact ? 1.38 : 1.52;
         const depthLateScale = prefersReduced ? 1 : compact ? 1.12 : 1.16;
-
-        return interpolateNumber(
+        const scale = interpolateNumber(
             latest,
             [0, 0.24, 0.52, 0.8, CAMERA_SETTLE_END, 1],
             [depthStartScale, depthNearScale, depthMidScale, depthLateScale, 1, 1]
         );
-    });
-    const statsY = useTransform(() => {
-        const latest = cameraProgress.get();
-        const { reduced: prefersReduced, isCompact: compact } = motionConfig.get();
         const depthStartY = prefersReduced ? 0 : compact ? -240 : -430;
         const depthMidY = prefersReduced ? 0 : compact ? -96 : -170;
-
-        return interpolateNumber(
+        const y = interpolateNumber(
             latest,
             [0, 0.55, CAMERA_SETTLE_END, 1],
             [depthStartY, depthMidY, 0, 0]
         );
+
+        if (compact && !prefersReduced) {
+            const projection = STATS_PERSPECTIVE / (STATS_PERSPECTIVE - z);
+            return `translate3d(0px, ${y * projection}px, 0px) scale(${scale * projection})`;
+        }
+
+        return `translate3d(0px, ${y}px, ${z}px) scale(${scale})`;
     });
     const statsPointerEvents = useTransform(() =>
         cameraProgress.get() <= (motionConfig.get().reduced ? 0.02 : 0.08) ? "none" : "auto"
@@ -763,16 +760,9 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                         <m.div className={styles.statsLiftLayer} style={{ y: statsLiftY }}>
                             <m.div
                                 className={styles.statsDepthPlane}
-                                transformTemplate={(_, generatedTransform) =>
-                                    generatedTransform === "none"
-                                        ? "translate3d(0px, 0px, 0px) scale(1)"
-                                        : generatedTransform
-                                }
                                 style={{
                                     opacity: statsOpacity,
-                                    z: statsZ,
-                                    scale: statsScale,
-                                    y: statsY,
+                                    transform: statsTransform,
                                     pointerEvents: statsPointerEvents,
                                 }}
                             >

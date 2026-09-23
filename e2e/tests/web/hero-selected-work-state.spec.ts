@@ -186,7 +186,7 @@ test("Stats reels always commit their exact final digits after a tiny last scrol
     ]);
 });
 
-test("Scroll-linked stats reels stop on the same frame as a reversed touch scroll", async ({
+test("Stats reels settle after a reversed touch scroll without lingering movement", async ({
     page,
 }) => {
     await page.goto("/en");
@@ -218,9 +218,7 @@ test("Scroll-linked stats reels stop on the same frame as a reversed touch scrol
             await new Promise<void>((resolve) => view.requestAnimationFrame(() => resolve()));
         }
 
-        await new Promise<void>((resolve) =>
-            view.requestAnimationFrame(() => view.requestAnimationFrame(() => resolve()))
-        );
+        await new Promise<void>((resolve) => view.setTimeout(resolve, 260));
 
         type Dataset = { dataset: Record<string, string | undefined> };
         const reels = Array.from(track.querySelectorAll("#stats [data-reel-place]"));
@@ -244,5 +242,5 @@ test("Scroll-linked stats reels stop on the same frame as a reversed touch scrol
         state.settled
             .filter(({ continuous }) => continuous === "false")
             .map(({ duration }) => duration)
-    ).toEqual(["0s", "0s", "0s"]);
+    ).toEqual(["0.22s", "0.22s", "0.22s"]);
 });

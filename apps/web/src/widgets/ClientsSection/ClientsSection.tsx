@@ -1,7 +1,7 @@
 "use client";
 
 import type { Ref } from "react";
-import { Container, Section } from "@/shared/ui";
+import { Section } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import type { Client, ClientsRow, MarqueeDirection } from "@avrash/content-schema";
 import { useClientsSectionAnimations } from "./useClientsSectionAnimations";
@@ -50,14 +50,20 @@ function ClientsRow({
 }) {
     return (
         <div ref={rowRef} className={styles.row} data-direction={direction}>
-            <div ref={trackRef} className={styles.track}>
+            <div ref={trackRef} className={styles.track} data-clients-marquee>
                 {Array.from({ length: 6 }, (_, cycle) => (
-                    <div key={cycle} className={styles.sequence} aria-hidden={cycle > 0}>
+                    <div
+                        key={cycle}
+                        className={styles.sequence}
+                        data-clients-sequence
+                        aria-hidden={cycle > 0}
+                    >
                         {slots.map((slot) =>
                             slot.kind === "client" ? (
                                 <span
                                     key={`${cycle}-${slot.key}`}
                                     className={cn(styles.pill, styles[slot.client.variant])}
+                                    data-client-pill
                                 >
                                     {slot.client.name}
                                 </span>
@@ -69,6 +75,7 @@ function ClientsRow({
                                         styles.pillEmpty,
                                         styles[slot.width]
                                     )}
+                                    data-client-pill
                                     aria-hidden="true"
                                 />
                             )
@@ -89,8 +96,8 @@ interface ClientsSectionProps {
     labels: ClientsSectionLabels;
 }
 
-export function ClientsSection({ rows, labels }: ClientsSectionProps) {
-    const { sectionRef, labelRef, setRowRef, setTrackRef } = useClientsSectionAnimations(rows);
+export function ClientsSection({ rows }: ClientsSectionProps) {
+    const { sectionRef, setRowRef, setTrackRef } = useClientsSectionAnimations(rows);
 
     if (rows.length === 0) {
         return null;

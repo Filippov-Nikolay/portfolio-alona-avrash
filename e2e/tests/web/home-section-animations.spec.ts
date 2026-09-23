@@ -48,7 +48,7 @@ for (const viewport of viewports) {
         });
         await page.waitForTimeout(250);
 
-        await expect(firstClientRow).not.toHaveCSS("transform", "none");
+        await expect(firstClientRow).not.toHaveCSS("clip-path", "none");
         await expect(toolsTitle).toHaveCSS("opacity", "0");
         await expect(reviewCarousel).toHaveCSS("opacity", "1");
         await expect(revealReviewCard).toHaveCSS("opacity", "0");
@@ -57,9 +57,7 @@ for (const viewport of viewports) {
         await expect(ctaTitle).toHaveCSS("opacity", "0");
 
         await placeSectionAt(page, clients, 0.7);
-        await expect
-            .poll(async () => firstClientRow.evaluate((element) => element.style.transform))
-            .toMatch(/translate(?:3d)?\(0px/);
+        await expect(firstClientRow).toHaveCSS("clip-path", "none");
 
         await placeSectionAt(page, tools, 0.5);
         await expect(toolsTitle).toHaveCSS("opacity", "1");

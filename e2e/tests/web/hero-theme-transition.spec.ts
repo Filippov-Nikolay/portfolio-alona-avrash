@@ -27,6 +27,11 @@ test("Hero stays coherent throughout theme transitions", async ({ browserName, p
     const headerLogo = page.locator("[data-hero-logo-target]");
     const heroTitle = page.locator("h1").first();
     const toggle = page.locator('button[aria-label^="Switch to"]').first();
+    const isTouch = await html.evaluate(
+        (element) =>
+            element.ownerDocument.defaultView!.matchMedia("(hover: none) and (pointer: coarse)")
+                .matches
+    );
     await expect(card).toBeVisible();
     await expect(headerLogo).toBeVisible();
     await expect(heroTitle).toBeVisible();
@@ -56,7 +61,11 @@ test("Hero stays coherent throughout theme transitions", async ({ browserName, p
 
     const light = await readMaterial();
     expect(light.name).toBe("none");
-    expect(light.filter).toContain("blur(");
+    if (isTouch) {
+        expect(light.filter).toBe("none");
+    } else {
+        expect(light.filter).toContain("blur(");
+    }
     expect(light.backgroundColor).toMatch(/^rgba\(/);
     expect(light.nestedFilter).toBe("none");
 
@@ -77,7 +86,11 @@ test("Hero stays coherent throughout theme transitions", async ({ browserName, p
 
     const during = await readMaterial();
     expect(during.name).toBe("none");
-    expect(during.filter).toContain("blur(");
+    if (isTouch) {
+        expect(during.filter).toBe("none");
+    } else {
+        expect(during.filter).toContain("blur(");
+    }
     expect(during).not.toEqual(light);
 
     await expect(html).toHaveAttribute("data-theme", "dark");

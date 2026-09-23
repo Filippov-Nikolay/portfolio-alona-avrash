@@ -61,6 +61,7 @@ export function StatsSection({
                     <div
                         ref={gridRef}
                         className={styles.grid}
+                        data-scroll-linked={depthProgress ? "true" : undefined}
                         style={
                             {
                                 "--stats-count": Math.max(items.length, 1),

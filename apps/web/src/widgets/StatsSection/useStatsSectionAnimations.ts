@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
     useMotionValue,
     useMotionValueEvent,
@@ -14,7 +14,11 @@ import {
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 import { isTouchViewport } from "@/shared/lib/motion/mobileViewport";
-import { digitWheelPosition, type ParsedStatValue } from "./lib/parseStatValue";
+import {
+    digitWheelPosition,
+    digitWheelScrollPosition,
+    type ParsedStatValue,
+} from "./lib/parseStatValue";
 
 const GRID_REVEAL_START = NEXT_SECTION_INTERNAL_ANIMATION_TRIGGER;
 const GRID_REVEAL_END = NEXT_SECTION_COUNTER_TRIGGER;
@@ -71,9 +75,11 @@ function createCounterTarget(
     return { element, parsed, reels };
 }
 
-function updateReels(target: CounterTarget, value: number, force = false) {
+function updateReels(target: CounterTarget, value: number, force = false, scrollLinked = false) {
     target.reels.forEach((reel) => {
-        const position = digitWheelPosition(value, reel.place, reel.continuous);
+        const position = scrollLinked
+            ? digitWheelScrollPosition(value, target.parsed.target, reel.place, reel.continuous)
+            : digitWheelPosition(value, reel.place, reel.continuous);
 
         if (!force && Math.abs(position - reel.lastPosition) < 0.001) return;
 
@@ -100,6 +106,8 @@ export function useStatsSectionAnimations(
     const gridFilterSetterRef = useRef<ReturnType<typeof gsap.quickSetter> | null>(null);
     const avoidDynamicBlurRef = useRef(false);
     const renderedProgressRef = useRef({ reveal: Number.NaN, counter: Number.NaN });
+    const pendingProgressRef = useRef(0);
+    const progressFrameRef = useRef(0);
 
     const setValueRef = (index: number) => (el: HTMLSpanElement | null) => {
         valueRefs.current[index] = el;
@@ -271,13 +279,36 @@ export function useStatsSectionAnimations(
                         isEndpoint && counterT >= 1
                             ? counter.parsed.target
                             : gsap.utils.interpolate(0, counter.parsed.target, counterT),
-                        isEndpoint
+                        isEndpoint,
+                        true
                     );
                 });
                 rendered.counter = counterT;
             }
         },
         [depthProgress, reduced]
+    );
+
+    const flushProgress = useCallback(() => {
+        progressFrameRef.current = 0;
+        applyProgress(pendingProgressRef.current);
+    }, [applyProgress]);
+
+    const scheduleProgress = useCallback(
+        (latest: number) => {
+            pendingProgressRef.current = latest;
+            if (progressFrameRef.current) return;
+
+            progressFrameRef.current = requestAnimationFrame(flushProgress);
+        },
+        [flushProgress]
+    );
+
+    useEffect(
+        () => () => {
+            if (progressFrameRef.current) cancelAnimationFrame(progressFrameRef.current);
+        },
+        [flushProgress]
     );
 
     useGSAP(
@@ -288,7 +319,7 @@ export function useStatsSectionAnimations(
         { dependencies: [depthProgress, reduced, parsedValues] }
     );
 
-    useMotionValueEvent(effectiveDepthProgress, "change", applyProgress);
+    useMotionValueEvent(effectiveDepthProgress, "change", scheduleProgress);
 
     return { sectionRef, gridRef, setValueRef };
 }

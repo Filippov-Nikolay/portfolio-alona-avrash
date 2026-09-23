@@ -181,3 +181,64 @@ test("Stats reels always commit their exact final digits after a tiny last scrol
         "translate3d(0px, 0em, 0px)",
     ]);
 });
+
+test("Scroll-linked stats reels stop on the same frame as a reversed touch scroll", async ({
+    page,
+}) => {
+    await page.goto("/en");
+    await expect(page.locator("#stats [data-reel-place]").first()).toBeAttached();
+    await expect
+        .poll(() =>
+            page
+                .locator("#stats [data-reel-place]")
+                .first()
+                .evaluate((reel) => reel.style.transform)
+        )
+        .not.toBe("");
+
+    const state = await page.locator("#hero-transition-track").evaluate(async (track) => {
+        const view = track.ownerDocument.defaultView!;
+        const heroTrack = track.querySelector("#hero-scroll-track")!;
+        const cameraTrack = track.querySelector("#stats-camera-track")!;
+        const viewport = track.querySelector("#hero-sticky-stage")!;
+        const stageTop = track.getBoundingClientRect().top + view.scrollY;
+        const viewportHeight = viewport.getBoundingClientRect().height;
+        const start =
+            stageTop + Math.max(heroTrack.getBoundingClientRect().height - viewportHeight, 1) * 0.9;
+        const end =
+            stageTop + Math.max(cameraTrack.getBoundingClientRect().height - viewportHeight, 1);
+        const yAt = (progress: number) => start + (end - start) * progress;
+
+        for (const y of [yAt(0.94), yAt(0.7), yAt(0.91)]) {
+            view.scrollTo(0, y);
+            await new Promise<void>((resolve) => view.requestAnimationFrame(() => resolve()));
+        }
+
+        await new Promise<void>((resolve) =>
+            view.requestAnimationFrame(() => view.requestAnimationFrame(() => resolve()))
+        );
+
+        type Dataset = { dataset: Record<string, string | undefined> };
+        const reels = Array.from(track.querySelectorAll("#stats [data-reel-place]"));
+        const sample = () =>
+            reels.map((reel) => ({
+                transform: view.getComputedStyle(reel).transform,
+                duration: view.getComputedStyle(reel).transitionDuration,
+                continuous: (reel as unknown as Dataset).dataset.reelContinuous,
+            }));
+        const settled = sample();
+
+        await new Promise<void>((resolve) => view.setTimeout(resolve, 260));
+
+        return { settled, afterDelay: sample() };
+    });
+
+    expect(state.afterDelay.map(({ transform }) => transform)).toEqual(
+        state.settled.map(({ transform }) => transform)
+    );
+    expect(
+        state.settled
+            .filter(({ continuous }) => continuous === "false")
+            .map(({ duration }) => duration)
+    ).toEqual(["0s", "0s", "0s"]);
+});

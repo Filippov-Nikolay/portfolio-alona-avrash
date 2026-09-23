@@ -136,7 +136,17 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
             // cache headers allow for, so a plain file swap alone often will
             // not show up for returning visitors. Bust it with the app
             // version, which is already incremented on every release.
-            icon: [{ url: `${icon.src}?v=${packageJson.version}`, type: "image/png" }],
+            // Browsers take the last icon they can render, so the PNG goes
+            // first as the fallback (Safari and older browsers) and the SVG
+            // last so it wins wherever SVG favicons are supported.
+            icon: [
+                { url: `${icon.src}?v=${packageJson.version}`, type: "image/png", sizes: "32x32" },
+                {
+                    url: `/icon/icon.svg?v=${packageJson.version}`,
+                    type: "image/svg+xml",
+                    sizes: "any",
+                },
+            ],
             shortcut: `${icon.src}?v=${packageJson.version}`,
         },
         robots: { index: true, follow: true },

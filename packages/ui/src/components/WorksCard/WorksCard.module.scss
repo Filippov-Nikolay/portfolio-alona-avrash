@@ -59,7 +59,14 @@ $card-transition: 0.45s cubic-bezier(0.22, 1, 0.36, 1);
     }
 }
 
-.card[data-works-reveal-active] {
+.card[data-works-reveal] {
+    --reveal-y: 24px;
+    --reveal-scale: 0.9;
+    --reveal-hover-scale: 0.9135;
+    --reveal-blur: 9px;
+}
+
+.card[data-works-reveal]:not([data-works-reveal-settled]) {
     filter: blur(var(--reveal-blur, 0px));
 }
 
@@ -198,5 +205,10 @@ $card-transition: 0.45s cubic-bezier(0.22, 1, 0.36, 1);
     .image,
     .viewBtn {
         transition: none;
+    }
+
+    .card[data-works-reveal] {
+        filter: none;
+        transform: none;
     }
 }

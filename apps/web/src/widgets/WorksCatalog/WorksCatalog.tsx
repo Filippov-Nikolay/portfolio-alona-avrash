@@ -332,6 +332,7 @@ export function WorksCatalog({
                                         }
                                         viewLabel={labels.viewProject}
                                         onOpen={() => openProject(project.id)}
+                                        revealOnScroll={project.id !== firstCardId}
                                         cardRef={
                                             project.id === firstCardId
                                                 ? undefined

@@ -30,6 +30,7 @@ function resetCardStyle(card: HTMLElement) {
     card.style.filter = "";
     card.style.willChange = "";
     card.removeAttribute("data-works-reveal-active");
+    card.removeAttribute("data-works-reveal-settled");
 }
 
 export function useWorksCardReveal() {
@@ -77,6 +78,7 @@ export function useWorksCardReveal() {
             );
 
             const isAnimating = progress > PROGRESS_EPSILON && progress < 1 - PROGRESS_EPSILON;
+            card.toggleAttribute("data-works-reveal-settled", progress >= 1 - PROGRESS_EPSILON);
             const wasAnimating = card.hasAttribute("data-works-reveal-active");
             if (isAnimating === wasAnimating) return;
 

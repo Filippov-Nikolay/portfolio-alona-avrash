@@ -20,6 +20,20 @@ test("Works only composites nearby cards while preserving the scroll reveal", as
     expect(await cards.count()).toBeGreaterThan(1);
 
     const target = cards.nth(1);
+    const initialState = await target.evaluate((element) => {
+        const style = element.ownerDocument.defaultView!.getComputedStyle(element);
+        return {
+            reveal: element.hasAttribute("data-works-reveal"),
+            settled: element.hasAttribute("data-works-reveal-settled"),
+            filter: style.filter,
+            transform: style.transform,
+        };
+    });
+    expect(initialState.reveal).toBe(true);
+    expect(initialState.settled).toBe(false);
+    expect(initialState.filter).not.toBe("none");
+    expect(initialState.transform).not.toBe("none");
+
     const placeCardTopAt = async (viewportRatio: number) => {
         await target.evaluate((element, ratio) => {
             const view = element.ownerDocument.defaultView!;
@@ -28,6 +42,17 @@ test("Works only composites nearby cards while preserving the scroll reveal", as
         }, viewportRatio);
         await page.waitForTimeout(200);
     };
+
+    await placeCardTopAt(1.01);
+    const filterBeforeEntry = await target.evaluate(
+        (element) => element.ownerDocument.defaultView!.getComputedStyle(element).filter
+    );
+    await placeCardTopAt(0.99);
+    const filterAfterEntry = await target.evaluate(
+        (element) => element.ownerDocument.defaultView!.getComputedStyle(element).filter
+    );
+    expect(filterBeforeEntry).not.toBe("none");
+    expect(filterAfterEntry).not.toBe("none");
 
     await placeCardTopAt(0.75);
     await placeCardTopAt(0.75);

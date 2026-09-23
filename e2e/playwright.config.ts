@@ -85,6 +85,16 @@ export default defineConfig({
                 /(clients-tools-reviews-ios|contact-footer-mobile|footer-ios-overscroll|header-menu-ios|hero-selected-work-state|hero-theme-transition|projects-ios-button|reviews-ios-reveal|services-ios-resize|services-mobile|tools-ios-scroll|tools-ios-visibility|works-filter-ios-tap|works-scroll-performance)\.spec\.ts/,
             use: { ...devices["iPhone 13"], baseURL: "http://localhost:3100" },
         },
+        {
+            name: "web-webkit",
+            testDir: "./tests/web",
+            testMatch: /showcase-mobile\.spec\.ts/,
+            use: {
+                ...devices["iPhone 13"],
+                browserName: "webkit",
+                baseURL: "http://localhost:3100",
+            },
+        },
     ],
     // Dedicated ports, deliberately different from the app's normal 3000/
     // 3001 dev ports - so this suite never attaches to (or fights over a

@@ -86,3 +86,7 @@ e2e/blob-report/
 # out with the full path now rather than assuming it travels on its own.
 # =========================
 apps/web/public/projects/*/
+
+# Stray copy of the gallery images at the repo root. Nothing serves from
+# here (the app reads apps/web/public/), so keep it out of git entirely.
+/public/

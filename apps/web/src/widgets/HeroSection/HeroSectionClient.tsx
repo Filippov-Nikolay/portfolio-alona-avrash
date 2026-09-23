@@ -160,14 +160,18 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         selectedFinalOffset: 560,
         selectedHeight: 624,
     });
-    const { progress: depthProgress } = useHeroDepthHandoffProgress();
+    const { scrollY, scrollYProgress } = useScroll({
+        target: scrollTrackRef,
+        offset: ["start start", "end end"],
+    });
+    const { progress: depthProgress } = useHeroDepthHandoffProgress(scrollY);
     const {
         progress: statsSelectedProgress,
         rawProgress: statsSelectedRawProgress,
         focusProgress: selectedFocusProgress,
         handoffProgress: selectedHandoffProgress,
         handoffRunway: selectedHandoffRunway,
-    } = useStatsSelectedProgress();
+    } = useStatsSelectedProgress(scrollY);
     const motionConfig = useMotionValue({
         reduced: Boolean(reduced),
         isCompact,
@@ -175,11 +179,6 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         titleExitX,
         choreographyMetrics,
         selectedHandoffRunway,
-    });
-
-    const { scrollYProgress } = useScroll({
-        target: scrollTrackRef,
-        offset: ["start start", "end end"],
     });
 
     useLayoutEffect(() => {

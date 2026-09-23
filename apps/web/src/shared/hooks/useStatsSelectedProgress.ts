@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useState } from "react";
-import { useScroll, useTransform } from "framer-motion";
+import { useTransform, type MotionValue } from "framer-motion";
 import { createViewportResizeGuard } from "@/shared/lib/motion";
 
 interface StatsSelectedRange {
@@ -25,13 +25,13 @@ const DEFAULT_RANGE: StatsSelectedRange = {
 };
 
 export function useStatsSelectedProgress(
+    scrollY: MotionValue<number>,
     stageId = "hero-transition-track",
     cameraTrackId = "stats-camera-track",
     selectedMotionTrackId = "selected-motion-track",
     selectedFocusTrackId = "selected-focus-track",
     viewportId = "hero-sticky-stage"
 ) {
-    const { scrollY } = useScroll();
     const [range, setRange] = useState(DEFAULT_RANGE);
 
     useLayoutEffect(() => {

@@ -16,7 +16,10 @@ import { cn } from "@/shared/lib/cn";
 import styles from "./ToolsSection.module.scss";
 import { Card } from "./components/Card/Card";
 import { peekBlendSrc, peekStyle } from "./lib/peek";
-import { useToolsSectionAnimations } from "./useToolsSectionAnimations";
+import {
+    TOOLS_REVEAL_COMPLETE_EVENT,
+    useToolsSectionAnimations,
+} from "./useToolsSectionAnimations";
 
 interface ToolsSectionLabels {
     title: string;
@@ -30,8 +33,10 @@ interface ToolsSectionProps {
 
 const AUTO_SCROLL_SPEED = 100;
 const AUTO_SCROLL_RESUME_DELAY = 1_500;
+const PAGE_SCROLL_RESUME_DELAY = 220;
 const SCROLL_IDLE_DELAY = 180;
-const PROGRAMMATIC_SCROLL_TOLERANCE = 1.5;
+const PROGRAMMATIC_SCROLL_TOLERANCE = 4;
+const PROGRAMMATIC_SCROLL_EVENT_WINDOW = 100;
 const MARQUEE_CYCLES = 5;
 const MARQUEE_HOME_CYCLE = 2;
 const PEEK_IMAGE_SIZE = 264;
@@ -110,18 +115,21 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         let isPaused = false;
         let isUserScrolling = false;
         let isSectionVisible = false;
+        let isRevealComplete = section.dataset.toolsRevealComplete === "true";
         let previousTimestamp = 0;
         let autoScrollPosition = track.scrollLeft;
         let programmaticScrollPosition: number | null = track.scrollLeft;
+        let ignoreProgrammaticScrollUntil = 0;
+        let loopWidth = sequence.offsetWidth;
 
         const writeScrollPosition = (position: number) => {
             autoScrollPosition = position;
             programmaticScrollPosition = position;
+            ignoreProgrammaticScrollUntil = performance.now() + PROGRAMMATIC_SCROLL_EVENT_WINDOW;
             track.scrollLeft = position;
         };
 
         const recenterTrack = () => {
-            const loopWidth = sequence.offsetWidth;
             if (loopWidth <= 0) return;
 
             const homeStart = loopWidth * MARQUEE_HOME_CYCLE;
@@ -135,9 +143,10 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             writeScrollPosition(wrapScrollPosition(position, loopWidth));
         };
 
-        const pauseAutoScroll = () => {
+        const pauseAutoScroll = (resumeDelay = AUTO_SCROLL_RESUME_DELAY) => {
             isPaused = true;
             previousTimestamp = 0;
+            stopAnimation();
 
             if (resumeTimeoutId) {
                 clearTimeout(resumeTimeoutId);
@@ -149,7 +158,8 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                 recenterTrack();
                 autoScrollPosition = track.scrollLeft;
                 isPaused = false;
-            }, AUTO_SCROLL_RESUME_DELAY);
+                startAnimation();
+            }, resumeDelay);
         };
 
         const finishUserScroll = () => {
@@ -170,6 +180,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
         const handlePointerDown = () => {
             programmaticScrollPosition = null;
+            ignoreProgrammaticScrollUntil = 0;
             isUserScrolling = true;
             if (scrollIdleTimeoutId) clearTimeout(scrollIdleTimeoutId);
             pauseAutoScroll();
@@ -184,13 +195,16 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
             if (
                 programmaticScrollPosition !== null &&
-                Math.abs(track.scrollLeft - programmaticScrollPosition) <=
-                    PROGRAMMATIC_SCROLL_TOLERANCE
+                (Math.abs(track.scrollLeft - programmaticScrollPosition) <=
+                    PROGRAMMATIC_SCROLL_TOLERANCE ||
+                    performance.now() <= ignoreProgrammaticScrollUntil)
             ) {
+                autoScrollPosition = track.scrollLeft;
                 return;
             }
 
             programmaticScrollPosition = null;
+            ignoreProgrammaticScrollUntil = 0;
             isUserScrolling = true;
             pauseAutoScroll();
             scheduleUserScrollEnd();
@@ -200,6 +214,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
 
             programmaticScrollPosition = null;
+            ignoreProgrammaticScrollUntil = 0;
             isUserScrolling = true;
             pauseAutoScroll();
             scheduleUserScrollEnd();
@@ -212,6 +227,11 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             finishUserScroll();
         };
 
+        const handlePageScroll = () => {
+            if (!isSectionVisible) return;
+            pauseAutoScroll(PAGE_SCROLL_RESUME_DELAY);
+        };
+
         const stopAnimation = () => {
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
@@ -222,7 +242,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
         const animate = (timestamp: number) => {
             animationFrameId = 0;
-            if (!isSectionVisible || document.visibilityState !== "visible") {
+            if (!isSectionVisible || !isRevealComplete || document.visibilityState !== "visible") {
                 previousTimestamp = 0;
                 return;
             }
@@ -234,8 +254,6 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                 !isTrackHoveredRef.current
             ) {
                 const elapsed = previousTimestamp ? Math.min(timestamp - previousTimestamp, 64) : 0;
-                const loopWidth = sequence.offsetWidth;
-
                 if (loopWidth > 0 && elapsed > 0) {
                     let nextScrollLeft = autoScrollPosition + (AUTO_SCROLL_SPEED * elapsed) / 1000;
                     const homeEnd = loopWidth * (MARQUEE_HOME_CYCLE + 1);
@@ -253,7 +271,13 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         };
 
         const startAnimation = () => {
-            if (animationFrameId || !isSectionVisible || document.visibilityState !== "visible") {
+            if (
+                animationFrameId ||
+                !isSectionVisible ||
+                !isRevealComplete ||
+                isPaused ||
+                document.visibilityState !== "visible"
+            ) {
                 return;
             }
 
@@ -270,6 +294,16 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             }
         };
 
+        const handleRevealComplete = () => {
+            isRevealComplete = true;
+            startAnimation();
+        };
+
+        const resizeObserver = new ResizeObserver(() => {
+            const nextLoopWidth = sequence.offsetWidth;
+            if (nextLoopWidth > 0) loopWidth = nextLoopWidth;
+        });
+
         const observer = new IntersectionObserver(
             ([entry]) => {
                 isSectionVisible = entry.isIntersecting;
@@ -285,23 +319,29 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
         pauseAutoScrollRef.current = pauseAutoScroll;
         document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("scroll", handlePageScroll, { passive: true });
+        section.addEventListener(TOOLS_REVEAL_COMPLETE_EVENT, handleRevealComplete);
         track.addEventListener("pointerdown", handlePointerDown);
         track.addEventListener("pointerup", handlePointerEnd);
         track.addEventListener("pointercancel", handlePointerEnd);
         track.addEventListener("scroll", handleScroll, { passive: true });
         track.addEventListener("scrollend", handleScrollEnd);
         track.addEventListener("wheel", handleHorizontalWheel, { passive: true });
+        resizeObserver.observe(sequence);
         observer.observe(section);
 
         return () => {
             pauseAutoScrollRef.current = () => undefined;
             document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("scroll", handlePageScroll);
+            section.removeEventListener(TOOLS_REVEAL_COMPLETE_EVENT, handleRevealComplete);
             track.removeEventListener("pointerdown", handlePointerDown);
             track.removeEventListener("pointerup", handlePointerEnd);
             track.removeEventListener("pointercancel", handlePointerEnd);
             track.removeEventListener("scroll", handleScroll);
             track.removeEventListener("scrollend", handleScrollEnd);
             track.removeEventListener("wheel", handleHorizontalWheel);
+            resizeObserver.disconnect();
             observer.disconnect();
             stopAnimation();
 
@@ -501,6 +541,9 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                                     key={`${cycle}-${tool.id}`}
                                     tool={tool}
                                     isActive={activeId === tool.id}
+                                    data-tools-reveal-card={
+                                        cycle === MARQUEE_HOME_CYCLE ? "" : undefined
+                                    }
                                     tabIndex={cycle !== MARQUEE_HOME_CYCLE ? -1 : undefined}
                                     onPointerEnter={(event) => {
                                         if (event.pointerType !== "mouse") return;
@@ -547,7 +590,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
                         height={PEEK_IMAGE_SIZE}
                         sizes={`${PEEK_IMAGE_SIZE}px`}
                         quality={PEEK_IMAGE_QUALITY}
-                        loading="lazy"
+                        loading="eager"
                         fetchPriority="low"
                         className={styles.peekPreloaderImage}
                         onLoad={() => markPeekImageReady(src)}

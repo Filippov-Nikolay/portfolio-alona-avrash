@@ -67,8 +67,11 @@ test("Tools recenters an infinite strip only after iOS momentum has settled", as
     const section = page.locator("#tools");
     const track = section.locator("[data-tools-track]");
     await expect(track).toBeAttached();
-    await section.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(500);
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        await section.scrollIntoViewIfNeeded();
+        await page.waitForTimeout(250);
+    }
+    await expect(section).toHaveAttribute("data-tools-reveal-complete", "true");
 
     const loopWidth = await track.evaluate((element) => {
         const marquee = element.firstElementChild;

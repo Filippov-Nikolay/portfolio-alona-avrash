@@ -83,7 +83,6 @@ export function useReviewSectionAnimations(totalItems: number) {
                     scale: 0.965,
                     transformOrigin: "50% 20%",
                 });
-                setLayerHint();
                 section.dataset.reviewRevealReady = "true";
 
                 const timeline = gsap.timeline({
@@ -112,6 +111,7 @@ export function useReviewSectionAnimations(totalItems: number) {
                     if (hasRevealed) return;
                     hasRevealed = true;
                     section.dataset.reviewRevealed = "true";
+                    setLayerHint();
                     observer?.disconnect();
                     timeline.play(0);
                 };

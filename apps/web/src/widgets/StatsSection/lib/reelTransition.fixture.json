@@ -1,0 +1,52 @@
+{
+    "first": [
+        {
+            "time": 0,
+            "value": 0
+        },
+        {
+            "time": 22,
+            "value": 3.60987
+        },
+        {
+            "time": 55,
+            "value": 6.88378
+        },
+        {
+            "time": 110,
+            "value": 8.65244
+        },
+        {
+            "time": 165,
+            "value": 8.97205
+        },
+        {
+            "time": 220,
+            "value": 9
+        }
+    ],
+    "reversalStart": 6.88378,
+    "reverseDuration": 168.2702381929696,
+    "reverse": [
+        {
+            "time": 0,
+            "value": 6.88378
+        },
+        {
+            "time": 20,
+            "value": 3.69834
+        },
+        {
+            "time": 60,
+            "value": 0.779237
+        },
+        {
+            "time": 100,
+            "value": 0.118484
+        },
+        {
+            "time": 168.2702381929696,
+            "value": 0
+        }
+    ]
+}

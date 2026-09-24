@@ -112,13 +112,13 @@ describe("shared ScrollTrigger refresh scheduling", () => {
         harness.isScrolling.mockReturnValue(false);
         emit("scrollEnd");
         flushFrame();
-        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith(true);
+        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith();
     });
 
     it("does not refresh again for pin spacing produced by its own refresh", () => {
         mount();
         flushFrame();
-        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith(true);
+        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith();
         documentMock.body.scrollHeight = 1600;
         emit("refresh");
         resize();
@@ -129,7 +129,7 @@ describe("shared ScrollTrigger refresh scheduling", () => {
         resize();
         flushFrame();
         expect(harness.refresh).toHaveBeenCalledTimes(2);
-        expect(harness.refresh).toHaveBeenLastCalledWith(true);
+        expect(harness.refresh).toHaveBeenLastCalledWith();
     });
 
     it("cleans up a pending refresh on navigation and starts the next mount cleanly", () => {
@@ -147,7 +147,7 @@ describe("shared ScrollTrigger refresh scheduling", () => {
         );
         mount();
         flushFrame();
-        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith(true);
+        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith();
     });
 
     it("keeps shared listeners until the last consumer unmounts and handles touch cancellation", () => {
@@ -162,6 +162,6 @@ describe("shared ScrollTrigger refresh scheduling", () => {
         expect(harness.refresh).not.toHaveBeenCalled();
         pointer("pointerup", 2);
         flushFrame();
-        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith(true);
+        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith();
     });
 });

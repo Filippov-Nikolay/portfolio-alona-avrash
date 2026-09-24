@@ -95,8 +95,10 @@ function queueRefresh() {
         if (activePointers.size > 0 || ScrollTrigger.isScrolling()) return;
         refreshRequested = false;
         ScrollTrigger.sort();
-        // Safe mode also covers a new gesture starting before GSAP's delay ends.
-        ScrollTrigger.refresh(true);
+        // Keep the idle check and refresh in the same task. GSAP's safe mode
+        // delays again and installs a forced scrollEnd refresh; WebKit can emit
+        // that event while handling the next scroll after a long rendering frame.
+        ScrollTrigger.refresh();
     });
 }
 

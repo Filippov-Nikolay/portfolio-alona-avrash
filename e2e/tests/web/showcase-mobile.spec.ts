@@ -51,9 +51,10 @@ test("mobile showcase keeps its full tab rule and close button visible while scr
 declare global {
     interface Window {
         lightboxAnimations: Animation[];
+        lightboxFades: Animation[];
         lightboxImage: HTMLImageElement;
         lightboxSource: string;
-        releaseImageDecode: () => void;
+        releaseImageDecode: () => void | Promise<void>;
     }
 }
 
@@ -86,9 +87,10 @@ async function openGallery(page: Page) {
     return tile;
 }
 
-async function controlTransition(page: Page) {
-    await page.evaluate(() => {
+async function controlTransition(page: Page, controlReveals = false) {
+    await page.evaluate((controlReveals) => {
         window.lightboxAnimations = [];
+        window.lightboxFades = [];
         const animate = Element.prototype.animate;
         Element.prototype.animate = function (frames, options) {
             const animation = animate.call(this, frames, options);
@@ -100,9 +102,14 @@ async function controlTransition(page: Page) {
                 animation.currentTime = 0;
                 window.lightboxAnimations.push(animation);
             }
+            if (controlReveals && this.hasAttribute("data-image-layer")) {
+                animation.pause();
+                animation.currentTime = 0;
+                window.lightboxFades.push(animation);
+            }
             return animation;
         };
-    });
+    }, controlReveals);
 }
 
 async function assertImage(page: Page) {
@@ -121,9 +128,9 @@ async function assertImage(page: Page) {
     });
 }
 
-async function captureFrame(page: Page, testInfo: TestInfo, name: string) {
+async function captureImageColor(page: Page, testInfo: TestInfo, name: string, index = 1) {
     const bounds = await page
-        .locator('[data-testid="gallery-lightbox"] img[data-gallery-image="1"]')
+        .locator(`[data-testid="gallery-lightbox"] img[data-gallery-image="${index}"]`)
         .boundingBox();
     expect(bounds).not.toBeNull();
     const png = await page.screenshot({
@@ -134,7 +141,7 @@ async function captureFrame(page: Page, testInfo: TestInfo, name: string) {
     await testInfo.attach(name, { body: png, contentType: "image/png" });
     // Read actual rendered pixels, not CSS opacity. A missing image or a
     // compositing flash changes this solid interior patch of the artwork.
-    const color = await page.evaluate(
+    return page.evaluate(
         async ({ data, x, y }) => {
             const image = new Image();
             image.src = "data:image/png;base64," + data;
@@ -155,6 +162,10 @@ async function captureFrame(page: Page, testInfo: TestInfo, name: string) {
             y: bounds!.y + bounds!.height / 2,
         }
     );
+}
+
+async function captureFrame(page: Page, testInfo: TestInfo, name: string) {
+    const color = await captureImageColor(page, testInfo, name);
     for (let c = 0; c < 3; c++)
         expect(Math.abs(color[c] - [180, 90, 140][c]), name).toBeLessThan(4);
     return color.reduce((a, b) => a + b) / 3;
@@ -291,6 +302,156 @@ test("paired slots, scrolling, reopen and reduced motion preserve their images",
         await expect(lightbox).toHaveCount(0);
         await expect(page.getByRole("button", { name: /visual 3$/i })).toBeFocused();
     }
+});
+
+for (const selectedIndex of [2, 3]) {
+    test(`row companion fades in and out when opening image ${selectedIndex + 1}`, async ({
+        page,
+    }, testInfo) => {
+        test.setTimeout(60_000);
+        await openGallery(page);
+        await controlTransition(page, true);
+        const tile = page.getByRole("button", {
+            name: new RegExp(`visual ${selectedIndex + 1}$`, "i"),
+        });
+        await tile.locator("img").evaluate((image) => {
+            window.lightboxImage = image as HTMLImageElement;
+        });
+        await tile.click();
+        const lightbox = page.getByTestId("gallery-lightbox");
+        await expect(lightbox).toHaveAttribute("data-phase", "opening");
+        await expect(lightbox.locator("img")).toHaveCount(1);
+        await page.evaluate(() =>
+            window.lightboxAnimations.forEach((animation) => animation.finish())
+        );
+        await expect(lightbox.getByRole("group")).toBeVisible();
+
+        const companionIndex = selectedIndex === 2 ? 3 : 2;
+        const companion = lightbox.locator(`[data-image-layer="${companionIndex}"]`);
+        await expect(companion.locator("img")).toHaveCount(1);
+        // Offscreen neighbors must not allocate extra opacity animations.
+        expect(
+            await page.evaluate(
+                (index) =>
+                    window.lightboxFades.every(
+                        (animation) =>
+                            ((animation.effect as KeyframeEffect).target as HTMLElement).dataset
+                                .imageLayer === String(index)
+                    ),
+                companionIndex
+            )
+        ).toBe(true);
+        const setFadeTime = async (time: number | "finish") => {
+            await page.evaluate(
+                ({ index, time }) => {
+                    const animation = window.lightboxFades
+                        .filter(
+                            (item) =>
+                                ((item.effect as KeyframeEffect).target as HTMLElement).dataset
+                                    .imageLayer === String(index)
+                        )
+                        .at(-1)!;
+                    if (time === "finish") animation.finish();
+                    else animation.currentTime = time;
+                },
+                { index: companionIndex, time }
+            );
+        };
+        const artworkDistance = (color: number[]) =>
+            color.reduce(
+                (sum, value, channel) => sum + Math.abs(value - [180, 90, 140][channel]),
+                0
+            );
+        const openingColors: number[][] = [];
+        // The right-side launch also tests closing halfway through the reveal.
+        for (const time of selectedIndex === 2 ? [0, 80, 160, 239] : [0, 60, 120]) {
+            await setFadeTime(time);
+            openingColors.push(
+                await captureImageColor(page, testInfo, `row-reveal-${time}`, companionIndex)
+            );
+        }
+        const openingDistances = openingColors.map(artworkDistance);
+        expect(openingDistances[0]).toBeGreaterThan(30);
+        for (let i = 1; i < openingDistances.length; i++)
+            expect(openingDistances[i]).toBeLessThan(openingDistances[i - 1] - 3);
+        if (selectedIndex === 2) {
+            expect(openingDistances.at(-1)).toBeLessThan(4);
+            await setFadeTime("finish");
+            await expect
+                .poll(() => companion.evaluate((element) => element.getAnimations().length))
+                .toBe(0);
+        }
+        const opacityBeforeClose = await companion.evaluate((element) =>
+            Number(getComputedStyle(element).opacity)
+        );
+        await lightbox.getByRole("button", { name: "Close", exact: true }).click();
+        await expect(lightbox).toHaveAttribute("data-phase", "preparing-close");
+        expect(
+            await companion.evaluate((element) => Number(getComputedStyle(element).opacity))
+        ).toBeCloseTo(opacityBeforeClose, 3);
+        const closingDistances: number[] = [];
+        for (const fraction of [0, 0.25, 0.5, 0.99]) {
+            await setFadeTime(160 * opacityBeforeClose * fraction);
+            closingDistances.push(
+                artworkDistance(
+                    await captureImageColor(page, testInfo, `row-hide-${fraction}`, companionIndex)
+                )
+            );
+        }
+        expect(closingDistances[0]).toBeCloseTo(openingDistances.at(-1)!, 0);
+        for (let i = 1; i < closingDistances.length; i++)
+            expect(closingDistances[i]).toBeGreaterThan(closingDistances[i - 1] + 3);
+        await setFadeTime("finish");
+        await expect(lightbox).toHaveAttribute("data-phase", "closing");
+        await expect(companion).toHaveCSS("opacity", "0");
+        expect(
+            await lightbox
+                .locator(`img[data-gallery-image="${selectedIndex}"]`)
+                .evaluate((image) => image === window.lightboxImage)
+        ).toBe(true);
+        await expect(page.locator(`img[data-gallery-image="${companionIndex}"]`)).toHaveCount(1);
+        await page.evaluate(() =>
+            window.lightboxAnimations.slice(-2).forEach((animation) => animation.finish())
+        );
+        await expect(lightbox).toHaveCount(0);
+        await expect(tile).toBeFocused();
+    });
+}
+
+test("a companion decoded during close stays hidden", async ({ page }) => {
+    await openGallery(page);
+    await page.evaluate(() => {
+        const decode = HTMLImageElement.prototype.decode;
+        HTMLImageElement.prototype.decode = function () {
+            if (this.dataset.galleryImage !== "3") return decode.call(this);
+            return new Promise<void>((resolve, reject) => {
+                window.releaseImageDecode = async () => {
+                    HTMLImageElement.prototype.decode = decode;
+                    await decode.call(this).then(resolve, reject);
+                };
+            });
+        };
+    });
+    const tile = page.getByRole("button", { name: /visual 3$/i });
+    await tile.click();
+    const lightbox = page.getByTestId("gallery-lightbox");
+    await expect(lightbox.getByRole("group")).toBeVisible({ timeout: 10_000 });
+    // Only hold the close: native opening avoids racing StrictMode's entrance
+    // effect replay, which can replace the test-controlled animation handles.
+    await controlTransition(page);
+    await expect.poll(() => page.evaluate(() => typeof window.releaseImageDecode)).toBe("function");
+    const companion = lightbox.locator('[data-image-layer="3"]');
+    await expect(companion.locator("img")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(lightbox).toHaveAttribute("data-phase", "closing");
+    await page.evaluate(() => window.releaseImageDecode());
+    await expect(companion.locator("img")).toHaveCount(0);
+    await expect(companion).toHaveCSS("opacity", "0");
+    await page.evaluate(() =>
+        window.lightboxAnimations.slice(-2).forEach((animation) => animation.finish())
+    );
+    await expect(lightbox).toHaveCount(0);
+    await expect(tile).toBeFocused();
 });
 
 test("native frames keep the image and background still across open and close", async ({

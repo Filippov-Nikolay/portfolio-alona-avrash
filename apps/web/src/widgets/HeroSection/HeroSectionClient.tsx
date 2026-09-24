@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { m, useMotionValue, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { m, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { HeroContent, Social, StatItem } from "@avrash/content-schema";
@@ -28,6 +28,7 @@ import {
     type SelectedWorkSectionProps,
 } from "@/widgets/SelectedWorkSection/SelectedWorkSection";
 import styles from "./HeroSection.module.scss";
+import { useHeroScroll } from "./useHeroScroll";
 
 const [NAME_FIRST, ...nameRest] = siteConfig.name.split(" ");
 const NAME_LAST = nameRest.join(" ");
@@ -161,10 +162,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         selectedFinalOffset: 560,
         selectedHeight: 624,
     });
-    const { scrollY, scrollYProgress } = useScroll({
-        target: scrollTrackRef,
-        offset: ["start start", "end end"],
-    });
+    const { scrollY, scrollYProgress } = useHeroScroll(scrollTrackRef, stageRef);
     const { progress: depthProgress } = useHeroDepthHandoffProgress(scrollY);
     const {
         progress: statsSelectedProgress,
@@ -331,6 +329,9 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const heroPointerEvents = useTransform(() =>
         depthProgress.get() >= (motionConfig.get().reduced ? 0.995 : 0.5) ? "none" : "auto"
     );
+    const heroVisibility = useTransform(heroOpacity, (opacity) =>
+        opacity === 0 ? "hidden" : "visible"
+    );
     const statsCameraProgress = useTransform(
         depthProgress,
         [0, STATS_CAMERA_MOTION_END, 1],
@@ -382,6 +383,9 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
 
         return `translate3d(0px, ${y}px, ${z}px) scale(${scale})`;
     });
+    const statsVisibility = useTransform(statsOpacity, (opacity) =>
+        opacity === 0 ? "hidden" : "visible"
+    );
     const statsPointerEvents = useTransform(() =>
         cameraProgress.get() <= (motionConfig.get().reduced ? 0.02 : 0.08) ? "none" : "auto"
     );
@@ -549,7 +553,11 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                 <div ref={stageRef} id="hero-sticky-stage" className={styles.stage}>
                     <m.div
                         className={styles.heroLayer}
-                        style={{ opacity: heroOpacity, pointerEvents: heroPointerEvents }}
+                        style={{
+                            opacity: heroOpacity,
+                            visibility: heroVisibility,
+                            pointerEvents: heroPointerEvents,
+                        }}
                     >
                         <NoiseLayer />
                         <div className={styles.glow} aria-hidden="true" />
@@ -687,7 +695,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                                 FLOATER_LAYER_CLASSES[2]
                                             )}
                                             variants={safeFadeIn}
-                                            style={{ y: floaterThreeY }}
+                                            style={{ y: isCompact ? 0 : floaterThreeY }}
                                             aria-hidden="true"
                                         >
                                             <Image
@@ -714,7 +722,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                                 FLOATER_LAYER_CLASSES[3]
                                             )}
                                             variants={safeFadeIn}
-                                            style={{ y: floaterFourY }}
+                                            style={{ y: isNarrow ? 0 : floaterFourY }}
                                             aria-hidden="true"
                                         >
                                             <Image
@@ -762,6 +770,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                 className={styles.statsDepthPlane}
                                 style={{
                                     opacity: statsOpacity,
+                                    visibility: statsVisibility,
                                     transform: statsTransform,
                                     pointerEvents: statsPointerEvents,
                                 }}

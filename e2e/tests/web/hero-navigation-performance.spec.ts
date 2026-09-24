@@ -1,0 +1,114 @@
+import { expect, test } from "@playwright/test";
+
+declare global {
+    interface Window {
+        homeReturnProbe: {
+            recording: boolean;
+            cameraStarts: string[];
+            scrollWrites: { y: number; stack: string }[];
+        };
+        scrollForHomeReturnTest: (x: number, y: number) => void;
+    }
+}
+
+test("Works to Home keeps the compact camera and defers refresh throughout a touch scroll", async ({
+    context,
+    page,
+    hasTouch,
+}, testInfo) => {
+    test.skip(!hasTouch, "exercises a touch gesture followed by inertial scrolling");
+    test.setTimeout(60_000);
+    await context.addCookies([
+        { name: "site-preloader", value: "1", url: String(testInfo.project.use.baseURL) },
+    ]);
+    await page.addInitScript(() => {
+        window.homeReturnProbe = { recording: false, cameraStarts: [], scrollWrites: [] };
+        const scroll = window.scrollTo.bind(window);
+        window.scrollForHomeReturnTest = (x, y) => scroll(x, y);
+        window.scrollTo = (optionsOrX: ScrollToOptions | number = {}, y?: number) => {
+            if (window.homeReturnProbe.recording) {
+                window.homeReturnProbe.scrollWrites.push({
+                    y: typeof optionsOrX === "number" ? (y ?? 0) : (optionsOrX.top ?? scrollY),
+                    stack: new Error().stack ?? "",
+                });
+            }
+            if (typeof optionsOrX === "number") scroll(optionsOrX, y ?? 0);
+            else scroll(optionsOrX);
+        };
+        const animate = Element.prototype.animate;
+        Element.prototype.animate = function (keyframes, options) {
+            if (this.matches('[class*="statsDepthPlane"]') && Array.isArray(keyframes)) {
+                window.homeReturnProbe.cameraStarts.push(String(keyframes[0]?.transform));
+            }
+            return animate.call(this, keyframes, options);
+        };
+    });
+    await page.goto("/en/works");
+    await expect(page.getByTestId("works-card").first()).toBeVisible();
+    await page.getByRole("link", { name: "Home", exact: true }).click();
+    await expect(page).toHaveURL(/\/en\/?$/);
+    const plane = page.locator('[class*="statsDepthPlane"]');
+    await expect
+        .poll(() => plane.evaluate((element) => element.getAnimations()[0]?.playState))
+        .toBe("paused");
+    await expect(page.locator(".pin-spacer").first()).toBeAttached();
+
+    const during = await page.evaluate(async () => {
+        // Finish initial trigger construction, then exercise the delayed startup
+        // refreshes and real layout changes while the user is already scrolling.
+        for (let i = 0; i < 2; i++) await new Promise(requestAnimationFrame);
+        const probe = window.homeReturnProbe;
+        document.dispatchEvent(
+            new PointerEvent("pointerdown", { pointerId: 71, pointerType: "touch" })
+        );
+        probe.recording = true;
+        const spacer = document.createElement("div");
+        spacer.id = "home-return-layout-probe";
+        spacer.style.height = "10px";
+        document.body.append(spacer);
+        for (let i = 0; i < 90; i++) {
+            if (i === 25) spacer.style.height = "25px";
+            if (i === 50) {
+                // No finger after this point, but native scroll events continue.
+                document.dispatchEvent(
+                    new PointerEvent("pointerup", { pointerId: 71, pointerType: "touch" })
+                );
+            }
+            window.scrollForHomeReturnTest(0, 40 + i * 12);
+            await new Promise(requestAnimationFrame);
+        }
+        // Sample after the scroll handler/render phases of the final frame.
+        await new Promise(requestAnimationFrame);
+        return {
+            scrollWrites: [...probe.scrollWrites],
+            cameraStarts: [...probe.cameraStarts],
+            y: scrollY,
+        };
+    });
+    await testInfo.attach("works-home-scroll-work", {
+        body: JSON.stringify(during, null, 2),
+        contentType: "application/json",
+    });
+    expect(during.cameraStarts.length).toBeGreaterThan(0);
+    for (const transform of during.cameraStarts) {
+        expect(Number(transform.match(/scale\(([^)]+)\)/)?.[1])).toBeCloseTo(2.58, 5);
+    }
+    expect(during.scrollWrites).toEqual([]);
+    expect(during.y).toBe(40 + 89 * 12);
+
+    // Deferred work must eventually run, then settle instead of refreshing
+    // repeatedly in response to the pin spacers it just measured.
+    await expect
+        .poll(() => page.evaluate(() => window.homeReturnProbe.scrollWrites.length))
+        .toBeGreaterThan(0);
+    await expect.poll(() => page.evaluate(() => scrollY)).toBe(during.y);
+    await page.waitForTimeout(250);
+    const writesAfterRefresh = await page.evaluate(
+        () => window.homeReturnProbe.scrollWrites.length
+    );
+    await page.waitForTimeout(650);
+    expect(await page.evaluate(() => window.homeReturnProbe.scrollWrites.length)).toBe(
+        writesAfterRefresh
+    );
+    await expect.poll(() => plane.evaluate((element) => element.getAnimations().length)).toBe(1);
+});

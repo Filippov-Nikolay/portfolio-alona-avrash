@@ -18,15 +18,18 @@ interface GalleryLightboxProps {
     launchRect: LightboxRect;
     fillRect: LightboxRect;
     prepareClose: (index: number) => Promise<LightboxRect | null>;
+    prepareBackground: (index: number) => Promise<void>;
     onOpened: () => void;
     onClose: (index: number) => void;
 }
 
 const OPEN_DURATION = 640;
+const PAIRED_OPEN_DURATION = 480;
 const CLOSE_DURATION = 520;
-const REVEAL_DURATION = 240;
+const REVEAL_DURATION = 120;
 const HIDE_DURATION = 160;
 const RENDER_WINDOW = 1;
+const SCROLL_SETTLE_DELAY = 180;
 
 function panelRect(slot: GallerySlot, position: number, viewport: LightboxRect): LightboxRect {
     if (slot.type === "single") return viewport;
@@ -137,6 +140,7 @@ export function GalleryLightbox({
     launchRect,
     fillRect,
     prepareClose,
+    prepareBackground,
     onOpened,
     onClose,
 }: GalleryLightboxProps) {
@@ -156,16 +160,18 @@ export function GalleryLightbox({
     const closeButtonRef = useRef<HTMLButtonElement>(null);
     const animations = useRef<Animation[]>([]);
     const deferredFrame = useRef(0);
+    const scrollMotion = useRef({ timer: 0, frame: 0, lastTop: 0, active: false, touching: false });
     const closing = useRef(false);
     const alive = useRef(true);
     const reduceMotion = useReducedMotion();
-    const callbacks = useRef({ prepareClose, onOpened, onClose });
+    const callbacks = useRef({ prepareClose, prepareBackground, onOpened, onClose });
     useLayoutEffect(() => {
-        callbacks.current = { prepareClose, onOpened, onClose };
+        callbacks.current = { prepareClose, prepareBackground, onOpened, onClose };
     });
 
     useLayoutEffect(() => {
         alive.current = true;
+        const motion = scrollMotion.current;
         const frame = frameRef.current!;
         const image = imagePool.get(initialIndex).element;
         const slot = slots[initialSlot];
@@ -186,7 +192,11 @@ export function GalleryLightbox({
             destination.height
         );
         const options = {
-            duration: reduceMotion ? 0 : OPEN_DURATION,
+            duration: reduceMotion
+                ? 0
+                : slot.type === "single"
+                  ? OPEN_DURATION
+                  : PAIRED_OPEN_DURATION,
             easing: "cubic-bezier(0.22, 1, 0.36, 1)",
             fill: "both" as const,
         };
@@ -205,6 +215,9 @@ export function GalleryLightbox({
                 deferredFrame.current = requestAnimationFrame(() => {
                     deferredFrame.current = requestAnimationFrame(() => {
                         if (closing.current) return;
+                        imagePool.setLightboxPlayback(
+                            slot.images.map((item) => item.originalIndex)
+                        );
                         setReady(true);
                         callbacks.current.onOpened();
                     });
@@ -216,6 +229,8 @@ export function GalleryLightbox({
         return () => {
             alive.current = false;
             cancelAnimationFrame(deferredFrame.current);
+            window.clearTimeout(motion.timer);
+            cancelAnimationFrame(motion.frame);
             animations.current.forEach((animation) => animation.cancel());
         };
         // The entrance uses a snapshot of the source and launch geometry.
@@ -223,7 +238,10 @@ export function GalleryLightbox({
     }, []);
 
     useLayoutEffect(() => {
-        if (ready && scrollRef.current) scrollRef.current.scrollTop = center * viewport.height;
+        if (ready && scrollRef.current) {
+            scrollMotion.current.lastTop = center * viewport.height;
+            scrollRef.current.scrollTop = scrollMotion.current.lastTop;
+        }
         // Preserve the current slot when the viewport resizes; normal scrolling
         // must not snap whenever center changes.
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -233,10 +251,9 @@ export function GalleryLightbox({
         if (phase !== "open") return;
         const modal = rootRef.current?.parentElement;
         if (!modal) return;
-        const observer = new ResizeObserver(() => {
+        const observer = new ResizeObserver(([entry]) => {
             if (closing.current) return;
-            const width = modal.clientWidth;
-            const height = modal.clientHeight;
+            const { width, height } = entry.contentRect;
             setViewport((previous) =>
                 previous.width === width && previous.height === height
                     ? previous
@@ -263,9 +280,57 @@ export function GalleryLightbox({
         if (ready) updateScroll();
     });
 
+    const pauseScrolling = () => {
+        if (closing.current) return;
+        const motion = scrollMotion.current;
+        window.clearTimeout(motion.timer);
+        if (motion.active) return;
+        motion.active = true;
+        rootRef.current?.setAttribute("data-scrolling", "");
+        imagePool.setLightboxPlayback([]);
+    };
+    const settleScrolling = () => {
+        const motion = scrollMotion.current;
+        window.clearTimeout(motion.timer);
+        motion.timer = window.setTimeout(() => {
+            if (closing.current || motion.touching || !scrollRef.current) return;
+            const scroll = scrollRef.current;
+            const index = Math.max(
+                0,
+                Math.min(slots.length - 1, Math.round(scroll.scrollTop / viewport.height))
+            );
+            motion.active = false;
+            rootRef.current?.removeAttribute("data-scrolling");
+            // Start decoding the full GIF only when movement has settled. The
+            // neighboring slots and the pinned launch image keep static previews.
+            imagePool.setLightboxPlayback(slots[index].images.map((item) => item.originalIndex));
+        }, SCROLL_SETTLE_DELAY);
+    };
+    const scrollIntent = () => {
+        pauseScrolling();
+        settleScrolling();
+    };
+    const handleScroll = () => {
+        if (closing.current || !scrollRef.current) return;
+        const motion = scrollMotion.current;
+        const top = scrollRef.current.scrollTop;
+        // Ignore the initial positioning and viewport-size adjustment.
+        if (Math.abs(top - motion.lastTop) < 0.5) return;
+        motion.lastTop = top;
+        scrollIntent();
+        if (!motion.frame)
+            motion.frame = requestAnimationFrame(() => {
+                motion.frame = 0;
+                updateScroll();
+            });
+    };
+
     const requestClose = async () => {
         if (closing.current) return;
         closing.current = true;
+        window.clearTimeout(scrollMotion.current.timer);
+        cancelAnimationFrame(scrollMotion.current.frame);
+        imagePool.setLightboxPlayback([]);
         cancelAnimationFrame(deferredFrame.current);
         setPhase("preparing-close");
         // Interrupted opening keeps its current compositor state while the
@@ -322,6 +387,15 @@ export function GalleryLightbox({
         if (!alive.current) return;
         const frame = frameRef.current!;
         const image = imagePool.get(index).element;
+        if (/\.gif(?:[?#]|$)/i.test(images[index].src)) {
+            try {
+                await imagePool.decode(index);
+            } catch {
+                if (alive.current) callbacks.current.onClose(index);
+                return;
+            }
+            if (!alive.current) return;
+        }
         if (!frame.contains(image)) {
             try {
                 await imagePool.decode(index);
@@ -336,6 +410,10 @@ export function GalleryLightbox({
             callbacks.current.onClose(index);
             return;
         }
+        // Companions have finished fading. Return all other borrowed images and
+        // prepare the visible tiles before the shrinking frame exposes them.
+        await callbacks.current.prepareBackground(index);
+        if (!alive.current) return;
         const rootBounds = rootRef.current!.getBoundingClientRect();
         const relative = (rect: DOMRect): LightboxRect => ({
             left: rect.left - rootBounds.left + viewport.left,
@@ -406,12 +484,7 @@ export function GalleryLightbox({
             className={styles.lightbox}
             data-testid="gallery-lightbox"
             data-phase={phase}
-            style={{
-                top: viewport.top,
-                left: viewport.left,
-                width: viewport.width,
-                height: viewport.height,
-            }}
+            data-ready={ready ? "" : undefined}
         >
             <div ref={frameRef} className={styles.frame} data-lightbox-frame>
                 {slots.map((slot, slotIndex) => {
@@ -452,7 +525,34 @@ export function GalleryLightbox({
                 <div
                     ref={scrollRef}
                     className={styles.scrollArea}
-                    onScroll={updateScroll}
+                    onScroll={handleScroll}
+                    onWheel={scrollIntent}
+                    onTouchStart={() => {
+                        scrollMotion.current.touching = true;
+                        pauseScrolling();
+                    }}
+                    onTouchEnd={() => {
+                        scrollMotion.current.touching = false;
+                        settleScrolling();
+                    }}
+                    onTouchCancel={() => {
+                        scrollMotion.current.touching = false;
+                        settleScrolling();
+                    }}
+                    onKeyDown={(event) => {
+                        if (
+                            [
+                                "ArrowUp",
+                                "ArrowDown",
+                                "PageUp",
+                                "PageDown",
+                                "Home",
+                                "End",
+                                " ",
+                            ].includes(event.key)
+                        )
+                            scrollIntent();
+                    }}
                     data-gallery-scroll
                     tabIndex={0}
                     aria-label="Gallery images"
@@ -479,12 +579,13 @@ export function GalleryLightbox({
                             className={styles.progressSegment}
                             aria-label={slot.images.map((item) => item.image.alt).join(" / ")}
                             aria-current={index === center ? "true" : undefined}
-                            onClick={() =>
+                            onClick={() => {
+                                scrollIntent();
                                 scrollRef.current?.scrollTo({
                                     top: index * viewport.height,
                                     behavior: reduceMotion ? "auto" : "smooth",
-                                })
-                            }
+                                });
+                            }}
                         />
                     ))}
                 </div>

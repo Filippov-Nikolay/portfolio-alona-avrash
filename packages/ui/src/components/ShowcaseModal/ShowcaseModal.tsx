@@ -72,6 +72,7 @@ function TileImage({
         <div
             ref={hostRef}
             className={styles.tileImages}
+            data-gallery-tile={index}
             data-load-state="loading"
             aria-busy="true"
         />
@@ -224,6 +225,9 @@ function ModalContent({
             const modalEl = modalRef.current;
             const tileRect = measureRect(el);
             if (!modalEl || !tileRect) throw new Error("Missing gallery tile");
+            // Preserve subpixel layout sizes without the modal entrance's scale.
+            // clientWidth/clientHeight would round them before the FLIP starts.
+            const modalStyle = getComputedStyle(modalEl);
             pendingIndex.current = null;
             setLightbox({
                 index,
@@ -231,8 +235,8 @@ function ModalContent({
                 fillRect: {
                     top: 0,
                     left: 0,
-                    width: modalEl.clientWidth,
-                    height: modalEl.clientHeight,
+                    width: parseFloat(modalStyle.width),
+                    height: parseFloat(modalStyle.height),
                 },
             });
         } catch {
@@ -286,9 +290,25 @@ function ModalContent({
         });
         // Separate scroll writes from measurement and from the closing FLIP.
         await nextPaint();
-        const result = measureRect(el);
+        return measureRect(el);
+    };
+
+    const prepareBackground = async (index: number) => {
+        const request = openRequest.current;
+        imagePool.restoreTiles(index);
+        const body = bodyRef.current;
+        if (!body) return;
+        const bounds = body.getBoundingClientRect();
+        const visible: number[] = [];
+        for (const [tileIndex, tile] of galleryElRefs.current) {
+            if (tileIndex === index) continue;
+            const rect = tile.getBoundingClientRect();
+            if (rect.bottom > bounds.top - 80 && rect.top < bounds.bottom + 80)
+                visible.push(tileIndex);
+        }
+        await imagePool.prepareTiles(visible);
+        if (request !== openRequest.current) return;
         body.style.visibility = "";
-        return result;
     };
 
     // ESC closes the lightbox first when it's open, the modal itself otherwise.
@@ -527,6 +547,7 @@ function ModalContent({
                     launchRect={lightbox.launchRect}
                     fillRect={lightbox.fillRect}
                     prepareClose={prepareClose}
+                    prepareBackground={prepareBackground}
                     onOpened={() => {
                         if (bodyRef.current) bodyRef.current.style.visibility = "hidden";
                         onLightboxChange?.(lightbox.index);

@@ -2,8 +2,20 @@
 
 .lightbox {
     position: absolute;
+    // Fill fractional modal dimensions too; integer clientWidth/clientHeight
+    // measurements can expose a light seam at the right and bottom edges.
+    inset: 0;
     z-index: 30;
     overflow: hidden;
+    transition: none;
+
+    // Paint the open viewport below the transformed frame. WebKit can rasterize
+    // that GPU layer a device pixel narrower than the modal at fractional zoom.
+    // Keep the viewport transparent while the frame travels to/from a tile.
+    &[data-phase="open"],
+    &[data-phase="preparing-close"][data-ready] {
+        background: var(--accent-color-modal, #000);
+    }
 }
 
 .frame {

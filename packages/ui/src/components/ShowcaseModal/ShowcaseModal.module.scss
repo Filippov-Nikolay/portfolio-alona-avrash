@@ -501,6 +501,10 @@
         animation: none;
     }
 
+    &[data-load-state="error"] img {
+        visibility: hidden;
+    }
+
     @include can-hover {
         .previewItem:hover & {
             transform: scale(1.04);

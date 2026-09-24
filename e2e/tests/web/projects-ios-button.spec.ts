@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-test.beforeEach(async ({ context }, testInfo) => {
+test.beforeEach(async ({ context, hasTouch }, testInfo) => {
+    test.skip(!hasTouch, "desktop intentionally enables velocity-based snapping");
     await context.addCookies([
         {
             name: "site-preloader",
@@ -16,6 +17,7 @@ test("Projects CTA keeps its painted layer while the iOS scene is pinned", async
     const section = page.locator("#projects");
     const button = section.locator('a[href$="/works"]');
     await expect(button).toBeAttached();
+    await expect(section.locator(".pin-spacer")).toBeAttached();
     await page.waitForTimeout(800);
 
     const sectionStart = await section.evaluate((element) => {
@@ -75,9 +77,12 @@ test("Projects does not change the iOS scroll position after touch scrolling sto
     page,
 }) => {
     await page.goto("/en");
+    const section = page.locator("#projects");
+    // SSR contains the section before GSAP constructs its scroll range. Measuring
+    // then gives a zero distance and tests hydration, not the pinned scene.
+    await expect(section.locator(".pin-spacer")).toBeAttached();
     await page.waitForTimeout(800);
 
-    const section = page.locator("#projects");
     const range = await section.evaluate((element) => {
         const view = element.ownerDocument.defaultView!;
         const scene = element.querySelector("[class*='stage']")!;

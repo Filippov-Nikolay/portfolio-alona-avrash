@@ -85,7 +85,9 @@ test.beforeEach(async ({ context }, testInfo) => {
 
 test("Clients, Tools and Reviews remain stable through repeated iOS scrolling", async ({
     page,
+    hasTouch,
 }) => {
+    test.skip(!hasTouch, "asserts the compact touch reveal used by Tools and Reviews");
     await page.goto("/en");
 
     const clients = page.locator("#clients");

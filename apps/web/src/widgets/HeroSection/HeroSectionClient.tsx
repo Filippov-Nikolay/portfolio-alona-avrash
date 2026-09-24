@@ -32,6 +32,7 @@ import { useHeroScroll } from "./useHeroScroll";
 import { useStatsCamera } from "./useStatsCamera";
 import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
+import { useMotionInert } from "@/shared/hooks/useMotionInert";
 
 const [NAME_FIRST, ...nameRest] = siteConfig.name.split(" ");
 const NAME_LAST = nameRest.join(" ");
@@ -100,6 +101,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const isCompact = useMediaQuery("(max-width: 767px)");
     const isNarrow = useMediaQuery("(max-width: 1023px)");
     const stageRef = useRef<HTMLDivElement>(null);
+    const heroLayerRef = useRef<HTMLDivElement>(null);
     const statsDepthPlaneRef = useRef<HTMLDivElement>(null);
     const scrollTrackRef = useRef<HTMLDivElement>(null);
     const nameFirstRef = useRef<HTMLSpanElement>(null);
@@ -280,9 +282,8 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const heroPointerEvents = useTransform(() =>
         depthProgress.get() >= (motionConfig.get().reduced ? 0.995 : 0.5) ? "none" : "auto"
     );
-    const heroVisibility = useTransform(heroOpacity, (opacity) =>
-        opacity === 0 ? "hidden" : "visible"
-    );
+    const heroInert = useTransform(heroOpacity, (opacity) => opacity === 0);
+    useMotionInert(heroLayerRef, heroInert);
     const statsCameraProgress = useTransform(
         depthProgress,
         [0, STATS_CAMERA_MOTION_END, 1],
@@ -298,9 +299,8 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         compact: isCompact,
         reduced: Boolean(reduced),
     });
-    const statsVisibility = useTransform(cameraProgress, (progress) =>
-        progress === 0 ? "hidden" : "visible"
-    );
+    const statsInert = useTransform(cameraProgress, (progress) => progress === 0);
+    useMotionInert(statsDepthPlaneRef, statsInert);
     const statsPointerEvents = useTransform(() =>
         cameraProgress.get() <= (motionConfig.get().reduced ? 0.02 : 0.08) ? "none" : "auto"
     );
@@ -467,10 +467,10 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
 
                 <div ref={stageRef} id="hero-sticky-stage" className={styles.stage}>
                     <m.div
+                        ref={heroLayerRef}
                         className={styles.heroLayer}
                         style={{
                             opacity: heroOpacity,
-                            visibility: heroVisibility,
                             pointerEvents: heroPointerEvents,
                         }}
                     >
@@ -684,8 +684,8 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                             <m.div
                                 ref={statsDepthPlaneRef}
                                 className={styles.statsDepthPlane}
+                                inert
                                 style={{
-                                    visibility: statsVisibility,
                                     pointerEvents: statsPointerEvents,
                                 }}
                             >

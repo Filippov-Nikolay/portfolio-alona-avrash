@@ -184,6 +184,8 @@
 }
 
 .statsDepthPlane {
+    // Keep SSR hidden until the camera effect is installed before paint.
+    opacity: 0;
     width: 100%;
     min-height: 100%;
     display: flex;

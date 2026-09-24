@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { m, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
+import { m, useMotionValue, useTransform } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { HeroContent, Social, StatItem } from "@avrash/content-schema";
@@ -29,6 +29,8 @@ import {
 } from "@/widgets/SelectedWorkSection/SelectedWorkSection";
 import styles from "./HeroSection.module.scss";
 import { useHeroScroll } from "./useHeroScroll";
+import { useStatsCamera } from "./useStatsCamera";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 
 const [NAME_FIRST, ...nameRest] = siteConfig.name.split(" ");
 const NAME_LAST = nameRest.join(" ");
@@ -37,10 +39,8 @@ const TITLE_TRAVEL_END = 1;
 const IMAGE_TRAVEL_END = 1;
 const TITLE_EXIT_SAFETY_MARGIN_MIN = 24;
 const TITLE_EXIT_SAFETY_MARGIN_RATIO = 0.04;
-const CAMERA_SETTLE_END = 0.96;
 const CAMERA_PROGRESS_INPUT = [0, 0.32, 0.62, 0.86, 1];
 const CAMERA_PROGRESS_OUTPUT = [0, 0.24, 0.52, 0.8, 1];
-const STATS_PERSPECTIVE = 1320;
 const STATS_PICKUP_PROGRESS = 0;
 const SELECTED_ENTRY_VIEWPORT_RATIO = 1.14;
 const SELECTED_FOCUS_DRIFT = 0;
@@ -65,25 +65,6 @@ function clamp01(value: number) {
 function smoothstep(value: number) {
     const clamped = clamp01(value);
     return clamped * clamped * (3 - 2 * clamped);
-}
-
-function interpolateNumber(value: number, input: number[], output: number[]) {
-    if (value <= input[0]) return output[0];
-
-    const lastIndex = input.length - 1;
-    if (value >= input[lastIndex]) return output[lastIndex];
-
-    for (let index = 1; index < input.length; index += 1) {
-        if (value > input[index]) continue;
-
-        const start = input[index - 1];
-        const end = input[index];
-        const progress = end === start ? 1 : (value - start) / (end - start);
-
-        return output[index - 1] + (output[index] - output[index - 1]) * progress;
-    }
-
-    return output[lastIndex];
 }
 
 function readTranslateX(node: HTMLElement) {
@@ -146,10 +127,11 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
     const { isReady } = usePreloader();
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
     const isCompact = useCompactViewport();
     const isNarrow = useNarrowViewport();
     const stageRef = useRef<HTMLDivElement>(null);
+    const statsDepthPlaneRef = useRef<HTMLDivElement>(null);
     const scrollTrackRef = useRef<HTMLDivElement>(null);
     const nameFirstRef = useRef<HTMLSpanElement>(null);
     const nameLastRef = useRef<HTMLSpanElement>(null);
@@ -343,48 +325,12 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         CAMERA_PROGRESS_OUTPUT
     );
 
-    const statsOpacity = useTransform(() => {
-        const latest = cameraProgress.get();
-        return motionConfig.get().reduced
-            ? clamp01(latest)
-            : interpolateNumber(latest, [0, 0.04, 0.1, 0.22, 0.42, 1], [0, 0.18, 0.52, 0.82, 1, 1]);
+    useStatsCamera(statsDepthPlaneRef, cameraProgress, {
+        compact: isCompact,
+        reduced: Boolean(reduced),
     });
-    const statsTransform = useTransform(() => {
-        const latest = cameraProgress.get();
-        const { reduced: prefersReduced, isCompact: compact } = motionConfig.get();
-        const depthStartZ = prefersReduced ? 0 : compact ? 220 : 420;
-        const depthMidZ = prefersReduced ? 0 : compact ? 92 : 172;
-        const z = interpolateNumber(
-            latest,
-            [0, 0.52, CAMERA_SETTLE_END, 1],
-            [depthStartZ, depthMidZ, 0, 0]
-        );
-        const depthStartScale = prefersReduced ? 1 : compact ? 2.15 : 2.9;
-        const depthNearScale = prefersReduced ? 1 : compact ? 1.72 : 2.08;
-        const depthMidScale = prefersReduced ? 1 : compact ? 1.38 : 1.52;
-        const depthLateScale = prefersReduced ? 1 : compact ? 1.12 : 1.16;
-        const scale = interpolateNumber(
-            latest,
-            [0, 0.24, 0.52, 0.8, CAMERA_SETTLE_END, 1],
-            [depthStartScale, depthNearScale, depthMidScale, depthLateScale, 1, 1]
-        );
-        const depthStartY = prefersReduced ? 0 : compact ? -240 : -430;
-        const depthMidY = prefersReduced ? 0 : compact ? -96 : -170;
-        const y = interpolateNumber(
-            latest,
-            [0, 0.55, CAMERA_SETTLE_END, 1],
-            [depthStartY, depthMidY, 0, 0]
-        );
-
-        if (compact && !prefersReduced) {
-            const projection = STATS_PERSPECTIVE / (STATS_PERSPECTIVE - z);
-            return `translate3d(0px, ${y * projection}px, 0px) scale(${scale * projection})`;
-        }
-
-        return `translate3d(0px, ${y}px, ${z}px) scale(${scale})`;
-    });
-    const statsVisibility = useTransform(statsOpacity, (opacity) =>
-        opacity === 0 ? "hidden" : "visible"
+    const statsVisibility = useTransform(cameraProgress, (progress) =>
+        progress === 0 ? "hidden" : "visible"
     );
     const statsPointerEvents = useTransform(() =>
         cameraProgress.get() <= (motionConfig.get().reduced ? 0.02 : 0.08) ? "none" : "auto"
@@ -767,11 +713,10 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                     <div className={styles.statsViewport}>
                         <m.div className={styles.statsLiftLayer} style={{ y: statsLiftY }}>
                             <m.div
+                                ref={statsDepthPlaneRef}
                                 className={styles.statsDepthPlane}
                                 style={{
-                                    opacity: statsOpacity,
                                     visibility: statsVisibility,
-                                    transform: statsTransform,
                                     pointerEvents: statsPointerEvents,
                                 }}
                             >

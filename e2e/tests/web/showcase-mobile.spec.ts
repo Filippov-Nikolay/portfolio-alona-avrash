@@ -57,6 +57,19 @@ declare global {
         releaseImageDecode: () => void | Promise<void>;
         gifImage: HTMLImageElement;
         gifSourceChanges: string[];
+        modalEntrance: {
+            scrollY: number;
+            recording: boolean;
+            previousFocus: Element | null;
+            frames: {
+                phase: string | undefined;
+                scrollY: number;
+                locked: boolean;
+                bounds: number[];
+                tiles: { width: number; radius: string; clip: string }[];
+                ancestorOpacity: string;
+            }[];
+        };
     }
 }
 
@@ -73,6 +86,151 @@ test.beforeEach(async ({ page, context }, testInfo) => {
     await page.route("**/projects/esencha/**", (route) => route.fulfill(artwork));
     await page.route("**/api/gallery-poster?**", (route) => route.fulfill(artwork));
 });
+
+for (const width of [1407, 390]) {
+    test.describe(`project modal entrance at ${width}px`, () => {
+        test.use({ viewport: { width, height: 847 }, isMobile: false });
+
+        test("opening from Works keeps geometry, clipping and page scroll stable", async ({
+            page,
+        }, testInfo) => {
+            const gifRequests: string[] = [];
+            page.on("request", (request) => {
+                if (/\/projects\/esencha\/.*\.gif$/.test(new URL(request.url()).pathname))
+                    gifRequests.push(request.url());
+            });
+            await page.goto("/en/works");
+            await page.evaluate(() => document.fonts.ready);
+            const card = page.getByTestId("works-card").filter({
+                has: page.getByRole("heading", { name: "ESENCHA", exact: true }),
+            });
+            const trigger = card.getByRole("button", { name: /view project/i });
+            await trigger.scrollIntoViewIfNeeded();
+            await trigger.focus();
+            await trigger.evaluate((button) => {
+                button.addEventListener(
+                    "click",
+                    () => {
+                        window.modalEntrance = {
+                            scrollY,
+                            recording: true,
+                            previousFocus: document.activeElement,
+                            frames: [],
+                        };
+                        const sample = () => {
+                            const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+                            if (dialog) {
+                                const rect = dialog.getBoundingClientRect();
+                                window.modalEntrance.frames.push({
+                                    phase: dialog.dataset.state,
+                                    scrollY,
+                                    locked: document.documentElement.style.overflow === "hidden",
+                                    bounds: [rect.x, rect.y, rect.width, rect.height],
+                                    ancestorOpacity: getComputedStyle(
+                                        dialog.parentElement!.parentElement!
+                                    ).opacity,
+                                    tiles: Array.from(
+                                        dialog.querySelectorAll<HTMLElement>("[data-gallery-tile]"),
+                                        (tile) => ({
+                                            width: tile.getBoundingClientRect().width,
+                                            radius: getComputedStyle(tile).borderRadius,
+                                            clip: getComputedStyle(tile).clipPath,
+                                        })
+                                    ),
+                                });
+                            }
+                            if (window.modalEntrance.recording) requestAnimationFrame(sample);
+                        };
+                        requestAnimationFrame(sample);
+                    },
+                    { once: true }
+                );
+            });
+            await trigger.click();
+            const dialog = page.getByRole("dialog", { name: "ESENCHA" });
+            await expect(dialog).toHaveAttribute("data-state", "open");
+            await expect(
+                dialog.locator('[data-gallery-tile][data-load-state="loaded"]')
+            ).toHaveCount(3);
+            // Leave the cursor at the click position: opening under it must not
+            // trigger the flex-grow hover animation on a newly mounted preview.
+            await page.waitForTimeout(550);
+            const entrance = await page.evaluate(() => window.modalEntrance);
+            expect(entrance.frames.length).toBeGreaterThan(1);
+            const first = entrance.frames[0];
+            for (const frame of entrance.frames) {
+                expect(frame.locked).toBe(true);
+                expect(frame.scrollY).toBe(entrance.scrollY);
+                expect(frame.ancestorOpacity).toBe("1");
+                frame.bounds.forEach((value, index) =>
+                    expect(Math.abs(value - first.bounds[index])).toBeLessThan(1)
+                );
+                expect(frame.tiles).toHaveLength(3);
+                frame.tiles.forEach((tile, index) => {
+                    expect(tile.radius).toBe("12px");
+                    expect(tile.clip).toBe("inset(0px round 12px)");
+                    expect(Math.abs(tile.width - first.tiles[index].width)).toBeLessThan(1);
+                });
+            }
+            expect(gifRequests).toEqual([]);
+            const tile = await dialog.locator('[data-gallery-tile="0"]').boundingBox();
+            const screenshot = await page.screenshot({ scale: "css" });
+            await testInfo.attach("project-modal-open", {
+                body: screenshot,
+                contentType: "image/png",
+            });
+            const pixels = await page.evaluate(
+                async ({ data, x, y }) => {
+                    const image = new Image();
+                    image.src = "data:image/png;base64," + data;
+                    await image.decode();
+                    const canvas = document.createElement("canvas");
+                    canvas.width = canvas.height = 20;
+                    const context = canvas.getContext("2d")!;
+                    context.drawImage(image, x, y, 20, 20, 0, 0, 20, 20);
+                    return {
+                        corner: Array.from(context.getImageData(1, 1, 1, 1).data).slice(0, 3),
+                        interior: Array.from(context.getImageData(15, 15, 1, 1).data).slice(0, 3),
+                    };
+                },
+                {
+                    data: screenshot.toString("base64"),
+                    x: Math.ceil(tile!.x),
+                    y: Math.ceil(tile!.y),
+                }
+            );
+            // The image must actually be cut away at its rounded corner, not
+            // merely report a border-radius while painting a square GPU layer.
+            pixels.corner.forEach((value, index) =>
+                expect(Math.abs(value - [244, 244, 245][index])).toBeLessThan(5)
+            );
+            pixels.interior.forEach((value, index) =>
+                expect(Math.abs(value - [180, 90, 140][index])).toBeLessThan(5)
+            );
+            await page.keyboard.press("Escape");
+            await expect(dialog).toHaveCount(0);
+            await page.evaluate(() => {
+                window.modalEntrance.recording = false;
+            });
+            expect(await page.evaluate(() => scrollY)).toBe(entrance.scrollY);
+            expect(await page.evaluate(() => document.documentElement.style.overflow)).not.toBe(
+                "hidden"
+            );
+            const closing = await page.evaluate(() =>
+                window.modalEntrance.frames.filter((frame) => frame.phase === "closing")
+            );
+            expect(closing.length).toBeGreaterThan(0);
+            expect(closing.every((frame) => frame.locked)).toBe(true);
+            // WebKit does not focus buttons on pointer clicks. Restore the
+            // focus that actually preceded opening in each browser.
+            expect(
+                await page.evaluate(
+                    () => document.activeElement === window.modalEntrance.previousFocus
+                )
+            ).toBe(true);
+        });
+    });
+}
 
 async function openGallery(page: Page) {
     await page.setViewportSize({ width: 390, height: 844 });

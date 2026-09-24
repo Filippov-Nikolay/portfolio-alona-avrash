@@ -5,6 +5,12 @@ export const STATS_CAMERA_DURATION = 1000;
 export interface StatsCameraConfig {
     compact: boolean;
     reduced: boolean;
+    integratedReveal?: boolean;
+}
+
+export function statsGridRevealY(progress: number) {
+    const t = Math.max(0, Math.min(1, (progress - 0.49) / (0.58 - 0.49)));
+    return 28 * (1 - t) ** 3;
 }
 
 function interpolate(value: number, input: number[], output: number[]) {
@@ -20,7 +26,10 @@ function interpolate(value: number, input: number[], output: number[]) {
 }
 
 /** The original camera curve, shared by keyframes and the non-WAAPI fallback. */
-export function statsCameraPose(progress: number, { compact, reduced }: StatsCameraConfig) {
+export function statsCameraPose(
+    progress: number,
+    { compact, reduced, integratedReveal }: StatsCameraConfig
+) {
     const opacity = reduced
         ? Math.max(0, Math.min(1, progress))
         : interpolate(progress, [0, 0.04, 0.1, 0.22, 0.42, 1], [0, 0.18, 0.52, 0.82, 1, 1]);
@@ -41,14 +50,18 @@ export function statsCameraPose(progress: number, { compact, reduced }: StatsCam
         [0, 0.55, CAMERA_SETTLE_END, 1],
         [reduced ? 0 : compact ? -240 : -430, reduced ? 0 : compact ? -96 : -170, 0, 0]
     );
+    const revealY = integratedReveal && !reduced ? statsGridRevealY(progress) : 0;
     if (compact && !reduced) {
         const projection = STATS_PERSPECTIVE / (STATS_PERSPECTIVE - z);
         return {
             opacity,
-            transform: `translate3d(0px, ${y * projection}px, 0px) scale(${scale * projection})`,
+            transform: `translate3d(0px, ${(y + scale * revealY) * projection}px, 0px) scale(${scale * projection})`,
         };
     }
-    return { opacity, transform: `translate3d(0px, ${y}px, ${z}px) scale(${scale})` };
+    return {
+        opacity,
+        transform: `translate3d(0px, ${y + scale * revealY}px, ${z}px) scale(${scale})`,
+    };
 }
 
 export function statsCameraKeyframes(config: StatsCameraConfig): Keyframe[] {
@@ -69,6 +82,11 @@ export function statsCameraKeyframes(config: StatsCameraConfig): Keyframe[] {
     ]);
     if (config.compact && !config.reduced) {
         for (let step = 1; step < 120; step++) offsets.add(step / 120);
+    }
+    if (config.integratedReveal && !config.reduced) {
+        // The old child translation uses power2.out over a short progress window.
+        // Sample that cubic densely to keep its projected path within 0.01 CSS px.
+        for (let step = 0; step <= 90; step++) offsets.add(0.49 + step * 0.001);
     }
     return [...offsets]
         .sort((a, b) => a - b)

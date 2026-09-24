@@ -12,14 +12,40 @@ import {
 export function useStatsCamera(
     ref: RefObject<HTMLDivElement | null>,
     progress: MotionValue<number>,
-    { compact, reduced }: StatsCameraConfig
+    { compact, reduced, integratedReveal }: StatsCameraConfig
 ) {
     useLayoutEffect(() => {
         const element = ref.current;
         if (!element) return;
-        const config = { compact, reduced };
+        const config = { compact, reduced, integratedReveal };
         const originalTransform = element.style.transform;
         const originalOpacity = element.style.opacity;
+        const originalOrigin = element.style.transformOrigin;
+        const anchor = element.parentElement!;
+        const stage = element.closest<HTMLElement>("[data-stats-camera-stage]")!;
+        let disposed = false;
+        let origin = "";
+        const applyOrigin = () => {
+            if (element.style.transformOrigin !== origin) element.style.transformOrigin = origin;
+        };
+        const measureOrigin = () => {
+            if (disposed) return;
+            // Measure the untransformed slot, never the animated camera. The
+            // origin stays at the old full-screen plane's center as the grid shrinks.
+            const slot = anchor.getBoundingClientRect();
+            const viewport = stage.getBoundingClientRect();
+            origin = `${viewport.left + viewport.width / 2 - slot.left}px ${viewport.top + viewport.height / 2 - slot.top}px`;
+            frame.render(applyOrigin);
+        };
+        const scheduleOrigin = () => frame.read(measureOrigin);
+        measureOrigin();
+        applyOrigin();
+        const observer = new ResizeObserver(scheduleOrigin);
+        observer.observe(anchor);
+        observer.observe(stage);
+        void document.fonts.ready.then(() => {
+            if (!disposed) scheduleOrigin();
+        });
         const animation =
             typeof element.animate === "function"
                 ? element.animate(statsCameraKeyframes(config), {
@@ -51,13 +77,18 @@ export function useStatsCamera(
         seek();
 
         return () => {
+            disposed = true;
+            observer.disconnect();
+            cancelFrame(measureOrigin);
+            cancelFrame(applyOrigin);
             unsubscribe();
             cancelFrame(seek);
             animation?.cancel();
+            element.style.transformOrigin = originalOrigin;
             if (!animation) {
                 element.style.transform = originalTransform;
                 element.style.opacity = originalOpacity;
             }
         };
-    }, [compact, progress, reduced, ref]);
+    }, [compact, progress, reduced, integratedReveal, ref]);
 }

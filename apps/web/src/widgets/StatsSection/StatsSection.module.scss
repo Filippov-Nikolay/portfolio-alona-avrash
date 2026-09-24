@@ -18,10 +18,18 @@
     padding-block: clamp(96px, 13svh, 148px);
 }
 
+.grid,
+.cameraSlot {
+    width: min(100%, 760px);
+}
+
+.cameraSlot .grid {
+    width: 100%;
+}
+
 .grid {
     display: grid;
     grid-template-columns: repeat(var(--stats-count), minmax(0, 1fr));
-    width: min(100%, 760px);
     will-change: transform, filter;
     backface-visibility: hidden;
 }
@@ -71,12 +79,6 @@
 .reelTrack {
     display: flex;
     flex-direction: column;
-    will-change: transform;
-    backface-visibility: hidden;
-}
-
-.reelTrackDiscrete {
-    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reelDigit {
@@ -107,7 +109,8 @@
         padding-block: clamp(88px, 11svh, 120px);
     }
 
-    .grid {
+    .grid,
+    .cameraSlot {
         width: min(100%, 660px);
     }
 
@@ -133,6 +136,10 @@
 
     .grid {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .grid,
+    .cameraSlot {
         width: min(100%, 280px);
     }
 
@@ -162,6 +169,10 @@
 
     .grid {
         grid-template-columns: repeat(var(--stats-count), minmax(0, 1fr));
+    }
+
+    .grid,
+    .cameraSlot {
         width: min(100%, 520px);
     }
 
@@ -188,15 +199,15 @@
     .grid {
         will-change: transform;
     }
+
+    .cameraSlot .grid {
+        will-change: auto;
+        backface-visibility: visible;
+    }
 }
 
 @include reduced-motion {
-    .grid,
-    .reelTrack {
+    .grid {
         will-change: auto;
-    }
-
-    .reelTrackDiscrete {
-        transition: none;
     }
 }

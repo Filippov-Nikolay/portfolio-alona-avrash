@@ -100,6 +100,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const reduced = useReducedMotionPreference();
     const isCompact = useMediaQuery("(max-width: 767px)");
     const isNarrow = useMediaQuery("(max-width: 1023px)");
+    const isTouch = useMediaQuery("(hover: none) and (pointer: coarse)");
     const stageRef = useRef<HTMLDivElement>(null);
     const heroLayerRef = useRef<HTMLDivElement>(null);
     const statsDepthPlaneRef = useRef<HTMLDivElement>(null);
@@ -283,7 +284,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         depthProgress.get() >= (motionConfig.get().reduced ? 0.995 : 0.5) ? "none" : "auto"
     );
     const heroInert = useTransform(heroOpacity, (opacity) => opacity === 0);
-    useMotionInert(heroLayerRef, heroInert);
+    useMotionInert(heroLayerRef, heroInert, heroPointerEvents);
     const statsCameraProgress = useTransform(
         depthProgress,
         [0, STATS_CAMERA_MOTION_END, 1],
@@ -298,12 +299,13 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     useStatsCamera(statsDepthPlaneRef, cameraProgress, {
         compact: isCompact,
         reduced: Boolean(reduced),
+        integratedReveal: isTouch,
     });
     const statsInert = useTransform(cameraProgress, (progress) => progress === 0);
-    useMotionInert(statsDepthPlaneRef, statsInert);
     const statsPointerEvents = useTransform(() =>
         cameraProgress.get() <= (motionConfig.get().reduced ? 0.02 : 0.08) ? "none" : "auto"
     );
+    useMotionInert(statsDepthPlaneRef, statsInert, statsPointerEvents);
     const selectedEntryProgress = useTransform(statsSelectedRawProgress, (latest) => {
         return clamp01(latest);
     });
@@ -471,7 +473,6 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                         className={styles.heroLayer}
                         style={{
                             opacity: heroOpacity,
-                            pointerEvents: heroPointerEvents,
                         }}
                     >
                         <NoiseLayer />
@@ -680,22 +681,20 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                     </m.div>
 
                     <div className={styles.statsViewport}>
-                        <m.div className={styles.statsLiftLayer} style={{ y: statsLiftY }}>
-                            <m.div
-                                ref={statsDepthPlaneRef}
-                                className={styles.statsDepthPlane}
-                                inert
-                                style={{
-                                    pointerEvents: statsPointerEvents,
-                                }}
-                            >
-                                <StatsSection
-                                    as="div"
-                                    items={stats}
-                                    depthProgress={cameraProgress}
-                                    className={styles.statsSection}
-                                />
-                            </m.div>
+                        <m.div
+                            className={styles.statsLiftLayer}
+                            style={{ y: statsLiftY }}
+                            data-stats-camera-stage
+                        >
+                            <StatsSection
+                                as="div"
+                                items={stats}
+                                depthProgress={cameraProgress}
+                                className={styles.statsSection}
+                                cameraRef={statsDepthPlaneRef}
+                                cameraClassName={styles.statsDepthPlane}
+                                integratedReveal={isTouch}
+                            />
                         </m.div>
                     </div>
                     {selectedWork && (

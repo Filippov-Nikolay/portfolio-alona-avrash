@@ -187,9 +187,6 @@
     // Keep SSR hidden until the camera effect is installed before paint.
     opacity: 0;
     width: 100%;
-    min-height: 100%;
-    display: flex;
-    align-items: center;
     transform-origin: 50% 50%;
     transform-style: preserve-3d;
     will-change: transform, opacity;
@@ -427,7 +424,6 @@
 
 .nameTrack {
     width: 100%;
-    will-change: transform;
 }
 
 .name {

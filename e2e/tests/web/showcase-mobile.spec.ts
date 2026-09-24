@@ -55,6 +55,8 @@ declare global {
         lightboxImage: HTMLImageElement;
         lightboxSource: string;
         releaseImageDecode: () => void | Promise<void>;
+        gifImage: HTMLImageElement;
+        gifSourceChanges: string[];
     }
 }
 
@@ -64,12 +66,12 @@ test.beforeEach(async ({ page, context }, testInfo) => {
     await context.addCookies([
         { name: "site-preloader", value: "1", url: String(testInfo.project.use.baseURL) },
     ]);
-    await page.route("**/projects/esencha/**", (route) =>
-        route.fulfill({
-            contentType: "image/svg+xml",
-            body: '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><path fill="#b45a8c" d="M0 0h1200v800H0z"/><circle cx="600" cy="400" r="260" fill="none" stroke="#fff" stroke-width="20"/></svg>',
-        })
-    );
+    const artwork = {
+        contentType: "image/svg+xml",
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><path fill="#b45a8c" d="M0 0h1200v800H0z"/><circle cx="600" cy="400" r="260" fill="none" stroke="#fff" stroke-width="20"/></svg>',
+    };
+    await page.route("**/projects/esencha/**", (route) => route.fulfill(artwork));
+    await page.route("**/api/gallery-poster?**", (route) => route.fulfill(artwork));
 });
 
 async function openGallery(page: Page) {
@@ -128,10 +130,14 @@ async function assertImage(page: Page) {
     });
 }
 
-async function captureImageColor(page: Page, testInfo: TestInfo, name: string, index = 1) {
-    const bounds = await page
-        .locator(`[data-testid="gallery-lightbox"] img[data-gallery-image="${index}"]`)
-        .boundingBox();
+async function captureImageColor(
+    page: Page,
+    testInfo: TestInfo,
+    name: string,
+    index = 1,
+    scope = '[data-testid="gallery-lightbox"]'
+) {
+    const bounds = await page.locator(`${scope} img[data-gallery-image="${index}"]`).boundingBox();
     expect(bounds).not.toBeNull();
     const png = await page.screenshot({
         path: testInfo.outputPath(name + ".png"),
@@ -364,7 +370,7 @@ for (const selectedIndex of [2, 3]) {
             );
         const openingColors: number[][] = [];
         // The right-side launch also tests closing halfway through the reveal.
-        for (const time of selectedIndex === 2 ? [0, 80, 160, 239] : [0, 60, 120]) {
+        for (const time of selectedIndex === 2 ? [0, 40, 80, 119] : [0, 30, 60]) {
             await setFadeTime(time);
             openingColors.push(
                 await captureImageColor(page, testInfo, `row-reveal-${time}`, companionIndex)
@@ -418,7 +424,7 @@ for (const selectedIndex of [2, 3]) {
     });
 }
 
-test("a companion decoded during close stays hidden", async ({ page }) => {
+test("closing restores a late companion before revealing the tiles", async ({ page }) => {
     await openGallery(page);
     await page.evaluate(() => {
         const decode = HTMLImageElement.prototype.decode;
@@ -443,15 +449,265 @@ test("a companion decoded during close stays hidden", async ({ page }) => {
     const companion = lightbox.locator('[data-image-layer="3"]');
     await expect(companion.locator("img")).toHaveCount(0);
     await page.keyboard.press("Escape");
-    await expect(lightbox).toHaveAttribute("data-phase", "closing");
+    await expect(lightbox).toHaveAttribute("data-phase", "preparing-close");
+    await expect(page.locator("[data-lightbox-open]")).toHaveCSS("visibility", "hidden");
     await page.evaluate(() => window.releaseImageDecode());
+    await expect(lightbox).toHaveAttribute("data-phase", "closing");
     await expect(companion.locator("img")).toHaveCount(0);
     await expect(companion).toHaveCSS("opacity", "0");
+    await expectBackgroundReady(page, 2);
     await page.evaluate(() =>
         window.lightboxAnimations.slice(-2).forEach((animation) => animation.finish())
     );
     await expect(lightbox).toHaveCount(0);
     await expect(tile).toBeFocused();
+});
+
+async function expectBackgroundReady(page: Page, returningIndex: number) {
+    const state = await page.locator("[data-lightbox-open]").evaluate((body, returningIndex) => {
+        const bounds = body.getBoundingClientRect();
+        const visible = Array.from(
+            body.querySelectorAll<HTMLElement>("[data-gallery-tile]")
+        ).filter((host) => {
+            const rect = host.getBoundingClientRect();
+            return (
+                Number(host.dataset.galleryTile) !== returningIndex &&
+                rect.bottom > bounds.top &&
+                rect.top < bounds.bottom
+            );
+        });
+        return {
+            visible: getComputedStyle(body).visibility,
+            count: visible.length,
+            incomplete: visible
+                .filter((host) => {
+                    const image = host.querySelector("img");
+                    return (
+                        !image ||
+                        !image.getAttribute("src") ||
+                        !image.complete ||
+                        !image.naturalWidth ||
+                        getComputedStyle(image).visibility !== "visible" ||
+                        getComputedStyle(image).objectFit !== "cover"
+                    );
+                })
+                .map((host) => host.dataset.galleryTile),
+        };
+    }, returningIndex);
+    expect(state.visible).toBe("visible");
+    expect(state.count).toBeGreaterThan(1);
+    expect(state.incomplete).toEqual([]);
+}
+
+test("closing exposes restored tiles and keeps GIFs valid without a poster", async ({
+    page,
+}, testInfo) => {
+    test.setTimeout(60_000);
+    await page.route("**/api/gallery-poster?**", (route) => route.fulfill({ status: 404 }));
+    await page.addInitScript(() => {
+        // Cross-origin artwork can prevent poster capture in production.
+        HTMLCanvasElement.prototype.toDataURL = () => {
+            throw new DOMException("Tainted canvas", "SecurityError");
+        };
+    });
+    await openGallery(page);
+    const tile = page.getByRole("button", { name: /visual 3$/i });
+    await tile.click();
+    const lightbox = page.getByTestId("gallery-lightbox");
+    await expect(lightbox.getByRole("group")).toBeVisible();
+    await expect(lightbox.locator('[data-image-layer="3"] img')).toHaveCount(1);
+    await controlTransition(page);
+    await page.keyboard.press("Escape");
+    await expect(lightbox).toHaveAttribute("data-phase", "closing");
+    await expect(lightbox.locator("img")).toHaveCount(1);
+    for (const time of [0, 260, 519]) {
+        await page.evaluate(
+            (time) =>
+                window.lightboxAnimations.forEach((animation) => {
+                    animation.currentTime = time;
+                }),
+            time
+        );
+        await expectBackgroundReady(page, 2);
+    }
+    for (const index of [0, 1]) {
+        const color = await captureImageColor(
+            page,
+            testInfo,
+            `restored-tile-${index}`,
+            index,
+            "[data-lightbox-open]"
+        );
+        for (let channel = 0; channel < 3; channel++)
+            expect(Math.abs(color[channel] - [180, 90, 140][channel])).toBeLessThan(4);
+    }
+    await page.evaluate(() => window.lightboxAnimations.forEach((animation) => animation.finish()));
+    await expect(lightbox).toHaveCount(0);
+    await expect(tile).toBeFocused();
+    await expect(page.locator('[data-gallery-tile="0"] img')).toHaveAttribute(
+        "src",
+        "/projects/esencha/001.gif"
+    );
+});
+
+for (const direct of [true, false]) {
+    test(`GIF ${direct ? "opened directly" : "reached by scrolling"} survives a failed preview and closes smoothly`, async ({
+        page,
+    }) => {
+        await page.route("**/api/gallery-poster?**", (route) =>
+            route.fulfill({ status: 503, body: "Preview unavailable" })
+        );
+        // Keep the original pending after the preview fails, as on a cold CDN
+        // request. A rejected preview decode must follow this fallback load.
+        await page.route("**/projects/esencha/014.gif", async (route) => {
+            await new Promise((resolve) => setTimeout(resolve, 150));
+            await route.fallback();
+        });
+        const tile = await openGallery(page);
+        if (direct) await page.getByRole("button", { name: /visual 1$/i }).click();
+        else await tile.click();
+        const lightbox = page.getByTestId("gallery-lightbox");
+        await expect(lightbox.getByRole("group")).toBeVisible();
+        if (!direct) {
+            const scroll = lightbox.locator("[data-gallery-scroll]");
+            await scroll.dispatchEvent("touchstart");
+            await scroll.evaluate((element) => {
+                element.scrollTop = element.clientHeight * 9;
+            });
+        }
+        const index = direct ? 0 : 13;
+        const host = lightbox.locator(`[data-image-layer="${index}"]`);
+        const image = host.locator("img");
+        await expect(image).toHaveCount(1);
+        await image.evaluate(async (element) => {
+            window.gifImage = element as HTMLImageElement;
+            await window.gifImage.decode();
+        });
+        await expect(host).toHaveText("");
+        await controlTransition(page);
+        await page.keyboard.press("Escape");
+        await expect(lightbox).toHaveAttribute("data-phase", "closing");
+        const widths: number[] = [];
+        for (const time of [0, 260, 519]) {
+            await page.evaluate((time) => {
+                window.lightboxAnimations.forEach((animation) => {
+                    animation.currentTime = time;
+                });
+            }, time);
+            expect(await image.evaluate((element) => element === window.gifImage)).toBe(true);
+            widths.push((await image.boundingBox())!.width);
+            await expect(host).toHaveText("");
+        }
+        expect(widths[1]).toBeLessThan(widths[0]);
+        expect(widths[2]).toBeLessThan(widths[1]);
+        await page.evaluate(() =>
+            window.lightboxAnimations.forEach((animation) => animation.finish())
+        );
+        await expect(lightbox).toHaveCount(0);
+        await expect(
+            page.getByRole("button", { name: new RegExp(`visual ${index + 1}$`, "i") })
+        ).toBeFocused();
+    });
+}
+
+test("an interrupted GIF decode does not skip the closing animation", async ({ page }) => {
+    await openGallery(page);
+    const tile = page.getByRole("button", { name: /visual 1$/i });
+    await tile.click();
+    const lightbox = page.getByTestId("gallery-lightbox");
+    await expect(lightbox.getByRole("group")).toBeVisible();
+    const image = lightbox.locator('img[data-gallery-image="0"]');
+    await image.evaluate((element) => {
+        const image = element as HTMLImageElement;
+        window.gifImage = image;
+        const decode = image.decode.bind(image);
+        image.decode = () => {
+            image.decode = decode;
+            return Promise.reject(new DOMException("Decode interrupted", "EncodingError"));
+        };
+    });
+    await controlTransition(page);
+    await page.keyboard.press("Escape");
+    await expect(lightbox).toHaveAttribute("data-phase", "closing");
+    expect(await image.evaluate((element) => element === window.gifImage)).toBe(true);
+    expect(
+        await image.evaluate((element) => (element as HTMLImageElement).naturalWidth)
+    ).toBeGreaterThan(0);
+    expect(
+        await page.evaluate(() =>
+            window.lightboxAnimations.map((animation) => animation.effect!.getTiming().duration)
+        )
+    ).toEqual([520, 520]);
+    await page.evaluate(() => window.lightboxAnimations.forEach((animation) => animation.finish()));
+    await expect(lightbox).toHaveCount(0);
+    await expect(tile).toBeFocused();
+});
+
+test("GIFs stay static throughout touch scrolling and only the settled slot plays", async ({
+    page,
+}) => {
+    test.setTimeout(60_000);
+    let fullGifRequests = 0;
+    page.on("request", (request) => {
+        if (new URL(request.url()).pathname.endsWith("/014.gif")) fullGifRequests++;
+    });
+    await openGallery(page);
+    await page.getByRole("button", { name: /visual 1$/i }).click();
+    const lightbox = page.getByTestId("gallery-lightbox");
+    const scroll = lightbox.locator("[data-gallery-scroll]");
+    await expect(lightbox.getByRole("group")).toBeVisible();
+    const launchGif = lightbox.locator('img[data-gallery-image="0"]');
+    await expect(launchGif).toHaveAttribute("src", "/projects/esencha/001.gif");
+    await scroll.dispatchEvent("touchstart");
+    await expect(launchGif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+    await scroll.evaluate((element) => {
+        element.scrollTop = element.clientHeight * 9;
+    });
+    const gif = lightbox.locator('img[data-gallery-image="13"]');
+    await expect(gif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+    // Holding a touch still must not restart a GIF just because the debounce
+    // has elapsed: the next touchmove would otherwise hitch again.
+    await page.waitForTimeout(300);
+    await expect(gif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+    expect(fullGifRequests).toBe(0);
+    await gif.evaluate((image) => {
+        window.gifImage = image as HTMLImageElement;
+    });
+    await scroll.dispatchEvent("touchend");
+    await expect(gif).toHaveAttribute("src", "/projects/esencha/014.gif");
+    await expect.poll(() => fullGifRequests).toBe(1);
+    await expect(launchGif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+
+    await scroll.dispatchEvent("touchstart");
+    await expect(gif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+    await gif.evaluate((image) => {
+        window.gifSourceChanges = [];
+        new MutationObserver((records) => {
+            records.forEach(() => window.gifSourceChanges.push(image.getAttribute("src")!));
+        }).observe(image, { attributes: true, attributeFilter: ["src"] });
+    });
+    for (const position of [9.2, 9.5, 9.8, 10.1, 9.7, 9]) {
+        await scroll.evaluate((element, position) => {
+            element.scrollTop = element.clientHeight * position;
+        }, position);
+        await page.evaluate(
+            () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+        );
+    }
+    expect(await page.evaluate(() => window.gifSourceChanges)).toEqual([]);
+    expect(fullGifRequests).toBe(1);
+    expect(await gif.evaluate((image) => image === window.gifImage)).toBe(true);
+
+    // Closing from a moving GIF must keep the preview stable for the FLIP.
+    await controlTransition(page);
+    await page.keyboard.press("Escape");
+    await expect(lightbox).toHaveAttribute("data-phase", "closing");
+    await expect(gif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+    expect(await gif.evaluate((image) => image === window.gifImage)).toBe(true);
+    await expectBackgroundReady(page, 13);
+    await page.evaluate(() => window.lightboxAnimations.forEach((animation) => animation.finish()));
+    await expect(lightbox).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /visual 14$/i })).toBeFocused();
 });
 
 test("native frames keep the image and background still across open and close", async ({
@@ -589,11 +845,103 @@ test("overview can close onto a later gallery tile after a viewport resize", asy
     await image.evaluate((element) => {
         window.lightboxImage = element as HTMLImageElement;
     });
+    await controlTransition(page);
     await page.keyboard.press("Escape");
+    await expect(lightbox).toHaveAttribute("data-phase", "closing");
+    await expectBackgroundReady(page, 6);
+    await page.evaluate(() => window.lightboxAnimations.forEach((animation) => animation.finish()));
     await expect(lightbox).toHaveCount(0);
     const destination = page.getByRole("button", { name: /visual 7$/i });
     await expect(destination).toBeFocused();
     expect(
         await destination.locator("img").evaluate((element) => element === window.lightboxImage)
     ).toBe(true);
+});
+
+test.describe("lightbox edges at fractional dimensions", () => {
+    test.use({ viewport: { width: 1407, height: 847 }, deviceScaleFactor: 1.25, isMobile: false });
+
+    test("scrolling leaves no light strip along the modal edge", async ({ page }, testInfo) => {
+        await page.route("**/projects/rosso/**", (route) =>
+            route.fulfill({
+                contentType: "image/svg+xml",
+                body: '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="1000"><path fill="#b45a8c" d="M0 0h400v1000H0z"/></svg>',
+            })
+        );
+        await page.goto("/en/works/rosso?tab=gallery");
+        const dialog = page.getByRole("dialog", { name: "Rosso" });
+        await expect(dialog).toHaveCSS("transform", "none");
+        await dialog.evaluate((element) => {
+            // Browser zoom and responsive layouts can both produce these sizes.
+            Object.assign(element.style, {
+                width: "1105.25px",
+                height: "740.25px",
+                maxWidth: "none",
+                maxHeight: "none",
+                backgroundColor: "#ffffff",
+            });
+        });
+        await page.getByRole("button", { name: /visual 2$/i }).click();
+        const lightbox = page.getByTestId("gallery-lightbox");
+        await expect(lightbox.getByRole("group")).toBeVisible();
+        const scroll = lightbox.locator("[data-gallery-scroll]");
+        for (const position of [1.25, 1.75]) {
+            await scroll.evaluate((element, position) => {
+                element.scrollTop = element.clientHeight * position;
+            }, position);
+            await expect(
+                lightbox.getByRole("group").getByRole("button").nth(Math.round(position))
+            ).toHaveAttribute("aria-current", "true");
+            const bounds = (await dialog.boundingBox())!;
+            const png = await page.screenshot({
+                path: testInfo.outputPath(`right-edge-${position}.png`),
+            });
+            const edge = await page.evaluate(
+                async ({ data, bounds }) => {
+                    const screenshot = new Image();
+                    screenshot.src = "data:image/png;base64," + data;
+                    await screenshot.decode();
+                    const dpr = window.devicePixelRatio;
+                    const canvas = document.createElement("canvas");
+                    canvas.width = 2;
+                    canvas.height = Math.floor((bounds.height - 100) * dpr);
+                    const context = canvas.getContext("2d")!;
+                    context.drawImage(
+                        screenshot,
+                        Math.floor((bounds.x + bounds.width) * dpr) - 1,
+                        Math.ceil((bounds.y + 50) * dpr),
+                        2,
+                        canvas.height,
+                        0,
+                        0,
+                        2,
+                        canvas.height
+                    );
+                    const pixels = context.getImageData(0, 0, 2, canvas.height).data;
+                    const contamination = [0, 0];
+                    // Rosso's red background has no green or blue. White from the
+                    // modal underneath is visible even in a fraction of an edge pixel.
+                    for (let i = 0; i < pixels.length; i += 4) {
+                        const column = (i / 4) % 2;
+                        contamination[column] = Math.max(
+                            contamination[column],
+                            pixels[i + 1],
+                            pixels[i + 2]
+                        );
+                    }
+                    return contamination;
+                },
+                { data: png.toString("base64"), bounds }
+            );
+            expect(edge[0]).toBeLessThan(5);
+            // The partially covered outer pixel can blend with the dark overlay,
+            // but must never expose the white modal surface below the GPU layer.
+            expect(edge[1]).toBeLessThan(100);
+            const frame = (await lightbox.locator("[data-lightbox-frame]").boundingBox())!;
+            expect(Math.abs(frame.width - bounds.width)).toBeLessThan(0.02);
+            expect(Math.abs(frame.height - bounds.height)).toBeLessThan(0.02);
+        }
+        await page.keyboard.press("Escape");
+        await expect(lightbox).toHaveCount(0);
+    });
 });

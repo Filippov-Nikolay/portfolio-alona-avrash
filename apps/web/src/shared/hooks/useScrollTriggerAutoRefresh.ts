@@ -10,6 +10,8 @@ let resizeObserver: ResizeObserver | null = null;
 let refreshTimers: number[] = [];
 let layoutSnapshot: LayoutSnapshot | null = null;
 let suppressTouchDocumentResizeUntil = 0;
+let refreshRequested = false;
+const activePointers = new Set<number>();
 
 const TOUCH_CHROME_RESIZE_SETTLE_MS = 1_200;
 
@@ -83,11 +85,46 @@ function handleDocumentResize() {
 }
 
 function queueRefresh() {
-    cancelAnimationFrame(refreshRaf);
+    refreshRequested = true;
+    if (refreshRaf) return;
     refreshRaf = requestAnimationFrame(() => {
+        refreshRaf = 0;
+        if (!activeConsumers || !refreshRequested) return;
+        // Refresh temporarily removes pins and writes scroll positions. Wait
+        // for both the gesture and inertia to finish before asking GSAP to run it.
+        if (activePointers.size > 0 || ScrollTrigger.isScrolling()) return;
+        refreshRequested = false;
         ScrollTrigger.sort();
-        ScrollTrigger.refresh();
+        // Safe mode also covers a new gesture starting before GSAP's delay ends.
+        ScrollTrigger.refresh(true);
     });
+}
+
+function flushPendingRefresh() {
+    if (refreshRequested) queueRefresh();
+}
+
+function handlePointerDown(event: PointerEvent) {
+    activePointers.add(event.pointerId);
+}
+
+function handlePointerUp(event: PointerEvent) {
+    activePointers.delete(event.pointerId);
+    flushPendingRefresh();
+}
+
+function handleBlur() {
+    activePointers.clear();
+    flushPendingRefresh();
+}
+
+function handleRefresh() {
+    // Pin spacers change document height during refresh. Treat that resulting
+    // layout as the baseline before ResizeObserver reports it back to us.
+    layoutSnapshot = readLayoutSnapshot();
+    refreshRequested = false;
+    cancelAnimationFrame(refreshRaf);
+    refreshRaf = 0;
 }
 
 function attachSharedWatchers() {
@@ -98,6 +135,12 @@ function attachSharedWatchers() {
     refreshTimers = [0, 250, 800].map((delay) => window.setTimeout(queueRefresh, delay));
     window.addEventListener("load", queueRefresh);
     window.addEventListener("resize", handleViewportResize);
+    window.addEventListener("blur", handleBlur);
+    document.addEventListener("pointerdown", handlePointerDown, { passive: true, capture: true });
+    document.addEventListener("pointerup", handlePointerUp, { passive: true, capture: true });
+    document.addEventListener("pointercancel", handlePointerUp, { passive: true, capture: true });
+    ScrollTrigger.addEventListener("scrollEnd", flushPendingRefresh);
+    ScrollTrigger.addEventListener("refresh", handleRefresh);
 
     if (typeof ResizeObserver !== "undefined") {
         resizeObserver = new ResizeObserver(handleDocumentResize);
@@ -111,10 +154,19 @@ function detachSharedWatchers() {
     if (activeConsumers > 0) return;
 
     cancelAnimationFrame(refreshRaf);
+    refreshRaf = 0;
+    refreshRequested = false;
+    activePointers.clear();
     refreshTimers.forEach((timer) => window.clearTimeout(timer));
     refreshTimers = [];
     window.removeEventListener("load", queueRefresh);
     window.removeEventListener("resize", handleViewportResize);
+    window.removeEventListener("blur", handleBlur);
+    document.removeEventListener("pointerdown", handlePointerDown, true);
+    document.removeEventListener("pointerup", handlePointerUp, true);
+    document.removeEventListener("pointercancel", handlePointerUp, true);
+    ScrollTrigger.removeEventListener("scrollEnd", flushPendingRefresh);
+    ScrollTrigger.removeEventListener("refresh", handleRefresh);
     resizeObserver?.disconnect();
     resizeObserver = null;
     layoutSnapshot = null;

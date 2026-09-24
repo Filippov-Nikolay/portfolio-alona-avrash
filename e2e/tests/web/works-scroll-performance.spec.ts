@@ -1,161 +1,185 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 declare global {
     interface Window {
-        worksEntrances: Animation[];
         worksMeasurements: number;
     }
 }
 
-test.beforeEach(async ({ context, hasTouch, page }, testInfo) => {
-    test.skip(!hasTouch, "requires a touch-capable browser context");
+test.beforeEach(async ({ context, page }, testInfo) => {
     await context.addCookies([
         { name: "site-preloader", value: "1", url: String(testInfo.project.use.baseURL) },
     ]);
     await page.addInitScript(() => {
-        window.worksEntrances = [];
         window.worksMeasurements = 0;
+        const isCard = (element: Element) => element.matches('[data-testid="works-card"]');
         const measure = Element.prototype.getBoundingClientRect;
         Element.prototype.getBoundingClientRect = function () {
-            if (this.matches('[data-works-reveal], [data-testid="works-card"]'))
-                window.worksMeasurements++;
+            if (isCard(this)) window.worksMeasurements++;
             return measure.call(this);
         };
-        document.addEventListener("animationstart", (event) => {
-            const target = event.target as HTMLElement;
-            if (target.dataset.worksReveal !== "entering") return;
-            const animation = target.getAnimations()[0];
-            animation.pause();
-            window.worksEntrances.push(animation);
-        });
+        for (const property of ["offsetTop", "offsetParent", "offsetHeight", "offsetWidth"]) {
+            const descriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, property)!;
+            Object.defineProperty(HTMLElement.prototype, property, {
+                ...descriptor,
+                get() {
+                    if (isCard(this)) window.worksMeasurements++;
+                    return descriptor.get!.call(this);
+                },
+            });
+        }
     });
 });
 
-test("Works entrances keep a constant size and finish independently of scrolling", async ({
+async function waitForEntrances(page: Page) {
+    const cards = page.getByTestId("works-card");
+    await expect(cards.first()).toBeVisible();
+    // Wait for hydration, fonts and the original staggered page entrance.
+    await page.evaluate(() => document.fonts.ready);
+    await expect
+        .poll(() => cards.nth(1).evaluate((card) => card.style.getPropertyValue("--reveal")))
+        .not.toBe("");
+    await expect
+        .poll(() =>
+            cards.evaluateAll((elements) =>
+                elements.every((card) => getComputedStyle(card.parentElement!).opacity === "1")
+            )
+        )
+        .toBe(true);
+}
+
+async function pose(card: Locator) {
+    return card.evaluate((element) => {
+        const style = getComputedStyle(element);
+        const transform = new DOMMatrixReadOnly(style.transform);
+        return {
+            progress: Number(style.getPropertyValue("--reveal")),
+            scale: transform.m11,
+            y: transform.m42,
+            blur: style.filter === "none" ? 0 : parseFloat(style.filter.slice(5)),
+            filter: style.filter,
+            opacity: style.opacity,
+            active: element.hasAttribute("data-works-reveal-active"),
+            settled: element.hasAttribute("data-works-reveal-settled"),
+            willChange: style.willChange,
+        };
+    });
+}
+
+async function scrubTo(card: Locator, ratio: number) {
+    await card.evaluate((element, ratio) => {
+        const top = element.parentElement!.getBoundingClientRect().top + scrollY;
+        scrollTo(0, top - innerHeight * ratio);
+    }, ratio);
+    const t = Math.max(0, Math.min(1, (1 - ratio) / 0.5));
+    const progress = t * t * (3 - 2 * t);
+    await expect(async () => {
+        const state = await pose(card);
+        // Layout offsets and scrollTo round to CSS pixels; WebKit can differ
+        // by 1–2px after reordering. Check the scroll position within 1% and
+        // the original visual ranges against the actual sampled progress.
+        expect(Math.abs(state.progress - progress)).toBeLessThan(0.01);
+        expect(state.scale).toBeCloseTo(0.9 + state.progress * 0.1, 3);
+        expect(state.y).toBeCloseTo((1 - state.progress) * 24, 0);
+        expect(state.blur).toBeCloseTo((1 - state.progress) * 9, 1);
+        expect(state.opacity).toBe("1");
+        if (progress === 1) expect(state.filter).toBe("none");
+    }).toPass();
+    return pose(card);
+}
+
+test("Works keeps the original scroll-linked scale, rise and blur in both directions", async ({
     page,
 }, testInfo) => {
     await page.goto("/en/works");
+    await waitForEntrances(page);
     const cards = page.getByTestId("works-card");
-    await expect(cards.first()).toBeVisible();
-    const target = cards.nth(1);
-    const wrapper = target.locator("..");
-    await expect(wrapper).toHaveAttribute("data-works-reveal", "pending");
-    const top = await wrapper.evaluate((element) => element.getBoundingClientRect().top + scrollY);
-    await page.evaluate((top) => scrollTo(0, top - innerHeight * 0.8), top);
-    await expect(wrapper).toHaveAttribute("data-works-reveal", "entering");
-    await expect.poll(() => page.evaluate(() => window.worksEntrances.length)).toBeGreaterThan(0);
-
+    await expect(cards.first()).not.toHaveAttribute("data-works-reveal");
+    const target = cards.nth(2);
     const frames = [];
-    for (const time of [0, 90, 240, 479]) {
-        await wrapper.evaluate((element, time) => {
-            element.getAnimations()[0].currentTime = time;
-        }, time);
-        const frame = await target.evaluate((element) => {
-            const wrapper = element.parentElement!;
-            const style = getComputedStyle(wrapper);
-            const matrix = new DOMMatrixReadOnly(style.transform);
-            return {
-                opacity: Number(style.opacity),
-                y: matrix.m42,
-                scale: [matrix.m11, matrix.m22],
-                width: element.getBoundingClientRect().width,
-                filter: getComputedStyle(element).filter,
-                wrapperFilter: style.filter,
-                willChange: style.willChange,
-            };
-        });
-        frames.push(frame);
-        expect(frame.scale).toEqual([1, 1]);
-        expect(frame.filter).toBe("none");
-        expect(frame.wrapperFilter).toBe("none");
-        expect(frame.willChange).not.toContain("filter");
-        expect(frame.width).toBeCloseTo(frames[0].width, 2);
+    for (const ratio of [1.04, 0.875, 0.75, 0.625, 0.45]) {
+        frames.push(await scrubTo(target, ratio));
     }
-    for (let i = 1; i < frames.length; i++) {
-        expect(frames[i].opacity).toBeGreaterThan(frames[i - 1].opacity);
-        expect(frames[i].y).toBeLessThan(frames[i - 1].y);
-    }
-    await testInfo.attach("works-entrance-frames", {
-        body: JSON.stringify(frames, null, 2),
+    expect(frames[0].scale).toBe(0.9);
+    expect(frames[0].blur).toBe(9);
+    expect(frames[2].active).toBe(true);
+    expect(frames[2].willChange).toContain("filter");
+    expect(frames[4].settled).toBe(true);
+    expect(frames[4].filter).toBe("none");
+    expect(frames[4].willChange).toBe("auto");
+    const reversed = await scrubTo(target, 0.75);
+    expect(reversed.progress).toBeCloseTo(frames[2].progress, 3);
+    expect(reversed.active).toBe(true);
+    // A stationary scroll position must hold its pose, not run a timed fade.
+    await page.waitForTimeout(600);
+    expect((await pose(target)).progress).toBe(reversed.progress);
+    await testInfo.attach("works-scroll-poses", {
+        body: JSON.stringify({ frames, reversed }, null, 2),
         contentType: "application/json",
     });
-    // Rewind and let the animation run while scroll stays still. A scroll-
-    // scrubbed reveal would remain half-finished indefinitely at this position.
-    await wrapper.evaluate((element) => {
-        const animation = element.getAnimations()[0];
-        animation.currentTime = 180;
-        animation.play();
-    });
-    await expect(wrapper).toHaveAttribute("data-works-reveal", "visible");
-    await expect(wrapper).toHaveCSS("opacity", "1");
-    await expect(wrapper).toHaveCSS("transform", "none");
-    await expect(wrapper).toHaveCSS("will-change", "auto");
+});
 
-    // Reverse direction and mimic the iOS address bar resizing the viewport.
-    // Already seen cards must not shrink, blur, or restart their entrance.
-    const entranceCount = await page.evaluate(() => window.worksEntrances.length);
-    await page.evaluate(() => scrollTo(0, 0));
-    const viewport = page.viewportSize()!;
-    await page.setViewportSize({ width: viewport.width, height: viewport.height - 80 });
-    await page.evaluate((top) => scrollTo(0, top - innerHeight * 0.8), top);
-    await expect(wrapper).toHaveAttribute("data-works-reveal", "visible");
-    expect(await page.evaluate(() => window.worksEntrances.length)).toBe(entranceCount);
-
+test("Works does not remeasure cards during scrolling or drift when the iOS toolbar resizes", async ({
+    page,
+    hasTouch,
+}, testInfo) => {
+    await page.goto("/en/works");
+    await waitForEntrances(page);
+    const target = page.getByTestId("works-card").nth(2);
+    await scrubTo(target, 0.75);
     const measurements = await page.evaluate(async () => {
         window.worksMeasurements = 0;
         const start = scrollY;
-        for (let i = 0; i < 20; i++) {
-            scrollTo(0, start + (i % 2 ? 8 : 0));
+        for (let i = 0; i < 40; i++) {
+            scrollTo(0, start + i * 2);
             await new Promise(requestAnimationFrame);
         }
+        await new Promise(requestAnimationFrame);
         return window.worksMeasurements;
     });
     expect(measurements).toBe(0);
+    await testInfo.attach("works-scroll-layout-reads", {
+        body: JSON.stringify({ frames: 40, measurements }),
+        contentType: "application/json",
+    });
+    await expect(page.locator("[data-works-reveal-active]")).toHaveCount(1);
+    if (hasTouch) {
+        const before = await scrubTo(target, 0.75);
+        const viewport = page.viewportSize()!;
+        await page.setViewportSize({ width: viewport.width, height: viewport.height - 80 });
+        await page.waitForTimeout(200);
+        expect((await pose(target)).progress).toBeCloseTo(before.progress, 3);
+    }
 });
 
-test("Works reveals later cards in order and honours reduced motion during an entrance", async ({
-    page,
-}) => {
+test("Works updates cached positions after sorting, filtering and resizing", async ({ page }) => {
     await page.goto("/en/works");
-    const cards = page.getByTestId("works-card");
-    for (const index of [1, 2]) {
-        const wrapper = cards.nth(index).locator("..");
-        await expect(wrapper).toHaveAttribute("data-works-reveal", "pending");
-        await wrapper.evaluate((element) =>
-            scrollTo(0, element.getBoundingClientRect().top + scrollY - innerHeight * 0.8)
-        );
-        await expect(wrapper).toHaveAttribute("data-works-reveal", "entering");
-        await expect
-            .poll(() => wrapper.evaluate((element) => element.getAnimations()[0]?.playState))
-            .toBe("paused");
-        expect(
-            await wrapper.evaluate(
-                (element) => element.getAnimations()[0].effect!.getTiming().delay
-            )
-        ).toBeLessThanOrEqual(210);
-        if (index === 1) {
-            await wrapper.evaluate((element) => element.getAnimations()[0].finish());
-            await expect(wrapper).toHaveAttribute("data-works-reveal", "visible");
-        }
-    }
+    await waitForEntrances(page);
+    await page.getByRole("button", { name: "Latest", exact: true }).click();
+    await page.getByRole("option").nth(1).click();
+    await expect(page).toHaveURL(/sort=oldest/);
+    await waitForEntrances(page);
+    await scrubTo(page.getByTestId("works-card").nth(2), 0.75);
+    await page.getByRole("radio", { name: "Branding", exact: true }).click();
+    await expect(page).toHaveURL(/filter=branding/);
+    await waitForEntrances(page);
+    const target = page.getByTestId("works-card").nth(1);
+    await scrubTo(target, 0.75);
+    const viewport = page.viewportSize()!;
+    await page.setViewportSize({ width: viewport.width + 60, height: viewport.height });
+    await scrubTo(target, 0.625);
+});
+
+test("Works honours reduced motion even when it changes mid-reveal", async ({ page }) => {
+    await page.goto("/en/works");
+    await waitForEntrances(page);
+    const target = page.getByTestId("works-card").nth(2);
+    await scrubTo(target, 0.75);
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await expect(
-        page.locator('[data-works-reveal="pending"], [data-works-reveal="entering"]')
-    ).toHaveCount(0);
-    const states = await cards.evaluateAll((elements) =>
-        elements.map((card) => {
-            const wrapper = card.parentElement!;
-            const style = getComputedStyle(wrapper);
-            return {
-                opacity: style.opacity,
-                transform: style.transform,
-                animations: wrapper.getAnimations().length,
-            };
-        })
-    );
-    expect(
-        states.every(
-            (state) => state.opacity === "1" && state.transform === "none" && state.animations === 0
-        )
-    ).toBe(true);
+    await expect(target).toHaveCSS("filter", "none");
+    await expect(target).toHaveCSS("transform", "none");
+    await expect(target).toHaveCSS("will-change", "auto");
+    await expect(page.locator("[data-works-reveal-active]")).toHaveCount(0);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await scrubTo(target, 0.75);
 });

@@ -17,6 +17,10 @@ $header-scale: 0.8;
         --_pill-text: #ffffff;
         --_pill-border: rgba(255, 255, 255, 0.1);
         --_pill-blur: blur(16px) saturate(140%);
+
+        @media (hover: none) and (pointer: coarse) {
+            --_pill-blur: none;
+        }
     }
 }
 

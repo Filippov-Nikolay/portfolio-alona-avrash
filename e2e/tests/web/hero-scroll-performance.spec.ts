@@ -122,12 +122,13 @@ test("Hero and Stats scroll without remeasuring the scene or animating hidden mo
     expect(result.reads).toEqual({});
     expect(result.cameraInlineStyles).toEqual(["", ""]);
     expect(result.sameAnimation).toBe(true);
-    // Only visibility/pointer-events at phase boundaries, not a style write
+    // Only pointer-events at phase boundaries, not a style write
     // each scroll frame. This measures DOM work, not iPhone paint counts.
-    expect(result.cameraWrites).toBeLessThanOrEqual(4);
+    expect(result.cameraWrites).toBeLessThanOrEqual(2);
     if (hasTouch && page.viewportSize()!.width <= 767) expect(result.hiddenWrites).toBe(0);
     await expect(page.locator('[class*="heroLayer"]')).toHaveCSS("visibility", "visible");
-    await expect(page.locator('[class*="statsDepthPlane"]')).toHaveCSS("visibility", "hidden");
+    await expect(page.locator('[class*="statsDepthPlane"]')).toHaveCSS("visibility", "visible");
+    await expect(page.locator('[class*="statsDepthPlane"]')).toHaveAttribute("inert", "");
 });
 
 test("Stats keyframes preserve the original camera poses after resizing and preference changes", async ({
@@ -295,4 +296,143 @@ test("Hero progress keeps its trajectory after reverse scrolling and a viewport 
         for (const pose of poses)
             expect(Math.abs(pose.x - endpoint * pose.progress)).toBeLessThan(1);
     }
+});
+
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+    test(`Hero and Stats keep their rendering visibility and interaction boundaries (${reducedMotion})`, async ({
+        page,
+    }, testInfo) => {
+        await page.emulateMedia({ reducedMotion });
+        await page.goto("/en");
+        const hero = page.locator('[class*="heroLayer"]');
+        const stats = page.locator('[class*="statsDepthPlane"]');
+        await expect
+            .poll(() => stats.evaluate((element) => element.getAnimations()[0]?.playState))
+            .toBe("paused");
+        await page.evaluate(() => document.fonts.ready);
+        await expect(stats).toHaveAttribute("inert", "");
+        await expect(hero.locator("a[href]").first()).toBeAttached();
+        // Finish startup refreshes before isolating repeated boundary crossings.
+        await page.waitForTimeout(1100);
+
+        const result = await page.evaluate(async (reduced) => {
+            const root = document.getElementById("hero-transition-track")!;
+            const heroTrack = document.getElementById("hero-scroll-track")!;
+            const cameraTrack = document.getElementById("stats-camera-track")!;
+            const stage = document.getElementById("hero-sticky-stage")!;
+            const hero = root.querySelector<HTMLElement>('[class*="heroLayer"]')!;
+            const stats = root.querySelector<HTMLElement>('[class*="statsDepthPlane"]')!;
+            const link = hero.querySelector<HTMLAnchorElement>("a[href]")!;
+            const top = root.getBoundingClientRect().top + scrollY;
+            const stageHeight = stage.getBoundingClientRect().height;
+            const heroRunway = heroTrack.getBoundingClientRect().height - stageHeight;
+            const start = top + heroRunway * 0.9;
+            const end = top + cameraTrack.getBoundingClientRect().height - stageHeight;
+            const atDepth = (progress: number) => start + (end - start) * progress;
+            // Sample both sides of each existing hit-testing boundary, the
+            // first nonzero camera frame, and Hero's exact opacity-zero edge.
+            const heroHitDepth = reduced ? 0.995 : 0.5;
+            const statsHitDepth = reduced ? 0.0256 : 0.1024;
+            const positions = [
+                top,
+                start - 3,
+                start + 8,
+                atDepth(statsHitDepth - 0.008),
+                atDepth(statsHitDepth + 0.008),
+                top + heroRunway - 3,
+                top + heroRunway + 3,
+                atDepth(heroHitDepth - 0.004),
+                atDepth(heroHitDepth + 0.004),
+                end + 3,
+            ].sort((a, b) => a - b);
+            const visits = [...positions, ...positions.slice(0, -1).reverse(), ...positions];
+            const inertWrites = { hero: 0, stats: 0 };
+            const observer = new MutationObserver((entries) => {
+                for (const entry of entries)
+                    inertWrites[entry.target === hero ? "hero" : "stats"]++;
+            });
+            for (const element of [hero, stats]) {
+                observer.observe(element, { attributes: true, attributeFilter: ["inert"] });
+            }
+            let alwaysVisible = true;
+            const poses = [];
+            try {
+                for (const y of visits) {
+                    scrollTo(0, Math.round(y));
+                    for (let frame = 0; frame < 4; frame++) {
+                        await new Promise(requestAnimationFrame);
+                        alwaysVisible &&=
+                            getComputedStyle(hero).visibility === "visible" &&
+                            getComputedStyle(stats).visibility === "visible";
+                    }
+                    const heroStyle = getComputedStyle(hero);
+                    const statsStyle = getComputedStyle(stats);
+                    link.focus({ preventScroll: true });
+                    const focused = document.activeElement === link;
+                    link.blur();
+                    poses.push({
+                        depth: Math.max(0, Math.min(1, (scrollY - start) / (end - start))),
+                        heroOpacity: Number(heroStyle.opacity),
+                        heroInert: hero.inert,
+                        heroPointer: heroStyle.pointerEvents,
+                        focused,
+                        cameraProgress: Number(stats.getAnimations()[0].currentTime) / 1000,
+                        statsOpacity: Number(statsStyle.opacity),
+                        statsInert: stats.inert,
+                        statsPointer: statsStyle.pointerEvents,
+                    });
+                }
+            } finally {
+                observer.disconnect();
+            }
+            return { alwaysVisible, poses, inertWrites };
+        }, reducedMotion === "reduce");
+        await testInfo.attach("hero-layer-boundaries", {
+            body: JSON.stringify(result, null, 2),
+            contentType: "application/json",
+        });
+        expect(result.alwaysVisible).toBe(true);
+        let previousHeroInert = false;
+        let previousStatsInert = true;
+        const expectedWrites = { hero: 0, stats: 0 };
+        for (const pose of result.poses) {
+            const heroInert = pose.heroOpacity === 0;
+            const statsInert = pose.cameraProgress === 0;
+            expect(pose.heroInert).toBe(heroInert);
+            expect(pose.focused).toBe(!heroInert);
+            expect(pose.statsInert).toBe(statsInert);
+            expect(pose.statsOpacity === 0).toBe(statsInert);
+            expect(pose.heroPointer).toBe(
+                pose.depth >= (reducedMotion === "reduce" ? 0.995 : 0.5) ? "none" : "auto"
+            );
+            expect(pose.statsPointer).toBe(
+                pose.cameraProgress <= (reducedMotion === "reduce" ? 0.02 : 0.08) ? "none" : "auto"
+            );
+            if (heroInert !== previousHeroInert) expectedWrites.hero++;
+            if (statsInert !== previousStatsInert) expectedWrites.stats++;
+            previousHeroInert = heroInert;
+            previousStatsInert = statsInert;
+        }
+        expect(result.inertWrites).toEqual(expectedWrites);
+        await expect(hero).toHaveAttribute("inert", "");
+        await expect(stats).not.toHaveAttribute("inert", "");
+        await page.evaluate(() => scrollTo(0, 0));
+        await expect(hero).not.toHaveAttribute("inert", "");
+        await expect(stats).toHaveAttribute("inert", "");
+    });
+}
+
+test.describe("Hero server markup", () => {
+    test.use({ javaScriptEnabled: false });
+
+    test("Stats starts transparent and inert before hydration", async ({ page }) => {
+        await page.goto("/en");
+        const stats = page.locator('[class*="statsDepthPlane"]');
+        await expect(stats).toHaveCSS("visibility", "visible");
+        await expect(stats).toHaveCSS("opacity", "0");
+        await expect(stats).toHaveAttribute("inert", "");
+        expect(
+            await stats.evaluate((element) => element instanceof HTMLElement && element.inert)
+        ).toBe(true);
+    });
 });

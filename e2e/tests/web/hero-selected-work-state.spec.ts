@@ -109,7 +109,7 @@ test("Hero camera uses compact geometry and avoids dynamic blur on touch devices
     const compactProjection = 1320 / (1320 - 220);
     expect(cameraState.scale).toBeCloseTo(cameraState.isTouch ? 2.15 * compactProjection : 2.9, 1);
     expect(cameraState.translateY).toBeCloseTo(
-        cameraState.isTouch ? -240 * compactProjection : -430,
+        cameraState.isTouch ? (-240 + 2.15 * 28) * compactProjection : -430,
         0
     );
     expect(cameraState.translateZ).toBeCloseTo(cameraState.isTouch ? 0 : 420, 0);
@@ -179,19 +179,18 @@ test("Stats reels always commit their exact final digits after a tiny last scrol
     await scrollToDepthProgress(0.941184);
     await scrollToDepthProgress(0.96);
 
-    const finalPositions = await page
-        .locator("#stats [data-stat-index='2'] [data-reel-place]")
-        .evaluateAll((reels) =>
-            reels.map(
-                (reel) => (reel as unknown as { style: { transform: string } }).style.transform
-            )
-        );
+    const finalPositions = () =>
+        page
+            .locator("#stats [data-stat-index='2'] [data-reel-place]")
+            .evaluateAll((reels) =>
+                reels.map(
+                    (reel) => (reel as unknown as { style: { transform: string } }).style.transform
+                )
+            );
 
-    expect(finalPositions).toEqual([
-        "translate3d(0px, -9em, 0px)",
-        "translate3d(0px, 0em, 0px)",
-        "translate3d(0px, 0em, 0px)",
-    ]);
+    await expect
+        .poll(finalPositions)
+        .toEqual(["translateY(-9em)", "translateY(0em)", "translateY(0em)"]);
 });
 
 test("Stats reels settle after a reversed touch scroll without lingering movement", async ({
@@ -233,7 +232,7 @@ test("Stats reels settle after a reversed touch scroll without lingering movemen
         const sample = () =>
             reels.map((reel) => ({
                 transform: view.getComputedStyle(reel).transform,
-                duration: view.getComputedStyle(reel).transitionDuration,
+                transition: view.getComputedStyle(reel).transitionProperty,
                 continuous: (reel as unknown as Dataset).dataset.reelContinuous,
             }));
         const settled = sample();
@@ -246,9 +245,8 @@ test("Stats reels settle after a reversed touch scroll without lingering movemen
     expect(state.afterDelay.map(({ transform }) => transform)).toEqual(
         state.settled.map(({ transform }) => transform)
     );
-    expect(
-        state.settled
-            .filter(({ continuous }) => continuous === "false")
-            .map(({ duration }) => duration)
-    ).toEqual(["0.22s", "0.22s", "0.22s"]);
+    for (const reel of state.settled) {
+        expect(reel.transition).not.toContain("transform");
+        expect(reel.transition).not.toBe("all");
+    }
 });

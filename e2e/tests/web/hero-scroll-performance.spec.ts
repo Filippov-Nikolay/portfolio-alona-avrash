@@ -133,6 +133,7 @@ test("Hero and Stats scroll without remeasuring the scene or animating hidden mo
 
 test("Stats keyframes preserve the original camera poses after resizing and preference changes", async ({
     page,
+    hasTouch,
 }) => {
     await page.goto("/en");
     const plane = page.locator('[class*="statsDepthPlane"]');
@@ -176,7 +177,9 @@ test("Stats keyframes preserve the original camera poses after resizing and pref
             const original = reference[index];
             expect(Math.abs(actual.opacity - original.opacity)).toBeLessThan(0.0001);
             expect(Math.abs(actual.scale - original.scale)).toBeLessThan(0.0001);
-            expect(Math.abs(actual.y - original.y)).toBeLessThan(0.01);
+            const reveal = Math.max(0, Math.min(1, (original.progress - 0.49) / 0.09));
+            const childTranslation = hasTouch ? original.scale * 28 * (1 - reveal) ** 3 : 0;
+            expect(Math.abs(actual.y - original.y - childTranslation)).toBeLessThan(0.01);
             expect(Math.abs(actual.z - original.z)).toBeLessThan(0.001);
         });
         await expect

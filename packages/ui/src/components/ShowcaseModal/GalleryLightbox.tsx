@@ -24,6 +24,8 @@ interface GalleryLightboxProps {
 
 const OPEN_DURATION = 640;
 const CLOSE_DURATION = 520;
+const REVEAL_DURATION = 240;
+const HIDE_DURATION = 160;
 const RENDER_WINDOW = 1;
 
 function panelRect(slot: GallerySlot, position: number, viewport: LightboxRect): LightboxRect {
@@ -42,19 +44,32 @@ function ImageLayer({
     imagePool,
     rect,
     viewport,
+    reveal,
+    reduceMotion,
 }: {
     index: number;
     imagePool: GalleryImages;
     rect: LightboxRect;
     viewport: LightboxRect;
+    reveal: boolean;
+    reduceMotion: boolean;
 }) {
     const hostRef = useRef<HTMLDivElement>(null);
+    const revealed = useRef(false);
+    const revealAnimation = useRef<Animation | null>(null);
+    useLayoutEffect(
+        () => () => {
+            revealAnimation.current?.cancel();
+            revealed.current = false;
+        },
+        []
+    );
     const { left, top, width, height } = rect;
     useLayoutEffect(() => {
         const host = hostRef.current!;
         let cancelled = false;
         const mount = () => {
-            if (cancelled) return;
+            if (cancelled || host.dataset.exiting) return;
             const image = imagePool.take(index, host);
             const fit = fitImage(image.naturalWidth, image.naturalHeight, {
                 left,
@@ -73,6 +88,19 @@ function ImageLayer({
                 objectFit: "fill",
                 transform: `translate3d(${fit.left - viewport.left}px, ${fit.top - viewport.top}px, 0) scale(1, 1)`,
             });
+            // Reveal the decoded image on its existing host. Resizing must not
+            // restart the fade, and the selected FLIP image stays fully opaque.
+            if (!revealed.current) {
+                revealed.current = true;
+                if (reveal && !reduceMotion) {
+                    const animation = host.animate([{ opacity: 0 }, { opacity: 1 }], {
+                        duration: REVEAL_DURATION,
+                        easing: "ease-out",
+                    });
+                    revealAnimation.current = animation;
+                    void animation.finished.then(() => animation.cancel()).catch(() => {});
+                }
+            }
         };
         if (imagePool.get(index).decoded) mount();
         else
@@ -80,13 +108,25 @@ function ImageLayer({
                 .decode(index)
                 .then(mount)
                 .catch(() => {
-                    if (!cancelled) host.textContent = imagePool.get(index).element.alt;
+                    if (!cancelled && !host.dataset.exiting)
+                        host.textContent = imagePool.get(index).element.alt;
                 });
         return () => {
             cancelled = true;
             imagePool.release(index);
         };
-    }, [index, imagePool, left, top, width, height, viewport.left, viewport.top]);
+    }, [
+        index,
+        imagePool,
+        left,
+        top,
+        width,
+        height,
+        viewport.left,
+        viewport.top,
+        reveal,
+        reduceMotion,
+    ]);
     return <div ref={hostRef} className={styles.imageLayer} data-image-layer={index} />;
 }
 
@@ -244,7 +284,41 @@ export function GalleryLightbox({
         const index =
             slot.images.find((item) => item.originalIndex === initialIndex)?.originalIndex ??
             slot.images[0].originalIndex;
-        const target = (await callbacks.current.prepareClose(index)) ?? launchRect;
+        // Fade the companion while preparing the destination tile. Wait for it
+        // before the nonuniform FLIP so it never stretches with the outer frame.
+        // Mark even undecoded hosts now: a late decode must not flash during close.
+        const outgoing = Array.from(
+            frameRef.current!.querySelectorAll<HTMLElement>("[data-image-layer]")
+        )
+            .filter((layer) => Number(layer.dataset.imageLayer) !== index)
+            .map((layer) => ({
+                layer,
+                opacity:
+                    layer.childElementCount &&
+                    Number(layer.closest<HTMLElement>("[data-slot]")?.dataset.slot) === slotIndex
+                        ? Number(getComputedStyle(layer).opacity)
+                        : 0,
+            }));
+        const fades: Animation[] = [];
+        outgoing.forEach(({ layer, opacity }) => {
+            layer.dataset.exiting = "true";
+            layer.getAnimations().forEach((animation) => animation.cancel());
+            layer.style.opacity = "0";
+            if (!reduceMotion && opacity > 0) {
+                fades.push(
+                    layer.animate([{ opacity }, { opacity: 0 }], {
+                        duration: HIDE_DURATION * opacity,
+                        easing: "ease-out",
+                    })
+                );
+            }
+        });
+        animations.current.push(...fades);
+        const [preparedTarget] = await Promise.all([
+            callbacks.current.prepareClose(index),
+            Promise.all(fades.map((animation) => animation.finished.catch(() => {}))),
+        ]);
+        const target = preparedTarget ?? launchRect;
         if (!alive.current) return;
         const frame = frameRef.current!;
         const image = imagePool.get(index).element;
@@ -362,6 +436,11 @@ export function GalleryLightbox({
                                         imagePool={imagePool}
                                         rect={panelRect(slot, position, viewport)}
                                         viewport={viewport}
+                                        reveal={
+                                            slotIndex === initialSlot &&
+                                            originalIndex !== initialIndex
+                                        }
+                                        reduceMotion={!!reduceMotion}
                                     />
                                 );
                             })}

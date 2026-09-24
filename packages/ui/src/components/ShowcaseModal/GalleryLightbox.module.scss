@@ -22,6 +22,8 @@
     pointer-events: none;
 }
 .slot {
+    // Keep preceding slots out of the letterbox and companion reveal.
+    background: var(--accent-color-modal, #000);
     transform-origin: center center;
 }
 .imageLayer img {

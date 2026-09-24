@@ -232,7 +232,10 @@ export class GalleryImages {
 
     private source(index: number, entry: GalleryImage) {
         const paused =
-            this.frozen && (this.playback ? !this.playback.has(index) : index !== this.anchor);
+            // Thumbnails use the small static preview. Decode/play the original
+            // only when borrowed by the lightbox, never on modal entrance.
+            !entry.borrowed ||
+            (this.frozen && (this.playback ? !this.playback.has(index) : index !== this.anchor));
         return paused && entry.poster ? entry.poster : this.images[index].src;
     }
 }

@@ -82,13 +82,14 @@ export default defineConfig({
             name: "web-ios",
             testDir: "./tests/web",
             testMatch:
-                /(clients-tools-reviews-ios|contact-footer-mobile|footer-ios-overscroll|header-menu-ios|hero-selected-work-state|hero-theme-transition|projects-ios-button|reviews-ios-reveal|services-ios-resize|services-mobile|tools-ios-scroll|tools-ios-visibility|works-filter-ios-tap|works-scroll-performance)\.spec\.ts/,
+                /(clients-tools-reviews-ios|contact-footer-mobile|footer-ios-overscroll|header-menu-ios|hero-selected-work-state|hero-theme-transition|hero-scroll-performance|projects-ios-button|reviews-ios-reveal|services-ios-resize|services-mobile|tools-ios-scroll|tools-ios-visibility|works-filter-ios-tap|works-scroll-performance)\.spec\.ts/,
             use: { ...devices["iPhone 13"], baseURL: "http://localhost:3100" },
         },
         {
             name: "web-webkit",
             testDir: "./tests/web",
-            testMatch: /showcase-mobile\.spec\.ts/,
+            testMatch:
+                /(hero-selected-work-state|hero-theme-transition|hero-scroll-performance|showcase-mobile|works-scroll-performance|works-filter-ios-tap)\.spec\.ts/,
             use: {
                 ...devices["iPhone 13"],
                 browserName: "webkit",

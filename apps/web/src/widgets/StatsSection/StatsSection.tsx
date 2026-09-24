@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type CSSProperties } from "react";
+import { memo, useMemo, type CSSProperties } from "react";
 import { type MotionValue } from "framer-motion";
 import type { StatItem } from "@avrash/content-schema";
 import { Container, Section } from "@/shared/ui";
@@ -37,7 +37,7 @@ interface StatsSectionProps {
     depthProgress?: MotionValue<number> | null;
 }
 
-export function StatsSection({
+export const StatsSection = memo(function StatsSection({
     items,
     id = "stats",
     as = "section",
@@ -111,4 +111,4 @@ export function StatsSection({
             </Container>
         </Section>
     );
-}
+});

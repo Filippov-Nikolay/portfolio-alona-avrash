@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { m } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -31,7 +31,7 @@ export interface SelectedWorkSectionProps {
 
 const CONTENT_REVEAL_PROGRESS = 0.3;
 
-export function SelectedWorkSection({
+export const SelectedWorkSection = memo(function SelectedWorkSection({
     projects,
     modalItems,
     categoryLabels,
@@ -201,4 +201,4 @@ export function SelectedWorkSection({
             />
         </Section>
     );
-}
+});

@@ -1,187 +1,122 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
-import { useReducedMotion } from "framer-motion";
-import { createViewportResizeGuard } from "@/shared/lib/motion";
+import { useCallback, useLayoutEffect, useRef } from "react";
 
-const ENTRY_START_RATIO = 1;
-const SETTLE_RATIO = 0.5;
-const ACTIVE_ROOT_MARGIN = "0px 0px 12% 0px";
-const PROGRESS_EPSILON = 0.001;
-const REVEAL_RISE_PX = 24;
-const REVEAL_MIN_SCALE = 0.9;
-const REVEAL_HOVER_SCALE = 1.015;
-const REVEAL_MAX_BLUR_PX = 9;
-
-function clamp01(value: number) {
-    return Math.max(0, Math.min(1, value));
-}
-
-function smoothstep(t: number) {
-    return t * t * (3 - 2 * t);
-}
-
-function resetCardStyle(card: HTMLElement) {
-    card.style.removeProperty("--reveal");
-    card.style.removeProperty("--reveal-y");
-    card.style.removeProperty("--reveal-scale");
-    card.style.removeProperty("--reveal-hover-scale");
-    card.style.removeProperty("--reveal-blur");
-    card.style.filter = "";
-    card.style.willChange = "";
-    card.removeAttribute("data-works-reveal-active");
-    card.removeAttribute("data-works-reveal-settled");
-}
+const ENTRY_INSET_PX = 24;
+const STAGGER_MS = 70;
+const MAX_STAGGER_MS = 210;
 
 export function useWorksCardReveal() {
-    const cardsRef = useRef<Map<number, HTMLElement>>(new Map());
-    const registerCallbacksRef = useRef<Map<number, (el: HTMLElement | null) => void>>(new Map());
-    const observerRef = useRef<IntersectionObserver | null>(null);
-    const activeCardsRef = useRef<Set<HTMLElement>>(new Set());
-    const progressRef = useRef<Map<HTMLElement, number>>(new Map());
-    const reducedMotion = useReducedMotion();
+    const cardsRef = useRef(new Map<number, HTMLDivElement>());
+    const callbacksRef = useRef(new Map<number, (el: HTMLDivElement | null) => void>());
+    const revealedRef = useRef(new Set<number>());
+    const observeRef = useRef<((id: number, element: HTMLDivElement) => void) | null>(null);
+    const disconnectRef = useRef<((element: HTMLDivElement) => void) | null>(null);
 
-    useEffect(() => {
-        if (reducedMotion) return;
+    useLayoutEffect(() => {
+        const cards = cardsRef.current;
+        const revealed = revealedRef.current;
+        const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+        const ids = new Map<HTMLElement, number>();
 
-        const cardsMap = cardsRef.current;
-        const activeCards = activeCardsRef.current;
-        const progressByCard = progressRef.current;
-        let frame = 0;
-        let viewportHeight = window.innerHeight;
-        const shouldMeasureViewportResize = createViewportResizeGuard();
-
-        const applyProgress = (card: HTMLElement, progress: number) => {
-            const previousProgress = progressByCard.get(card);
-            if (
-                previousProgress !== undefined &&
-                Math.abs(previousProgress - progress) < PROGRESS_EPSILON
-            ) {
-                return;
-            }
-
-            progressByCard.set(card, progress);
-            const revealScale = REVEAL_MIN_SCALE + progress * (1 - REVEAL_MIN_SCALE);
-            card.style.setProperty("--reveal", progress.toFixed(3));
-            card.style.setProperty(
-                "--reveal-y",
-                `${((1 - progress) * REVEAL_RISE_PX).toFixed(2)}px`
-            );
-            card.style.setProperty("--reveal-scale", revealScale.toFixed(4));
-            card.style.setProperty(
-                "--reveal-hover-scale",
-                (revealScale * REVEAL_HOVER_SCALE).toFixed(4)
-            );
-            card.style.setProperty(
-                "--reveal-blur",
-                `${((1 - progress) * REVEAL_MAX_BLUR_PX).toFixed(2)}px`
-            );
-
-            const isAnimating = progress > PROGRESS_EPSILON && progress < 1 - PROGRESS_EPSILON;
-            card.toggleAttribute("data-works-reveal-settled", progress >= 1 - PROGRESS_EPSILON);
-            const wasAnimating = card.hasAttribute("data-works-reveal-active");
-            if (isAnimating === wasAnimating) return;
-
-            card.toggleAttribute("data-works-reveal-active", isAnimating);
-            card.style.willChange = isAnimating ? "filter, transform" : "auto";
+        const show = (element: HTMLElement) => {
+            const id = ids.get(element);
+            if (id !== undefined) revealed.add(id);
+            element.dataset.worksReveal = "visible";
+            element.style.removeProperty("--card-reveal-delay");
+            observer.unobserve(element);
         };
 
-        const update = () => {
-            frame = 0;
-            const entryStart = viewportHeight * ENTRY_START_RATIO;
-            const settle = viewportHeight * SETTLE_RATIO;
-            const revealDistance = Math.max(entryStart - settle, 1);
-            const measurements = Array.from(activeCards, (card) => ({
-                card,
-                top: card.getBoundingClientRect().top,
-            }));
-
-            for (const { card, top } of measurements) {
-                const progress = smoothstep(clamp01((entryStart - top) / revealDistance));
-                applyProgress(card, progress);
-            }
-        };
-
-        const scheduleUpdate = () => {
-            if (frame || activeCards.size === 0) return;
-            frame = requestAnimationFrame(update);
-        };
-
+        // Observe the layout wrapper, not the card that owns the hover effect.
+        // Each entry starts one CSS compositor animation, independent of scroll
+        // cadence and Safari's collapsing browser toolbar.
         const observer = new IntersectionObserver(
             (entries) => {
-                const settle = viewportHeight * SETTLE_RATIO;
-
-                for (const entry of entries) {
-                    const card = entry.target as HTMLElement;
-                    if (entry.isIntersecting) {
-                        activeCards.add(card);
-                        continue;
+                let order = 0;
+                for (const entry of entries.sort(
+                    (a, b) => a.boundingClientRect.top - b.boundingClientRect.top
+                )) {
+                    const element = entry.target as HTMLElement;
+                    if (element.dataset.worksReveal !== "pending") continue;
+                    if (motion.matches || entry.boundingClientRect.bottom <= 0) {
+                        show(element);
+                    } else if (entry.isIntersecting) {
+                        const id = ids.get(element);
+                        if (id !== undefined) revealed.add(id);
+                        observer.unobserve(element);
+                        element.style.setProperty(
+                            "--card-reveal-delay",
+                            `${Math.min(order++ * STAGGER_MS, MAX_STAGGER_MS)}ms`
+                        );
+                        element.dataset.worksReveal = "entering";
                     }
-
-                    activeCards.delete(card);
-                    applyProgress(card, entry.boundingClientRect.top <= settle ? 1 : 0);
                 }
-
-                scheduleUpdate();
             },
-            { rootMargin: ACTIVE_ROOT_MARGIN }
+            { rootMargin: `0px 0px -${ENTRY_INSET_PX}px 0px`, threshold: 0 }
         );
 
-        observerRef.current = observer;
-        for (const card of cardsMap.values()) observer.observe(card);
-
-        const handleResize = () => {
-            if (!shouldMeasureViewportResize()) return;
-
-            viewportHeight = window.innerHeight;
-            scheduleUpdate();
+        const onAnimationEnd = (event: AnimationEvent) => {
+            if (event.target === event.currentTarget) show(event.currentTarget as HTMLElement);
         };
-
-        window.addEventListener("scroll", scheduleUpdate, { passive: true });
-        window.addEventListener("resize", handleResize);
-
-        return () => {
-            cancelAnimationFrame(frame);
-            window.removeEventListener("scroll", scheduleUpdate);
-            window.removeEventListener("resize", handleResize);
-            observer.disconnect();
-            observerRef.current = null;
-            activeCards.clear();
-            progressByCard.clear();
-            for (const card of cardsMap.values()) {
-                resetCardStyle(card);
+        const onFocus = (event: FocusEvent) => show(event.currentTarget as HTMLElement);
+        const observe = (id: number, element: HTMLDivElement) => {
+            ids.set(element, id);
+            element.addEventListener("animationend", onAnimationEnd);
+            element.addEventListener("focusin", onFocus);
+            // Never hide content that was already painted by SSR, or replay a
+            // card when filtering, sorting, or scrolling back up the list.
+            if (
+                motion.matches ||
+                revealed.has(id) ||
+                element.getBoundingClientRect().top < window.innerHeight
+            ) {
+                show(element);
+            } else {
+                element.dataset.worksReveal = "pending";
+                observer.observe(element);
             }
         };
-    }, [reducedMotion]);
+        const disconnect = (element: HTMLDivElement) => {
+            observer.unobserve(element);
+            ids.delete(element);
+            element.removeEventListener("animationend", onAnimationEnd);
+            element.removeEventListener("focusin", onFocus);
+            element.removeAttribute("data-works-reveal");
+            element.style.removeProperty("--card-reveal-delay");
+        };
+        const onMotionChange = () => {
+            if (motion.matches) for (const element of cards.values()) show(element);
+        };
+
+        observeRef.current = observe;
+        disconnectRef.current = disconnect;
+        for (const [id, element] of cards) observe(id, element);
+        motion.addEventListener("change", onMotionChange);
+
+        return () => {
+            observer.disconnect();
+            motion.removeEventListener("change", onMotionChange);
+            for (const element of cards.values()) disconnect(element);
+            observeRef.current = null;
+            disconnectRef.current = null;
+        };
+    }, []);
 
     return useCallback((id: number) => {
-        let callback = registerCallbacksRef.current.get(id);
+        let callback = callbacksRef.current.get(id);
         if (!callback) {
-            callback = (el: HTMLElement | null) => {
-                if (el) {
-                    const previous = cardsRef.current.get(id);
-                    if (previous && previous !== el) {
-                        observerRef.current?.unobserve(previous);
-                        activeCardsRef.current.delete(previous);
-                        progressRef.current.delete(previous);
-                        resetCardStyle(previous);
-                    }
-
-                    cardsRef.current.set(id, el);
-                    observerRef.current?.observe(el);
-                    return;
-                }
-
+            callback = (element: HTMLDivElement | null) => {
                 const previous = cardsRef.current.get(id);
-                if (previous) {
-                    observerRef.current?.unobserve(previous);
-                    activeCardsRef.current.delete(previous);
-                    progressRef.current.delete(previous);
-                    resetCardStyle(previous);
+                if (previous === element) return;
+                if (previous) disconnectRef.current?.(previous);
+                if (element) {
+                    cardsRef.current.set(id, element);
+                    observeRef.current?.(id, element);
+                } else {
+                    cardsRef.current.delete(id);
                 }
-                cardsRef.current.delete(id);
             };
-            registerCallbacksRef.current.set(id, callback);
+            callbacksRef.current.set(id, callback);
         }
         return callback;
     }, []);

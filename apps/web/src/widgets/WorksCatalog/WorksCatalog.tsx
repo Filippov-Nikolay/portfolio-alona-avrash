@@ -237,12 +237,6 @@ export function WorksCatalog({
         [visibleProjects, selectedCategory, categoryKeys]
     );
 
-    // The very first card on the page sits above the reveal effect's own
-    // "settled" line before any scrolling happens at all, so it would
-    // render blurred on load - which reads as broken, not intentional.
-    // It's exempt from the reveal entirely and always shows sharp.
-    const firstCardId = groups[0]?.projects[0]?.id;
-
     const sortOptions: { value: SortOrder; label: string }[] = [
         { value: "latest", label: labels.sortLatest },
         { value: "oldest", label: labels.sortOldest },
@@ -310,14 +304,14 @@ export function WorksCatalog({
                         <span className={styles.sectionSuffix}>{labels.sectionSuffix}</span>
                     </m.div>
 
-                    <m.div className={styles.list} variants={safeStagger}>
+                    <div className={styles.list}>
                         {group.projects.map((project, i) => (
                             <Fragment key={project.id}>
                                 {i === group.projects.length - 1 &&
                                     group.projects.length > CTA_MIN_GROUP_SIZE && (
                                         <CtaSection content={cta} variant="banner" />
                                     )}
-                                <m.div variants={safeReveal}>
+                                <div className={styles.cardReveal} ref={registerCard(project.id)}>
                                     <WorksCard
                                         project={project}
                                         rank={i + 1}
@@ -332,17 +326,11 @@ export function WorksCatalog({
                                         }
                                         viewLabel={labels.viewProject}
                                         onOpen={() => openProject(project.id)}
-                                        revealOnScroll={project.id !== firstCardId}
-                                        cardRef={
-                                            project.id === firstCardId
-                                                ? undefined
-                                                : registerCard(project.id)
-                                        }
                                     />
-                                </m.div>
+                                </div>
                             </Fragment>
                         ))}
-                    </m.div>
+                    </div>
                 </m.section>
             ))}
 

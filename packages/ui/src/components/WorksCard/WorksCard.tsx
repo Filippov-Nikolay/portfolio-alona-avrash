@@ -11,9 +11,19 @@ export interface WorksCardProps {
     categoryLabel: string;
     viewLabel: string;
     onOpen: () => void;
+    cardRef?: (el: HTMLDivElement | null) => void;
+    revealOnScroll?: boolean;
 }
 
-export function WorksCard({ project, rank, categoryLabel, viewLabel, onOpen }: WorksCardProps) {
+export function WorksCard({
+    project,
+    rank,
+    categoryLabel,
+    viewLabel,
+    onOpen,
+    cardRef,
+    revealOnScroll = false,
+}: WorksCardProps) {
     const heroImage = project.image.find((image) => image.isHero) ?? project.image[0];
     const year = new Date(project.createdAt).getFullYear();
 
@@ -26,11 +36,13 @@ export function WorksCard({ project, rank, categoryLabel, viewLabel, onOpen }: W
 
     return (
         <div
+            ref={cardRef}
             className={styles.card}
             style={hoverStyle}
             onClick={onOpen}
             data-testid="works-card"
             data-category={categoryLabel}
+            data-works-reveal={revealOnScroll ? "" : undefined}
         >
             <div className={styles.visual}>
                 {heroImage?.src && (

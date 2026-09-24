@@ -4,40 +4,6 @@
     padding-block: var(--page-top-offset) clamp(64px, 8vw, 96px);
 }
 
-.cardReveal {
-    // SSR stays visible; only offscreen cards opt into an entrance.
-    &[data-works-reveal="pending"] {
-        opacity: 0;
-    }
-
-    &[data-works-reveal="entering"] {
-        animation: works-card-enter 480ms cubic-bezier(0.22, 1, 0.36, 1)
-            var(--card-reveal-delay, 0ms) backwards;
-        will-change: opacity, transform;
-    }
-
-    @include reduced-motion {
-        &[data-works-reveal] {
-            animation: none;
-            opacity: 1;
-            transform: none;
-            will-change: auto;
-        }
-    }
-}
-
-@keyframes works-card-enter {
-    from {
-        opacity: 0;
-        transform: translate3d(0, 18px, 0);
-    }
-
-    to {
-        opacity: 1;
-        transform: translate3d(0, 0, 0);
-    }
-}
-
 // === Page header ==============================================
 
 .pageHeader {

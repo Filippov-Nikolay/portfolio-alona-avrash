@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { m, useMotionValue, useTransform } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { HeroContent, Social, StatItem } from "@avrash/content-schema";
 import {
     HERO_DEPTH_TRANSITION_START,
@@ -31,6 +31,7 @@ import styles from "./HeroSection.module.scss";
 import { useHeroScroll } from "./useHeroScroll";
 import { useStatsCamera } from "./useStatsCamera";
 import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
+import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 
 const [NAME_FIRST, ...nameRest] = siteConfig.name.split(" ");
 const NAME_LAST = nameRest.join(" ");
@@ -82,38 +83,6 @@ function readTranslateX(node: HTMLElement) {
     return Number(values[values.length === 16 ? 12 : 4] ?? 0);
 }
 
-function useCompactViewport() {
-    const [isCompact, setIsCompact] = useState(false);
-
-    useEffect(() => {
-        const media = window.matchMedia("(max-width: 767px)");
-        const update = () => setIsCompact(media.matches);
-
-        update();
-        media.addEventListener("change", update);
-
-        return () => media.removeEventListener("change", update);
-    }, []);
-
-    return isCompact;
-}
-
-function useNarrowViewport() {
-    const [isNarrow, setIsNarrow] = useState(false);
-
-    useEffect(() => {
-        const media = window.matchMedia("(max-width: 1023px)");
-        const update = () => setIsNarrow(media.matches);
-
-        update();
-        media.addEventListener("change", update);
-
-        return () => media.removeEventListener("change", update);
-    }, []);
-
-    return isNarrow;
-}
-
 interface HeroSectionClientProps {
     hero: HeroContent;
     socials: Social[];
@@ -128,8 +97,8 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
     const safeFadeIn = useMotionVariants(fadeIn);
     const { isReady } = usePreloader();
     const reduced = useReducedMotionPreference();
-    const isCompact = useCompactViewport();
-    const isNarrow = useNarrowViewport();
+    const isCompact = useMediaQuery("(max-width: 767px)");
+    const isNarrow = useMediaQuery("(max-width: 1023px)");
     const stageRef = useRef<HTMLDivElement>(null);
     const statsDepthPlaneRef = useRef<HTMLDivElement>(null);
     const scrollTrackRef = useRef<HTMLDivElement>(null);

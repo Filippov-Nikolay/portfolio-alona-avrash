@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
-import { m, AnimatePresence, useInView } from "framer-motion";
+import { m, AnimatePresence, useInView, useIsPresent, useReducedMotion } from "framer-motion";
 import type { ShowcaseItem } from "../../types/showcase";
 import { useMounted } from "../../hooks/useMounted";
 import { Button } from "../Button";
@@ -118,6 +118,8 @@ function ModalContent({
         GALLERY_PREVIEW_COUNT
     );
     const modalRef = useRef<HTMLDivElement>(null);
+    const closeRef = useRef<HTMLButtonElement>(null);
+    const previousFocusRef = useRef<Element | null>(null);
     const bodyRef = useRef<HTMLDivElement>(null);
     const tabsRef = useRef<HTMLDivElement>(null);
     const galleryElRefs = useRef<Map<number, HTMLElement>>(new Map());
@@ -128,7 +130,38 @@ function ModalContent({
     const pendingIndex = useRef<number | null>(null);
     const returnFocusIndex = useRef<number | null>(null);
     const busyRef = useRef(false);
-    const registerTile = useGalleryTilt(bodyRef, tabsRef, lightboxBusy);
+    const [modalEntranceDone, setModalEntranceDone] = useState(false);
+    const isPresent = useIsPresent();
+    const reducedMotion = useReducedMotion();
+    const registerTile = useGalleryTilt(
+        bodyRef,
+        tabsRef,
+        lightboxBusy || !modalEntranceDone || !isPresent
+    );
+    // Lock before the first paint and keep it until the exit has actually
+    // unmounted this content. Autofocus must not scroll the page underneath.
+    useLayoutEffect(() => {
+        const html = document.documentElement;
+        const body = document.body;
+        previousFocusRef.current ??= document.activeElement;
+        const previousFocus = previousFocusRef.current;
+        const scrollbarWidth = window.innerWidth - html.clientWidth;
+        const padding = parseFloat(getComputedStyle(html).paddingRight) || 0;
+        const previousHtmlOverflow = html.style.overflow;
+        const previousBodyOverflow = body.style.overflow;
+        const previousHtmlPaddingRight = html.style.paddingRight;
+        html.style.overflow = "hidden";
+        body.style.overflow = "hidden";
+        if (scrollbarWidth > 0) html.style.paddingRight = `${padding + scrollbarWidth}px`;
+        closeRef.current?.focus({ preventScroll: true });
+        return () => {
+            html.style.overflow = previousHtmlOverflow;
+            body.style.overflow = previousBodyOverflow;
+            html.style.paddingRight = previousHtmlPaddingRight;
+            if (previousFocus instanceof HTMLElement && previousFocus.isConnected)
+                previousFocus.focus({ preventScroll: true });
+        };
+    }, []);
     useLayoutEffect(() => {
         if (lightboxBusy || returnFocusIndex.current === null) return;
         galleryElRefs.current.get(returnFocusIndex.current)?.focus({ preventScroll: true });
@@ -140,7 +173,6 @@ function ModalContent({
         },
         []
     );
-    const [modalEntranceDone, setModalEntranceDone] = useState(false);
     const autoOpenedLightboxRef = useRef(false);
     const handleTabChange = (nextTab: Tab) => {
         if (nextTab === tab) return;
@@ -192,10 +224,15 @@ function ModalContent({
         };
     }, [lightboxBusy]);
 
-    const registerGalleryEl = (index: number) => (el: HTMLElement | null) => {
-        if (el) galleryElRefs.current.set(index, el);
-        else galleryElRefs.current.delete(index);
-    };
+    const galleryRefs = useMemo(
+        () =>
+            item.gallery.map((_, index) => (el: HTMLElement | null) => {
+                if (el) galleryElRefs.current.set(index, el);
+                else galleryElRefs.current.delete(index);
+                registerTile(index)(contentTab === "gallery" ? el : null);
+            }),
+        [item.gallery, registerTile, contentTab]
+    );
 
     const measureRect = (el: HTMLElement): LightboxRect | null => {
         const modalEl = modalRef.current;
@@ -344,11 +381,11 @@ function ModalContent({
     const modalInner = (
         <>
             <button
+                ref={closeRef}
                 className={styles.close}
                 onClick={onClose}
                 aria-label="Close"
                 disabled={lightboxBusy}
-                autoFocus
             >
                 <CloseIcon className={styles.closeIcon} />
             </button>
@@ -358,6 +395,11 @@ function ModalContent({
                 className={styles.body}
                 data-lightbox-open={lightboxBusy ? "" : undefined}
                 inert={lightboxBusy}
+                onPointerMove={(event) => {
+                    // Opening under a stationary cursor is not a hover intent.
+                    if (event.pointerType === "mouse" && modalEntranceDone && !lightboxBusy)
+                        event.currentTarget.setAttribute("data-preview-hover-ready", "");
+                }}
             >
                 <div className={styles.banner}>
                     {item.src && (
@@ -454,7 +496,7 @@ function ModalContent({
                                             {previewImages.map((image, index) => (
                                                 <button
                                                     key={image.src}
-                                                    ref={registerGalleryEl(index)}
+                                                    ref={galleryRefs[index]}
                                                     type="button"
                                                     className={styles.previewItem}
                                                     onClick={(e) => openLightbox(index, e)}
@@ -508,10 +550,7 @@ function ModalContent({
                                                 {row.map(({ image, index }) => (
                                                     <button
                                                         key={image.src}
-                                                        ref={(el) => {
-                                                            registerGalleryEl(index)(el);
-                                                            registerTile(index)(el);
-                                                        }}
+                                                        ref={galleryRefs[index]}
                                                         type="button"
                                                         className={cn(
                                                             styles.previewItem,
@@ -573,11 +612,14 @@ function ModalContent({
             role="dialog"
             aria-modal="true"
             aria-label={item.title}
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", stiffness: 380, damping: 34 }}
-            onAnimationComplete={() => setModalEntranceDone(true)}
+            data-state={!isPresent ? "closing" : modalEntranceDone ? "open" : "opening"}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
+            onAnimationComplete={() => {
+                if (isPresent) setModalEntranceDone(true);
+            }}
             onClick={(e) => e.stopPropagation()}
             style={colorStyle}
         >
@@ -611,43 +653,22 @@ export function ShowcaseModal({
 }: ShowcaseModalProps) {
     const mounted = useMounted();
 
-    useEffect(() => {
-        if (!item) return;
-
-        const html = document.documentElement;
-        const body = document.body;
-        const scrollbarWidth = window.innerWidth - html.clientWidth;
-
-        const previousHtmlOverflow = html.style.overflow;
-        const previousBodyOverflow = body.style.overflow;
-        const previousHtmlPaddingRight = html.style.paddingRight;
-
-        html.style.overflow = "hidden";
-        body.style.overflow = "hidden";
-
-        if (scrollbarWidth > 0) {
-            html.style.paddingRight = `${scrollbarWidth}px`;
-        }
-
-        return () => {
-            html.style.overflow = previousHtmlOverflow;
-            body.style.overflow = previousBodyOverflow;
-            html.style.paddingRight = previousHtmlPaddingRight;
-        };
-    }, [item]);
+    const reducedMotion = useReducedMotion();
 
     if (!mounted) return null;
 
     return createPortal(
         <AnimatePresence>
             {item && (
-                <m.div
-                    className={styles.overlay}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0, pointerEvents: "none" }}
-                    transition={{ duration: 0.22 }}
-                >
+                <div key={item.id} className={styles.overlay}>
+                    <m.div
+                        className={styles.backdrop}
+                        aria-hidden="true"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: reducedMotion ? 0 : 0.22 }}
+                    />
                     <div
                         className={styles.overlayInner}
                         onClick={(e) => {
@@ -667,7 +688,7 @@ export function ShowcaseModal({
                             onVisitWebsite={onVisitWebsite}
                         />
                     </div>
-                </m.div>
+                </div>
             )}
         </AnimatePresence>,
         document.body

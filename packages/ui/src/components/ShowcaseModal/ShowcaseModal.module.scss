@@ -6,10 +6,21 @@
     position: fixed;
     inset: 0;
     z-index: 200;
+    // Only the backdrop fades here; an ancestor opacity would fade the
+    // dialog a second time and regroup all of its image layers.
+    transition: none;
+}
+
+.backdrop {
+    position: absolute;
+    inset: 0;
     background: rgba(0 0 0 / 0.76);
+    pointer-events: none;
+    transition: none;
 }
 
 .overlayInner {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -36,6 +47,8 @@
     flex-direction: column;
     background: var(--color-surface);
     border-radius: var(--radius-md, 16px);
+    isolation: isolate;
+    transition: none;
     box-shadow:
         0 40px 80px -20px rgba(0 0 0 / 0.65),
         0 0 0 1px var(--c-a14),
@@ -55,6 +68,13 @@
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: none;
+    // Clip composited images explicitly without cutting off the window shadow.
+    border-radius: inherit;
+    clip-path: inset(0 round var(--radius-md, 16px));
+
+    @include respond-to("mobile") {
+        clip-path: inset(0 round var(--radius-sm));
+    }
 
     // Firefox
     scrollbar-width: thin;
@@ -432,7 +452,7 @@
                 aspect-ratio: auto;
                 transition: flex-grow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 
-                &:hover {
+                [data-preview-hover-ready] &:hover {
                     flex-grow: 2.2;
                 }
             }
@@ -445,6 +465,7 @@
     inset: 0;
     overflow: hidden;
     border-radius: inherit;
+    clip-path: inset(0 round var(--radius-sm));
     isolation: isolate;
     background: var(--color-visual-bg);
     background: color-mix(
@@ -460,6 +481,7 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        border-radius: inherit;
         display: block;
         z-index: 1;
     }
@@ -506,7 +528,7 @@
     }
 
     @include can-hover {
-        .previewItem:hover & {
+        [data-preview-hover-ready] .previewItem:hover & {
             transform: scale(1.04);
         }
     }

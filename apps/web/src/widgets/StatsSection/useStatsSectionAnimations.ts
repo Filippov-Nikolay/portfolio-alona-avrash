@@ -1,17 +1,13 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import {
-    useMotionValue,
-    useMotionValueEvent,
-    useReducedMotion,
-    type MotionValue,
-} from "framer-motion";
+import { useMotionValue, useMotionValueEvent, type MotionValue } from "framer-motion";
 import {
     NEXT_SECTION_COUNTER_TRIGGER,
     NEXT_SECTION_INTERNAL_ANIMATION_TRIGGER,
 } from "@/shared/config/heroDepthHandoff";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 import { isTouchViewport } from "@/shared/lib/motion/mobileViewport";
 import { digitWheelPosition, type ParsedStatValue } from "./lib/parseStatValue";
@@ -86,11 +82,13 @@ export function useStatsSectionAnimations(
     parsedValues: ParsedStatValue[],
     depthProgress?: MotionValue<number> | null
 ) {
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
     const fallbackDepthProgress = useMotionValue(1);
     const effectiveDepthProgress = depthProgress ?? fallbackDepthProgress;
 
-    useScrollTriggerAutoRefresh([reduced]);
+    // The Hero camera owns this progress and creates no ScrollTriggers here.
+    // Changing its motion preference must not refresh/reset the page scroller.
+    useScrollTriggerAutoRefresh([depthProgress ?? reduced]);
 
     const sectionRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<HTMLDivElement>(null);

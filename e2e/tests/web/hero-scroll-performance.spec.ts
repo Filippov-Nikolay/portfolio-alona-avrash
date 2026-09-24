@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+// Captured from the original inline camera before moving it to keyframes.
+import cameraPoses from "../../fixtures/stats-camera-poses.json";
 
 test.beforeEach(async ({ context }, testInfo) => {
     await context.addCookies([
@@ -74,6 +76,14 @@ test("Hero and Stats scroll without remeasuring the scene or animating hidden mo
         });
 
         let hiddenWrites = 0;
+        let cameraWrites = 0;
+        const camera = track.querySelector<HTMLElement>('[class*="statsDepthPlane"]')!;
+        const animation = camera.getAnimations()[0];
+        let sameAnimation = true;
+        const cameraObserver = new MutationObserver((entries) => {
+            cameraWrites += entries.length;
+        });
+        cameraObserver.observe(camera, { attributes: true, attributeFilter: ["style"] });
         const hiddenImages = Array.from(
             track.querySelectorAll<HTMLElement>('[class*="lowerFloater"]')
         ).filter((element) => getComputedStyle(element).display === "none");
@@ -89,14 +99,19 @@ test("Hero and Stats scroll without remeasuring the scene or animating hidden mo
                 const progress = i < 24 ? i / 23 : (47 - i) / 23;
                 scrollTo(0, start + (end - start) * progress);
                 frames.push(await new Promise<number>(requestAnimationFrame));
+                sameAnimation &&= camera.getAnimations()[0] === animation;
             }
         } finally {
             observer.disconnect();
+            cameraObserver.disconnect();
             restores.forEach((restore) => restore());
         }
         return {
             reads,
             hiddenWrites,
+            cameraWrites,
+            sameAnimation,
+            cameraInlineStyles: [camera.style.transform, camera.style.opacity],
             intervals: frames.slice(1).map((time, index) => time - frames[index]),
         };
     });
@@ -105,9 +120,120 @@ test("Hero and Stats scroll without remeasuring the scene or animating hidden mo
         contentType: "application/json",
     });
     expect(result.reads).toEqual({});
+    expect(result.cameraInlineStyles).toEqual(["", ""]);
+    expect(result.sameAnimation).toBe(true);
+    // Only visibility/pointer-events at phase boundaries, not a style write
+    // each scroll frame. This measures DOM work, not iPhone paint counts.
+    expect(result.cameraWrites).toBeLessThanOrEqual(4);
     if (hasTouch && page.viewportSize()!.width <= 767) expect(result.hiddenWrites).toBe(0);
     await expect(page.locator('[class*="heroLayer"]')).toHaveCSS("visibility", "visible");
     await expect(page.locator('[class*="statsDepthPlane"]')).toHaveCSS("visibility", "hidden");
+});
+
+test("Stats keyframes preserve the original camera poses after resizing and preference changes", async ({
+    page,
+}) => {
+    await page.goto("/en");
+    const plane = page.locator('[class*="statsDepthPlane"]');
+    await expect
+        .poll(() => plane.evaluate((element) => element.getAnimations()[0]?.playState))
+        .toBe("paused");
+    const initialSize = page.viewportSize()!;
+    for (const width of [initialSize.width, initialSize.width <= 767 ? 1024 : 390]) {
+        await page.setViewportSize({ width, height: initialSize.height });
+        const reference = width <= 767 ? cameraPoses.compact : cameraPoses.wide;
+        await expect
+            .poll(() =>
+                plane.evaluate(
+                    (element) => new DOMMatrixReadOnly(getComputedStyle(element).transform).m11
+                )
+            )
+            .toBeCloseTo(reference[0].scale, 4);
+        const samples = await plane.evaluate(
+            async (element, checkpoints) => {
+                const animation = element.getAnimations()[0];
+                const initialTime = animation.currentTime;
+                const samples = [];
+                for (const progress of checkpoints) {
+                    animation.currentTime = progress * 1000;
+                    await new Promise(requestAnimationFrame);
+                    const style = getComputedStyle(element);
+                    const matrix = new DOMMatrixReadOnly(style.transform);
+                    samples.push({
+                        opacity: Number(style.opacity),
+                        scale: matrix.m11,
+                        y: matrix.m42,
+                        z: matrix.m43,
+                    });
+                }
+                animation.currentTime = initialTime;
+                return samples;
+            },
+            reference.map(({ progress }) => progress)
+        );
+        samples.forEach((actual, index) => {
+            const original = reference[index];
+            expect(Math.abs(actual.opacity - original.opacity)).toBeLessThan(0.0001);
+            expect(Math.abs(actual.scale - original.scale)).toBeLessThan(0.0001);
+            expect(Math.abs(actual.y - original.y)).toBeLessThan(0.01);
+            expect(Math.abs(actual.z - original.z)).toBeLessThan(0.001);
+        });
+        await expect
+            .poll(() => plane.evaluate((element) => element.getAnimations().length))
+            .toBe(1);
+
+        const beforePreference = await plane.evaluate(async (element) => {
+            const root = document.getElementById("hero-transition-track")!;
+            const hero = document.getElementById("hero-scroll-track")!;
+            const camera = document.getElementById("stats-camera-track")!;
+            const height = document
+                .getElementById("hero-sticky-stage")!
+                .getBoundingClientRect().height;
+            const top = root.getBoundingClientRect().top + scrollY;
+            const start = top + (hero.getBoundingClientRect().height - height) * 0.9;
+            const end = top + camera.getBoundingClientRect().height - height;
+            scrollTo(0, start + (end - start) * 0.5);
+            for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+            const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+            return {
+                scale: matrix.m11,
+                time: Number(element.getAnimations()[0].currentTime),
+                scrollY,
+            };
+        });
+        expect(beforePreference.time).toBeGreaterThan(0);
+        expect(beforePreference.time).toBeLessThan(1000);
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await expect
+            .poll(() =>
+                plane.evaluate((element) => {
+                    const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+                    return [matrix.m11, matrix.m42, matrix.m43];
+                })
+            )
+            .toEqual([1, 0, 0]);
+        await expect
+            .poll(() => plane.evaluate((element) => Number(getComputedStyle(element).opacity)))
+            .toBeCloseTo(beforePreference.time / 1000, 3);
+        await page.emulateMedia({ reducedMotion: "no-preference" });
+        // Other sections rebuild their ScrollTriggers on a media change.
+        // Compare the camera at the same document position after that refresh.
+        await expect(async () => {
+            const scale = await plane.evaluate(async (element, y) => {
+                scrollTo(0, y);
+                for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+                return new DOMMatrixReadOnly(getComputedStyle(element).transform).m11;
+            }, beforePreference.scrollY);
+            expect(scale).toBeCloseTo(beforePreference.scale, 4);
+        }).toPass();
+        await expect
+            .poll(() => plane.evaluate((element) => element.getAnimations().length))
+            .toBe(1);
+        await page.evaluate(() => scrollTo(0, 0));
+        await expect
+            .poll(() => plane.evaluate((element) => element.getAnimations()[0].currentTime))
+            .toBe(0);
+    }
 });
 
 test("Hero progress keeps its trajectory after reverse scrolling and a viewport resize", async ({

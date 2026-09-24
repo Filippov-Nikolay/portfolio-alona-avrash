@@ -66,6 +66,14 @@ test("Hero camera uses compact geometry and avoids dynamic blur on touch devices
 }) => {
     await page.goto("/en");
     await expect(page.locator("#stats")).toBeAttached();
+    // The camera effect is installed during hydration; SSR keeps Stats hidden.
+    await expect
+        .poll(() =>
+            page
+                .locator('[class*="statsDepthPlane"]')
+                .evaluate((element) => element.getAnimations()[0]?.playState)
+        )
+        .toBe("paused");
 
     if ((await page.viewportSize())!.width <= 767) {
         await expect(page.locator("[class*='titleFloaters']").locator(":scope > *")).toHaveCount(3);

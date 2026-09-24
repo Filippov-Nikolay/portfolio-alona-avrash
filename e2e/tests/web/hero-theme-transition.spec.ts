@@ -96,6 +96,11 @@ test("Hero stays coherent throughout theme transitions", async ({ browserName, p
     await expect(html).toHaveAttribute("data-theme", "dark");
     await expect(html).not.toHaveClass(/vt-running/);
     expect(await readMaterial()).toEqual(during);
+    const headerBlur = await headerLogo.evaluate(
+        (element) => getComputedStyle(element).backdropFilter
+    );
+    if (isTouch) expect(headerBlur).toBe("none");
+    else expect(headerBlur).toContain("blur(16px)");
 
     await toggle.click();
     await page.waitForTimeout(30);

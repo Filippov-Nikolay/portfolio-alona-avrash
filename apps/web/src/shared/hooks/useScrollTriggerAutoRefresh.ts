@@ -7,7 +7,6 @@ import { ScrollTrigger } from "@/shared/lib/gsap";
 let activeConsumers = 0;
 let refreshRaf = 0;
 let resizeObserver: ResizeObserver | null = null;
-let refreshTimers: number[] = [];
 let layoutSnapshot: LayoutSnapshot | null = null;
 let suppressTouchDocumentResizeUntil = 0;
 let refreshRequested = false;
@@ -182,8 +181,11 @@ function attachSharedWatchers() {
         width: layoutSnapshot.viewportWidth,
         height: layoutSnapshot.viewportHeight,
     };
-    refreshTimers = [0, 250, 800].map((delay) => window.setTimeout(queueRefresh, delay));
-    window.addEventListener("load", queueRefresh);
+    // Mount requests are coalesced below. Subsequent refreshes must correspond
+    // to a layout/font change, not timed retries of an already measured page.
+    // ScrollTrigger already owns the window load refresh.
+    document.fonts?.addEventListener("loadingdone", queueRefresh);
+    document.fonts?.addEventListener("loadingerror", queueRefresh);
     window.addEventListener("resize", handleViewportResize);
     window.addEventListener("blur", handleBlur);
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -215,9 +217,8 @@ function detachSharedWatchers() {
     lastScrollTime = Number.NEGATIVE_INFINITY;
     window.clearTimeout(scrollIdleTimer);
     scrollIdleTimer = 0;
-    refreshTimers.forEach((timer) => window.clearTimeout(timer));
-    refreshTimers = [];
-    window.removeEventListener("load", queueRefresh);
+    document.fonts?.removeEventListener("loadingdone", queueRefresh);
+    document.fonts?.removeEventListener("loadingerror", queueRefresh);
     window.removeEventListener("resize", handleViewportResize);
     window.removeEventListener("blur", handleBlur);
     window.removeEventListener("scroll", handleScroll);

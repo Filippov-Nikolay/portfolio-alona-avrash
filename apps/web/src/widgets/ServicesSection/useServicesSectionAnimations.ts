@@ -3,6 +3,11 @@
 import { useRef } from "react";
 import type { Service } from "@avrash/content-schema";
 import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
+import {
+    cancelScrollIdleTask,
+    retainScrollIdleTracking,
+    scheduleWhenScrollIdle,
+} from "@/shared/lib/motion/scrollIdle";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap, ScrollTrigger } from "@/shared/lib/gsap";
 import {
@@ -151,16 +156,23 @@ export function useServicesSectionAnimations(services: Service[]) {
                     scale: Number.POSITIVE_INFINITY,
                     y: Number.POSITIVE_INFINITY,
                 }));
-                const renderedSoftness = cards.map(() => Number.POSITIVE_INFINITY);
-                const inertStates = cards.map(() => false);
-                const layerActiveStates = cards.map(() => false);
-                const softenerVisibleStates = cards.map(() => false);
-                const cardVisibleStates = cards.map<boolean | null>(() => null);
                 softeners.forEach((softener) => {
                     if (!softener) return;
                     softener.style.visibility = "hidden";
                     softener.hidden = false;
                 });
+                const renderedSoftness = cards.map(() => Number.POSITIVE_INFINITY);
+                const inertStates = cards.map(() => false);
+                const releaseScrollIdleTracking = retainScrollIdleTracking();
+                const commitInteraction = cards.map((card, index) => () => {
+                    const nextInert = inertStates[index];
+                    if (card.inert === nextInert) return;
+                    card.inert = nextInert;
+                    card.style.pointerEvents = nextInert ? "none" : "auto";
+                });
+                const layerActiveStates = cards.map(() => false);
+                const softenerVisibleStates = cards.map(() => false);
+                const cardVisibleStates = cards.map<boolean | null>(() => null);
                 let revealDistance = 0;
                 let stackOffset = 0;
                 let revealStarts: number[] = [];
@@ -270,8 +282,7 @@ export function useServicesSectionAnimations(services: Service[]) {
                             promotion >= CARD_INTERACTION_THRESHOLD;
                         if (inertStates[index] !== nextInert) {
                             inertStates[index] = nextInert;
-                            card.inert = nextInert;
-                            card.style.pointerEvents = nextInert ? "none" : "auto";
+                            scheduleWhenScrollIdle(commitInteraction[index]);
                         }
                     });
                 };
@@ -421,6 +432,8 @@ export function useServicesSectionAnimations(services: Service[]) {
                     stopFollowingScroll();
                     window.removeEventListener("scroll", handleNativeScroll);
                     cardTrigger.kill();
+                    commitInteraction.forEach(cancelScrollIdleTask);
+                    releaseScrollIdleTracking();
                     cards.forEach((card) => {
                         card.inert = false;
                         card.style.removeProperty("opacity");

@@ -521,7 +521,6 @@ export function useProjectsSectionAnimations() {
                 scrub: true,
                 anticipatePin: 1,
                 refreshPriority: 1,
-                invalidateOnRefresh: true,
                 snap: allowVelocitySnap
                     ? {
                           delay: 0.02,

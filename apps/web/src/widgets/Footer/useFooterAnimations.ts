@@ -204,7 +204,6 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                             trigger: section,
                             start: "top 76%",
                             toggleActions,
-                            invalidateOnRefresh: true,
                             once: playOnce,
                         },
                     })

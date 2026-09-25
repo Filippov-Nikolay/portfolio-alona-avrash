@@ -28,6 +28,8 @@ export function revealOnScroll({
     scrub,
     toggleActions,
     once,
+    // This generic helper accepts function-based tween values (unlike the
+    // fixed section reveals). Keep reevaluation unless the caller opts out.
     invalidateOnRefresh = true,
     fastScrollEnd,
 }: RevealOnScrollOptions) {

@@ -176,7 +176,6 @@ export function useReviewSectionAnimations(totalItems: number) {
                             trigger: section,
                             start: getStart,
                             toggleActions: "play none none reverse",
-                            invalidateOnRefresh: true,
                         },
                     })
                     .to(

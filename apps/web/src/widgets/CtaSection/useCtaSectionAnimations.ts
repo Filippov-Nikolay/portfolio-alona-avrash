@@ -55,7 +55,6 @@ export function useCtaSectionAnimations() {
                         trigger: section,
                         start: getStart,
                         toggleActions: "play none none reverse",
-                        invalidateOnRefresh: true,
                     },
                 })
                 .to(

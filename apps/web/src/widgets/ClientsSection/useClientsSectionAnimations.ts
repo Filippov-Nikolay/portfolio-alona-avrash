@@ -249,7 +249,6 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                         trigger: section,
                         start: getStart,
                         toggleActions: "play none none none",
-                        invalidateOnRefresh: true,
                     },
                 });
 

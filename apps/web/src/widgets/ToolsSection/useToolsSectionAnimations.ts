@@ -141,7 +141,6 @@ export function useToolsSectionAnimations() {
                             start: getStart,
                             end: getEnd,
                             scrub: 0.9,
-                            invalidateOnRefresh: true,
                             fastScrollEnd: true,
                         },
                     })

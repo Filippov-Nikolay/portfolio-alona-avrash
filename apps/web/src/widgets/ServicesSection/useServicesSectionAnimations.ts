@@ -132,7 +132,6 @@ export function useServicesSectionAnimations(services: Service[]) {
                         start: titleStart,
                         end: `+=${SERVICES_TITLE_REVEAL_DISTANCE}`,
                         scrub: 0.45,
-                        invalidateOnRefresh: true,
                     },
                 });
 

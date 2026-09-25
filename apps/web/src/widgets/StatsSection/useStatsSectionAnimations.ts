@@ -183,7 +183,6 @@ export function useStatsSectionAnimations(
                         trigger: grid,
                         start: "top 88%",
                         toggleActions: "play none none reverse",
-                        invalidateOnRefresh: true,
                     },
                 }
             );

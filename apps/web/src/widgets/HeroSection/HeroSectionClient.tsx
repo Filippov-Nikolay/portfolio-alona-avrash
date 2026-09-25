@@ -47,6 +47,7 @@ const STATS_PICKUP_PROGRESS = 0;
 const SELECTED_ENTRY_VIEWPORT_RATIO = 1.14;
 const STATS_SELECTED_GAP = 24;
 const SELECTED_FOCUS_DRIFT = 0;
+const HERO_OPACITY_CEILING = 0.9999;
 
 const FLOATER_LAYER_CLASSES = [
     styles.floaterBack,
@@ -63,6 +64,10 @@ const TITLE_FLOATER_VARIANT_CLASSES = [
 
 function clamp01(value: number) {
     return Math.max(0, Math.min(1, value));
+}
+
+function keepTransformLayer(_: unknown, generated: string) {
+    return generated || "translateY(0px)";
 }
 
 function smoothstep(value: number) {
@@ -292,11 +297,12 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
 
     const heroOpacity = useTransform(() => {
         const latest = scrollYProgress.get();
-        if (motionConfig.get().reduced) return 1 - clamp01(latest);
-        if (latest <= HERO_DEPTH_TRANSITION_START) return 1;
+        if (motionConfig.get().reduced) return Math.min(1 - clamp01(latest), HERO_OPACITY_CEILING);
+        if (latest <= HERO_DEPTH_TRANSITION_START) return HERO_OPACITY_CEILING;
 
-        return (
-            1 - clamp01((latest - HERO_DEPTH_TRANSITION_START) / (1 - HERO_DEPTH_TRANSITION_START))
+        return Math.min(
+            1 - clamp01((latest - HERO_DEPTH_TRANSITION_START) / (1 - HERO_DEPTH_TRANSITION_START)),
+            HERO_OPACITY_CEILING
         );
     });
     const heroPointerEvents = useTransform(() =>
@@ -540,6 +546,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                                     ref={nameFirstRef}
                                                     className={styles.nameLine}
                                                     style={{ x: nameFirstX }}
+                                                    transformTemplate={keepTransformLayer}
                                                 >
                                                     {NAME_FIRST}
                                                 </m.span>
@@ -550,6 +557,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                                         styles.nameLineEnd
                                                     )}
                                                     style={{ x: nameLastX }}
+                                                    transformTemplate={keepTransformLayer}
                                                 >
                                                     {NAME_LAST}
                                                 </m.span>
@@ -571,6 +579,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                                     )}
                                                     variants={safeFadeIn}
                                                     style={{ y: floaterYValues[index] }}
+                                                    transformTemplate={keepTransformLayer}
                                                 >
                                                     <Image
                                                         src={floater.image.src}
@@ -596,6 +605,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                         className={styles.introCardWrap}
                                         variants={safeFadeIn}
                                         style={{ y: introY }}
+                                        transformTemplate={keepTransformLayer}
                                     >
                                         <GlassSurface
                                             as="article"
@@ -631,6 +641,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                             )}
                                             variants={safeFadeIn}
                                             style={{ y: isCompact ? 0 : floaterThreeY }}
+                                            transformTemplate={keepTransformLayer}
                                             aria-hidden="true"
                                         >
                                             <Image
@@ -658,6 +669,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                             )}
                                             variants={safeFadeIn}
                                             style={{ y: isNarrow ? 0 : floaterFourY }}
+                                            transformTemplate={keepTransformLayer}
                                             aria-hidden="true"
                                         >
                                             <Image
@@ -685,6 +697,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                         )}
                                         variants={safeFadeIn}
                                         style={{ y: availabilityY }}
+                                        transformTemplate={keepTransformLayer}
                                     >
                                         <span
                                             className={styles.availabilityDot}
@@ -703,6 +716,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                         <m.div
                             className={styles.statsLiftLayer}
                             style={{ y: statsLiftY }}
+                            transformTemplate={keepTransformLayer}
                             data-stats-camera-stage
                         >
                             <StatsSection
@@ -721,6 +735,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                             ref={selectedMotionLayerRef}
                             className={styles.selectedMotionLayer}
                             style={{ y: selectedLayerY }}
+                            transformTemplate={keepTransformLayer}
                         >
                             <StatsSelectedChoreographyProvider progress={selectedEntryProgress}>
                                 <SelectedWorkSection {...selectedWork} />

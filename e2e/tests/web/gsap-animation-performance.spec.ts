@@ -192,3 +192,71 @@ test("finished section reveals leave no 3D transform layers behind", async ({ pa
     );
     expect(leftovers).toEqual([]);
 });
+
+test("section reveal timelines are initialized before the user scrolls to them", async ({
+    page,
+    hasTouch,
+}) => {
+    test.skip(hasTouch, "desktop runs every reveal through a ScrollTrigger timeline");
+    test.setTimeout(60000);
+    const inits = await page.evaluate(async () => {
+        const audit = (window as AuditWindow).__animationAudit;
+        for (const key in audit.counts) audit.counts[key] = 0;
+        const end = document.documentElement.scrollHeight - innerHeight;
+        for (let step = 0; step <= 300; step++) {
+            scrollTo(0, Math.round((end * step) / 300));
+            await new Promise(requestAnimationFrame);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        return audit.counts.cssInit;
+    });
+    expect(inits).toBeLessThanOrEqual(10);
+});
+
+test("Services cards change hit testing only after a crossing scroll settles", async ({ page }) => {
+    test.setTimeout(60000);
+    const result = await page.evaluate(async () => {
+        const grid = document.querySelector<HTMLElement>("#services article")!.parentElement!;
+        const cards = Array.from(grid.querySelectorAll<HTMLElement>(":scope > article"));
+        const top = grid.getBoundingClientRect().top + scrollY - innerHeight;
+        const end = top + grid.offsetHeight * 0.6;
+        scrollTo(0, Math.round(top));
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        let inertWrites = 0;
+        const observer = new MutationObserver((entries) => {
+            inertWrites += entries.length;
+        });
+        cards.forEach((card) =>
+            observer.observe(card, { attributes: true, attributeFilter: ["inert"] })
+        );
+        const before = cards.map((card) => card.inert);
+        for (let step = 1; step <= 60; step++) {
+            scrollTo(0, Math.round(top + ((end - top) * step) / 60));
+            await new Promise((resolve) => setTimeout(resolve, 40));
+        }
+        const duringScroll = inertWrites;
+        const afterScroll = cards.map((card) => card.inert);
+        observer.disconnect();
+        return { before, duringScroll, afterScroll };
+    });
+    expect(result.duringScroll).toBe(0);
+    expect(result.afterScroll).toEqual(result.before);
+    await expect
+        .poll(() =>
+            page.evaluate(() =>
+                Array.from(document.querySelectorAll<HTMLElement>("#services article")).some(
+                    (card) => !card.inert && Number(card.style.opacity) > 0.5
+                )
+            )
+        )
+        .toBe(true);
+    await expect
+        .poll(() =>
+            page.evaluate(() =>
+                Array.from(document.querySelectorAll<HTMLElement>("#services article")).every(
+                    (card) => card.inert === (card.style.pointerEvents === "none")
+                )
+            )
+        )
+        .toBe(true);
+});

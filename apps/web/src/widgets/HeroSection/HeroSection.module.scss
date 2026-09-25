@@ -1,7 +1,7 @@
 @use "@/shared/styles/mixins" as *;
 
 .hero {
-    --_pad-top: 30px;
+    --_pad-top: 0px;
     --_pad-bottom: 0px;
     --hero-title-start-offset: 6vw;
     --stats-camera-runway: clamp(1120px, 148svh, 1540px);
@@ -161,6 +161,7 @@
     inset: 0;
     overflow: clip;
     will-change: opacity;
+    padding-top: 30px;
 }
 
 .statsViewport {

@@ -112,3 +112,90 @@ test("Works to Home keeps the compact camera and defers refresh throughout a tou
     );
     await expect.poll(() => plane.evaluate((element) => element.getAnimations().length)).toBe(1);
 });
+
+test("Stats to Hero defers refresh after native pointer cancellation and through inertia", async ({
+    context,
+    page,
+    hasTouch,
+}, testInfo) => {
+    test.skip(!hasTouch, "exercises the native touch lifetime after pointercancel");
+    test.setTimeout(60_000);
+    await context.addCookies([
+        { name: "site-preloader", value: "1", url: String(testInfo.project.use.baseURL) },
+    ]);
+    await page.addInitScript(() => {
+        window.homeReturnProbe = { recording: false, cameraStarts: [], scrollWrites: [] };
+        const scroll = window.scrollTo.bind(window);
+        window.scrollForHomeReturnTest = (x, y) => scroll(x, y);
+        window.scrollTo = (optionsOrX: ScrollToOptions | number = {}, y?: number) => {
+            if (window.homeReturnProbe.recording) {
+                window.homeReturnProbe.scrollWrites.push({
+                    y: typeof optionsOrX === "number" ? (y ?? 0) : (optionsOrX.top ?? scrollY),
+                    stack: new Error().stack ?? "",
+                });
+            }
+            if (typeof optionsOrX === "number") scroll(optionsOrX, y ?? 0);
+            else scroll(optionsOrX);
+        };
+    });
+    await page.goto("/en");
+    const camera = page.locator('[class*="statsDepthPlane"]');
+    await expect
+        .poll(() => camera.evaluate((element) => element.getAnimations()[0]?.playState))
+        .toBe("paused");
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(1300);
+    const result = await page.evaluate(async () => {
+        const root = document.getElementById("hero-transition-track")!;
+        const stage = document.getElementById("hero-sticky-stage")!;
+        const camera = document.getElementById("stats-camera-track")!;
+        const top = root.getBoundingClientRect().top + scrollY;
+        const end =
+            top + camera.getBoundingClientRect().height - stage.getBoundingClientRect().height;
+        window.scrollForHomeReturnTest(0, end);
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        const touch = (name: string, count: number) => {
+            // Preserve touch lifetime independently of Pointer Events, as a
+            // browser does when handing the pan over to its native scroller.
+            document.dispatchEvent(Object.assign(new Event(name), { touches: { length: count } }));
+        };
+        touch("touchstart", 1);
+        document.dispatchEvent(new PointerEvent("pointerdown", { pointerId: 72 }));
+        document.dispatchEvent(new PointerEvent("pointercancel", { pointerId: 72 }));
+        window.homeReturnProbe.recording = true;
+        const spacer = document.createElement("div");
+        spacer.style.height = "20px";
+        document.body.append(spacer);
+        // The user pauses mid-gesture. GSAP considers scrolling finished but
+        // a refresh is still unsafe: the finger has not left the screen.
+        await new Promise((resolve) => setTimeout(resolve, 450));
+        const heldWrites = [...window.homeReturnProbe.scrollWrites];
+        const strips = Array.from(document.querySelectorAll("#stats [data-reel-place]"));
+        for (let i = 0; i < 90; i++) {
+            if (i === 50) touch("touchend", 0);
+            window.scrollForHomeReturnTest(0, end * (1 - i / 89));
+            await new Promise(requestAnimationFrame);
+        }
+        await new Promise(requestAnimationFrame);
+        return {
+            heldWrites,
+            scrollWrites: [...window.homeReturnProbe.scrollWrites],
+            sameStrips: strips.every(
+                (strip, i) => document.querySelectorAll("#stats [data-reel-place]")[i] === strip
+            ),
+            y: scrollY,
+        };
+    });
+    await testInfo.attach("stats-hero-native-pan", {
+        body: JSON.stringify(result, null, 2),
+        contentType: "application/json",
+    });
+    expect(result.heldWrites).toEqual([]);
+    expect(result.scrollWrites).toEqual([]);
+    expect(result.sameStrips).toBe(true);
+    expect(result.y).toBe(0);
+    await expect
+        .poll(() => page.evaluate(() => window.homeReturnProbe.scrollWrites.length))
+        .toBeGreaterThan(0);
+    await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+});

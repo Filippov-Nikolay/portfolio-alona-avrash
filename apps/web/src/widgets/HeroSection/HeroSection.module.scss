@@ -446,6 +446,7 @@
     display: inline-block;
     align-self: flex-start;
     backface-visibility: hidden;
+    will-change: transform;
 }
 
 .nameLineEnd {
@@ -865,6 +866,7 @@
     .statsDepthPlane,
     .selectedMotionLayer,
     .nameTrack,
+    .nameLine,
     .floater,
     .introCardWrap,
     .availability {

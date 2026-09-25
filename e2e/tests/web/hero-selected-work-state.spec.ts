@@ -224,6 +224,7 @@ test("Stats reels settle after a reversed touch scroll without lingering movemen
             view.scrollTo(0, y);
             await new Promise<void>((resolve) => view.requestAnimationFrame(() => resolve()));
         }
+        await new Promise<void>((resolve) => view.requestAnimationFrame(() => resolve()));
 
         await new Promise<void>((resolve) => view.setTimeout(resolve, 260));
 

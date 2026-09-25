@@ -167,3 +167,28 @@ test("refresh, responsive changes and navigation keep one set of homepage trigge
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await expect.poll(inventory).toEqual(original);
 });
+
+test("finished section reveals leave no 3D transform layers behind", async ({ page }) => {
+    test.setTimeout(60000);
+    for (const selector of ["#services", "#tools", "#reviews", "#cta", "footer"]) {
+        const top = await page.evaluate(
+            (selector) => document.querySelector(selector)!.getBoundingClientRect().top + scrollY,
+            selector
+        );
+        for (let step = 0; step < 8; step++) {
+            await page.evaluate((y) => scrollTo(0, y), Math.round(top - 400 + step * 60));
+            await page.waitForTimeout(120);
+        }
+        await page.waitForTimeout(2500);
+    }
+    const leftovers = await page.evaluate(() =>
+        Array.from(
+            document.querySelectorAll<HTMLElement>(
+                "#services h2, #tools h2, #tools p, #reviews h2, #reviews p, #reviews blockquote, #reviews button, #reviews [class*='decor'], #cta *, footer, footer *"
+            )
+        )
+            .filter((element) => /translate3d|matrix3d/.test(element.style.transform))
+            .map((element) => `${element.tagName}.${element.className}`)
+    );
+    expect(leftovers).toEqual([]);
+});

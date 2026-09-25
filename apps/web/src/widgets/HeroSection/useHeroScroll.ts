@@ -21,11 +21,11 @@ export function useHeroScroll(
         let needsMeasure = true;
         let start = 0;
         let runway = 1;
+        let y = window.scrollY;
         const shouldMeasureResize = createViewportResizeGuard();
 
         const update = () => {
             if (disposed) return;
-            const y = window.scrollY;
             if (needsMeasure) {
                 const bounds = track.getBoundingClientRect();
                 start = bounds.top + y;
@@ -40,8 +40,13 @@ export function useHeroScroll(
         // Motion's read/update/render phases share one frame. Do not insert an
         // independent rAF loop between the scroll input, camera and counters.
         const scheduleUpdate = () => frame.read(update);
+        const onScroll = () => {
+            y = window.scrollY;
+            scheduleUpdate();
+        };
         const measure = () => {
             if (disposed) return;
+            y = window.scrollY;
             needsMeasure = true;
             scheduleUpdate();
         };
@@ -53,7 +58,7 @@ export function useHeroScroll(
         observer.observe(viewport);
         update();
         void document.fonts.ready.then(measure);
-        window.addEventListener("scroll", scheduleUpdate, { passive: true });
+        window.addEventListener("scroll", onScroll, { passive: true });
         window.addEventListener("resize", onResize);
         window.addEventListener("pageshow", measure);
 
@@ -61,7 +66,7 @@ export function useHeroScroll(
             disposed = true;
             cancelFrame(update);
             observer.disconnect();
-            window.removeEventListener("scroll", scheduleUpdate);
+            window.removeEventListener("scroll", onScroll);
             window.removeEventListener("resize", onResize);
             window.removeEventListener("pageshow", measure);
         };

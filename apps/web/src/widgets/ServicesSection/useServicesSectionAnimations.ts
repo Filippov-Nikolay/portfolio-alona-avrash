@@ -129,7 +129,6 @@ export function useServicesSectionAnimations(services: Service[]) {
                     y: 0,
                     clipPath: "inset(0% 0 0)",
                     ease: "none",
-                    force3D: true,
                     scrollTrigger: {
                         trigger: sectionRef.current,
                         start: titleStart,

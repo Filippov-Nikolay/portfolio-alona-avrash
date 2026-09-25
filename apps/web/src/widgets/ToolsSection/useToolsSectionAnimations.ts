@@ -131,7 +131,7 @@ export function useToolsSectionAnimations() {
 
                 const timeline = gsap
                     .timeline({
-                        defaults: { ease: "none", force3D: true },
+                        defaults: { ease: "none" },
                         onComplete: () => {
                             gsap.set(track, { clearProps: "willChange" });
                             finishReveal();

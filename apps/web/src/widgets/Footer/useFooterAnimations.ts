@@ -204,7 +204,6 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
 
                 const timeline = gsap
                     .timeline({
-                        defaults: { force3D: true },
                         scrollTrigger: {
                             trigger: section,
                             start: "top 76%",

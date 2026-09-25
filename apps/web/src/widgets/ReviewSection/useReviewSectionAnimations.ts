@@ -176,7 +176,6 @@ export function useReviewSectionAnimations(totalItems: number) {
 
                 const timeline = gsap
                     .timeline({
-                        defaults: { force3D: true },
                         scrollTrigger: {
                             trigger: section,
                             start: getStart,

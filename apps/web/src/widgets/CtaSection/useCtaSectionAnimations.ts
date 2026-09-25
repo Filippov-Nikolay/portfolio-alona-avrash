@@ -53,7 +53,6 @@ export function useCtaSectionAnimations() {
 
             const tl = gsap
                 .timeline({
-                    defaults: { force3D: true },
                     scrollTrigger: {
                         trigger: section,
                         start: getStart,

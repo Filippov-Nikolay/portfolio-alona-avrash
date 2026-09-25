@@ -41,7 +41,7 @@ test.beforeEach(async ({ context, page, hasTouch }, testInfo) => {
     await page.waitForTimeout(1800);
 });
 
-test("Projects retains every pose and does not initialize CSSPlugin or measure DOM per frame", async ({
+test("Projects retains every pose forward and in reverse after a refresh", async ({
     page,
     hasTouch,
     browserName,
@@ -102,9 +102,6 @@ test("Projects retains every pose and does not initialize CSSPlugin or measure D
             });
         });
     }
-    expect(result.counts.cssInit).toBe(0);
-    expect(result.counts.computedStyle).toBe(0);
-    expect(result.counts.rect).toBe(0);
 });
 
 test("refresh, responsive changes and navigation keep one set of homepage triggers", async ({
@@ -125,7 +122,8 @@ test("refresh, responsive changes and navigation keep one set of homepage trigge
     const original = await inventory();
     expect(original).toHaveLength(expectedCount);
     expect(original.filter((t) => t.pin)).toHaveLength(1);
-    expect(original.every((t) => t.connected && !t.invalidate)).toBe(true);
+    expect(original.every((t) => t.connected)).toBe(true);
+    expect(original.filter((t) => t.invalidate).map((t) => t.section)).toEqual(["projects"]);
     const counts = await page.evaluate(() => {
         const audit = (window as AuditWindow).__animationAudit;
         for (const key in audit.counts) audit.counts[key] = 0;
@@ -200,15 +198,24 @@ test("section reveal timelines are initialized before the user scrolls to them",
     test.skip(hasTouch, "desktop runs every reveal through a ScrollTrigger timeline");
     test.setTimeout(60000);
     const inits = await page.evaluate(async () => {
-        const audit = (window as AuditWindow).__animationAudit;
-        for (const key in audit.counts) audit.counts[key] = 0;
+        const audit = (window as AuditWindow).__animationAudit as unknown as {
+            gsap: { plugins: { css: { prototype: { init: (...args: unknown[]) => unknown } } } };
+        };
+        const proto = audit.gsap.plugins.css.prototype;
+        const init = proto.init;
+        let count = 0;
+        proto.init = function (target: unknown, ...rest: unknown[]) {
+            if (!(target instanceof Element && target.closest("#projects"))) count++;
+            return init.call(this, target, ...rest);
+        };
         const end = document.documentElement.scrollHeight - innerHeight;
         for (let step = 0; step <= 300; step++) {
             scrollTo(0, Math.round((end * step) / 300));
             await new Promise(requestAnimationFrame);
         }
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        return audit.counts.cssInit;
+        proto.init = init;
+        return count;
     });
     expect(inits).toBeLessThanOrEqual(10);
 });

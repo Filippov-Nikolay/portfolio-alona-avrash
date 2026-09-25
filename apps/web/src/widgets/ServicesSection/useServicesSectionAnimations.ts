@@ -156,6 +156,11 @@ export function useServicesSectionAnimations(services: Service[]) {
                 const layerActiveStates = cards.map(() => false);
                 const softenerVisibleStates = cards.map(() => false);
                 const cardVisibleStates = cards.map<boolean | null>(() => null);
+                softeners.forEach((softener) => {
+                    if (!softener) return;
+                    softener.style.visibility = "hidden";
+                    softener.hidden = false;
+                });
                 let revealDistance = 0;
                 let stackOffset = 0;
                 let revealStarts: number[] = [];
@@ -215,15 +220,13 @@ export function useServicesSectionAnimations(services: Service[]) {
                         const softener = softeners[index];
                         const showSoftener = opacity > 0.001 && softness > 0.01;
                         const layerLead = Math.min(revealDistance * 0.35, 120);
-                        const isNearReveal =
+                        const lastPhaseStart =
+                            revealStarts[index + 2] ??
+                            revealStarts[index + 1] ??
+                            revealStarts[index];
+                        const activateLayer =
                             scrollY >= revealStarts[index] - layerLead &&
-                            scrollY <= revealStarts[index] + revealDistance;
-                        const isTransitioning = [entry, promotion, exit].some(
-                            (progress) =>
-                                progress > TRANSITION_PROGRESS_EPSILON &&
-                                progress < 1 - TRANSITION_PROGRESS_EPSILON
-                        );
-                        const activateLayer = isTransitioning || isNearReveal;
+                            scrollY <= lastPhaseStart + revealDistance;
                         const isVisible = opacity > TRANSITION_PROGRESS_EPSILON;
 
                         if (cardVisibleStates[index] !== isVisible) {
@@ -245,14 +248,17 @@ export function useServicesSectionAnimations(services: Service[]) {
                         }
                         if (layerActiveStates[index] !== activateLayer) {
                             layerActiveStates[index] = activateLayer;
-                            if (activateLayer) card.style.willChange = "transform, opacity";
-                            else card.style.removeProperty("will-change");
+                            if (activateLayer) {
+                                card.style.willChange = "transform, opacity";
+                                softener?.style.setProperty("will-change", "opacity");
+                            } else {
+                                card.style.removeProperty("will-change");
+                                softener?.style.removeProperty("will-change");
+                            }
                         }
                         if (softener && softenerVisibleStates[index] !== showSoftener) {
                             softenerVisibleStates[index] = showSoftener;
-                            if (showSoftener) softener.style.willChange = "opacity";
-                            else softener.style.removeProperty("will-change");
-                            softener.hidden = !showSoftener;
+                            softener.style.visibility = showSoftener ? "visible" : "hidden";
                         }
                         const nextSoftness = showSoftener ? softness : 0;
                         if (softener && Math.abs(renderedSoftness[index] - nextSoftness) > 0.0001) {
@@ -423,7 +429,9 @@ export function useServicesSectionAnimations(services: Service[]) {
                         card.style.removeProperty("visibility");
                     });
                     softeners.forEach((softener) => {
-                        if (softener) softener.hidden = true;
+                        if (!softener) return;
+                        softener.hidden = true;
+                        softener.style.removeProperty("visibility");
                     });
                     clearLayerHints();
                     softeners.forEach((softener) => {

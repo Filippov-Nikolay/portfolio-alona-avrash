@@ -29,6 +29,7 @@ let resize: () => void;
 let documentMock: EventTarget & {
     body: { scrollHeight: number };
     documentElement: { scrollHeight: number };
+    fonts: EventTarget;
 };
 const frames = new Map<number, FrameRequestCallback>();
 let nextFrame = 0;
@@ -53,6 +54,7 @@ beforeEach(async () => {
     documentMock = Object.assign(new EventTarget(), {
         documentElement: { scrollHeight: 1000 },
         body: { scrollHeight: 1000 },
+        fonts: new EventTarget(),
     });
     vi.stubGlobal("document", documentMock);
     vi.stubGlobal(
@@ -93,6 +95,35 @@ afterEach(() => {
 });
 
 describe("shared ScrollTrigger refresh scheduling", () => {
+    it("does not remeasure a settled page on arbitrary startup timers", () => {
+        mount();
+        mount();
+        flushFrame();
+        expect(harness.refresh).toHaveBeenCalledTimes(1);
+        for (const delay of [250, 550, 1000]) {
+            vi.advanceTimersByTime(delay);
+            flushFrame();
+        }
+        expect(harness.refresh).toHaveBeenCalledTimes(1);
+    });
+
+    it("refreshes font-dependent geometry after fonts load, even without a document resize", () => {
+        mount();
+        flushFrame();
+        harness.refresh.mockClear();
+        touch("touchstart", 1);
+        documentMock.fonts.dispatchEvent(new Event("loadingdone"));
+        flushFrame();
+        expect(harness.refresh).not.toHaveBeenCalled();
+        touch("touchend", 0);
+        flushFrame();
+        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith();
+        harness.cleanups.pop()!();
+        documentMock.fonts.dispatchEvent(new Event("loadingdone"));
+        flushFrame();
+        expect(harness.refresh).toHaveBeenCalledTimes(1);
+    });
+
     it("keeps a native pan blocked after pointercancel until all fingers lift", () => {
         mount();
         touch("touchstart", 2);
@@ -112,7 +143,7 @@ describe("shared ScrollTrigger refresh scheduling", () => {
 
     it("requires native scroll to settle even when GSAP reports an early scrollEnd", () => {
         mount();
-        // Consume startup timers while scrolling so they cannot affect the assertion.
+        // A delayed mount refresh must remain blocked throughout the gesture.
         pointer("pointerdown");
         vi.advanceTimersByTime(900);
         window.dispatchEvent(new Event("scroll"));

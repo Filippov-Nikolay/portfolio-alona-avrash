@@ -40,6 +40,8 @@ const flushFrame = () => {
 const emit = (name: string) => harness.listeners.get(name)?.forEach((callback) => callback());
 const pointer = (name: string, id = 1) =>
     documentMock.dispatchEvent(Object.assign(new Event(name), { pointerId: id }));
+const touch = (name: string, count: number) =>
+    documentMock.dispatchEvent(Object.assign(new Event(name), { touches: { length: count } }));
 
 beforeEach(async () => {
     vi.resetModules();
@@ -91,6 +93,71 @@ afterEach(() => {
 });
 
 describe("shared ScrollTrigger refresh scheduling", () => {
+    it("keeps a native pan blocked after pointercancel until all fingers lift", () => {
+        mount();
+        touch("touchstart", 2);
+        pointer("pointerdown");
+        pointer("pointercancel");
+        vi.advanceTimersByTime(900);
+        emit("scrollEnd");
+        flushFrame();
+        expect(harness.refresh).not.toHaveBeenCalled();
+        touch("touchend", 1);
+        flushFrame();
+        expect(harness.refresh).not.toHaveBeenCalled();
+        touch("touchend", 0);
+        flushFrame();
+        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith();
+    });
+
+    it("requires native scroll to settle even when GSAP reports an early scrollEnd", () => {
+        mount();
+        // Consume startup timers while scrolling so they cannot affect the assertion.
+        pointer("pointerdown");
+        vi.advanceTimersByTime(900);
+        window.dispatchEvent(new Event("scroll"));
+        pointer("pointerup");
+        emit("scrollEnd");
+        flushFrame();
+        expect(harness.refresh).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(200);
+        window.dispatchEvent(new Event("scroll"));
+        emit("scrollEnd");
+        flushFrame();
+        vi.advanceTimersByTime(249);
+        flushFrame();
+        expect(harness.refresh).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1);
+        flushFrame();
+        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith();
+    });
+
+    it.each([true, false])(
+        "ignores browser chrome resizing with ResizeObserver first: %s",
+        (observerFirst) => {
+            mount();
+            vi.advanceTimersByTime(900);
+            flushFrame();
+            harness.refresh.mockClear();
+            window.innerHeight = 740;
+            documentMock.body.scrollHeight = 1020;
+            if (observerFirst) resize();
+            window.dispatchEvent(new Event("resize"));
+            if (!observerFirst) resize();
+            // Safari can also dispatch another resize with unchanged dimensions.
+            window.dispatchEvent(new Event("resize"));
+            flushFrame();
+            expect(harness.refresh).not.toHaveBeenCalled();
+
+            // A real orientation/width change must still invalidate pin geometry.
+            window.innerWidth = 844;
+            resize();
+            window.dispatchEvent(new Event("resize"));
+            flushFrame();
+            expect(harness.refresh).toHaveBeenCalledExactlyOnceWith();
+        }
+    );
+
     it("coalesces startup and layout requests until both touch and inertia end", () => {
         mount();
         pointer("pointerdown");

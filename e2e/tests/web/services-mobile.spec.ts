@@ -87,7 +87,7 @@ test("mobile Services reveal stays progressive during a fast scroll", async ({
     await expect(secondSoftener).toBeHidden();
 
     await expect(cards.nth(1)).toHaveCSS("filter", "none");
-    await expect(cards.nth(1)).toHaveCSS("will-change", "auto");
+    await expect(cards.nth(1)).toHaveCSS("will-change", "transform, opacity");
 
     await page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)");
     await expect(cards.nth(1)).toHaveCSS("will-change", "auto");

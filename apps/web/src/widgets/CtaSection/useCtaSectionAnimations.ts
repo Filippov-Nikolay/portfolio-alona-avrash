@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -9,7 +9,7 @@ const isCompact = () => window.matchMedia("(max-width: 768px)").matches;
 const getStart = () => (isCompact() ? "top 88%" : "top 68%");
 
 export function useCtaSectionAnimations() {
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
     useScrollTriggerAutoRefresh([reduced]);
 
     const sectionRef = useRef<HTMLElement>(null);

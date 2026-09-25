@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -15,7 +15,7 @@ interface UseFooterAnimationsOptions {
 }
 
 export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOptions = {}) {
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
     useScrollTriggerAutoRefresh([reduced]);
 
     const sectionRef = useRef<HTMLElement>(null);

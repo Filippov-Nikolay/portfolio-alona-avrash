@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -15,7 +15,7 @@ const DESKTOP_QUERY = "(min-width: 1025px) and (pointer: fine)";
 const COMPACT_REVEAL_ROOT_MARGIN = "0px 0px -40% 0px";
 
 export function useReviewSectionAnimations(totalItems: number) {
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
 
     useScrollTriggerAutoRefresh([reduced]);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { ScrollTrigger, useGSAP, gsap } from "@/shared/lib/gsap";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 
@@ -82,7 +82,7 @@ interface FinalCompositionLayout {
 }
 
 export function useProjectsSectionAnimations() {
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
     const compact = useCompactViewport();
     const sectionRef = useRef<HTMLElement>(null);
     const sceneRef = useRef<HTMLDivElement>(null);

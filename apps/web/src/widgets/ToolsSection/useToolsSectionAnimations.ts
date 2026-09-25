@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -15,7 +15,7 @@ const COMPACT_REVEAL_ROOT_MARGIN = "0px 0px -12% 0px";
 export const TOOLS_REVEAL_COMPLETE_EVENT = "tools:reveal-complete";
 
 export function useToolsSectionAnimations() {
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
 
     useScrollTriggerAutoRefresh([reduced]);
 

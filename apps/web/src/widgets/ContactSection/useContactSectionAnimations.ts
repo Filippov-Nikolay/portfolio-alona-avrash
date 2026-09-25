@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { gsap, useGSAP } from "@/shared/lib/gsap";
 
 export function useContactSectionAnimations(enabled: boolean) {
     const sectionRef = useRef<HTMLElement>(null);
-    const reducedMotion = useReducedMotion();
+    const reducedMotion = useReducedMotionPreference();
 
     useGSAP(
         () => {

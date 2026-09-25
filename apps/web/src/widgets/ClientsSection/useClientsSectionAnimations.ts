@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import type { ClientsRow, MarqueeDirection } from "@avrash/content-schema";
 import { useArrayRefs, useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
@@ -23,7 +23,7 @@ interface RowRefPair {
 }
 
 export function useClientsSectionAnimations(rows: ClientsRow[]) {
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
 
     useScrollTriggerAutoRefresh([reduced, rows.length]);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
 // The middle digit of "404" is always 0, so it never has to move - only
@@ -16,7 +16,7 @@ function setDigitPosition(container: HTMLElement, digit: number) {
 }
 
 export function useNotFoundOdometer() {
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
     const containerRef = useRef<HTMLSpanElement>(null);
 
     useGSAP(

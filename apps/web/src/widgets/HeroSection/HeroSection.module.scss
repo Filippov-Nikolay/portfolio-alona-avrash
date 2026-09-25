@@ -158,7 +158,7 @@
 
 .heroLayer {
     position: absolute;
-    inset: 0;
+    inset: 0 0 calc(100svh - 100lvh);
     overflow: clip;
     will-change: opacity;
     padding-top: 30px;
@@ -234,7 +234,7 @@
 
 .glow {
     position: absolute;
-    top: -18%;
+    top: -18svh;
     left: -8%;
     width: 700px;
     height: 700px;
@@ -250,7 +250,7 @@
     }
 
     @media (max-width: 767px) {
-        top: -10%;
+        top: -10svh;
         left: -18%;
         width: 360px;
         height: 360px;
@@ -259,7 +259,7 @@
 
 .glowSecondary {
     position: absolute;
-    top: 8%;
+    top: 8svh;
     right: -12%;
     width: 620px;
     height: 620px;
@@ -276,7 +276,7 @@
     }
 
     @media (max-width: 767px) {
-        top: 2%;
+        top: 2svh;
         right: -24%;
         width: 320px;
         height: 320px;

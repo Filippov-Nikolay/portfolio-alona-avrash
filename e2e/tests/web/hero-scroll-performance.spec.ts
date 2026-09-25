@@ -305,6 +305,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     test(`Hero and Stats keep their rendering visibility and interaction boundaries (${reducedMotion})`, async ({
         page,
     }, testInfo) => {
+        test.setTimeout(90_000);
         await page.emulateMedia({ reducedMotion });
         await page.goto("/en");
         const hero = page.locator('[class*="heroLayer"]');
@@ -368,6 +369,10 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
                             getComputedStyle(hero).visibility === "visible" &&
                             getComputedStyle(stats).visibility === "visible";
                     }
+                    await new Promise((resolve) => setTimeout(resolve, 200));
+                    for (let frame = 0; frame < 4; frame++) {
+                        await new Promise(requestAnimationFrame);
+                    }
                     const heroStyle = getComputedStyle(hero);
                     const statsStyle = getComputedStyle(stats);
                     link.focus({ preventScroll: true });
@@ -424,6 +429,89 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
         await expect(stats).toHaveAttribute("inert", "");
     });
 }
+
+test("Hero and Stats defer hit-testing changes until a crossing scroll settles", async ({
+    page,
+}, testInfo) => {
+    await page.goto("/en");
+    const hero = page.locator('[class*="heroLayer"]');
+    const stats = page.locator('[class*="statsDepthPlane"]');
+    await expect
+        .poll(() => stats.evaluate((element) => element.getAnimations()[0]?.playState))
+        .toBe("paused");
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(1100);
+
+    const crossing = async (direction: "down" | "up") =>
+        page.evaluate(async (direction) => {
+            const root = document.getElementById("hero-transition-track")!;
+            const cameraTrack = document.getElementById("stats-camera-track")!;
+            const stage = document.getElementById("hero-sticky-stage")!;
+            const hero = root.querySelector<HTMLElement>('[class*="heroLayer"]')!;
+            const stats = root.querySelector<HTMLElement>('[class*="statsDepthPlane"]')!;
+            const top = root.getBoundingClientRect().top + scrollY;
+            const end =
+                top +
+                cameraTrack.getBoundingClientRect().height -
+                stage.getBoundingClientRect().height;
+            let inertWrites = 0;
+            const observer = new MutationObserver((entries) => {
+                inertWrites += entries.length;
+            });
+            for (const element of [hero, stats]) {
+                observer.observe(element, { attributes: true, attributeFilter: ["inert"] });
+            }
+            const from = direction === "down" ? top : end;
+            const to = direction === "down" ? end : top;
+            for (let i = 1; i <= 60; i++) {
+                scrollTo(0, Math.round(from + ((to - from) * i) / 60));
+                await new Promise((resolve) => setTimeout(resolve, 40));
+            }
+            const duringScroll = inertWrites;
+            const pointerDuringScroll = [hero.style.pointerEvents, stats.style.pointerEvents].join(
+                ","
+            );
+            observer.disconnect();
+            return { duringScroll, pointerDuringScroll };
+        }, direction);
+    const settled = () =>
+        page.evaluate(() => {
+            const hero = document.querySelector<HTMLElement>('[class*="heroLayer"]')!;
+            const stats = document.querySelector<HTMLElement>('[class*="statsDepthPlane"]')!;
+            return {
+                heroInert: hero.inert,
+                heroPointer: hero.style.pointerEvents,
+                statsInert: stats.inert,
+                statsPointer: stats.style.pointerEvents,
+            };
+        });
+
+    const down = await crossing("down");
+    expect(down.duringScroll).toBe(0);
+    expect(down.pointerDuringScroll).toBe("auto,none");
+    await expect.poll(settled).toEqual({
+        heroInert: true,
+        heroPointer: "none",
+        statsInert: false,
+        statsPointer: "auto",
+    });
+
+    const up = await crossing("up");
+    await testInfo.attach("hit-testing-crossings", {
+        body: JSON.stringify({ down, up }, null, 2),
+        contentType: "application/json",
+    });
+    expect(up.duringScroll).toBe(0);
+    expect(up.pointerDuringScroll).toBe("none,auto");
+    await expect.poll(settled).toEqual({
+        heroInert: false,
+        heroPointer: "auto",
+        statsInert: true,
+        statsPointer: "none",
+    });
+    await expect(hero).not.toHaveAttribute("inert", "");
+    await expect(stats).toHaveAttribute("inert", "");
+});
 
 test.describe("Hero server markup", () => {
     test.use({ javaScriptEnabled: false });

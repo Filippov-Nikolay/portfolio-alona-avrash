@@ -30,6 +30,8 @@ const FINAL_STOP_VELOCITY = 1400;
 const FINAL_HOLD_SCROLL_DISTANCE = 0.9;
 const COMPACT_MEDIA_QUERY = "(max-width: 479px)";
 const PATH_SAMPLES_PER_CARD = 64;
+// Match CSSPlugin's numeric precision without reinitializing it on each frame.
+const roundCss = (value: number) => Math.round(value * 10_000) / 10_000;
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(Math.max(value, min), max);
 const lerp = (from: number, to: number, progress: number) => from + (to - from) * progress;
@@ -121,14 +123,13 @@ export function useProjectsSectionAnimations() {
 
             const getSceneDistance = () => {
                 const logicalSteps = Math.max(finalTailStart + 2.6, 6);
-                const sceneHeight = scene.clientHeight || viewportHeight;
 
                 return (
                     Math.max(
-                        sceneHeight * 4.5,
-                        logicalSteps * cardWidth * 0.84 + window.innerWidth * 0.35
+                        viewportHeight * 4.5,
+                        logicalSteps * cardWidth * 0.84 + viewportWidth * 0.35
                     ) +
-                    sceneHeight * FINAL_HOLD_SCROLL_DISTANCE
+                    viewportHeight * FINAL_HOLD_SCROLL_DISTANCE
                 );
             };
             const getFocusInfluence = (relative: number) =>
@@ -342,10 +343,30 @@ export function useProjectsSectionAnimations() {
                 );
             };
 
-            gsap.set(cards, { yPercent: -50, force3D: true });
-            const cardSetters = cards.map((card) => gsap.quickSetter(card, "css"));
-            const titleSetter = gsap.quickSetter(title, "css");
-            const viewAllSetter = gsap.quickSetter(viewAll, "css");
+            const targets = [...cards, title, viewAll];
+            const ownedProperties = [
+                "transform",
+                "opacity",
+                "visibility",
+                "z-index",
+                "pointer-events",
+            ];
+            const originalStyles = targets.map((target) =>
+                ownedProperties.map((property) => ({
+                    value: target.style.getPropertyValue(property),
+                    priority: target.style.getPropertyPriority(property),
+                }))
+            );
+            // The title/button can inherit CSS transforms; parse both before
+            // writing. Card transforms are fully owned by the renderer below.
+            [title, viewAll].forEach((target) => gsap.getProperty(target, "x"));
+            const titleYSetter = gsap.quickSetter(title, "y", "px");
+            const titleOpacitySetter = gsap.quickSetter(title, "opacity");
+            const titleVisibilitySetter = gsap.quickSetter(title, "visibility");
+            const buttonXSetter = gsap.quickSetter(viewAll, "x", "px");
+            const buttonYSetter = gsap.quickSetter(viewAll, "y", "px");
+            const buttonOpacitySetter = gsap.quickSetter(viewAll, "opacity");
+            const buttonVisibilitySetter = gsap.quickSetter(viewAll, "visibility");
             const zIndexSetters = cards.map((card) => gsap.quickSetter(card, "zIndex"));
             const visibilitySetters = cards.map((card) => gsap.quickSetter(card, "visibility"));
             const pointerEventSetters = cards.map((card) =>
@@ -372,13 +393,12 @@ export function useProjectsSectionAnimations() {
                 const isVisible = opacity !== 0;
                 if (!isVisible && renderedVisibility[index] === false) return;
 
-                cardSetters[index]({
-                    x,
-                    y,
-                    scale,
-                    rotationY,
-                    opacity,
-                });
+                // Same order/precision as CSSPlugin's yPercent + force3D
+                // renderer, with one transform write and no plugin init/read.
+                const card = cards[index];
+                const size = roundCss(scale);
+                card.style.transform = `translate(0%, -50%) translate3d(${roundCss(x)}px, ${roundCss(y)}px, 0px) rotateY(${rotationY}deg) scale(${size}, ${size})`;
+                card.style.opacity = String(roundCss(opacity));
 
                 if (renderedZIndices[index] !== zIndex) {
                     renderedZIndices[index] = zIndex;
@@ -436,7 +456,9 @@ export function useProjectsSectionAnimations() {
                 if (titleOpacity !== renderedTitleOpacity || titleY !== renderedTitleY) {
                     renderedTitleOpacity = titleOpacity;
                     renderedTitleY = titleY;
-                    titleSetter({ autoAlpha: titleOpacity, y: titleY });
+                    titleYSetter(roundCss(titleY));
+                    titleOpacitySetter(roundCss(titleOpacity));
+                    titleVisibilitySetter(titleOpacity ? "inherit" : "hidden");
                 }
 
                 const buttonX = finalLayout.viewAllX;
@@ -449,7 +471,10 @@ export function useProjectsSectionAnimations() {
                     renderedButtonOpacity = buttonProgress;
                     renderedButtonX = buttonX;
                     renderedButtonY = buttonY;
-                    viewAllSetter({ autoAlpha: buttonProgress, x: buttonX, y: buttonY });
+                    buttonXSetter(roundCss(buttonX));
+                    buttonYSetter(roundCss(buttonY));
+                    buttonOpacitySetter(roundCss(buttonProgress));
+                    buttonVisibilitySetter(buttonProgress ? "inherit" : "hidden");
                 }
 
                 cards.forEach((_, index) => {
@@ -560,6 +585,15 @@ export function useProjectsSectionAnimations() {
             render(scrollTrigger.progress);
             return () => {
                 scrollTrigger.kill();
+                // quickSetter is deliberately outside the tween lifecycle, so
+                // restore its owned properties on breakpoint changes/unmount too.
+                targets.forEach((target, index) => {
+                    ownedProperties.forEach((property, propertyIndex) => {
+                        const { value, priority } = originalStyles[index][propertyIndex];
+                        if (value) target.style.setProperty(property, value, priority);
+                        else target.style.removeProperty(property);
+                    });
+                });
                 delete scene.dataset.phase;
             };
         },

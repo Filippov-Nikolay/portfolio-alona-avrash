@@ -13,12 +13,14 @@ const BAND_OVERLAP = 20;
 const ENTRY_SENTINEL_ID = "services-header-band-entry";
 const EXIT_SENTINEL_ID = "services-header-band-exit";
 const HEADER_SCENE_HEIGHT_VAR = "--header-scene-height";
+const UNMEASURED_BAND_HEIGHT = 120;
 
 export function useServicesHeaderBandController(
     headerRef: RefObject<HTMLElement | null>,
     bandRef: RefObject<HTMLDivElement | null>
 ) {
-    const bandY = useMotionValue(-120);
+    const bandY = useMotionValue(-UNMEASURED_BAND_HEIGHT);
+    const bandVisibility = useMotionValue<"visible" | "hidden">("hidden");
     const geometryRef = useRef<ServicesHeaderBandGeometry | null>(null);
 
     useLayoutEffect(() => {
@@ -48,6 +50,8 @@ export function useServicesHeaderBandController(
         const syncBand = () => {
             const nextY = calculateServicesHeaderBandY(window.scrollY, geometryRef.current);
             bandY.set(nextY);
+            const bandHeight = geometryRef.current?.bandHeight ?? UNMEASURED_BAND_HEIGHT;
+            bandVisibility.set(nextY <= -bandHeight + 0.5 ? "hidden" : "visible");
 
             if (
                 process.env.NODE_ENV === "development" &&
@@ -191,7 +195,7 @@ export function useServicesHeaderBandController(
                 root.style.removeProperty(HEADER_SCENE_HEIGHT_VAR);
             }
         };
-    }, [bandRef, bandY, headerRef]);
+    }, [bandRef, bandVisibility, bandY, headerRef]);
 
-    return bandY;
+    return { bandY, bandVisibility };
 }

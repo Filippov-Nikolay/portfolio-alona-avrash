@@ -108,7 +108,7 @@ export function Header() {
     const sceneBackdropRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const menuTriggerRef = useRef<HTMLButtonElement>(null);
-    const bandY = useServicesHeaderBandController(headerRef, sceneBackdropRef);
+    const { bandY, bandVisibility } = useServicesHeaderBandController(headerRef, sceneBackdropRef);
     useHeaderHeightVar(headerRef);
 
     // Keep the pills hidden for at least one committed frame after `isReady`
@@ -184,7 +184,7 @@ export function Header() {
             <m.div
                 ref={sceneBackdropRef}
                 className={styles.sceneBackdrop}
-                style={{ y: bandY }}
+                style={{ y: bandY, visibility: bandVisibility }}
                 data-services-header-band
                 data-services-header-controller
                 aria-hidden="true"

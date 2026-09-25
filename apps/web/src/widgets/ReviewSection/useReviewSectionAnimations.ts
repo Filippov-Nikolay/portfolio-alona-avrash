@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
+import { primeAnimation } from "@/shared/lib/animation/primeAnimation";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -69,7 +70,9 @@ export function useReviewSectionAnimations(totalItems: number) {
                 }
 
                 const setLayerHint = () =>
-                    gsap.set(compactTargets, { willChange: "transform, opacity" });
+                    compactTargets.forEach((target) =>
+                        target.style.setProperty("will-change", "transform, opacity")
+                    );
                 const clearAnimatedProps = () =>
                     gsap.set(compactTargets, {
                         clearProps: "transform,transformOrigin,opacity,visibility,willChange",
@@ -108,6 +111,7 @@ export function useReviewSectionAnimations(totalItems: number) {
                         },
                         0.16
                     );
+                primeAnimation(timeline);
 
                 let hasRevealed = false;
                 const reveal = () => {
@@ -246,6 +250,7 @@ export function useReviewSectionAnimations(totalItems: number) {
                         },
                         0.25
                     );
+                primeAnimation(timeline);
 
                 return () => timeline.kill();
             });

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
+import { primeAnimation } from "@/shared/lib/animation/primeAnimation";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -71,8 +72,8 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
 
                 const revealTargets = [...maskLines, ...socialItems, ...legalItems, ...chars];
 
-                const setLayerHint = () => gsap.set(curtain, { willChange: "transform" });
-                const clearLayerHint = () => gsap.set(curtain, { clearProps: "willChange" });
+                const setLayerHint = () => curtain?.style.setProperty("will-change", "transform");
+                const clearLayerHint = () => curtain?.style.removeProperty("will-change");
                 const settleVisibleState = () => {
                     gsap.set(revealTargets, {
                         clearProps: "opacity,visibility,transform",
@@ -158,6 +159,7 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                         0.5
                     )
                     .set(curtain, { autoAlpha: 0 }, 1.1);
+                primeAnimation(timeline);
 
                 const reveal = () => {
                     if (timeline.progress() === 0) timeline.play();
@@ -256,6 +258,7 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                         },
                         0.5
                     );
+                primeAnimation(timeline);
 
                 return () => timeline.kill();
             });

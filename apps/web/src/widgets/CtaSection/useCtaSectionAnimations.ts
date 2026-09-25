@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
+import { primeAnimation } from "@/shared/lib/animation/primeAnimation";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -81,6 +82,7 @@ export function useCtaSectionAnimations() {
             if (arrow) {
                 tl.to(arrow, { autoAlpha: 1, scale: 1, duration: 0.4, ease: "back.out(3)" }, 0.75);
             }
+            primeAnimation(tl);
         },
         { scope: sectionRef, dependencies: [reduced], revertOnUpdate: true }
     );

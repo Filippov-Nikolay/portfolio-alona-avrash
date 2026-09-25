@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
+import { primeAnimation } from "@/shared/lib/animation/primeAnimation";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -93,6 +94,7 @@ export function useToolsSectionAnimations() {
                         0.1
                     )
                     .to(revealCards, { autoAlpha: 1, duration: 0.76, ease: "power2.out" }, 0.2);
+                primeAnimation(timeline);
 
                 let hasStarted = false;
                 let observer: IntersectionObserver | null = null;
@@ -100,8 +102,10 @@ export function useToolsSectionAnimations() {
                     if (hasStarted) return;
                     hasStarted = true;
                     section.dataset.toolsRevealStarted = "true";
-                    gsap.set([title, description], { willChange: "transform, opacity" });
-                    gsap.set(revealCards, { willChange: "opacity" });
+                    [title, description].forEach((target) =>
+                        target.style.setProperty("will-change", "transform, opacity")
+                    );
+                    revealCards.forEach((card) => card.style.setProperty("will-change", "opacity"));
                     observer?.disconnect();
                     timeline.play(0);
                 };
@@ -127,16 +131,16 @@ export function useToolsSectionAnimations() {
             media.add(DESKTOP_QUERY, () => {
                 prepareTransformTargets([title, description]);
 
-                gsap.set(track, { willChange: "opacity" });
+                track.style.setProperty("will-change", "opacity");
 
                 const timeline = gsap
                     .timeline({
                         defaults: { ease: "none" },
                         onComplete: () => {
-                            gsap.set(track, { clearProps: "willChange" });
+                            track.style.removeProperty("will-change");
                             finishReveal();
                         },
-                        onReverseComplete: () => gsap.set(track, { clearProps: "willChange" }),
+                        onReverseComplete: () => track.style.removeProperty("will-change"),
                         scrollTrigger: {
                             trigger: section,
                             start: getStart,

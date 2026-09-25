@@ -6,6 +6,7 @@ import type { ClientsRow, MarqueeDirection } from "@avrash/content-schema";
 import { useArrayRefs, useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
+import { primeAnimation } from "@/shared/lib/animation/primeAnimation";
 
 const isCompact = () => window.matchMedia("(max-width: 768px)").matches;
 const getStart = () => (isCompact() ? "top 92%" : "top 82%");
@@ -98,6 +99,7 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                       );
             });
 
+            marqueeTweens.forEach(primeAnimation);
             const marqueeStarted = pairs.map(() => false);
 
             const syncMarqueePlayback = () => {
@@ -189,6 +191,7 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                         REVEAL_START
                     );
                 });
+                primeAnimation(timeline);
 
                 let hasStarted = false;
                 let revealObserver: IntersectionObserver | null = null;
@@ -265,6 +268,7 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                         REVEAL_START
                     );
                 });
+                primeAnimation(timeline);
 
                 return () => {
                     timeline.kill();

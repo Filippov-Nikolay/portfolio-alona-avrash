@@ -72,6 +72,9 @@
     position: relative;
     display: inline-block;
     overflow: hidden;
+    // These are viewports for transformed digit strips, never scrollers.
+    // Keep hidden as a fallback for older Safari versions without overflow: clip.
+    overflow: clip;
     height: 1em;
     line-height: 1;
 }

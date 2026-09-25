@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { sampleHeroScene } from "../../helpers/heroScene";
-// Captured before resizing the camera or merging the grid reveal into it.
+// Captured before resizing the camera or merging the grid reveal into it,
+// then re-captured once the Hero top gap moved inside the stage (y -30,
+// title +30) and landscape Selected Work gained its 24px Stats gap. Every
+// other coordinate matched the original capture exactly.
 import desktop from "../../fixtures/hero-scene-chromium-desktop.json";
 import chromiumTouch from "../../fixtures/hero-scene-chromium-touch.json";
 import webkitTouch from "../../fixtures/hero-scene-webkit-touch.json";
@@ -27,11 +30,6 @@ test("Smaller Stats raster preserves Hero, grid and Selected Work screen positio
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(1300);
         const actual = await sampleHeroScene(page);
-        const lastEntryPose = expected[expected.length / 2 - 1];
-        const oldEntryGap =
-            lastEntryPose.bounds.selected[1] -
-            lastEntryPose.bounds.grid[1] -
-            lastEntryPose.bounds.grid[3];
         let maxError = 0;
         for (let i = 0; i < expected.length; i++) {
             expect(actual[i].y).toBeCloseTo(expected[i].y, 0);
@@ -39,15 +37,6 @@ test("Smaller Stats raster preserves Hero, grid and Selected Work screen positio
                 expected[i].bounds
             ) as (keyof (typeof expected)[number]["bounds"])[]) {
                 for (let axis = 0; axis < 4; axis++) {
-                    if (name === "selected" && axis === 1 && oldEntryGap < 24) {
-                        // The original landscape fixture contains the overlap.
-                        // Keep every other coordinate pinned to it; the corrected
-                        // entry, reverse path and gap have their own spacing test.
-                        const shift = actual[i].bounds.selected[1] - expected[i].bounds.selected[1];
-                        expect(shift).toBeGreaterThanOrEqual(-0.15);
-                        expect(shift).toBeLessThanOrEqual(24 - oldEntryGap + 0.15);
-                        continue;
-                    }
                     const error = Math.abs(
                         actual[i].bounds[name][axis] - expected[i].bounds[name][axis]
                     );

@@ -294,7 +294,7 @@ test("Hero progress keeps its trajectory after reverse scrolling and a viewport 
         expect(poses[0].x).toBeCloseTo(poses[4].x, 2);
         expect(poses[1].x).toBeCloseTo(poses[3].x, 2);
         expect(poses[2].opacity).toBe(0);
-        expect(poses[0].opacity).toBe(1);
+        expect(poses[0].opacity).toBe(0.9999);
         const endpoint = poses[2].x;
         for (const pose of poses)
             expect(Math.abs(pose.x - endpoint * pose.progress)).toBeLessThan(1);
@@ -511,6 +511,62 @@ test("Hero and Stats defer hit-testing changes until a crossing scroll settles",
     });
     await expect(hero).not.toHaveAttribute("inert", "");
     await expect(stats).toHaveAttribute("inert", "");
+});
+
+test("Scene layers keep their transform and Hero opacity stays below one while scrolling", async ({
+    page,
+}) => {
+    await page.goto("/en");
+    const stats = page.locator('[class*="statsDepthPlane"]');
+    await expect
+        .poll(() => stats.evaluate((element) => element.getAnimations()[0]?.playState))
+        .toBe("paused");
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(1100);
+
+    const result = await page.evaluate(async () => {
+        const root = document.getElementById("hero-transition-track")!;
+        const cameraTrack = document.getElementById("stats-camera-track")!;
+        const selectedTrack = document.getElementById("selected-motion-track")!;
+        const stage = document.getElementById("hero-sticky-stage")!;
+        const hero = root.querySelector<HTMLElement>('[class*="heroLayer"]')!;
+        const layers = Array.from(
+            root.querySelectorAll<HTMLElement>(
+                '[class*="nameLine"], [class*="introCardWrap"], [class*="availability"]:not([class*="Dot"]), [class*="statsLiftLayer"], [class*="selectedMotionLayer"], [class*="floater"][class*="Floater"], [class*="floaterVariant"]'
+            )
+        );
+        const top = root.getBoundingClientRect().top + scrollY;
+        const end =
+            top +
+            selectedTrack.getBoundingClientRect().height -
+            stage.getBoundingClientRect().height;
+        const cameraEnd =
+            top + cameraTrack.getBoundingClientRect().height - stage.getBoundingClientRect().height;
+        const bareTransforms = new Set<string>();
+        const opacities = new Set<string>();
+        const sample = () => {
+            for (const layer of layers) {
+                if (!layer.style.transform || layer.style.transform === "none") {
+                    bareTransforms.add(layer.className);
+                }
+            }
+            opacities.add(hero.style.opacity);
+        };
+        for (const y of [top, top + 1, (top + cameraEnd) / 2, cameraEnd, end, top]) {
+            scrollTo(0, Math.round(y));
+            for (let frame = 0; frame < 3; frame++) await new Promise(requestAnimationFrame);
+            sample();
+        }
+        return {
+            layers: layers.length,
+            bareTransforms: [...bareTransforms],
+            opacities: [...opacities].map(Number),
+        };
+    });
+    expect(result.layers).toBeGreaterThanOrEqual(6);
+    expect(result.bareTransforms).toEqual([]);
+    expect(Math.max(...result.opacities)).toBe(0.9999);
+    expect(result.opacities).not.toContain(1);
 });
 
 test.describe("Hero server markup", () => {

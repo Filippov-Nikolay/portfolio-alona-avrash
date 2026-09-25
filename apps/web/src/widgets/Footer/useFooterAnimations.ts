@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
+import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -79,6 +80,8 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                     gsap.set(curtain, { autoAlpha: 0 });
                     clearLayerHint();
                 };
+
+                prepareTransformTargets([curtain, ...revealTargets]);
 
                 gsap.set(section, { clearProps: "clipPath" });
                 gsap.set([left, right, brand], { clearProps: "all" });
@@ -187,6 +190,8 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
             });
 
             media.add(DESKTOP_QUERY, () => {
+                prepareTransformTargets([...maskLines, ...socialItems, ...legalItems, ...chars]);
+
                 gsap.set(section, { clipPath: PANEL_CLIP_HIDDEN });
                 gsap.set(maskLines, { yPercent: 110 });
                 gsap.set(socialItems, { autoAlpha: 0, y: 12, scale: 0.6 });

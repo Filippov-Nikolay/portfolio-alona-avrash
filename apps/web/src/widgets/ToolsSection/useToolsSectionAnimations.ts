@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
+import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -65,11 +66,9 @@ export function useToolsSectionAnimations() {
                     return;
                 }
 
-                gsap.set(title, {
-                    autoAlpha: 0,
-                    y: 28,
-                });
-                gsap.set(description, {
+                prepareTransformTargets([title, description]);
+
+                gsap.set([title, description], {
                     autoAlpha: 0,
                     y: 28,
                 });
@@ -126,6 +125,8 @@ export function useToolsSectionAnimations() {
             });
 
             media.add(DESKTOP_QUERY, () => {
+                prepareTransformTargets([title, description]);
+
                 gsap.set(track, { willChange: "opacity" });
 
                 const timeline = gsap

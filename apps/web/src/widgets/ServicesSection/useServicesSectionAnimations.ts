@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import type { Service } from "@avrash/content-schema";
+import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap, ScrollTrigger } from "@/shared/lib/gsap";
 import {
@@ -114,6 +115,8 @@ export function useServicesSectionAnimations(services: Service[]) {
                         )
                     );
                 };
+
+                prepareTransformTargets([title, ...cards]);
 
                 gsap.set(title, {
                     autoAlpha: 0,
@@ -387,8 +390,6 @@ export function useServicesSectionAnimations(services: Service[]) {
                         renderTowards(scrollY);
                     }
                 };
-
-                measureCards();
 
                 const cardTrigger = ScrollTrigger.create({
                     trigger: grid,

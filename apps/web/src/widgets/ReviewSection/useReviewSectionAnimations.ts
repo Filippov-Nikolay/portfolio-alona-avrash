@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
+import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -74,6 +75,8 @@ export function useReviewSectionAnimations(totalItems: number) {
                         clearProps: "transform,transformOrigin,opacity,visibility,willChange",
                     });
 
+                prepareTransformTargets(compactTargets);
+
                 gsap.set([decorBack, decorFront, ...navItems, ...cards], { clearProps: "all" });
                 gsap.set(title, { autoAlpha: 0, y: 24 });
                 gsap.set(aside, { autoAlpha: 0, y: 18 });
@@ -142,6 +145,8 @@ export function useReviewSectionAnimations(totalItems: number) {
             });
 
             media.add(DESKTOP_QUERY, () => {
+                prepareTransformTargets([decorBack, decorFront, ...navItems, ...cards]);
+
                 gsap.set(title, { clipPath: TITLE_CLIP_HIDDEN });
                 if (decorBack) {
                     gsap.set(decorBack, {

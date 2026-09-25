@@ -5,6 +5,7 @@ import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPrefe
 import type { ClientsRow, MarqueeDirection } from "@avrash/content-schema";
 import { useArrayRefs, useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
+import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
 
 const isCompact = () => window.matchMedia("(max-width: 768px)").matches;
 const getStart = () => (isCompact() ? "top 92%" : "top 82%");
@@ -62,6 +63,11 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                 return;
             }
 
+            prepareTransformTargets([...rowTargets, ...pairs.map((pair) => pair.track)]);
+            const initialBounds = section.getBoundingClientRect();
+            let isNearViewport =
+                initialBounds.bottom >= -120 && initialBounds.top <= window.innerHeight + 120;
+
             const marqueeTweens = pairs.map((pair) => {
                 const duration = isCompact() ? 25 : pair.speed;
 
@@ -92,13 +98,7 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                       );
             });
 
-            let isNearViewport = false;
             const marqueeStarted = pairs.map(() => false);
-
-            const readIsNearViewport = () => {
-                const rect = section.getBoundingClientRect();
-                isNearViewport = rect.bottom >= -120 && rect.top <= window.innerHeight + 120;
-            };
 
             const syncMarqueePlayback = () => {
                 const shouldPlay = isNearViewport && document.visibilityState === "visible";
@@ -119,7 +119,6 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
             const startMarquee = (index: number) => {
                 marqueeStarted[index] = true;
                 marqueeTweens[index]?.play(0);
-                readIsNearViewport();
                 syncMarqueePlayback();
             };
 
@@ -127,8 +126,10 @@ export function useClientsSectionAnimations(rows: ClientsRow[]) {
                 typeof IntersectionObserver === "undefined"
                     ? null
                     : new IntersectionObserver(
-                          () => {
-                              readIsNearViewport();
+                          (entries) => {
+                              const entry = entries[entries.length - 1];
+                              if (!entry) return;
+                              isNearViewport = entry.isIntersecting;
                               syncMarqueePlayback();
                           },
                           { rootMargin: MARQUEE_VISIBILITY_MARGIN }

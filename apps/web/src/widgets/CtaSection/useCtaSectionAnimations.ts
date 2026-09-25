@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
+import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
@@ -34,6 +35,8 @@ export function useCtaSectionAnimations() {
                 gsap.set(allTargets, { clearProps: "all" });
                 return;
             }
+
+            prepareTransformTargets(allTargets);
 
             gsap.set(heading, {
                 autoAlpha: 0,

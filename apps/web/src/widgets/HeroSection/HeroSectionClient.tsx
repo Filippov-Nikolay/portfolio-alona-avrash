@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { m, useMotionValue, useTransform } from "framer-motion";
+import { cancelFrame, frame, m, useMotionValue, useTransform } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { HeroContent, Social, StatItem } from "@avrash/content-schema";
@@ -45,6 +45,7 @@ const CAMERA_PROGRESS_INPUT = [0, 0.32, 0.62, 0.86, 1];
 const CAMERA_PROGRESS_OUTPUT = [0, 0.24, 0.52, 0.8, 1];
 const STATS_PICKUP_PROGRESS = 0;
 const SELECTED_ENTRY_VIEWPORT_RATIO = 1.14;
+const STATS_SELECTED_GAP = 24;
 const SELECTED_FOCUS_DRIFT = 0;
 
 const FLOATER_LAYER_CLASSES = [
@@ -209,25 +210,41 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         const selectedMotionLayer = selectedMotionLayerRef.current;
         const stage = stageRef.current;
         const header = document.querySelector("header");
+        const statsSlot = statsDepthPlaneRef.current?.parentElement;
+        const statsLiftLayer = statsSlot?.closest<HTMLElement>("[data-stats-camera-stage]");
 
         if (!selectedGeometryProbe || !selectedMotionLayer || !stage) {
             return;
         }
 
-        let measureFrame = 0;
+        let disposed = false;
         const shouldMeasureViewportResize = createViewportResizeGuard();
 
         const measure = () => {
-            measureFrame = 0;
+            if (disposed) return;
             // The sticky scene uses 100svh. Reading that same box keeps the
             // choreography stable when mobile browser chrome changes innerHeight.
             const viewportHeight = stage.getBoundingClientRect().height;
             const headerHeight = header?.getBoundingClientRect().height ?? 0;
-            const selectedFinalOffset = Math.abs(
+            const preferredSelectedOffset = Math.abs(
                 Number.parseFloat(getComputedStyle(selectedGeometryProbe).marginTop) || 0
             );
             const selectedHeight = selectedMotionLayer.getBoundingClientRect().height;
             const headerClearance = headerHeight + Math.max(viewportHeight * 0.04, 28) + 36;
+            const finalStatsLift = Math.max(viewportHeight / 2 - headerClearance, 0);
+            // The slot keeps the grid's unscaled layout size. Subtract its moving
+            // parent's top so measuring during a reverse scroll gives the same
+            // resting geometry. At handoff the camera has settled to scale(1).
+            const statsBottom =
+                statsSlot && statsLiftLayer
+                    ? statsSlot.getBoundingClientRect().bottom -
+                      statsLiftLayer.getBoundingClientRect().top -
+                      finalStatsLift
+                    : 0;
+            const selectedFinalOffset = Math.min(
+                preferredSelectedOffset,
+                viewportHeight - statsBottom - STATS_SELECTED_GAP
+            );
 
             setChoreographyMetrics((prev) =>
                 Math.abs(prev.viewportHeight - viewportHeight) < 0.5 &&
@@ -240,8 +257,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         };
 
         const scheduleMeasure = () => {
-            if (measureFrame) return;
-            measureFrame = requestAnimationFrame(measure);
+            if (!disposed) frame.read(measure);
         };
 
         const handleResize = () => {
@@ -254,14 +270,17 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         resizeObserver?.observe(selectedGeometryProbe);
         resizeObserver?.observe(selectedMotionLayer);
         resizeObserver?.observe(stage);
+        if (statsSlot) resizeObserver?.observe(statsSlot);
         if (header instanceof HTMLElement) {
             resizeObserver?.observe(header);
         }
         scheduleMeasure();
+        void document.fonts?.ready.then(scheduleMeasure);
         window.addEventListener("resize", handleResize);
 
         return () => {
-            cancelAnimationFrame(measureFrame);
+            disposed = true;
+            cancelFrame(measure);
             resizeObserver?.disconnect();
             window.removeEventListener("resize", handleResize);
         };

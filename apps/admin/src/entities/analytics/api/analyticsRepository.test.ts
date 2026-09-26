@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+    getEngagement,
     getOverview,
     getProjectDetail,
     getTopCategories,
     getTopProjects,
+    getTraffic,
     isAnalyticsConfigured,
 } from "./analyticsRepository";
 
@@ -102,6 +104,22 @@ describe("analyticsRepository", () => {
             expect(fetchMock.mock.calls[0]![0]).toBe(
                 "https://analytics.example.com/analytics/projects/crusty%20%26%20co?days=30"
             );
+        });
+    });
+
+    describe("traffic and engagement", () => {
+        it.each([
+            ["getTraffic", getTraffic, "/analytics/traffic?days=90"],
+            ["getEngagement", getEngagement, "/analytics/engagement?days=90"],
+        ] as const)("%s reads its worker route with the bearer token", async (_, read, path) => {
+            const payload = { ok: true };
+            const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => payload });
+            vi.stubGlobal("fetch", fetchMock);
+
+            await expect(read(90)).resolves.toEqual(payload);
+            const [url, init] = fetchMock.mock.calls[0]!;
+            expect(url).toBe(`https://analytics.example.com${path}`);
+            expect(init.headers.Authorization).toBe("Bearer test-secret");
         });
     });
 });

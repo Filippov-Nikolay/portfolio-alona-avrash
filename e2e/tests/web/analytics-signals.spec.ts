@@ -84,3 +84,58 @@ test("focusing the honeypot alone does not count as starting the form", async ({
         .poll(() => beacons.filter((b) => b.eventName === "contact_started").length)
         .toBe(1);
 });
+
+test("every page reached fires page_view once with its own path", async ({
+    page,
+    context,
+}, testInfo) => {
+    await context.addCookies([
+        { name: "site-preloader", value: "1", url: String(testInfo.project.use.baseURL) },
+    ]);
+    const beacons = await captureBeacons(page);
+
+    await page.goto("/en");
+    await expect
+        .poll(() => beacons.filter((b) => b.eventName === "page_view").map((b) => b.path))
+        .toEqual(["/en"]);
+
+    await page
+        .locator('header a[href="/en/works"]')
+        .first()
+        .evaluate((link: HTMLAnchorElement) => link.click());
+    await page.waitForURL("**/en/works");
+    await expect
+        .poll(() => beacons.filter((b) => b.eventName === "page_view").map((b) => b.path))
+        .toEqual(["/en", "/en/works"]);
+
+    await page.waitForTimeout(500);
+    expect(beacons.filter((b) => b.eventName === "page_view")).toHaveLength(2);
+});
+
+test("opening a project straight on its gallery fires project_gallery_view", async ({ page }) => {
+    const beacons = await captureBeacons(page);
+
+    await page.goto("/en/works/esencha?tab=gallery");
+    await expect(page.getByRole("dialog", { name: "ESENCHA" })).toBeVisible();
+
+    await expect.poll(() => beacons.some((b) => b.eventName === "project_gallery_view")).toBe(true);
+    expect(beacons.find((b) => b.eventName === "project_gallery_view")!.entityId).toBeTruthy();
+});
+
+test("a Hero social link fires social_click", async ({ page, context }, testInfo) => {
+    await context.addCookies([
+        { name: "site-preloader", value: "1", url: String(testInfo.project.use.baseURL) },
+    ]);
+    const beacons = await captureBeacons(page);
+
+    await page.goto("/en");
+    const link = page.locator("#hero a[target='_blank']").first();
+    await expect(link).toBeVisible();
+    await link.evaluate((element: HTMLAnchorElement) => {
+        element.addEventListener("click", (event) => event.preventDefault(), { once: true });
+        element.click();
+    });
+
+    await expect.poll(() => beacons.some((b) => b.eventName === "social_click")).toBe(true);
+    expect(beacons.find((b) => b.eventName === "social_click")!.entityId).toBeTruthy();
+});

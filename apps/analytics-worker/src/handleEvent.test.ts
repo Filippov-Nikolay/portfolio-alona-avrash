@@ -43,6 +43,10 @@ function createFakeDb(initialRows: AnalyticsEventRow[] = []) {
                                     country,
                                     referrer,
                                     createdAt,
+                                    visitorId: (values[9] ?? null) as string | null,
+                                    device: (values[10] ?? null) as string | null,
+                                    os: (values[11] ?? null) as string | null,
+                                    browser: (values[12] ?? null) as string | null,
                                 });
                             }
                         },
@@ -96,14 +100,26 @@ const VALID_BODY = {
 describe("handleEvent", () => {
     it("rejects a body that fails validation", async () => {
         const { db, rows } = createFakeDb();
-        const result = await handleEvent({ body: { eventName: "not_allowed" }, country: null, db });
+        const result = await handleEvent({
+            body: { eventName: "not_allowed" },
+            country: null,
+            visitorId: null,
+            client: null,
+            db,
+        });
         expect(result.status).toBe(400);
         expect(rows).toHaveLength(0);
     });
 
     it("inserts a valid, first-time event", async () => {
         const { db, rows } = createFakeDb();
-        const result = await handleEvent({ body: VALID_BODY, country: "FI", db });
+        const result = await handleEvent({
+            body: VALID_BODY,
+            country: "FI",
+            visitorId: null,
+            client: null,
+            db,
+        });
         expect(result.status).toBe(204);
         expect(rows).toHaveLength(1);
         expect(rows[0]).toMatchObject({
@@ -115,8 +131,14 @@ describe("handleEvent", () => {
 
     it("does not insert a duplicate project_open within the dedupe window, but still returns 204", async () => {
         const { db, rows } = createFakeDb();
-        await handleEvent({ body: VALID_BODY, country: null, db });
-        const result = await handleEvent({ body: VALID_BODY, country: null, db });
+        await handleEvent({ body: VALID_BODY, country: null, visitorId: null, client: null, db });
+        const result = await handleEvent({
+            body: VALID_BODY,
+            country: null,
+            visitorId: null,
+            client: null,
+            db,
+        });
         expect(result.status).toBe(204);
         expect(rows).toHaveLength(1);
     });
@@ -127,6 +149,8 @@ describe("handleEvent", () => {
             await handleEvent({
                 body: { ...VALID_BODY, entityId: `project-${i}` },
                 country: null,
+                visitorId: null,
+                client: null,
                 db,
             });
         }

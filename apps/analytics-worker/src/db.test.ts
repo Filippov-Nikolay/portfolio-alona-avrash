@@ -50,6 +50,10 @@ function createFakeDb(initialRows: AnalyticsEventRow[] = []) {
                                     country,
                                     referrer,
                                     createdAt,
+                                    visitorId: (values[9] ?? null) as string | null,
+                                    device: (values[10] ?? null) as string | null,
+                                    os: (values[11] ?? null) as string | null,
+                                    browser: (values[12] ?? null) as string | null,
                                 });
                             }
                         },
@@ -103,7 +107,11 @@ const BASE_BODY: AnalyticsEventBody = {
 describe("buildEventRow", () => {
     it("carries the body fields through, with entityId/referrer null when absent", () => {
         const { entityId, referrer, ...rest } = BASE_BODY;
-        const row = buildEventRow(rest as AnalyticsEventBody, "FI");
+        const row = buildEventRow(rest as AnalyticsEventBody, {
+            country: "FI",
+            visitorId: null,
+            client: null,
+        });
         expect(row.entityId).toBeNull();
         expect(row.referrer).toBeNull();
         expect(row.country).toBe("FI");
@@ -126,19 +134,22 @@ describe("wasRecentlyTracked", () => {
     });
 
     it("returns true for a matching event tracked inside the dedupe window", async () => {
-        const row = buildEventRow(BASE_BODY, null);
+        const row = buildEventRow(BASE_BODY, { country: null, visitorId: null, client: null });
         const { db } = createFakeDb([{ ...row, createdAt: Date.now() - 5 * 60 * 1000 }]);
         await expect(wasRecentlyTracked(db, BASE_BODY)).resolves.toBe(true);
     });
 
     it("returns false once the matching event is outside the dedupe window", async () => {
-        const row = buildEventRow(BASE_BODY, null);
+        const row = buildEventRow(BASE_BODY, { country: null, visitorId: null, client: null });
         const { db } = createFakeDb([{ ...row, createdAt: Date.now() - 31 * 60 * 1000 }]);
         await expect(wasRecentlyTracked(db, BASE_BODY)).resolves.toBe(false);
     });
 
     it("does not match a different entity in the same session", async () => {
-        const row = buildEventRow({ ...BASE_BODY, entityId: "esencha" }, null);
+        const row = buildEventRow(
+            { ...BASE_BODY, entityId: "esencha" },
+            { country: null, visitorId: null, client: null }
+        );
         const { db } = createFakeDb([{ ...row, createdAt: Date.now() }]);
         await expect(wasRecentlyTracked(db, BASE_BODY)).resolves.toBe(false);
     });
@@ -146,20 +157,24 @@ describe("wasRecentlyTracked", () => {
 
 describe("isSessionRateLimited", () => {
     it("returns false under the threshold", async () => {
-        const rows = Array.from({ length: 5 }, () => buildEventRow(BASE_BODY, null));
+        const rows = Array.from({ length: 5 }, () =>
+            buildEventRow(BASE_BODY, { country: null, visitorId: null, client: null })
+        );
         const { db } = createFakeDb(rows);
         await expect(isSessionRateLimited(db, BASE_BODY.sessionId)).resolves.toBe(false);
     });
 
     it("returns true at the threshold", async () => {
-        const rows = Array.from({ length: 20 }, () => buildEventRow(BASE_BODY, null));
+        const rows = Array.from({ length: 20 }, () =>
+            buildEventRow(BASE_BODY, { country: null, visitorId: null, client: null })
+        );
         const { db } = createFakeDb(rows);
         await expect(isSessionRateLimited(db, BASE_BODY.sessionId)).resolves.toBe(true);
     });
 
     it("ignores events outside the rate limit window", async () => {
         const rows = Array.from({ length: 20 }, () => ({
-            ...buildEventRow(BASE_BODY, null),
+            ...buildEventRow(BASE_BODY, { country: null, visitorId: null, client: null }),
             createdAt: Date.now() - 2 * 60 * 1000,
         }));
         const { db } = createFakeDb(rows);
@@ -170,7 +185,7 @@ describe("isSessionRateLimited", () => {
 describe("insertEvent", () => {
     it("appends the row", async () => {
         const { db, rows } = createFakeDb();
-        const row = buildEventRow(BASE_BODY, "FI");
+        const row = buildEventRow(BASE_BODY, { country: "FI", visitorId: null, client: null });
         await insertEvent(db, row);
         expect(rows).toHaveLength(1);
         expect(rows[0]).toEqual(row);

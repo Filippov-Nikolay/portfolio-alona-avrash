@@ -7,11 +7,20 @@ compatibility_date = "2026-09-19"
 # gets a 403. Set to the public site's real origin before deploying.
 [vars]
 ALLOWED_ORIGIN = "https://dev.avrash.com"
+# Events older than this many days are deleted by the daily cron below.
+RETENTION_DAYS = "730"
+
+[triggers]
+crons = ["17 3 * * *"]
 
 # ANALYTICS_READ_SECRET (the bearer token admin's GET /analytics/* reads
 # authenticate with) is NOT set here - this file is committed. Set it with:
 #   wrangler secret put ANALYTICS_READ_SECRET
 # Give apps/admin this exact same value as its ANALYTICS_READ_SECRET env var.
+#
+# VISITOR_SALT (optional, recommended) salts the daily visitor hash. Set it
+# with: wrangler secret put VISITOR_SALT
+# Without it the read secret is used as the salt.
 
 # Created once with: wrangler d1 create avrash-analytics
 # Then paste the printed database_id below, and run migrations with:

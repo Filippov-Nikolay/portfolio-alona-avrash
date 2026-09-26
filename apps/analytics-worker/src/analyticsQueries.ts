@@ -283,3 +283,198 @@ export async function getTopCategories(db: D1Like, days: number): Promise<Catego
 
     return toCategoryBreakdown(results);
 }
+
+export interface TrafficTimelinePoint {
+    date: string;
+    pageViews: number;
+    visitors: number;
+}
+
+export interface PageStat {
+    path: string;
+    views: number;
+    visitors: number;
+    percent: number;
+}
+
+export interface ShareBreakdown {
+    key: string;
+    visitors: number;
+    percent: number;
+}
+
+export interface TrafficOverview {
+    pageViews: number;
+    visitors: number;
+    viewsPerVisitor: number;
+    timeline: TrafficTimelinePoint[];
+    pages: PageStat[];
+    countries: ShareBreakdown[];
+    devices: ShareBreakdown[];
+    operatingSystems: ShareBreakdown[];
+    browsers: ShareBreakdown[];
+    languages: ShareBreakdown[];
+    referrers: ShareBreakdown[];
+}
+
+const TOP_PAGES_LIMIT = 50;
+const TOP_SHARE_LIMIT = 10;
+
+export function toShareBreakdown(
+    rows: { key: string | null; visitors: number }[],
+    totalVisitors: number,
+    limit = TOP_SHARE_LIMIT
+): ShareBreakdown[] {
+    const merged = new Map<string, number>();
+    for (const row of rows) {
+        const key = row.key || "Unknown";
+        merged.set(key, (merged.get(key) ?? 0) + row.visitors);
+    }
+    return [...merged]
+        .map(([key, visitors]) => ({
+            key,
+            visitors,
+            percent: computeRate(visitors, totalVisitors),
+        }))
+        .sort((a, b) => b.visitors - a.visitors)
+        .slice(0, limit);
+}
+
+export function referrerHost(referrer: string | null, ownHosts: readonly string[]): string {
+    if (!referrer) return "Direct";
+    try {
+        const host = new URL(referrer).hostname.replace(/^www\./, "");
+        return ownHosts.includes(host) ? "Direct" : host;
+    } catch {
+        return "Direct";
+    }
+}
+
+const VISITOR_KEY = "COALESCE(visitor_id, session_id)";
+
+export async function getTraffic(
+    db: D1Like,
+    days: number,
+    ownHosts: readonly string[] = []
+): Promise<TrafficOverview> {
+    const since = daysAgo(days);
+    const scope = `FROM analytics_events WHERE event_name = 'page_view' AND created_at > ?`;
+
+    const totals = await db
+        .prepare(
+            `SELECT COUNT(*) as pageViews, COUNT(DISTINCT ${VISITOR_KEY}) as visitors ${scope}`
+        )
+        .bind(since)
+        .first<{ pageViews: number | null; visitors: number | null }>();
+    const pageViews = totals?.pageViews ?? 0;
+    const visitors = totals?.visitors ?? 0;
+
+    const dailyRows = await db
+        .prepare(
+            `SELECT date(created_at / 1000, 'unixepoch') as day, COUNT(*) as views,
+                    COUNT(DISTINCT ${VISITOR_KEY}) as visitors
+             ${scope}
+             GROUP BY day`
+        )
+        .bind(since)
+        .all<{ day: string; views: number; visitors: number }>();
+    const views = fillDailyCounts(
+        dailyRows.results.map((row) => ({ day: row.day, count: row.views })),
+        days
+    );
+    const dailyVisitors = fillDailyCounts(
+        dailyRows.results.map((row) => ({ day: row.day, count: row.visitors })),
+        days
+    );
+
+    const pageRows = await db
+        .prepare(
+            `SELECT path, COUNT(*) as views, COUNT(DISTINCT ${VISITOR_KEY}) as visitors
+             ${scope}
+             GROUP BY path
+             ORDER BY views DESC
+             LIMIT ?`
+        )
+        .bind(since, TOP_PAGES_LIMIT)
+        .all<{ path: string; views: number; visitors: number }>();
+
+    const breakdown = async (column: string) =>
+        (
+            await db
+                .prepare(
+                    `SELECT ${column} as key, COUNT(DISTINCT ${VISITOR_KEY}) as visitors
+                     ${scope}
+                     GROUP BY ${column}`
+                )
+                .bind(since)
+                .all<{ key: string | null; visitors: number }>()
+        ).results;
+
+    const referrerRows = await breakdown("referrer");
+
+    return {
+        pageViews,
+        visitors,
+        viewsPerVisitor: computeRate(pageViews, visitors),
+        timeline: views.map((point, index) => ({
+            date: point.date,
+            pageViews: point.count,
+            visitors: dailyVisitors[index]!.count,
+        })),
+        pages: pageRows.results.map((row) => ({
+            ...row,
+            percent: computeRate(row.views, pageViews),
+        })),
+        countries: toShareBreakdown(await breakdown("country"), visitors),
+        devices: toShareBreakdown(await breakdown("device"), visitors),
+        operatingSystems: toShareBreakdown(await breakdown("os"), visitors),
+        browsers: toShareBreakdown(await breakdown("browser"), visitors),
+        languages: toShareBreakdown(await breakdown("locale"), visitors),
+        referrers: toShareBreakdown(
+            referrerRows.map((row) => ({
+                key: referrerHost(row.key, ownHosts),
+                visitors: row.visitors,
+            })),
+            visitors
+        ),
+    };
+}
+
+export interface EntityCount {
+    entityId: string;
+    count: number;
+    percent: number;
+}
+
+export interface EngagementSummary {
+    cvDownloads: number;
+    socialClicks: number;
+    socials: EntityCount[];
+}
+
+export async function getEngagement(db: D1Like, days: number): Promise<EngagementSummary> {
+    const since = daysAgo(days);
+    const cv = await db
+        .prepare(
+            `SELECT COUNT(*) as count FROM analytics_events
+             WHERE event_name = 'cv_download' AND created_at > ?`
+        )
+        .bind(since)
+        .first<{ count: number | null }>();
+    const { results } = await db
+        .prepare(
+            `SELECT entity_id as entityId, COUNT(*) as count FROM analytics_events
+             WHERE event_name = 'social_click' AND entity_id IS NOT NULL AND created_at > ?
+             GROUP BY entity_id`
+        )
+        .bind(since)
+        .all<{ entityId: string; count: number }>();
+    const socialClicks = results.reduce((sum, row) => sum + row.count, 0);
+    return {
+        cvDownloads: cv?.count ?? 0,
+        socialClicks,
+        socials: results
+            .map((row) => ({ ...row, percent: computeRate(row.count, socialClicks) }))
+            .sort((a, b) => b.count - a.count),
+    };
+}

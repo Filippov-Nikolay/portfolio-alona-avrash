@@ -1,17 +1,39 @@
 import { handleEvent } from "./handleEvent";
 import {
+    getEngagement,
     getOverview,
     getProjectDetail,
     getTopCategories,
     getTopProjects,
+    getTraffic,
     parseDays,
 } from "./analyticsQueries";
+import { deleteEventsBefore } from "./db";
 import { isAllowedOrigin, isAuthorizedRead } from "./security";
+import { computeVisitorId, isBotUserAgent, parseUserAgent } from "./userAgent";
 
 export interface Env {
     DB: D1Database;
     ALLOWED_ORIGIN: string;
     ANALYTICS_READ_SECRET: string;
+    VISITOR_SALT?: string;
+    RETENTION_DAYS?: string;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_RETENTION_DAYS = 730;
+
+function retentionDays(env: Env): number {
+    const value = Number(env.RETENTION_DAYS);
+    return Number.isInteger(value) && value > 0 ? value : DEFAULT_RETENTION_DAYS;
+}
+
+function ownHosts(env: Env): string[] {
+    try {
+        return [new URL(env.ALLOWED_ORIGIN).hostname.replace(/^www\./, "")];
+    } catch {
+        return [];
+    }
 }
 
 function corsHeaders(origin: string): HeadersInit {
@@ -34,8 +56,22 @@ async function handleEventRequest(
         return new Response("Invalid request body.", { status: 400, headers });
     }
 
+    const userAgent = request.headers.get("User-Agent");
+    if (isBotUserAgent(userAgent)) return new Response(null, { status: 204, headers });
+
     const country = (request.cf?.country as string | undefined) ?? null;
-    const result = await handleEvent({ body, country, db: env.DB });
+    const visitorId = await computeVisitorId({
+        ip: request.headers.get("CF-Connecting-IP"),
+        userAgent,
+        salt: env.VISITOR_SALT || env.ANALYTICS_READ_SECRET,
+    });
+    const result = await handleEvent({
+        body,
+        country,
+        visitorId,
+        client: parseUserAgent(userAgent),
+        db: env.DB,
+    });
 
     return new Response(null, { status: result.status, headers });
 }
@@ -59,6 +95,16 @@ async function handleAnalyticsRead(
 
     if (url.pathname === "/analytics/projects") {
         return Response.json(await getTopProjects(env.DB, days), { headers: jsonHeaders });
+    }
+
+    if (url.pathname === "/analytics/traffic") {
+        return Response.json(await getTraffic(env.DB, days, ownHosts(env)), {
+            headers: jsonHeaders,
+        });
+    }
+
+    if (url.pathname === "/analytics/engagement") {
+        return Response.json(await getEngagement(env.DB, days), { headers: jsonHeaders });
     }
 
     if (url.pathname === "/analytics/categories") {
@@ -98,5 +144,9 @@ export default {
         }
 
         return new Response("Not found", { status: 404, headers });
+    },
+
+    async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+        await deleteEventsBefore(env.DB, Date.now() - retentionDays(env) * DAY_MS);
     },
 };

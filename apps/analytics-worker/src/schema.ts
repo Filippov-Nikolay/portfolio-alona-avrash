@@ -9,6 +9,7 @@ export const ANALYTICS_EVENTS = [
     "contact_started",
     "contact_success",
     "social_click",
+    "page_view",
 ] as const;
 
 export const AnalyticsEventBodySchema = z.object({

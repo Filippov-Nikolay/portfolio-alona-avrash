@@ -207,10 +207,15 @@
         will-change: auto;
         backface-visibility: visible;
     }
+
+    .cameraSlot .digits {
+        will-change: transform;
+    }
 }
 
 @include reduced-motion {
-    .grid {
+    .grid,
+    .cameraSlot .digits {
         will-change: auto;
     }
 }

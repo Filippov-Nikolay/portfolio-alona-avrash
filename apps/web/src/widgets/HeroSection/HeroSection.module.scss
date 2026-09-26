@@ -164,6 +164,15 @@
     padding-top: 30px;
 }
 
+.heroVeil {
+    position: absolute;
+    inset: 0 0 calc(100svh - 100lvh);
+    background: var(--color-bg);
+    opacity: 0;
+    pointer-events: none;
+    will-change: opacity;
+}
+
 .statsViewport {
     position: absolute;
     inset: 0;
@@ -862,6 +871,7 @@
 @include reduced-motion {
     .stage,
     .heroLayer,
+    .heroVeil,
     .statsLiftLayer,
     .statsDepthPlane,
     .selectedMotionLayer,

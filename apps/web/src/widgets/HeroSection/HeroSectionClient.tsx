@@ -47,7 +47,6 @@ const STATS_PICKUP_PROGRESS = 0;
 const SELECTED_ENTRY_VIEWPORT_RATIO = 1.14;
 const STATS_SELECTED_GAP = 24;
 const SELECTED_FOCUS_DRIFT = 0;
-const HERO_OPACITY_CEILING = 0.9999;
 
 const FLOATER_LAYER_CLASSES = [
     styles.floaterBack,
@@ -297,14 +296,15 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
 
     const heroOpacity = useTransform(() => {
         const latest = scrollYProgress.get();
-        if (motionConfig.get().reduced) return Math.min(1 - clamp01(latest), HERO_OPACITY_CEILING);
-        if (latest <= HERO_DEPTH_TRANSITION_START) return HERO_OPACITY_CEILING;
+        if (motionConfig.get().reduced) return 1 - clamp01(latest);
+        if (latest <= HERO_DEPTH_TRANSITION_START) return 1;
 
-        return Math.min(
-            1 - clamp01((latest - HERO_DEPTH_TRANSITION_START) / (1 - HERO_DEPTH_TRANSITION_START)),
-            HERO_OPACITY_CEILING
+        return (
+            1 - clamp01((latest - HERO_DEPTH_TRANSITION_START) / (1 - HERO_DEPTH_TRANSITION_START))
         );
     });
+    const heroLayerOpacity = useTransform(heroOpacity, (opacity) => (opacity === 0 ? 0 : 1));
+    const heroVeilOpacity = useTransform(heroOpacity, (opacity) => 1 - opacity);
     const heroPointerEvents = useTransform(() =>
         depthProgress.get() >= (motionConfig.get().reduced ? 0.995 : 0.5) ? "none" : "auto"
     );
@@ -497,7 +497,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                         ref={heroLayerRef}
                         className={styles.heroLayer}
                         style={{
-                            opacity: heroOpacity,
+                            opacity: heroLayerOpacity,
                         }}
                     >
                         <NoiseLayer />
@@ -711,6 +711,12 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                             </m.div>
                         </Container>
                     </m.div>
+
+                    <m.div
+                        className={styles.heroVeil}
+                        style={{ opacity: heroVeilOpacity }}
+                        aria-hidden="true"
+                    />
 
                     <div className={styles.statsViewport}>
                         <m.div

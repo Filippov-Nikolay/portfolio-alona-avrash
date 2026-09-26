@@ -1,4 +1,5 @@
 import {
+    getEngagement,
     getOverview,
     getTopCategories,
     getTopProjects,
@@ -35,13 +36,15 @@ export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsO
         );
     }
 
-    const [overview, projects, categories, allProjects, categoryOptions] = await Promise.all([
-        getOverview(days),
-        getTopProjects(days),
-        getTopCategories(days),
-        listProjects(),
-        listOptions("categories.json") as Promise<CategoryOption[]>,
-    ]);
+    const [overview, projects, categories, engagement, allProjects, categoryOptions] =
+        await Promise.all([
+            getOverview(days),
+            getTopProjects(days),
+            getTopCategories(days),
+            getEngagement(days),
+            listProjects(),
+            listOptions("categories.json") as Promise<CategoryOption[]>,
+        ]);
 
     if (!overview || !projects || !categories) {
         return (
@@ -78,6 +81,7 @@ export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsO
                 projectNames={projectNames}
                 categories={categories}
                 categoryLabels={categoryLabels}
+                engagement={engagement}
                 days={days}
             />
         </div>

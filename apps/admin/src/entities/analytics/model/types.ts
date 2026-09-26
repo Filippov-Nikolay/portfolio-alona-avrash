@@ -47,3 +47,48 @@ export interface ProjectDetail extends ProjectSummary {
     countries: CountryBreakdown[];
     languages: LocaleBreakdown[];
 }
+
+export interface TrafficTimelinePoint {
+    date: string;
+    pageViews: number;
+    visitors: number;
+}
+
+export interface PageStat {
+    path: string;
+    views: number;
+    visitors: number;
+    percent: number;
+}
+
+export interface ShareBreakdown {
+    key: string;
+    visitors: number;
+    percent: number;
+}
+
+export interface TrafficOverview {
+    pageViews: number;
+    visitors: number;
+    viewsPerVisitor: number;
+    timeline: TrafficTimelinePoint[];
+    pages: PageStat[];
+    countries: ShareBreakdown[];
+    devices: ShareBreakdown[];
+    operatingSystems: ShareBreakdown[];
+    browsers: ShareBreakdown[];
+    languages: ShareBreakdown[];
+    referrers: ShareBreakdown[];
+}
+
+export interface EntityCount {
+    entityId: string;
+    count: number;
+    percent: number;
+}
+
+export interface EngagementSummary {
+    cvDownloads: number;
+    socialClicks: number;
+    socials: EntityCount[];
+}

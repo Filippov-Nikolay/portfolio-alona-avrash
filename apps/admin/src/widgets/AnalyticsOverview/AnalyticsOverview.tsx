@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
-import { Eye, MessageSquareText, Send, TrendingUp } from "lucide-react";
+import { Download, Eye, MessageSquareText, Send, TrendingUp } from "lucide-react";
 import { LineChart } from "@/shared/ui/LineChart";
 import { TopProjectsTable } from "@/widgets/TopProjectsTable";
 import { cn } from "@/shared/lib/cn";
 import type {
     AnalyticsOverview as AnalyticsOverviewData,
     CategoryBreakdown,
+    EngagementSummary,
     ProjectSummary,
 } from "@/entities/analytics/model/types";
 import type { PeriodDays } from "@/entities/analytics/lib/period";
@@ -27,7 +28,16 @@ interface AnalyticsOverviewProps {
     projectNames: Record<string, string>;
     categories: CategoryBreakdown[];
     categoryLabels: Record<string, string>;
+    engagement: EngagementSummary | null;
     days: PeriodDays;
+}
+
+function socialName(id: string): string {
+    return id
+        .split(/[-_]/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
 }
 
 function formatPercent(value: number): string {
@@ -53,6 +63,7 @@ export function AnalyticsOverview({
     projectNames,
     categories,
     categoryLabels,
+    engagement,
     days,
 }: AnalyticsOverviewProps) {
     const [metric, setMetric] = useState<Metric>("projectOpens");
@@ -174,6 +185,72 @@ export function AnalyticsOverview({
                     )}
                 </section>
             </div>
+
+            {engagement && (
+                <div className={styles.engagementGrid}>
+                    <section className={cn(styles.breakdown, styles.cvCard)}>
+                        <div className={styles.panelHeaderCompact}>
+                            <div>
+                                <p className={styles.eyebrow}>Outbound interest</p>
+                                <h2 className={styles.panelTitle}>CV downloads</h2>
+                            </div>
+                            <span className={styles.statIconInline} aria-hidden="true">
+                                <Download size={17} strokeWidth={1.8} />
+                            </span>
+                        </div>
+                        <strong className={styles.statValue}>
+                            {formatNumber(engagement.cvDownloads)}
+                        </strong>
+                        <span className={styles.statMeta}>
+                            Clicks on Download CV in the header and mobile menu
+                        </span>
+                    </section>
+
+                    <section className={styles.breakdown}>
+                        <div className={styles.panelHeaderCompact}>
+                            <div>
+                                <p className={styles.eyebrow}>Outbound interest</p>
+                                <h2 className={styles.panelTitle}>Social clicks</h2>
+                            </div>
+                            <span className={styles.rowCount}>
+                                {formatNumber(engagement.socialClicks)}
+                            </span>
+                        </div>
+                        {engagement.socials.length === 0 ? (
+                            <p className={styles.muted}>No social clicks in this period.</p>
+                        ) : (
+                            <ol className={styles.breakdownList}>
+                                {engagement.socials.map((row, index) => (
+                                    <li key={row.entityId}>
+                                        <div className={styles.breakdownRow}>
+                                            <span className={styles.rank}>
+                                                {String(index + 1).padStart(2, "0")}
+                                            </span>
+                                            <span className={styles.breakdownLabel}>
+                                                {socialName(row.entityId)}
+                                            </span>
+                                            <strong>
+                                                {formatNumber(row.count)} /{" "}
+                                                {formatPercent(row.percent)}
+                                            </strong>
+                                        </div>
+                                        <span className={styles.barTrack} aria-hidden="true">
+                                            <span
+                                                className={styles.barFill}
+                                                style={
+                                                    {
+                                                        "--bar-width": `${Math.min(row.percent * 100, 100)}%`,
+                                                    } as CSSProperties
+                                                }
+                                            />
+                                        </span>
+                                    </li>
+                                ))}
+                            </ol>
+                        )}
+                    </section>
+                </div>
+            )}
 
             <section className={styles.projectsSection}>
                 <div className={styles.sectionHeader}>

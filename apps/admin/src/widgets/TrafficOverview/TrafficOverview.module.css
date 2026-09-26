@@ -90,59 +90,127 @@
     color: var(--muted);
 }
 
-.insightGrid {
-    display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(280px, 0.8fr);
-    gap: 16px;
-    margin-top: 16px;
-}
-
-.engagementGrid {
-    display: grid;
-    grid-template-columns: minmax(240px, 0.8fr) minmax(0, 2fr);
-    gap: 16px;
-    margin-top: 16px;
-}
-
-.cvCard {
-    display: flex;
-    flex-direction: column;
-}
-
-.cvCard .statValue {
-    margin-top: 0;
-}
-
-.cvCard .statMeta {
-    align-self: flex-start;
-}
-
-.statIconInline {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: 1px solid #e4e4e7;
-    border-radius: 6px;
-    color: #71717a;
-}
-
-.chartCard,
-.breakdown,
-.projectsSection {
+.panel {
     border: 1px solid var(--panel-border);
     border-radius: 8px;
     background: #fff;
 }
 
-.chartCard {
+.panel {
     min-width: 0;
     padding: 20px;
 }
 
-.breakdown {
-    padding: 20px;
+.chartCard,
+.pagesPanel {
+    margin-top: 16px;
+}
+
+.pagesPanel {
+    padding: 0;
+    overflow: hidden;
+}
+
+.breakdowns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.breakdownValue {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.breakdownValue span {
+    min-width: 32px;
+    color: var(--muted);
+    font-size: 10px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.identity {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.flag {
+    width: 18px;
+    height: 14px;
+}
+
+.tableWrap {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.table th {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--panel-border);
+    color: #71717a;
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.table td {
+    padding: 11px 20px;
+    border-bottom: 1px solid #f4f4f5;
+    color: #18181b;
+}
+
+.table tr:last-child td {
+    border-bottom: 0;
+}
+
+.pathCell {
+    max-width: 420px;
+    overflow: hidden;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.numCol {
+    width: 90px;
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+}
+
+.shareCol {
+    width: 34%;
+}
+
+.shareCell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 48px;
+    align-items: center;
+    gap: 10px;
+}
+
+.shareCell strong {
+    font-size: 11px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.shareTrack {
+    display: block;
+    height: 4px;
+    overflow: hidden;
+    background: #eeeeef;
 }
 
 .panelHeader,
@@ -304,11 +372,6 @@
     text-align: center;
 }
 
-.projectsSection {
-    margin-top: 16px;
-    overflow: hidden;
-}
-
 .sectionHeader {
     align-items: flex-end;
     padding: 18px 20px;
@@ -333,9 +396,8 @@
         border-bottom: 1px solid var(--panel-border);
     }
 
-    .insightGrid,
-    .engagementGrid {
-        grid-template-columns: 1fr;
+    .breakdowns {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -349,9 +411,42 @@
         font-size: 28px;
     }
 
-    .chartCard,
-    .breakdown {
+    .panel {
         padding: 16px;
+    }
+
+    .pagesPanel {
+        padding: 0;
+    }
+
+    .breakdowns {
+        grid-template-columns: 1fr;
+    }
+
+    .table th,
+    .table td {
+        padding-inline: 12px;
+    }
+
+    .shareCol {
+        width: auto;
+    }
+
+    .shareCell {
+        display: block;
+        text-align: right;
+    }
+
+    .shareTrack {
+        display: none;
+    }
+
+    .numCol {
+        width: auto;
+    }
+
+    .pathCell {
+        max-width: 150px;
     }
 
     .panelHeader {

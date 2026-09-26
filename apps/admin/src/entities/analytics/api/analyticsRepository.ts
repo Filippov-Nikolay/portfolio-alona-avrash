@@ -1,8 +1,10 @@
 import type {
     AnalyticsOverview,
     CategoryBreakdown,
+    EngagementSummary,
     ProjectDetail,
     ProjectSummary,
+    TrafficOverview,
 } from "../model/types";
 
 export function isAnalyticsConfigured(): boolean {
@@ -52,4 +54,12 @@ export async function getProjectDetail(
 
 export async function getTopCategories(days: number): Promise<CategoryBreakdown[] | null> {
     return fetchFromWorker<CategoryBreakdown[]>(`/analytics/categories?days=${days}`);
+}
+
+export async function getTraffic(days: number): Promise<TrafficOverview | null> {
+    return fetchFromWorker<TrafficOverview>(`/analytics/traffic?days=${days}`);
+}
+
+export async function getEngagement(days: number): Promise<EngagementSummary | null> {
+    return fetchFromWorker<EngagementSummary>(`/analytics/engagement?days=${days}`);
 }

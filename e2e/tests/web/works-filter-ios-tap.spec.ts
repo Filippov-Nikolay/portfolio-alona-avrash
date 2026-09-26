@@ -59,3 +59,26 @@ test("tapping a second filter replaces the first instead of combining with it", 
         )
         .toBe(true);
 });
+
+test("works and showcase controls opt out of double-tap zoom", async ({ page }) => {
+    await page.goto("/en/works");
+    await expect(page.getByTestId("works-card").first()).toBeVisible();
+    const catalogControls = [
+        page.getByRole("radio", { name: "Branding", exact: true }),
+        page.locator('button[aria-haspopup="listbox"]').first(),
+    ];
+    for (const control of catalogControls) {
+        await expect(control).toHaveCSS("touch-action", "manipulation");
+    }
+
+    await page.goto("/en/works/esencha?tab=gallery");
+    const dialog = page.getByRole("dialog", { name: "ESENCHA" });
+    await expect(dialog).toBeVisible();
+    for (const control of [
+        dialog.getByRole("tab", { name: /overview/i }),
+        dialog.getByRole("tab", { name: /gallery/i }),
+        dialog.getByRole("button", { name: "Close" }),
+    ]) {
+        await expect(control).toHaveCSS("touch-action", "manipulation");
+    }
+});

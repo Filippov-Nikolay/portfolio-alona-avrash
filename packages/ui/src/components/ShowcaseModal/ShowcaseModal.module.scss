@@ -190,7 +190,10 @@
     height: 36px;
     border-radius: 50%;
     border: 1px solid rgba(255 255 255 / 0.7);
-    background: transparent;
+    background: rgba(0 0 0 / 0.48);
+    box-shadow: 0 4px 16px rgba(0 0 0 / 0.18);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
     color: #fff;
     font-size: 20px;
     line-height: 1;
@@ -203,15 +206,22 @@
         background 0.2s ease,
         border-color 0.2s ease;
 
+    &::after {
+        content: "";
+        position: absolute;
+        inset: -4px;
+        border-radius: 50%;
+    }
+
     @include can-hover {
         &:hover {
-            background: rgba(255 255 255 / 0.16);
+            background: rgba(0 0 0 / 0.64);
             border-color: #fff;
         }
     }
 
     &:active {
-        background: rgba(255 255 255 / 0.24);
+        background: rgba(0 0 0 / 0.72);
     }
 
     &:focus-visible {
@@ -220,28 +230,29 @@
     }
 
     @include respond-to("mobile") {
-        top: 14px;
-        right: 14px;
-        width: 32px;
-        height: 32px;
-        font-size: 17px;
-        background: rgba(0 0 0 / 0.48);
-        box-shadow: 0 4px 16px rgba(0 0 0 / 0.18);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        top: 12px;
+        right: 12px;
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
     }
 
     @media (max-height: 480px) {
         top: 10px;
         right: 10px;
-        width: 30px;
-        height: 30px;
+        width: 36px;
+        height: 36px;
     }
 }
 
 .closeIcon {
     width: 16px;
     height: 16px;
+
+    @include respond-to("mobile") {
+        width: 18px;
+        height: 18px;
+    }
 }
 
 .websiteBtn {

@@ -571,7 +571,14 @@ export function GalleryLightbox({
                 <CloseIcon className={styles.closeIcon} />
             </button>
             {ready && slots.length > 1 && (
-                <div className={styles.progress} role="group" aria-label="Gallery images">
+                <div
+                    className={styles.progress}
+                    role="group"
+                    aria-label="Gallery images"
+                    data-density={
+                        slots.length > 22 ? "compact" : slots.length > 16 ? "dense" : undefined
+                    }
+                >
                     {slots.map((slot, index) => (
                         <button
                             key={index}

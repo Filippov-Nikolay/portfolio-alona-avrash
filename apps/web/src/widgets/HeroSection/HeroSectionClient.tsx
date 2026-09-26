@@ -21,6 +21,7 @@ import { createViewportResizeGuard } from "@/shared/lib/motion/mobileViewport";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { StatsSelectedChoreographyProvider } from "@/shared/lib/motion/StatsSelectedChoreographyContext";
 import { usePreloader } from "@/shared/providers";
+import { trackEvent } from "@/shared/analytics/analytics";
 import { Button, Container, GlassSurface, NoiseLayer, Section } from "@/shared/ui";
 import { StatsSection } from "@/widgets/StatsSection";
 import {
@@ -524,6 +525,11 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 aria-label={social.logo.alt ?? social.id}
+                                                onClick={() =>
+                                                    trackEvent("social_click", {
+                                                        entityId: social.id,
+                                                    })
+                                                }
                                                 style={
                                                     {
                                                         "--social-icon": `url(${social.logo.src})`,

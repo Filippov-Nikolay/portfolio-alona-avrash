@@ -192,17 +192,11 @@ export function WorksCatalog({
         trackEvent("project_open", { entityId: String(selectedItem.id) });
     }, [selectedItem]);
 
-    const handleTabChange = useCallback(
-        (tab: ShowcaseModalTab) => {
-            setActiveTab(tab);
-            // Only the switch-to-gallery direction is a deeper-engagement
-            // signal - going back to overview isn't.
-            if (tab === "gallery" && selectedItem) {
-                trackEvent("project_gallery_view", { entityId: String(selectedItem.id) });
-            }
-        },
-        [selectedItem]
-    );
+    useEffect(() => {
+        if (!selectedItem || activeTab !== "gallery") return;
+
+        trackEvent("project_gallery_view", { entityId: String(selectedItem.id) });
+    }, [selectedItem, activeTab]);
 
     const selectCategory = useCallback((key: CategoryKey) => {
         trackEvent("works_filter", { entityId: key });
@@ -351,7 +345,7 @@ export function WorksCatalog({
                 item={selectedItem}
                 onClose={closeProject}
                 initialTab={activeTab}
-                onTabChange={handleTabChange}
+                onTabChange={setActiveTab}
                 initialLightboxIndex={lightboxIndex}
                 onLightboxChange={setLightboxIndex}
                 labels={modalLabels}

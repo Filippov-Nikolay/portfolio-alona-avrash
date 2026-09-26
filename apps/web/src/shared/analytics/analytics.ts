@@ -1,6 +1,4 @@
-// Custom product events, separate from Vercel Analytics (which already
-// covers visitors/pageviews/countries/referrers on its own). Kept to a
-// short, explicit allowlist - see apps/analytics-worker/src/schema.ts for
+// Custom product events, kept to a short, explicit allowlist - see apps/analytics-worker/src/schema.ts for
 // the server-side copy of this same list, which is the one that actually
 // gets enforced.
 export type AnalyticsEvent =
@@ -11,7 +9,8 @@ export type AnalyticsEvent =
     | "cv_download"
     | "contact_started"
     | "contact_success"
-    | "social_click";
+    | "social_click"
+    | "page_view";
 
 export interface TrackOptions {
     entityId?: string;

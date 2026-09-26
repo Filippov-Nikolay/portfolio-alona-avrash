@@ -93,6 +93,12 @@ $header-scale: 0.8;
         opacity: 1;
         transform: none;
     }
+
+    @media (hover: none) and (pointer: coarse) {
+        > :not(.menuPanel) {
+            will-change: transform;
+        }
+    }
 }
 
 // =============================================

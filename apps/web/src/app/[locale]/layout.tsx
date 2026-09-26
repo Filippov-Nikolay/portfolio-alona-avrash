@@ -13,7 +13,7 @@ import { AppProviders } from "@/shared/providers";
 import { Header } from "@/widgets/Header";
 import { Footer } from "@/widgets/Footer";
 import { LOCALES, isLocale, getLocaleMeta } from "@/i18n/locales";
-import { buildPageAlternates } from "@/shared/lib/seo";
+import { DEFAULT_OG_IMAGE, buildPageAlternates } from "@/shared/lib/seo";
 import { getSocials } from "@/entities/social/api/getSocials";
 import { getIcon } from "@/entities/icon/api/getIcon";
 import packageJson from "../../../package.json";
@@ -124,12 +124,13 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
             siteName: siteConfig.name,
             type: "website",
             locale: ogLocale,
-            images: [{ url: "/og/cover.png", width: 1200, height: 630 }],
+            images: [DEFAULT_OG_IMAGE],
         },
         twitter: {
             card: "summary_large_image",
             title,
             description,
+            images: [DEFAULT_OG_IMAGE],
         },
         icons: {
             // Browsers cache favicons far more aggressively than normal HTTP

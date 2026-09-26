@@ -4,7 +4,7 @@ import { getSocials } from "@/entities/social/api/getSocials";
 import { ContactSection } from "@/widgets/ContactSection";
 import { siteConfig } from "@/shared/config/site.config";
 import { getLocaleMeta } from "@/i18n/locales";
-import { buildPageAlternates } from "@/shared/lib/seo";
+import { DEFAULT_OG_IMAGE, buildPageAlternates } from "@/shared/lib/seo";
 
 interface ContactPageProps {
     params: Promise<{ locale: string }>;
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: ContactPageProps): Promise<Me
             siteName: siteConfig.name,
             type: "website",
             locale: ogLocale,
-            images: [{ url: "/og/cover.png", width: 1200, height: 630 }],
+            images: [DEFAULT_OG_IMAGE],
         },
     };
 }

@@ -12,7 +12,7 @@ import { getToolBadges } from "@/entities/toolBadge/api/getToolBadges";
 import { getCta } from "@/entities/cta/api/getCta";
 import { siteConfig } from "@/shared/config/site.config";
 import { getLocaleMeta } from "@/i18n/locales";
-import { DEFAULT_OG_IMAGE, buildPageAlternates } from "@/shared/lib/seo";
+import { DEFAULT_OG_IMAGES, buildPageAlternates } from "@/shared/lib/seo";
 
 interface WorksPageProps {
     params: Promise<{ locale: string; slug?: string[] }>;
@@ -83,7 +83,7 @@ export async function generateMetadata({ params }: WorksPageProps): Promise<Meta
             siteName: siteConfig.name,
             type: "website",
             locale: ogLocale,
-            images: [DEFAULT_OG_IMAGE],
+            images: DEFAULT_OG_IMAGES,
         },
     };
 }

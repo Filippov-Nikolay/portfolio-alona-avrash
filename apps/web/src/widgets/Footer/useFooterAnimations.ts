@@ -91,11 +91,12 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                     scaleY: 1,
                     transformOrigin: "bottom center",
                 });
-                gsap.set(maskLines, { yPercent: 110 });
+                gsap.set(maskLines, { y: 0, yPercent: 110 });
                 gsap.set(socialItems, { autoAlpha: 0, y: 12, scale: 0.6 });
                 gsap.set(legalItems, { autoAlpha: 0, y: 12 });
                 gsap.set(chars, {
                     autoAlpha: 0,
+                    y: 0,
                     yPercent: -130,
                     rotate: () => gsap.utils.random(-14, 14),
                 });
@@ -195,11 +196,12 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                 prepareTransformTargets([...maskLines, ...socialItems, ...legalItems, ...chars]);
 
                 gsap.set(section, { clipPath: PANEL_CLIP_HIDDEN });
-                gsap.set(maskLines, { yPercent: 110 });
+                gsap.set(maskLines, { y: 0, yPercent: 110 });
                 gsap.set(socialItems, { autoAlpha: 0, y: 12, scale: 0.6 });
                 gsap.set(legalItems, { autoAlpha: 0, y: 12 });
                 gsap.set(chars, {
                     autoAlpha: 0,
+                    y: 0,
                     yPercent: -130,
                     rotate: () => gsap.utils.random(-14, 14),
                 });

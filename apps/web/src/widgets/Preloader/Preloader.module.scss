@@ -23,12 +23,18 @@
 }
 
 .routeOverlay {
+    --_quick-track: #e6e6e6;
+
     z-index: 300;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fff;
-    color: #050505;
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+
+    [data-theme="dark"] & {
+        --_quick-track: rgba(255, 255, 255, 0.14);
+    }
 }
 
 .frame {
@@ -252,7 +258,7 @@
     height: 3px;
     margin-top: 14px;
     overflow: hidden;
-    background: #e6e6e6;
+    background: var(--_quick-track);
 }
 
 .quickProgress {

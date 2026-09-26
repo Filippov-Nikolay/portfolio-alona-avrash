@@ -283,9 +283,11 @@ test("Hero progress keeps its trajectory after reverse scrolling and a viewport 
                 );
                 poses.push({
                     x: new DOMMatrixReadOnly(getComputedStyle(name).transform).m41,
-                    opacity: Number(
-                        getComputedStyle(document.querySelector('[class*="heroLayer"]')!).opacity
-                    ),
+                    opacity:
+                        1 -
+                        Number(
+                            getComputedStyle(document.querySelector('[class*="heroVeil"]')!).opacity
+                        ),
                     progress: (scrollY - start) / runway,
                 });
             }
@@ -325,6 +327,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
             const cameraTrack = document.getElementById("stats-camera-track")!;
             const stage = document.getElementById("hero-sticky-stage")!;
             const hero = root.querySelector<HTMLElement>('[class*="heroLayer"]')!;
+            const veil = root.querySelector<HTMLElement>('[class*="heroVeil"]')!;
             const stats = root.querySelector<HTMLElement>('[class*="statsDepthPlane"]')!;
             const link = hero.querySelector<HTMLAnchorElement>("a[href]")!;
             const top = root.getBoundingClientRect().top + scrollY;
@@ -380,7 +383,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
                     link.blur();
                     poses.push({
                         depth: Math.max(0, Math.min(1, (scrollY - start) / (end - start))),
-                        heroOpacity: Number(heroStyle.opacity),
+                        heroOpacity: 1 - Number(getComputedStyle(veil).opacity),
                         heroInert: hero.inert,
                         heroPointer: heroStyle.pointerEvents,
                         focused,
@@ -582,10 +585,10 @@ test("Scene layers keep their transform and the Hero fades through its veil, not
     });
     expect(result.layers).toBeGreaterThanOrEqual(6);
     expect(result.bareTransforms).toEqual([]);
-    expect([...result.opacities].sort()).toEqual([0, 1]);
+    for (const opacity of result.opacities) expect([0, 1]).toContain(opacity);
     for (const fade of result.fades) {
-        expect(fade.hero === 0).toBe(fade.veil === 1);
-        if (fade.hero === 1) expect(fade.veil).toBeLessThan(1);
+        if (fade.hero === 0) expect(fade.veil).toBe(1);
+        if (fade.veil < 1) expect(fade.hero).toBe(1);
     }
     expect(result.fades.some((fade) => fade.veil > 0.2 && fade.veil < 0.8)).toBe(true);
     expect(result.fades[0]).toEqual({ hero: 1, veil: 0 });
@@ -604,4 +607,73 @@ test.describe("Hero server markup", () => {
             await stats.evaluate((element) => element instanceof HTMLElement && element.inert)
         ).toBe(true);
     });
+});
+
+test("Hero keeps its layer raster through scrolling and releases it only at rest past the camera", async ({
+    page,
+}) => {
+    await page.goto("/en");
+    const stats = page.locator('[class*="statsDepthPlane"]');
+    await expect
+        .poll(() => stats.evaluate((element) => element.getAnimations()[0]?.playState))
+        .toBe("paused");
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(1100);
+    const geometry = () =>
+        page.evaluate(() => {
+            const root = document.getElementById("hero-transition-track")!;
+            const heroTrack = document.getElementById("hero-scroll-track")!;
+            const cameraTrack = document.getElementById("stats-camera-track")!;
+            const stage = document.getElementById("hero-sticky-stage")!;
+            const top = root.getBoundingClientRect().top + scrollY;
+            const height = stage.getBoundingClientRect().height;
+            return {
+                fadeMiddle: top + (heroTrack.getBoundingClientRect().height - height) * 0.95,
+                fadeEnd: top + heroTrack.getBoundingClientRect().height - height + 40,
+                cameraEnd: top + cameraTrack.getBoundingClientRect().height - height + 40,
+            };
+        });
+    const heroOpacity = () =>
+        page.evaluate(() =>
+            Number(document.querySelector<HTMLElement>('[class*="heroLayer"]')!.style.opacity)
+        );
+    const { fadeMiddle, fadeEnd, cameraEnd } = await geometry();
+
+    const whileScrolling = await page.evaluate(async (target) => {
+        const hero = document.querySelector<HTMLElement>('[class*="heroLayer"]')!;
+        const seen = new Set<string>();
+        for (let step = 1; step <= 40; step++) {
+            scrollTo(0, Math.round((target * step) / 40));
+            await new Promise((resolve) => setTimeout(resolve, 40));
+            seen.add(hero.style.opacity);
+        }
+        return [...seen];
+    }, cameraEnd);
+    expect(whileScrolling).toEqual(["1"]);
+    await expect.poll(heroOpacity).toBe(0);
+
+    await page.evaluate((y) => scrollTo(0, Math.round(y)), fadeEnd);
+    await expect.poll(heroOpacity).toBe(1);
+    await page.waitForTimeout(400);
+    expect(await heroOpacity()).toBe(1);
+
+    await page.evaluate((y) => scrollTo(0, Math.round(y)), cameraEnd);
+    await expect.poll(heroOpacity).toBe(0);
+    const restored = await page.evaluate(async (y) => {
+        scrollTo(0, Math.round(y));
+        await new Promise(requestAnimationFrame);
+        await new Promise(requestAnimationFrame);
+        const hero = document.querySelector<HTMLElement>('[class*="heroLayer"]')!;
+        const veil = document.querySelector<HTMLElement>('[class*="heroVeil"]')!;
+        return { hero: Number(hero.style.opacity), veil: Number(veil.style.opacity) };
+    }, fadeMiddle);
+    expect(restored.hero).toBe(1);
+    expect(restored.veil).toBeGreaterThan(0);
+    expect(restored.veil).toBeLessThan(1);
+});
+
+test("Hero title row and name stage keep their own layers", async ({ page }) => {
+    await page.goto("/en");
+    for (const selector of ['[class*="topRow"]', '[class*="nameStage"]'])
+        await expect(page.locator(selector)).toHaveCSS("will-change", "transform");
 });

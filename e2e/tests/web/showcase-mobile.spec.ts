@@ -48,6 +48,27 @@ test("mobile showcase keeps its full tab rule and close button visible while scr
     expect(Math.abs(afterScroll!.y - beforeScroll!.y)).toBeLessThanOrEqual(1);
 });
 
+for (const [label, viewport, minSize] of [
+    ["desktop", { width: 1403, height: 845 }, 36],
+    ["mobile", { width: 390, height: 844 }, 40],
+] as const) {
+    test(`showcase close button stays legible over the gallery on ${label}`, async ({ page }) => {
+        await page.setViewportSize(viewport);
+        await page.goto("/en/works/esencha?tab=gallery");
+        const dialog = page.getByRole("dialog", { name: "ESENCHA" });
+        await expect(dialog).toBeVisible();
+        const close = dialog.getByRole("button", { name: "Close" });
+        const style = await close.evaluate((button) => {
+            const computed = getComputedStyle(button);
+            const rect = button.getBoundingClientRect();
+            return { background: computed.backgroundColor, width: rect.width, height: rect.height };
+        });
+        expect(style.background).toBe("rgba(0, 0, 0, 0.48)");
+        expect(style.width).toBeGreaterThanOrEqual(minSize);
+        expect(style.height).toBeGreaterThanOrEqual(minSize);
+    });
+}
+
 declare global {
     interface Window {
         lightboxAnimations: Animation[];

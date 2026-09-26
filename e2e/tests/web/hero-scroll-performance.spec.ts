@@ -294,7 +294,7 @@ test("Hero progress keeps its trajectory after reverse scrolling and a viewport 
         expect(poses[0].x).toBeCloseTo(poses[4].x, 2);
         expect(poses[1].x).toBeCloseTo(poses[3].x, 2);
         expect(poses[2].opacity).toBe(0);
-        expect(poses[0].opacity).toBe(0.9999);
+        expect(poses[0].opacity).toBe(1);
         const endpoint = poses[2].x;
         for (const pose of poses)
             expect(Math.abs(pose.x - endpoint * pose.progress)).toBeLessThan(1);
@@ -513,7 +513,7 @@ test("Hero and Stats defer hit-testing changes until a crossing scroll settles",
     await expect(stats).toHaveAttribute("inert", "");
 });
 
-test("Scene layers keep their transform and Hero opacity stays below one while scrolling", async ({
+test("Scene layers keep their transform and the Hero fades through its veil, not group opacity", async ({
     page,
 }) => {
     await page.goto("/en");
@@ -530,6 +530,8 @@ test("Scene layers keep their transform and Hero opacity stays below one while s
         const selectedTrack = document.getElementById("selected-motion-track")!;
         const stage = document.getElementById("hero-sticky-stage")!;
         const hero = root.querySelector<HTMLElement>('[class*="heroLayer"]')!;
+        const veil = root.querySelector<HTMLElement>('[class*="heroVeil"]')!;
+        const heroTrack = document.getElementById("hero-scroll-track")!;
         const layers = Array.from(
             root.querySelectorAll<HTMLElement>(
                 '[class*="nameLine"], [class*="introCardWrap"], [class*="availability"]:not([class*="Dot"]), [class*="statsLiftLayer"], [class*="selectedMotionLayer"], [class*="floater"][class*="Floater"], [class*="floaterVariant"]'
@@ -544,6 +546,7 @@ test("Scene layers keep their transform and Hero opacity stays below one while s
             top + cameraTrack.getBoundingClientRect().height - stage.getBoundingClientRect().height;
         const bareTransforms = new Set<string>();
         const opacities = new Set<string>();
+        const fades: { hero: number; veil: number }[] = [];
         const sample = () => {
             for (const layer of layers) {
                 if (!layer.style.transform || layer.style.transform === "none") {
@@ -551,8 +554,21 @@ test("Scene layers keep their transform and Hero opacity stays below one while s
                 }
             }
             opacities.add(hero.style.opacity);
+            fades.push({ hero: Number(hero.style.opacity), veil: Number(veil.style.opacity) });
         };
-        for (const y of [top, top + 1, (top + cameraEnd) / 2, cameraEnd, end, top]) {
+        const heroRunway =
+            heroTrack.getBoundingClientRect().height - stage.getBoundingClientRect().height;
+        const fadeMiddle = top + heroRunway * 0.95;
+        for (const y of [
+            top,
+            top + 1,
+            fadeMiddle,
+            (top + cameraEnd) / 2,
+            cameraEnd,
+            end,
+            fadeMiddle,
+            top,
+        ]) {
             scrollTo(0, Math.round(y));
             for (let frame = 0; frame < 3; frame++) await new Promise(requestAnimationFrame);
             sample();
@@ -561,12 +577,18 @@ test("Scene layers keep their transform and Hero opacity stays below one while s
             layers: layers.length,
             bareTransforms: [...bareTransforms],
             opacities: [...opacities].map(Number),
+            fades,
         };
     });
     expect(result.layers).toBeGreaterThanOrEqual(6);
     expect(result.bareTransforms).toEqual([]);
-    expect(Math.max(...result.opacities)).toBe(0.9999);
-    expect(result.opacities).not.toContain(1);
+    expect([...result.opacities].sort()).toEqual([0, 1]);
+    for (const fade of result.fades) {
+        expect(fade.hero === 0).toBe(fade.veil === 1);
+        if (fade.hero === 1) expect(fade.veil).toBeLessThan(1);
+    }
+    expect(result.fades.some((fade) => fade.veil > 0.2 && fade.veil < 0.8)).toBe(true);
+    expect(result.fades[0]).toEqual({ hero: 1, veil: 0 });
 });
 
 test.describe("Hero server markup", () => {

@@ -308,7 +308,7 @@ shared with the CMS that will eventually write that same JSON.
   of truth for both the footer icons and the JSON-LD `sameAs`).
 - **Sitemap & robots:** [`src/app/sitemap.ts`](src/app/sitemap.ts) / [`src/app/robots.ts`](src/app/robots.ts)
   — both dynamic, both derive their domain from `siteConfig.url`.
-- **OpenGraph / favicon images:** `public/og/cover.png` (1200×630, the site-wide default) and
+- **OpenGraph / favicon images:** `public/og/cover.webp` (1200×630, the site-wide default) and
   `public/icon/icon.png` (32×32). A `/works/<slug>` page overrides `og:image` with that project's own
   hero image — see `generateMetadata` in
   [`works/[[...slug]]/page.tsx`](<src/app/[locale]/works/[[...slug]]/page.tsx>).
@@ -418,7 +418,7 @@ Developer / designer portfolio
       `--color-text-primary` per theme)
 - [ ] Replace the content under `src/entities/*/model/*.json` (and add real translations to each `i18n`
       block per locale)
-- [ ] Replace `public/icon/icon.png` (favicon) and `public/og/cover.png` (social share image)
+- [ ] Replace `public/icon/icon.png` (favicon) and `public/og/cover.webp` (social share image)
 - [ ] Set `NEXT_PUBLIC_SITE_URL` for your production environment
 - [ ] Update the JSON-LD `@type` in `src/app/[locale]/layout.tsx` (defaults to `Person`)
 - [ ] Remove any languages you don't need, or add your own (see [Localization](#localization))

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
     buildEventRow,
+    deleteEventsBefore,
     insertEvent,
     isSessionRateLimited,
     wasRecentlyTracked,
@@ -189,5 +190,66 @@ describe("insertEvent", () => {
         await insertEvent(db, row);
         expect(rows).toHaveLength(1);
         expect(rows[0]).toEqual(row);
+    });
+});
+describe("client context", () => {
+    it("stores the visitor hash and device details with the event", async () => {
+        const { db, rows } = createFakeDb();
+        const row = buildEventRow(
+            { ...BASE_BODY, eventName: "page_view", entityId: undefined },
+            {
+                country: "PL",
+                visitorId: "a".repeat(32),
+                client: { device: "mobile", os: "iOS", browser: "Safari" },
+            }
+        );
+        await insertEvent(db, row);
+        expect(rows[0]).toMatchObject({
+            eventName: "page_view",
+            country: "PL",
+            visitorId: "a".repeat(32),
+            device: "mobile",
+            os: "iOS",
+            browser: "Safari",
+        });
+    });
+});
+
+describe("wasRecentlyTracked outside the deduped events", () => {
+    it("never treats repeated outbound clicks as duplicates", async () => {
+        for (const eventName of ["social_click", "project_external_click"] as const) {
+            const body = { ...BASE_BODY, eventName };
+            const row = buildEventRow(body, { country: null, visitorId: null, client: null });
+            const { db } = createFakeDb([{ ...row, createdAt: Date.now() - 60 * 1000 }]);
+            await expect(wasRecentlyTracked(db, body)).resolves.toBe(false);
+        }
+    });
+});
+
+describe("deleteEventsBefore", () => {
+    it("deletes by created_at with the given cutoff", async () => {
+        const calls: { query: string; values: unknown[] }[] = [];
+        const db: D1Like = {
+            prepare(query) {
+                return {
+                    bind(...values) {
+                        calls.push({ query, values });
+                        return {
+                            async run() {},
+                            async first() {
+                                return null;
+                            },
+                            async all() {
+                                return { results: [] };
+                            },
+                        };
+                    },
+                };
+            },
+        };
+        await deleteEventsBefore(db, 1234);
+        expect(calls).toEqual([
+            { query: "DELETE FROM analytics_events WHERE created_at < ?", values: [1234] },
+        ]);
     });
 });

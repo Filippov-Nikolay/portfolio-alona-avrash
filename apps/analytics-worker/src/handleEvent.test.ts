@@ -157,3 +157,29 @@ describe("handleEvent", () => {
         expect(rows.length).toBeLessThan(25);
     });
 });
+it("stores the client context it is given", async () => {
+    const { db, rows } = createFakeDb();
+    await handleEvent({
+        body: { ...VALID_BODY, eventName: "page_view", entityId: undefined },
+        country: "DE",
+        visitorId: "b".repeat(32),
+        client: { device: "desktop", os: "macOS", browser: "Firefox" },
+        db,
+    });
+    expect(rows[0]).toMatchObject({
+        eventName: "page_view",
+        country: "DE",
+        visitorId: "b".repeat(32),
+        device: "desktop",
+        os: "macOS",
+        browser: "Firefox",
+    });
+});
+
+it("counts every page view instead of deduping them", async () => {
+    const { db, rows } = createFakeDb();
+    const pageView = { ...VALID_BODY, eventName: "page_view", entityId: undefined };
+    await handleEvent({ body: pageView, country: null, visitorId: null, client: null, db });
+    await handleEvent({ body: pageView, country: null, visitorId: null, client: null, db });
+    expect(rows).toHaveLength(2);
+});

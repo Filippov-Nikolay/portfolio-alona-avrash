@@ -7,7 +7,11 @@ import {
     getProjectDetail,
     getTopCategories,
     getTopProjects,
+    getEngagement,
+    getTraffic,
     parseDays,
+    referrerHost,
+    toShareBreakdown,
     toCategoryBreakdown,
     toCountryBreakdown,
     toLocaleBreakdown,
@@ -283,5 +287,136 @@ describe("getTopCategories", () => {
             { category: "branding", percent: 0.75 },
             { category: "packaging", percent: 0.25 },
         ]);
+    });
+});
+
+describe("toShareBreakdown", () => {
+    it("merges missing keys into Unknown, sorts and shares by visitors", () => {
+        expect(
+            toShareBreakdown(
+                [
+                    { key: "PL", visitors: 2 },
+                    { key: null, visitors: 1 },
+                    { key: "", visitors: 1 },
+                    { key: "DE", visitors: 4 },
+                ],
+                8
+            )
+        ).toEqual([
+            { key: "DE", visitors: 4, percent: 0.5 },
+            { key: "PL", visitors: 2, percent: 0.25 },
+            { key: "Unknown", visitors: 2, percent: 0.25 },
+        ]);
+    });
+
+    it("keeps only the requested number of rows", () => {
+        const rows = Array.from({ length: 12 }, (_, index) => ({ key: `k${index}`, visitors: 1 }));
+        expect(toShareBreakdown(rows, 12)).toHaveLength(10);
+    });
+});
+
+describe("referrerHost", () => {
+    it("reduces a referrer to its host and folds in-site and empty referrers into Direct", () => {
+        expect(referrerHost("https://www.google.com/search?q=avrash", ["dev.avrash.com"])).toBe(
+            "google.com"
+        );
+        expect(referrerHost("https://dev.avrash.com/en/works", ["dev.avrash.com"])).toBe("Direct");
+        expect(referrerHost(null, [])).toBe("Direct");
+        expect(referrerHost("not a url", [])).toBe("Direct");
+    });
+});
+
+describe("getTraffic", () => {
+    it("builds totals, a daily timeline, page shares and visitor breakdowns", async () => {
+        const today = dayKey(new Date());
+        const db = createSequencedDb([
+            { pageViews: 10, visitors: 4 },
+            { results: [{ day: today, views: 10, visitors: 4 }] },
+            {
+                results: [
+                    { path: "/en", views: 6, visitors: 4 },
+                    { path: "/en/works", views: 4, visitors: 2 },
+                ],
+            },
+            {
+                results: [
+                    { key: "https://www.google.com/search", visitors: 2 },
+                    { key: "https://dev.avrash.com/en", visitors: 1 },
+                    { key: null, visitors: 1 },
+                ],
+            },
+            {
+                results: [
+                    { key: "PL", visitors: 3 },
+                    { key: "DE", visitors: 1 },
+                ],
+            },
+            {
+                results: [
+                    { key: "mobile", visitors: 3 },
+                    { key: "desktop", visitors: 1 },
+                ],
+            },
+            {
+                results: [
+                    { key: "iOS", visitors: 3 },
+                    { key: "macOS", visitors: 1 },
+                ],
+            },
+            { results: [{ key: "Safari", visitors: 4 }] },
+            { results: [{ key: "en", visitors: 4 }] },
+        ]);
+
+        const traffic = await getTraffic(db, 7, ["dev.avrash.com"]);
+
+        expect(traffic.pageViews).toBe(10);
+        expect(traffic.visitors).toBe(4);
+        expect(traffic.viewsPerVisitor).toBe(2.5);
+        expect(traffic.timeline).toHaveLength(7);
+        expect(traffic.timeline.at(-1)).toEqual({ date: today, pageViews: 10, visitors: 4 });
+        expect(traffic.pages).toEqual([
+            { path: "/en", views: 6, visitors: 4, percent: 0.6 },
+            { path: "/en/works", views: 4, visitors: 2, percent: 0.4 },
+        ]);
+        expect(traffic.referrers).toEqual([
+            { key: "google.com", visitors: 2, percent: 0.5 },
+            { key: "Direct", visitors: 2, percent: 0.5 },
+        ]);
+        expect(traffic.countries[0]).toEqual({ key: "PL", visitors: 3, percent: 0.75 });
+        expect(traffic.devices[0]).toEqual({ key: "mobile", visitors: 3, percent: 0.75 });
+        expect(traffic.operatingSystems[0]!.key).toBe("iOS");
+        expect(traffic.browsers).toEqual([{ key: "Safari", visitors: 4, percent: 1 }]);
+        expect(traffic.languages).toEqual([{ key: "en", visitors: 4, percent: 1 }]);
+    });
+
+    it("returns zeros instead of NaN for a period without page views", async () => {
+        const traffic = await getTraffic(createSequencedDb([{ pageViews: 0, visitors: 0 }]), 7);
+        expect(traffic.pageViews).toBe(0);
+        expect(traffic.viewsPerVisitor).toBe(0);
+        expect(traffic.pages).toEqual([]);
+        expect(traffic.countries).toEqual([]);
+    });
+});
+
+describe("getEngagement", () => {
+    it("counts CV downloads and shares social clicks by network", async () => {
+        const db = createSequencedDb([
+            { count: 5 },
+            {
+                results: [
+                    { entityId: "instagram", count: 1 },
+                    { entityId: "behance", count: 3 },
+                ],
+            },
+        ]);
+
+        await expect(getEngagement(db, 30)).resolves.toEqual({
+            cvDownloads: 5,
+            socialClicks: 4,
+            socials: [
+                { entityId: "behance", count: 3, percent: 0.75 },
+                { entityId: "instagram", count: 1, percent: 0.25 },
+            ],
+        });
     });
 });

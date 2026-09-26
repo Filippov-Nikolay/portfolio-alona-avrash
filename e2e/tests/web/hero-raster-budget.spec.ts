@@ -64,6 +64,10 @@ test("Smaller Stats raster preserves Hero, grid and Selected Work screen positio
                     getComputedStyle(grid).backfaceVisibility,
                     getComputedStyle(grid).transform,
                 ],
+                digits: Array.from(
+                    element.querySelectorAll("[data-stat-index]"),
+                    (digits) => getComputedStyle(digits).willChange
+                ),
                 reels: Array.from(element.querySelectorAll("[data-reel-place]"), (reel) => {
                     const style = getComputedStyle(reel);
                     return {
@@ -78,6 +82,9 @@ test("Smaller Stats raster preserves Hero, grid and Selected Work screen positio
         expect(layers.size).toEqual(layers.grid);
         expect(layers.areaRatio).toBeLessThan(0.5);
         if (hasTouch) expect(layers.gridStyle).toEqual(["auto", "visible", "none"]);
+        expect(layers.digits.length).toBeGreaterThan(0);
+        for (const willChange of layers.digits)
+            expect(willChange).toBe(hasTouch ? "transform" : "auto");
         for (const reel of layers.reels) {
             expect(reel.willChange).toBe("auto");
             expect(reel.backface).toBe("visible");

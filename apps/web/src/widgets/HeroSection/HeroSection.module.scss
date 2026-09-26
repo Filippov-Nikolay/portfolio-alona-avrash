@@ -318,6 +318,7 @@
 .topRow {
     position: relative;
     z-index: 6;
+    will-change: transform;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -422,6 +423,7 @@
 .nameStage {
     position: relative;
     z-index: 2;
+    will-change: transform;
     width: calc(100% - var(--hero-title-start-offset));
     margin-top: clamp(34px, 7vh, 88px);
     margin-inline-start: var(--hero-title-start-offset);
@@ -872,6 +874,8 @@
     .stage,
     .heroLayer,
     .heroVeil,
+    .topRow,
+    .nameStage,
     .statsLiftLayer,
     .statsDepthPlane,
     .selectedMotionLayer,

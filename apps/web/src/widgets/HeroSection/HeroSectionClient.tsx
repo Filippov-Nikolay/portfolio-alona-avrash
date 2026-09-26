@@ -28,6 +28,7 @@ import {
     type SelectedWorkSectionProps,
 } from "@/widgets/SelectedWorkSection/SelectedWorkSection";
 import styles from "./HeroSection.module.scss";
+import { useHeroLayerOpacity } from "./useHeroLayerOpacity";
 import { useHeroScroll } from "./useHeroScroll";
 import { useStatsCamera } from "./useStatsCamera";
 import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
@@ -303,7 +304,6 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
             1 - clamp01((latest - HERO_DEPTH_TRANSITION_START) / (1 - HERO_DEPTH_TRANSITION_START))
         );
     });
-    const heroLayerOpacity = useTransform(heroOpacity, (opacity) => (opacity === 0 ? 0 : 1));
     const heroVeilOpacity = useTransform(heroOpacity, (opacity) => 1 - opacity);
     const heroPointerEvents = useTransform(() =>
         depthProgress.get() >= (motionConfig.get().reduced ? 0.995 : 0.5) ? "none" : "auto"
@@ -326,6 +326,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
         reduced: Boolean(reduced),
         integratedReveal: isTouch,
     });
+    const heroLayerOpacity = useHeroLayerOpacity(heroOpacity, cameraProgress);
     const statsInert = useTransform(cameraProgress, (progress) => progress === 0);
     const statsPointerEvents = useTransform(() =>
         cameraProgress.get() <= (motionConfig.get().reduced ? 0.02 : 0.08) ? "none" : "auto"

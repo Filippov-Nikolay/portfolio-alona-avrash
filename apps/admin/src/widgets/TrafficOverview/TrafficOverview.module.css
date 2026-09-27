@@ -107,6 +107,69 @@
     margin-top: 16px;
 }
 
+.chartCard:first-child,
+.acquisitionGrid .pagesPanel {
+    margin-top: 0;
+}
+
+.sessionStats {
+    background: #f4f6f9;
+}
+
+.sessionStats .stat {
+    min-height: 116px;
+    padding: 16px 20px;
+}
+
+.sessionStats .statValue {
+    margin-top: 12px;
+    font-size: 26px;
+}
+
+.sessionStats .statIcon {
+    border: 0;
+    background: transparent;
+}
+
+.audienceGrid,
+.acquisitionGrid {
+    display: grid;
+    gap: 16px;
+    align-items: start;
+}
+
+.audienceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.acquisitionGrid {
+    grid-template-columns: minmax(240px, 0.8fr) minmax(0, 2fr);
+}
+
+.groupTitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 28px 0 14px;
+    color: #52525b;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.groupTitle:first-child {
+    margin-top: 0;
+}
+
+.groupTitle svg {
+    width: 17px;
+    height: 17px;
+    color: #71717a;
+}
+
+.groupTitle + .breakdowns {
+    margin-top: 0;
+}
+
 .note {
     margin: 10px 2px 0;
     font-size: 11px;
@@ -391,6 +454,10 @@
 }
 
 @media (max-width: 980px) {
+    .acquisitionGrid {
+        grid-template-columns: 1fr;
+    }
+
     .stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -426,7 +493,8 @@
         padding: 0;
     }
 
-    .breakdowns {
+    .breakdowns,
+    .audienceGrid {
         grid-template-columns: 1fr;
     }
 

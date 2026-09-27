@@ -49,6 +49,7 @@ export default async function TrafficPage({ searchParams }: TrafficPageProps) {
         <div className={styles.page}>
             <PageHeader
                 title="Traffic"
+                description="See who visits your site, what they explore and how they find you."
                 actions={<PeriodSwitcher basePath="/dashboard/traffic" days={days} />}
             />
             <TrafficOverview traffic={traffic} sessions={sessions} />

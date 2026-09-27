@@ -1,7 +1,18 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
-import { Download, Eye, MessageSquareText, Send, TrendingUp } from "lucide-react";
+import {
+    ChartNoAxesCombined,
+    Download,
+    Eye,
+    FolderKanban,
+    GitBranch,
+    MessageSquareText,
+    Send,
+    Share2,
+    TrendingUp,
+} from "lucide-react";
+import { ReportTabs } from "@/shared/ui/ReportTabs/ReportTabs";
 import { LineChart } from "@/shared/ui/LineChart";
 import { TopProjectsTable } from "@/widgets/TopProjectsTable";
 import { ConversionFunnels } from "@/widgets/ConversionFunnels";
@@ -129,199 +140,281 @@ export function AnalyticsOverview({
                 </div>
             </section>
 
-            {sessions && <ConversionFunnels sessions={sessions} />}
-
-            <div className={styles.insightGrid}>
-                <section className={styles.chartCard}>
-                    <div className={styles.panelHeader}>
-                        <div>
-                            <p className={styles.eyebrow}>Activity</p>
-                            <h2 className={styles.panelTitle}>Performance over time</h2>
-                            <p className={styles.panelMeta}>{formatDateRange(overview.timeline)}</p>
-                        </div>
-                        <div className={styles.chartHeader} role="group" aria-label="Chart metric">
-                            {METRICS.map((option) => (
-                                <button
-                                    key={option.value}
-                                    type="button"
-                                    className={cn(
-                                        styles.metricBtn,
-                                        metric === option.value && styles.metricBtnActive
-                                    )}
-                                    onClick={() => setMetric(option.value)}
-                                    aria-pressed={metric === option.value}
-                                >
-                                    {option.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <LineChart
-                        points={chartPoints}
-                        label={`${METRICS.find((option) => option.value === metric)?.label} over time`}
-                    />
-                </section>
-
-                <section className={styles.breakdown}>
-                    <div className={styles.panelHeaderCompact}>
-                        <div>
-                            <p className={styles.eyebrow}>Discovery</p>
-                            <h2 className={styles.panelTitle}>Category interest</h2>
-                        </div>
-                        <span className={styles.rowCount}>{categories.length}</span>
-                    </div>
-                    {categories.length === 0 ? (
-                        <p className={styles.muted}>No category interactions in this period.</p>
-                    ) : (
-                        <ol className={styles.breakdownList}>
-                            {categories.map((row, index) => (
-                                <li key={row.category}>
-                                    <div className={styles.breakdownRow}>
-                                        <span className={styles.rank}>
-                                            {String(index + 1).padStart(2, "0")}
-                                        </span>
-                                        <span className={styles.breakdownLabel}>
-                                            {categoryLabels[row.category] ?? row.category}
-                                        </span>
-                                        <strong>{formatPercent(row.percent)}</strong>
-                                    </div>
-                                    <span className={styles.barTrack} aria-hidden="true">
-                                        <span
-                                            className={styles.barFill}
-                                            style={
-                                                {
-                                                    "--bar-width": `${Math.min(row.percent * 100, 100)}%`,
-                                                } as CSSProperties
-                                            }
-                                        />
-                                    </span>
-                                </li>
-                            ))}
-                        </ol>
-                    )}
-                </section>
-            </div>
-
-            {engagement && (
-                <div className={styles.engagementGrid}>
-                    <section className={cn(styles.breakdown, styles.cvCard)}>
-                        <div className={styles.panelHeaderCompact}>
-                            <div>
-                                <p className={styles.eyebrow}>Outbound interest</p>
-                                <h2 className={styles.panelTitle}>CV downloads</h2>
-                            </div>
-                            <span className={styles.statIconInline} aria-hidden="true">
-                                <Download size={17} strokeWidth={1.8} />
-                            </span>
-                        </div>
-                        <strong className={styles.statValue}>
-                            {formatNumber(engagement.cvDownloads)}
-                        </strong>
-                        <span className={styles.statMeta}>
-                            Clicks on Download CV in the header and mobile menu
-                        </span>
-                    </section>
-
-                    <section className={styles.breakdown}>
-                        <div className={styles.panelHeaderCompact}>
-                            <div>
-                                <p className={styles.eyebrow}>Outbound interest</p>
-                                <h2 className={styles.panelTitle}>Social clicks</h2>
-                            </div>
-                            <span className={styles.rowCount}>
-                                {formatNumber(engagement.socialClicks)}
-                            </span>
-                        </div>
-                        {engagement.socials.length === 0 ? (
-                            <p className={styles.muted}>No social clicks in this period.</p>
-                        ) : (
-                            <ol className={styles.breakdownList}>
-                                {engagement.socials.map((row, index) => (
-                                    <li key={row.entityId}>
-                                        <div className={styles.breakdownRow}>
-                                            <span className={styles.rank}>
-                                                {String(index + 1).padStart(2, "0")}
-                                            </span>
-                                            <span className={styles.breakdownLabel}>
-                                                {socialName(row.entityId)}
-                                            </span>
-                                            <strong>
-                                                {formatNumber(row.count)} /{" "}
-                                                {formatPercent(row.percent)}
-                                            </strong>
+            <ReportTabs
+                label="Analytics reports"
+                tabs={[
+                    {
+                        id: "overview",
+                        label: "Overview",
+                        icon: <ChartNoAxesCombined />,
+                        description:
+                            "Follow activity over time and see which categories attract interest.",
+                        content: (
+                            <div className={styles.insightGrid}>
+                                <section className={styles.chartCard}>
+                                    <div className={styles.panelHeader}>
+                                        <div>
+                                            <p className={styles.eyebrow}>Activity</p>
+                                            <h2 className={styles.panelTitle}>
+                                                Performance over time
+                                            </h2>
+                                            <p className={styles.panelMeta}>
+                                                {formatDateRange(overview.timeline)}
+                                            </p>
                                         </div>
-                                        <span className={styles.barTrack} aria-hidden="true">
-                                            <span
-                                                className={styles.barFill}
-                                                style={
-                                                    {
-                                                        "--bar-width": `${Math.min(row.percent * 100, 100)}%`,
-                                                    } as CSSProperties
-                                                }
-                                            />
-                                        </span>
-                                    </li>
-                                ))}
-                            </ol>
-                        )}
-                    </section>
-                </div>
-            )}
+                                        <div
+                                            className={styles.chartHeader}
+                                            role="group"
+                                            aria-label="Chart metric"
+                                        >
+                                            {METRICS.map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    className={cn(
+                                                        styles.metricBtn,
+                                                        metric === option.value &&
+                                                            styles.metricBtnActive
+                                                    )}
+                                                    onClick={() => setMetric(option.value)}
+                                                    aria-pressed={metric === option.value}
+                                                >
+                                                    {option.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <LineChart
+                                        points={chartPoints}
+                                        label={`${METRICS.find((option) => option.value === metric)?.label} over time`}
+                                    />
+                                </section>
 
-            {engagement?.timeline && (
-                <section className={cn(styles.chartCard, styles.trendCard)}>
-                    <div className={styles.panelHeader}>
-                        <div>
-                            <p className={styles.eyebrow}>Outbound interest</p>
-                            <h2 className={styles.panelTitle}>CV and social trend</h2>
-                            <p className={styles.panelMeta}>
-                                {days > WEEKLY_THRESHOLD_DAYS ? "Weekly totals" : "Daily totals"}
-                            </p>
-                        </div>
-                        <div
-                            className={styles.chartHeader}
-                            role="group"
-                            aria-label="Outbound metric"
-                        >
-                            {ENGAGEMENT_METRICS.map((option) => (
-                                <button
-                                    key={option.value}
-                                    type="button"
-                                    className={cn(
-                                        styles.metricBtn,
-                                        engagementMetric === option.value && styles.metricBtnActive
+                                <section className={styles.breakdown}>
+                                    <div className={styles.panelHeaderCompact}>
+                                        <div>
+                                            <p className={styles.eyebrow}>Discovery</p>
+                                            <h2 className={styles.panelTitle}>Category interest</h2>
+                                        </div>
+                                        <span className={styles.rowCount}>{categories.length}</span>
+                                    </div>
+                                    {categories.length === 0 ? (
+                                        <p className={styles.muted}>
+                                            No category interactions in this period.
+                                        </p>
+                                    ) : (
+                                        <ol className={styles.breakdownList}>
+                                            {categories.map((row, index) => (
+                                                <li key={row.category}>
+                                                    <div className={styles.breakdownRow}>
+                                                        <span className={styles.rank}>
+                                                            {String(index + 1).padStart(2, "0")}
+                                                        </span>
+                                                        <span className={styles.breakdownLabel}>
+                                                            {categoryLabels[row.category] ??
+                                                                row.category}
+                                                        </span>
+                                                        <strong>
+                                                            {formatPercent(row.percent)}
+                                                        </strong>
+                                                    </div>
+                                                    <span
+                                                        className={styles.barTrack}
+                                                        aria-hidden="true"
+                                                    >
+                                                        <span
+                                                            className={styles.barFill}
+                                                            style={
+                                                                {
+                                                                    "--bar-width": `${Math.min(row.percent * 100, 100)}%`,
+                                                                } as CSSProperties
+                                                            }
+                                                        />
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ol>
                                     )}
-                                    onClick={() => setEngagementMetric(option.value)}
-                                    aria-pressed={engagementMetric === option.value}
-                                >
-                                    {option.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <LineChart
-                        points={engagement.timeline.map((point) => ({
-                            date: point.date,
-                            value: point[engagementMetric],
-                        }))}
-                        label={`${ENGAGEMENT_METRICS.find((option) => option.value === engagementMetric)?.label} over time`}
-                    />
-                </section>
-            )}
+                                </section>
+                            </div>
+                        ),
+                    },
+                    {
+                        id: "projects",
+                        label: "Projects",
+                        icon: <FolderKanban />,
+                        description:
+                            "Compare projects by opens, gallery views and visits to their websites.",
+                        content: (
+                            <section className={styles.projectsSection}>
+                                <div className={styles.sectionHeader}>
+                                    <div>
+                                        <p className={styles.eyebrow}>Portfolio</p>
+                                        <h2 className={styles.panelTitle}>Project performance</h2>
+                                    </div>
+                                    <span className={styles.sectionMeta}>
+                                        {projects.length}{" "}
+                                        {projects.length === 1 ? "project" : "projects"} with
+                                        activity
+                                    </span>
+                                </div>
+                                <TopProjectsTable
+                                    projects={projects}
+                                    projectNames={projectNames}
+                                    days={days}
+                                />
+                            </section>
+                        ),
+                    },
+                    {
+                        id: "conversions",
+                        label: "Conversions",
+                        icon: <GitBranch />,
+                        description:
+                            "See how sessions progress from browsing to project visits and enquiries.",
+                        content: sessions ? (
+                            <ConversionFunnels sessions={sessions} />
+                        ) : (
+                            <p className={styles.muted}>Session data is currently unavailable.</p>
+                        ),
+                    },
+                    {
+                        id: "outbound",
+                        label: "CV & socials",
+                        icon: <Share2 />,
+                        description: "Track CV downloads and interest in your social profiles.",
+                        content: engagement ? (
+                            <>
+                                <div className={styles.engagementGrid}>
+                                    <section className={cn(styles.breakdown, styles.cvCard)}>
+                                        <div className={styles.panelHeaderCompact}>
+                                            <div>
+                                                <p className={styles.eyebrow}>Outbound interest</p>
+                                                <h2 className={styles.panelTitle}>CV downloads</h2>
+                                            </div>
+                                            <span
+                                                className={styles.statIconInline}
+                                                aria-hidden="true"
+                                            >
+                                                <Download size={17} strokeWidth={1.8} />
+                                            </span>
+                                        </div>
+                                        <strong className={styles.statValue}>
+                                            {formatNumber(engagement.cvDownloads)}
+                                        </strong>
+                                        <span className={styles.statMeta}>
+                                            Clicks on Download CV in the header and mobile menu
+                                        </span>
+                                    </section>
 
-            <section className={styles.projectsSection}>
-                <div className={styles.sectionHeader}>
-                    <div>
-                        <p className={styles.eyebrow}>Portfolio</p>
-                        <h2 className={styles.panelTitle}>Project performance</h2>
-                    </div>
-                    <span className={styles.sectionMeta}>
-                        {projects.length} {projects.length === 1 ? "project" : "projects"} with
-                        activity
-                    </span>
-                </div>
-                <TopProjectsTable projects={projects} projectNames={projectNames} days={days} />
-            </section>
+                                    <section className={styles.breakdown}>
+                                        <div className={styles.panelHeaderCompact}>
+                                            <div>
+                                                <p className={styles.eyebrow}>Outbound interest</p>
+                                                <h2 className={styles.panelTitle}>Social clicks</h2>
+                                            </div>
+                                            <span className={styles.rowCount}>
+                                                {formatNumber(engagement.socialClicks)}
+                                            </span>
+                                        </div>
+                                        {engagement.socials.length === 0 ? (
+                                            <p className={styles.muted}>
+                                                No social clicks in this period.
+                                            </p>
+                                        ) : (
+                                            <ol className={styles.breakdownList}>
+                                                {engagement.socials.map((row, index) => (
+                                                    <li key={row.entityId}>
+                                                        <div className={styles.breakdownRow}>
+                                                            <span className={styles.rank}>
+                                                                {String(index + 1).padStart(2, "0")}
+                                                            </span>
+                                                            <span className={styles.breakdownLabel}>
+                                                                {socialName(row.entityId)}
+                                                            </span>
+                                                            <strong>
+                                                                {formatNumber(row.count)} /{" "}
+                                                                {formatPercent(row.percent)}
+                                                            </strong>
+                                                        </div>
+                                                        <span
+                                                            className={styles.barTrack}
+                                                            aria-hidden="true"
+                                                        >
+                                                            <span
+                                                                className={styles.barFill}
+                                                                style={
+                                                                    {
+                                                                        "--bar-width": `${Math.min(row.percent * 100, 100)}%`,
+                                                                    } as CSSProperties
+                                                                }
+                                                            />
+                                                        </span>
+                                                    </li>
+                                                ))}
+                                            </ol>
+                                        )}
+                                    </section>
+                                </div>
+
+                                {engagement.timeline && (
+                                    <section className={cn(styles.chartCard, styles.trendCard)}>
+                                        <div className={styles.panelHeader}>
+                                            <div>
+                                                <p className={styles.eyebrow}>Outbound interest</p>
+                                                <h2 className={styles.panelTitle}>
+                                                    CV and social trend
+                                                </h2>
+                                                <p className={styles.panelMeta}>
+                                                    {days > WEEKLY_THRESHOLD_DAYS
+                                                        ? "Weekly totals"
+                                                        : "Daily totals"}
+                                                </p>
+                                            </div>
+                                            <div
+                                                className={styles.chartHeader}
+                                                role="group"
+                                                aria-label="Outbound metric"
+                                            >
+                                                {ENGAGEMENT_METRICS.map((option) => (
+                                                    <button
+                                                        key={option.value}
+                                                        type="button"
+                                                        className={cn(
+                                                            styles.metricBtn,
+                                                            engagementMetric === option.value &&
+                                                                styles.metricBtnActive
+                                                        )}
+                                                        onClick={() =>
+                                                            setEngagementMetric(option.value)
+                                                        }
+                                                        aria-pressed={
+                                                            engagementMetric === option.value
+                                                        }
+                                                    >
+                                                        {option.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <LineChart
+                                            points={engagement.timeline.map((point) => ({
+                                                date: point.date,
+                                                value: point[engagementMetric],
+                                            }))}
+                                            label={`${ENGAGEMENT_METRICS.find((option) => option.value === engagementMetric)?.label} over time`}
+                                        />
+                                    </section>
+                                )}
+                            </>
+                        ) : (
+                            <p className={styles.muted}>
+                                CV and social data is currently unavailable.
+                            </p>
+                        ),
+                    },
+                ]}
+            />
         </div>
     );
 }

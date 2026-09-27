@@ -136,6 +136,12 @@
     background: #fff;
 }
 
+.insightGrid:first-child,
+.engagementGrid:first-child,
+.projectsSection:first-child {
+    margin-top: 0;
+}
+
 .chartCard {
     min-width: 0;
     padding: 20px;

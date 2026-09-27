@@ -1,7 +1,21 @@
 "use client";
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Activity, Eye, Files, Layers, LogOut, Smartphone, Timer, Users } from "lucide-react";
+import {
+    Activity,
+    ChartNoAxesCombined,
+    Eye,
+    Files,
+    Globe2,
+    Layers,
+    LogOut,
+    MonitorSmartphone,
+    MousePointerClick,
+    Smartphone,
+    Timer,
+    Users,
+} from "lucide-react";
+import { ReportTabs } from "@/shared/ui/ReportTabs/ReportTabs";
 import { LineChart } from "@/shared/ui/LineChart";
 import { cn } from "@/shared/lib/cn";
 import { CountryFlag } from "@/widgets/ProjectAnalytics/CountryFlag";
@@ -272,140 +286,218 @@ export function TrafficOverview({ traffic, sessions }: TrafficOverviewProps) {
                 </div>
             </section>
 
-            {sessions && <SessionStats sessions={sessions} />}
-
             <p className={styles.note}>Only visitors who allowed analytics are counted.</p>
-
-            <section className={cn(styles.panel, styles.chartCard)}>
-                <div className={styles.panelHeader}>
-                    <div>
-                        <p className={styles.eyebrow}>Activity</p>
-                        <h2 className={styles.panelTitle}>Traffic over time</h2>
-                        <p className={styles.panelMeta}>{formatDateRange(traffic.timeline)}</p>
-                    </div>
-                    <div className={styles.chartHeader} role="group" aria-label="Chart metric">
-                        {METRICS.map((option) => (
-                            <button
-                                key={option.value}
-                                type="button"
-                                className={cn(
-                                    styles.metricBtn,
-                                    metric === option.value && styles.metricBtnActive
-                                )}
-                                onClick={() => setMetric(option.value)}
-                                aria-pressed={metric === option.value}
-                            >
-                                {option.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <LineChart
-                    points={traffic.timeline.map((point) => ({
-                        date: point.date,
-                        value: point[metric] ?? 0,
-                    }))}
-                    label={`${METRICS.find((option) => option.value === metric)?.label} over time`}
-                />
-            </section>
-
-            <section className={cn(styles.panel, styles.pagesPanel)}>
-                <div className={styles.sectionHeader}>
-                    <div>
-                        <p className={styles.eyebrow}>Content</p>
-                        <h2 className={styles.panelTitle}>Pages</h2>
-                    </div>
-                    <span className={styles.sectionMeta}>
-                        {traffic.pages.length} {traffic.pages.length === 1 ? "page" : "pages"}{" "}
-                        viewed
-                    </span>
-                </div>
-                {traffic.pages.length === 0 ? (
-                    <p className={styles.muted}>No page views in this period.</p>
-                ) : (
-                    <div className={styles.tableWrap}>
-                        <table className={styles.table}>
-                            <thead>
-                                <tr>
-                                    <th>Page</th>
-                                    <th className={styles.numCol}>Views</th>
-                                    <th className={styles.shareCol}>Share of views</th>
-                                    <th className={styles.numCol}>Visitors</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {traffic.pages.map((page) => (
-                                    <tr key={page.path}>
-                                        <td className={styles.pathCell} title={page.path}>
-                                            {page.path}
-                                        </td>
-                                        <td className={styles.numCol}>
-                                            {formatNumber(page.views)}
-                                        </td>
-                                        <td className={styles.shareCol}>
-                                            <span className={styles.shareCell}>
-                                                <span className={styles.shareTrack}>
-                                                    <span
-                                                        className={styles.barFill}
-                                                        style={
-                                                            {
-                                                                "--bar-width": `${(page.views / maxViews) * 100}%`,
-                                                            } as CSSProperties
-                                                        }
+            <ReportTabs
+                label="Traffic reports"
+                tabs={[
+                    {
+                        id: "overview",
+                        label: "Overview",
+                        icon: <ChartNoAxesCombined />,
+                        description:
+                            "Follow traffic trends, visit quality and the pages people explore.",
+                        content: (
+                            <>
+                                <section className={cn(styles.panel, styles.chartCard)}>
+                                    <div className={styles.panelHeader}>
+                                        <div>
+                                            <p className={styles.eyebrow}>Activity</p>
+                                            <h2 className={styles.panelTitle}>Traffic over time</h2>
+                                            <p className={styles.panelMeta}>
+                                                {formatDateRange(traffic.timeline)}
+                                            </p>
+                                        </div>
+                                        <div
+                                            className={styles.chartHeader}
+                                            role="group"
+                                            aria-label="Chart metric"
+                                        >
+                                            {METRICS.map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    className={cn(
+                                                        styles.metricBtn,
+                                                        metric === option.value &&
+                                                            styles.metricBtnActive
+                                                    )}
+                                                    onClick={() => setMetric(option.value)}
+                                                    aria-pressed={metric === option.value}
+                                                >
+                                                    {option.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <LineChart
+                                        points={traffic.timeline.map((point) => ({
+                                            date: point.date,
+                                            value: point[metric] ?? 0,
+                                        }))}
+                                        label={`${METRICS.find((option) => option.value === metric)?.label} over time`}
+                                    />
+                                </section>
+                                {sessions && <SessionStats sessions={sessions} />}
+                                <section className={cn(styles.panel, styles.pagesPanel)}>
+                                    <div className={styles.sectionHeader}>
+                                        <div>
+                                            <p className={styles.eyebrow}>Content</p>
+                                            <h2 className={styles.panelTitle}>Pages</h2>
+                                        </div>
+                                        <span className={styles.sectionMeta}>
+                                            {traffic.pages.length}{" "}
+                                            {traffic.pages.length === 1 ? "page" : "pages"} viewed
+                                        </span>
+                                    </div>
+                                    {traffic.pages.length === 0 ? (
+                                        <p className={styles.muted}>
+                                            No page views in this period.
+                                        </p>
+                                    ) : (
+                                        <div className={styles.tableWrap}>
+                                            <table className={styles.table}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Page</th>
+                                                        <th className={styles.numCol}>Views</th>
+                                                        <th className={styles.shareCol}>
+                                                            Share of views
+                                                        </th>
+                                                        <th className={styles.numCol}>Visitors</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {traffic.pages.map((page) => (
+                                                        <tr key={page.path}>
+                                                            <td
+                                                                className={styles.pathCell}
+                                                                title={page.path}
+                                                            >
+                                                                {page.path}
+                                                            </td>
+                                                            <td className={styles.numCol}>
+                                                                {formatNumber(page.views)}
+                                                            </td>
+                                                            <td className={styles.shareCol}>
+                                                                <span className={styles.shareCell}>
+                                                                    <span
+                                                                        className={
+                                                                            styles.shareTrack
+                                                                        }
+                                                                    >
+                                                                        <span
+                                                                            className={
+                                                                                styles.barFill
+                                                                            }
+                                                                            style={
+                                                                                {
+                                                                                    "--bar-width": `${(page.views / maxViews) * 100}%`,
+                                                                                } as CSSProperties
+                                                                            }
+                                                                        />
+                                                                    </span>
+                                                                    <strong>
+                                                                        {formatPercent(
+                                                                            page.percent
+                                                                        )}
+                                                                    </strong>
+                                                                </span>
+                                                            </td>
+                                                            <td className={styles.numCol}>
+                                                                {formatNumber(page.visitors)}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </section>
+                            </>
+                        ),
+                    },
+                    {
+                        id: "audience",
+                        label: "Audience",
+                        icon: <Users />,
+                        description:
+                            "Understand your visitors by location, language and technology.",
+                        content: (
+                            <>
+                                <h2 className={styles.groupTitle}>
+                                    <Globe2 aria-hidden="true" />
+                                    Location & language
+                                </h2>
+                                <div className={styles.audienceGrid}>
+                                    <BreakdownPanel
+                                        eyebrow="Audience"
+                                        title="Countries"
+                                        rows={traffic.countries}
+                                        renderLabel={(key) =>
+                                            key === "Unknown" ? (
+                                                key
+                                            ) : (
+                                                <span className={styles.identity}>
+                                                    <CountryFlag
+                                                        code={key}
+                                                        className={styles.flag}
                                                     />
+                                                    {countryName(key)}
                                                 </span>
-                                                <strong>{formatPercent(page.percent)}</strong>
-                                            </span>
-                                        </td>
-                                        <td className={styles.numCol}>
-                                            {formatNumber(page.visitors)}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </section>
-
-            {traffic.campaigns && <CampaignsPanel campaigns={traffic.campaigns} />}
-
-            <div className={styles.breakdowns}>
-                <BreakdownPanel
-                    eyebrow="Audience"
-                    title="Countries"
-                    rows={traffic.countries}
-                    renderLabel={(key) =>
-                        key === "Unknown" ? (
-                            key
-                        ) : (
-                            <span className={styles.identity}>
-                                <CountryFlag code={key} className={styles.flag} />
-                                {countryName(key)}
-                            </span>
-                        )
-                    }
-                />
-                <BreakdownPanel
-                    eyebrow="Audience"
-                    title="Languages"
-                    rows={traffic.languages}
-                    renderLabel={languageName}
-                />
-                <BreakdownPanel eyebrow="Acquisition" title="Referrers" rows={traffic.referrers} />
-                <BreakdownPanel
-                    eyebrow="Technology"
-                    title="Devices"
-                    rows={traffic.devices}
-                    renderLabel={(key) => DEVICE_LABELS[key] ?? key}
-                />
-                <BreakdownPanel
-                    eyebrow="Technology"
-                    title="Operating systems"
-                    rows={traffic.operatingSystems}
-                />
-                <BreakdownPanel eyebrow="Technology" title="Browsers" rows={traffic.browsers} />
-            </div>
+                                            )
+                                        }
+                                    />
+                                    <BreakdownPanel
+                                        eyebrow="Audience"
+                                        title="Languages"
+                                        rows={traffic.languages}
+                                        renderLabel={languageName}
+                                    />
+                                </div>
+                                <h2 className={styles.groupTitle}>
+                                    <MonitorSmartphone aria-hidden="true" />
+                                    Devices & software
+                                </h2>
+                                <div className={styles.breakdowns}>
+                                    <BreakdownPanel
+                                        eyebrow="Technology"
+                                        title="Devices"
+                                        rows={traffic.devices}
+                                        renderLabel={(key) => DEVICE_LABELS[key] ?? key}
+                                    />
+                                    <BreakdownPanel
+                                        eyebrow="Technology"
+                                        title="Operating systems"
+                                        rows={traffic.operatingSystems}
+                                    />
+                                    <BreakdownPanel
+                                        eyebrow="Technology"
+                                        title="Browsers"
+                                        rows={traffic.browsers}
+                                    />
+                                </div>
+                            </>
+                        ),
+                    },
+                    {
+                        id: "sources",
+                        label: "Sources",
+                        icon: <MousePointerClick />,
+                        description:
+                            "Compare referring websites and campaigns from the links you share.",
+                        content: (
+                            <div className={styles.acquisitionGrid}>
+                                <BreakdownPanel
+                                    eyebrow="Acquisition"
+                                    title="Referrers"
+                                    rows={traffic.referrers}
+                                />
+                                <CampaignsPanel campaigns={traffic.campaigns ?? []} />
+                            </div>
+                        ),
+                    },
+                ]}
+            />
         </div>
     );
 }

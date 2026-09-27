@@ -21,7 +21,7 @@ export default async function ProjectAnalyticsPage({
 }: ProjectAnalyticsPageProps) {
     const [{ id }, { days: rawDays }] = await Promise.all([params, searchParams]);
     const days = parseDaysParam(rawDays);
-    const backHref = `/dashboard/analytics?days=${days}`;
+    const backHref = `/dashboard/analytics?days=${days}&view=projects`;
 
     const allProjects = await listProjects();
     // entityId is the project's own numeric id (see WorksCatalog.tsx's

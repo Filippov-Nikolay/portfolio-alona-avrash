@@ -75,6 +75,7 @@ export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsO
         <div className={styles.page}>
             <PageHeader
                 title="Analytics"
+                description="Understand interest in your projects and the actions visitors take."
                 actions={<PeriodSwitcher basePath="/dashboard/analytics" days={days} />}
             />
             <AnalyticsOverview

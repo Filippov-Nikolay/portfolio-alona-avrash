@@ -84,6 +84,46 @@ const nextPaint = () =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     );
 
+function usePainted() {
+    const [painted, setPainted] = useState(false);
+    useEffect(() => {
+        let cancelled = false;
+        void nextPaint().then(() => {
+            if (!cancelled) setPainted(true);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+    return painted;
+}
+
+const DIALOG_VARIANTS = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.34, ease: [0.4, 0, 0.2, 1] } },
+    exit: { opacity: 0, transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } },
+} as const;
+
+const REDUCED_DIALOG_VARIANTS = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0 } },
+    exit: { opacity: 0, transition: { duration: 0 } },
+} as const;
+
+function Backdrop({ reducedMotion }: { reducedMotion: boolean }) {
+    const painted = usePainted();
+    return (
+        <m.div
+            className={styles.backdrop}
+            aria-hidden="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: painted ? 1 : 0 }}
+            exit={{ opacity: 0, transition: { duration: reducedMotion ? 0 : 0.22 } }}
+            transition={{ duration: reducedMotion ? 0 : 0.34, ease: [0.4, 0, 0.2, 1] }}
+        />
+    );
+}
+
 // == ModalContent =========================================
 
 interface ModalContentProps {
@@ -131,6 +171,7 @@ function ModalContent({
     const returnFocusIndex = useRef<number | null>(null);
     const busyRef = useRef(false);
     const [modalEntranceDone, setModalEntranceDone] = useState(false);
+    const painted = usePainted();
     const isPresent = useIsPresent();
     const reducedMotion = useReducedMotion();
     const registerTile = useGalleryTilt(
@@ -613,12 +654,12 @@ function ModalContent({
             aria-modal="true"
             aria-label={item.title}
             data-state={!isPresent ? "closing" : modalEntranceDone ? "open" : "opening"}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reducedMotion ? 0 : 0.22, ease: [0.22, 1, 0.36, 1] }}
-            onAnimationComplete={() => {
-                if (isPresent) setModalEntranceDone(true);
+            variants={reducedMotion ? REDUCED_DIALOG_VARIANTS : DIALOG_VARIANTS}
+            initial="hidden"
+            animate={painted ? "visible" : "hidden"}
+            exit="exit"
+            onAnimationComplete={(definition) => {
+                if (isPresent && definition === "visible") setModalEntranceDone(true);
             }}
             onClick={(e) => e.stopPropagation()}
             style={colorStyle}
@@ -661,14 +702,7 @@ export function ShowcaseModal({
         <AnimatePresence>
             {item && (
                 <div key={item.id} className={styles.overlay}>
-                    <m.div
-                        className={styles.backdrop}
-                        aria-hidden="true"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: reducedMotion ? 0 : 0.22 }}
-                    />
+                    <Backdrop reducedMotion={!!reducedMotion} />
                     <div
                         className={styles.overlayInner}
                         onClick={(e) => {

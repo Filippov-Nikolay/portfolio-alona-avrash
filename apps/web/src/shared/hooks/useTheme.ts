@@ -48,16 +48,14 @@ function isWebKitEngine() {
 
 export function useTheme() {
     const [theme, setTheme] = useState<Theme>(DEFAULT_THEME);
-    const cssTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const cssCleanupRef = useRef<(() => void) | null>(null);
     const transitionRunRef = useRef(0);
     const pendingThemeRef = useRef<Theme | null>(null);
 
     useEffect(() => {
         return () => {
-            if (cssTimerRef.current) {
-                clearTimeout(cssTimerRef.current);
-                cssTimerRef.current = null;
-            }
+            cssCleanupRef.current?.();
+            cssCleanupRef.current = null;
 
             transitionRunRef.current += 1;
             pendingThemeRef.current = null;
@@ -83,6 +81,8 @@ export function useTheme() {
             (html.getAttribute("data-theme") === "dark" ? "dark" : "light");
         const next: Theme = current === "dark" ? "light" : "dark";
         pendingThemeRef.current = next;
+        cssCleanupRef.current?.();
+        cssCleanupRef.current = null;
 
         const persistTheme = () => {
             if (!hasPreferencesConsent()) return;
@@ -108,19 +108,19 @@ export function useTheme() {
         const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const hasLiveBackdrop = document.querySelector('[data-preset="hero"]') !== null;
 
-        // WebKit can output a blank compositor frame when a complex scene with
-        // backdrop-filter is captured by View Transitions. Switch atomically on
-        // that engine; a clean single-frame update is preferable to a flash.
-        if (hasLiveBackdrop && isWebKitEngine()) {
+        if (prefersReduced) {
             transitionRunRef.current += 1;
-            if (cssTimerRef.current) clearTimeout(cssTimerRef.current);
             html.classList.remove("is-theme-changing", "vt-running");
             withoutTransition(() => applyTheme(false));
             pendingThemeRef.current = null;
             return;
         }
 
-        if (!prefersReduced && "startViewTransition" in document) {
+        // Avoid capturing WebKit's live Hero/backdrop layers, which can produce
+        // a blank compositor frame. Use the CSS color transition below instead
+        // of disabling the animation on that engine.
+        const avoidSnapshots = hasLiveBackdrop && isWebKitEngine();
+        if (!avoidSnapshots && "startViewTransition" in document) {
             const runId = ++transitionRunRef.current;
             html.classList.remove("is-theme-changing");
             html.classList.add("vt-running");
@@ -156,16 +156,30 @@ export function useTheme() {
             return;
         }
 
-        transitionRunRef.current += 1;
+        const runId = ++transitionRunRef.current;
         html.classList.remove("vt-running");
-        if (cssTimerRef.current) clearTimeout(cssTimerRef.current);
         html.classList.add("is-theme-changing");
+        const finishCss = () => {
+            if (transitionRunRef.current !== runId) return;
+            cssCleanupRef.current?.();
+            cssCleanupRef.current = null;
+            html.classList.remove("is-theme-changing");
+        };
+        const onTransitionEnd = (event: TransitionEvent) => {
+            if (event.target === document.body && event.propertyName === "background-color") {
+                finishCss();
+            }
+        };
+        // Follow the rendered transition, not a 450ms wall-clock deadline:
+        // WebKit can start the first painted frame later on a busy page.
+        document.body.addEventListener("transitionend", onTransitionEnd);
+        const timeout = setTimeout(finishCss, 2000);
+        cssCleanupRef.current = () => {
+            document.body.removeEventListener("transitionend", onTransitionEnd);
+            clearTimeout(timeout);
+        };
         applyTheme(false);
         pendingThemeRef.current = null;
-        cssTimerRef.current = setTimeout(() => {
-            html.classList.remove("is-theme-changing");
-            cssTimerRef.current = null;
-        }, 450);
     }, []);
 
     return { theme, toggle };

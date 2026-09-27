@@ -94,16 +94,18 @@ summary,
 
 // Пока VT активен — отключаем индивидуальные CSS transition.
 // Иначе каждый элемент анимируется дважды: через CSS и через VT-снимок.
+html.vt-running,
 html.vt-running *,
 html.vt-running *::before,
 html.vt-running *::after {
     transition: none !important;
 }
 
-// --- CSS-фолбек (Firefox / prefers-reduced-motion) --------
+// --- CSS fallback (WebKit with a live Hero / browsers without View Transitions) ---
 // html.is-theme-changing * имеет специфичность 11 (html+класс+*).
 // Это больше, чем у любого одиночного компонентного класса (10),
 // но меньше, чем у canvas/img/svg с !important — они остаются без анимации.
+html.is-theme-changing,
 html.is-theme-changing *,
 html.is-theme-changing *::before,
 html.is-theme-changing *::after {

@@ -1,20 +1,22 @@
 "use client";
 
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Eye, Layers, Smartphone, Users } from "lucide-react";
+import { Activity, Eye, Files, Layers, LogOut, Smartphone, Timer, Users } from "lucide-react";
 import { LineChart } from "@/shared/ui/LineChart";
 import { cn } from "@/shared/lib/cn";
 import { CountryFlag } from "@/widgets/ProjectAnalytics/CountryFlag";
 import type {
+    SessionsSummary,
     ShareBreakdown,
     TrafficOverview as TrafficOverviewData,
 } from "@/entities/analytics/model/types";
 import styles from "./TrafficOverview.module.css";
 
-type Metric = "visitors" | "pageViews";
+type Metric = "visitors" | "sessions" | "pageViews";
 
 const METRICS: { value: Metric; label: string }[] = [
     { value: "visitors", label: "Visitors" },
+    { value: "sessions", label: "Sessions" },
     { value: "pageViews", label: "Page views" },
 ];
 
@@ -26,6 +28,7 @@ const DEVICE_LABELS: Record<string, string> = {
 
 interface TrafficOverviewProps {
     traffic: TrafficOverviewData;
+    sessions: SessionsSummary | null;
 }
 
 function formatPercent(value: number): string {
@@ -38,6 +41,15 @@ function formatNumber(value: number): string {
 
 function formatRatio(value: number): string {
     return value.toFixed(2);
+}
+
+function formatDuration(ms: number | null): string {
+    if (ms === null) return "-";
+    if (ms < 1000) return "<1s";
+    const totalSeconds = Math.round(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return minutes > 0 ? `${minutes}m ${String(seconds).padStart(2, "0")}s` : `${seconds}s`;
 }
 
 function formatDateRange(points: TrafficOverviewData["timeline"]): string {
@@ -118,7 +130,105 @@ function BreakdownPanel({ eyebrow, title, rows, renderLabel }: BreakdownPanelPro
     );
 }
 
-export function TrafficOverview({ traffic }: TrafficOverviewProps) {
+function SessionStats({ sessions }: { sessions: SessionsSummary }) {
+    return (
+        <section className={cn(styles.stats, styles.sessionStats)} aria-label="Session summary">
+            <div className={styles.stat}>
+                <span className={styles.statIcon} aria-hidden="true">
+                    <Activity size={17} strokeWidth={1.8} />
+                </span>
+                <span className={styles.statLabel}>Sessions</span>
+                <strong className={styles.statValue}>{formatNumber(sessions.sessions)}</strong>
+                <span className={styles.statMeta}>
+                    {formatRatio(sessions.eventsPerSession)} tracked events per session
+                </span>
+            </div>
+            <div className={styles.stat}>
+                <span className={styles.statIcon} aria-hidden="true">
+                    <Files size={17} strokeWidth={1.8} />
+                </span>
+                <span className={styles.statLabel}>Pages per session</span>
+                <strong className={styles.statValue}>
+                    {formatRatio(sessions.pagesPerSession)}
+                </strong>
+                <span className={styles.statMeta}>Pages opened in one visit</span>
+            </div>
+            <div className={styles.stat}>
+                <span className={styles.statIcon} aria-hidden="true">
+                    <LogOut size={17} strokeWidth={1.8} />
+                </span>
+                <span className={styles.statLabel}>Single-page sessions</span>
+                <strong className={styles.statValue}>{formatPercent(sessions.bounceRate)}</strong>
+                <span className={styles.statMeta}>Visits that ended on the first page</span>
+            </div>
+            <div className={styles.stat}>
+                <span className={styles.statIcon} aria-hidden="true">
+                    <Timer size={17} strokeWidth={1.8} />
+                </span>
+                <span className={styles.statLabel}>Median session</span>
+                <strong className={styles.statValue}>
+                    {formatDuration(sessions.medianDurationMs)}
+                </strong>
+                <span className={styles.statMeta}>First to last event, visits with 2+ pages</span>
+            </div>
+        </section>
+    );
+}
+
+function CampaignsPanel({ campaigns }: { campaigns: TrafficOverviewData["campaigns"] }) {
+    return (
+        <section className={cn(styles.panel, styles.pagesPanel)}>
+            <div className={styles.sectionHeader}>
+                <div>
+                    <p className={styles.eyebrow}>Acquisition</p>
+                    <h2 className={styles.panelTitle}>Campaigns</h2>
+                </div>
+                <span className={styles.sectionMeta}>From UTM-tagged links</span>
+            </div>
+            {campaigns.length === 0 ? (
+                <p className={styles.muted}>
+                    No tagged visits yet. Add utm_source, utm_medium, utm_campaign or utm_content to
+                    the links you share.
+                </p>
+            ) : (
+                <div className={styles.tableWrap}>
+                    <table className={styles.table}>
+                        <thead>
+                            <tr>
+                                <th>Source</th>
+                                <th>Medium</th>
+                                <th>Campaign</th>
+                                <th>Content</th>
+                                <th className={styles.numCol}>Sessions</th>
+                                <th className={styles.numCol}>Visitors</th>
+                                <th className={styles.numCol}>Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {campaigns.map((row) => (
+                                <tr
+                                    key={[row.source, row.medium, row.campaign, row.content].join(
+                                        "|"
+                                    )}
+                                >
+                                    <td className={styles.pathCell}>{row.source ?? "-"}</td>
+                                    <td className={styles.pathCell}>{row.medium ?? "-"}</td>
+                                    <td className={styles.pathCell}>{row.campaign ?? "-"}</td>
+                                    <td className={styles.pathCell}>{row.content ?? "-"}</td>
+                                    <td className={styles.numCol}>{formatNumber(row.sessions)}</td>
+                                    <td className={styles.numCol}>{formatNumber(row.visitors)}</td>
+                                    <td className={styles.numCol}>{formatPercent(row.percent)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </section>
+    );
+}
+
+export function TrafficOverview({ traffic, sessions }: TrafficOverviewProps) {
     const [metric, setMetric] = useState<Metric>("visitors");
     const mobileShare = traffic.devices.find((row) => row.key === "mobile")?.percent ?? 0;
     const maxViews = Math.max(...traffic.pages.map((page) => page.views), 1);
@@ -162,6 +272,10 @@ export function TrafficOverview({ traffic }: TrafficOverviewProps) {
                 </div>
             </section>
 
+            {sessions && <SessionStats sessions={sessions} />}
+
+            <p className={styles.note}>Only visitors who allowed analytics are counted.</p>
+
             <section className={cn(styles.panel, styles.chartCard)}>
                 <div className={styles.panelHeader}>
                     <div>
@@ -189,7 +303,7 @@ export function TrafficOverview({ traffic }: TrafficOverviewProps) {
                 <LineChart
                     points={traffic.timeline.map((point) => ({
                         date: point.date,
-                        value: point[metric],
+                        value: point[metric] ?? 0,
                     }))}
                     label={`${METRICS.find((option) => option.value === metric)?.label} over time`}
                 />
@@ -253,6 +367,8 @@ export function TrafficOverview({ traffic }: TrafficOverviewProps) {
                     </div>
                 )}
             </section>
+
+            {traffic.campaigns && <CampaignsPanel campaigns={traffic.campaigns} />}
 
             <div className={styles.breakdowns}>
                 <BreakdownPanel

@@ -52,6 +52,7 @@ export interface TrafficTimelinePoint {
     date: string;
     pageViews: number;
     visitors: number;
+    sessions: number;
 }
 
 export interface PageStat {
@@ -63,6 +64,16 @@ export interface PageStat {
 
 export interface ShareBreakdown {
     key: string;
+    visitors: number;
+    percent: number;
+}
+
+export interface CampaignStat {
+    source: string | null;
+    medium: string | null;
+    campaign: string | null;
+    content: string | null;
+    sessions: number;
     visitors: number;
     percent: number;
 }
@@ -79,6 +90,7 @@ export interface TrafficOverview {
     browsers: ShareBreakdown[];
     languages: ShareBreakdown[];
     referrers: ShareBreakdown[];
+    campaigns: CampaignStat[];
 }
 
 export interface EntityCount {
@@ -87,8 +99,32 @@ export interface EntityCount {
     percent: number;
 }
 
+export interface EngagementTimelinePoint {
+    date: string;
+    cvDownloads: number;
+    socialClicks: number;
+}
+
 export interface EngagementSummary {
     cvDownloads: number;
     socialClicks: number;
     socials: EntityCount[];
+    timeline: EngagementTimelinePoint[];
+}
+
+export interface FunnelStep {
+    key: string;
+    sessions: number;
+    ofSessions: number;
+    ofBase: number;
+}
+
+export interface SessionsSummary {
+    sessions: number;
+    pagesPerSession: number;
+    eventsPerSession: number;
+    bounceRate: number;
+    medianDurationMs: number | null;
+    projectFunnel: FunnelStep[];
+    contactFunnel: FunnelStep[];
 }

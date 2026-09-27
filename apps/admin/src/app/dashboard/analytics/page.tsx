@@ -1,6 +1,7 @@
 import {
     getEngagement,
     getOverview,
+    getSessions,
     getTopCategories,
     getTopProjects,
     isAnalyticsConfigured,
@@ -36,12 +37,13 @@ export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsO
         );
     }
 
-    const [overview, projects, categories, engagement, allProjects, categoryOptions] =
+    const [overview, projects, categories, engagement, sessions, allProjects, categoryOptions] =
         await Promise.all([
             getOverview(days),
             getTopProjects(days),
             getTopCategories(days),
             getEngagement(days),
+            getSessions(days),
             listProjects(),
             listOptions("categories.json") as Promise<CategoryOption[]>,
         ]);
@@ -82,6 +84,7 @@ export default async function AnalyticsOverviewPage({ searchParams }: AnalyticsO
                 categories={categories}
                 categoryLabels={categoryLabels}
                 engagement={engagement}
+                sessions={sessions}
                 days={days}
             />
         </div>

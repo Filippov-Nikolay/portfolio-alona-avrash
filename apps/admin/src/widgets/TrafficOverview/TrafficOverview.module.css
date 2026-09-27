@@ -102,8 +102,15 @@
 }
 
 .chartCard,
-.pagesPanel {
+.pagesPanel,
+.sessionStats {
     margin-top: 16px;
+}
+
+.note {
+    margin: 10px 2px 0;
+    font-size: 11px;
+    color: #a1a1aa;
 }
 
 .pagesPanel {

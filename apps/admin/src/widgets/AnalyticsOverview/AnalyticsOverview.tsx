@@ -4,12 +4,14 @@ import { useState, type CSSProperties } from "react";
 import { Download, Eye, MessageSquareText, Send, TrendingUp } from "lucide-react";
 import { LineChart } from "@/shared/ui/LineChart";
 import { TopProjectsTable } from "@/widgets/TopProjectsTable";
+import { ConversionFunnels } from "@/widgets/ConversionFunnels";
 import { cn } from "@/shared/lib/cn";
 import type {
     AnalyticsOverview as AnalyticsOverviewData,
     CategoryBreakdown,
     EngagementSummary,
     ProjectSummary,
+    SessionsSummary,
 } from "@/entities/analytics/model/types";
 import type { PeriodDays } from "@/entities/analytics/lib/period";
 import styles from "./AnalyticsOverview.module.css";
@@ -22,6 +24,15 @@ const METRICS: { value: Metric; label: string }[] = [
     { value: "contacts", label: "Contacts" },
 ];
 
+type EngagementMetric = "cvDownloads" | "socialClicks";
+
+const ENGAGEMENT_METRICS: { value: EngagementMetric; label: string }[] = [
+    { value: "cvDownloads", label: "CV downloads" },
+    { value: "socialClicks", label: "Social clicks" },
+];
+
+const WEEKLY_THRESHOLD_DAYS = 30;
+
 interface AnalyticsOverviewProps {
     overview: AnalyticsOverviewData;
     projects: ProjectSummary[];
@@ -29,6 +40,7 @@ interface AnalyticsOverviewProps {
     categories: CategoryBreakdown[];
     categoryLabels: Record<string, string>;
     engagement: EngagementSummary | null;
+    sessions: SessionsSummary | null;
     days: PeriodDays;
 }
 
@@ -64,9 +76,11 @@ export function AnalyticsOverview({
     categories,
     categoryLabels,
     engagement,
+    sessions,
     days,
 }: AnalyticsOverviewProps) {
     const [metric, setMetric] = useState<Metric>("projectOpens");
+    const [engagementMetric, setEngagementMetric] = useState<EngagementMetric>("cvDownloads");
     const chartPoints = overview.timeline.map((point) => ({
         date: point.date,
         value: point[metric],
@@ -114,6 +128,8 @@ export function AnalyticsOverview({
                     <span className={styles.statMeta}>Form starts converted to sends</span>
                 </div>
             </section>
+
+            {sessions && <ConversionFunnels sessions={sessions} />}
 
             <div className={styles.insightGrid}>
                 <section className={styles.chartCard}>
@@ -250,6 +266,47 @@ export function AnalyticsOverview({
                         )}
                     </section>
                 </div>
+            )}
+
+            {engagement?.timeline && (
+                <section className={cn(styles.chartCard, styles.trendCard)}>
+                    <div className={styles.panelHeader}>
+                        <div>
+                            <p className={styles.eyebrow}>Outbound interest</p>
+                            <h2 className={styles.panelTitle}>CV and social trend</h2>
+                            <p className={styles.panelMeta}>
+                                {days > WEEKLY_THRESHOLD_DAYS ? "Weekly totals" : "Daily totals"}
+                            </p>
+                        </div>
+                        <div
+                            className={styles.chartHeader}
+                            role="group"
+                            aria-label="Outbound metric"
+                        >
+                            {ENGAGEMENT_METRICS.map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    className={cn(
+                                        styles.metricBtn,
+                                        engagementMetric === option.value && styles.metricBtnActive
+                                    )}
+                                    onClick={() => setEngagementMetric(option.value)}
+                                    aria-pressed={engagementMetric === option.value}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <LineChart
+                        points={engagement.timeline.map((point) => ({
+                            date: point.date,
+                            value: point[engagementMetric],
+                        }))}
+                        label={`${ENGAGEMENT_METRICS.find((option) => option.value === engagementMetric)?.label} over time`}
+                    />
+                </section>
             )}
 
             <section className={styles.projectsSection}>

@@ -4,6 +4,7 @@ import type {
     EngagementSummary,
     ProjectDetail,
     ProjectSummary,
+    SessionsSummary,
     TrafficOverview,
 } from "../model/types";
 
@@ -62,4 +63,8 @@ export async function getTraffic(days: number): Promise<TrafficOverview | null> 
 
 export async function getEngagement(days: number): Promise<EngagementSummary | null> {
     return fetchFromWorker<EngagementSummary>(`/analytics/engagement?days=${days}`);
+}
+
+export async function getSessions(days: number): Promise<SessionsSummary | null> {
+    return fetchFromWorker<SessionsSummary>(`/analytics/sessions?days=${days}`);
 }

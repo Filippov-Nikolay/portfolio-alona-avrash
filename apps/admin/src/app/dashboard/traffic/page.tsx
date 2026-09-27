@@ -1,4 +1,8 @@
-import { getTraffic, isAnalyticsConfigured } from "@/entities/analytics/api/analyticsRepository";
+import {
+    getSessions,
+    getTraffic,
+    isAnalyticsConfigured,
+} from "@/entities/analytics/api/analyticsRepository";
 import { parseDaysParam } from "@/entities/analytics/lib/period";
 import { AnalyticsNotice } from "@/widgets/AnalyticsNotice";
 import { PeriodSwitcher } from "@/widgets/PeriodSwitcher";
@@ -26,7 +30,7 @@ export default async function TrafficPage({ searchParams }: TrafficPageProps) {
         );
     }
 
-    const traffic = await getTraffic(days);
+    const [traffic, sessions] = await Promise.all([getTraffic(days), getSessions(days)]);
 
     if (!traffic) {
         return (
@@ -47,7 +51,7 @@ export default async function TrafficPage({ searchParams }: TrafficPageProps) {
                 title="Traffic"
                 actions={<PeriodSwitcher basePath="/dashboard/traffic" days={days} />}
             />
-            <TrafficOverview traffic={traffic} />
+            <TrafficOverview traffic={traffic} sessions={sessions} />
         </div>
     );
 }

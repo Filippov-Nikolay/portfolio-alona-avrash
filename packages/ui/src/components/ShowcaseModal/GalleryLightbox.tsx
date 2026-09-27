@@ -96,12 +96,22 @@ function ImageLayer({
             if (!revealed.current) {
                 revealed.current = true;
                 if (reveal && !reduceMotion) {
-                    const animation = host.animate([{ opacity: 0 }, { opacity: 1 }], {
+                    const veil = document.createElement("div");
+                    veil.className = styles.revealVeil;
+                    veil.dataset.revealVeil = "";
+                    Object.assign(veil.style, {
+                        width: `${fit.width}px`,
+                        height: `${fit.height}px`,
+                        transform: `translate3d(${fit.left - viewport.left}px, ${fit.top - viewport.top}px, 0)`,
+                    });
+                    host.append(veil);
+                    const animation = veil.animate([{ opacity: 1 }, { opacity: 0 }], {
                         duration: REVEAL_DURATION,
                         easing: "ease-out",
+                        fill: "forwards",
                     });
                     revealAnimation.current = animation;
-                    void animation.finished.then(() => animation.cancel()).catch(() => {});
+                    void animation.finished.then(() => veil.remove()).catch(() => {});
                 }
             }
         };
@@ -356,18 +366,24 @@ export function GalleryLightbox({
             frameRef.current!.querySelectorAll<HTMLElement>("[data-image-layer]")
         )
             .filter((layer) => Number(layer.dataset.imageLayer) !== index)
-            .map((layer) => ({
-                layer,
-                opacity:
-                    layer.childElementCount &&
-                    Number(layer.closest<HTMLElement>("[data-slot]")?.dataset.slot) === slotIndex
-                        ? Number(getComputedStyle(layer).opacity)
-                        : 0,
-            }));
+            .map((layer) => {
+                const veil = layer.querySelector<HTMLElement>("[data-reveal-veil]");
+                const covered = veil ? Number(getComputedStyle(veil).opacity) : 0;
+                return {
+                    layer,
+                    opacity:
+                        layer.childElementCount &&
+                        Number(layer.closest<HTMLElement>("[data-slot]")?.dataset.slot) ===
+                            slotIndex
+                            ? Number(getComputedStyle(layer).opacity) * (1 - covered)
+                            : 0,
+                };
+            });
         const fades: Animation[] = [];
         outgoing.forEach(({ layer, opacity }) => {
             layer.dataset.exiting = "true";
-            layer.getAnimations().forEach((animation) => animation.cancel());
+            layer.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
+            layer.querySelector("[data-reveal-veil]")?.remove();
             layer.style.opacity = "0";
             if (!reduceMotion && opacity > 0) {
                 fades.push(

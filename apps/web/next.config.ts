@@ -48,6 +48,8 @@ const svgrOptions = {
 };
 
 const nextConfig: NextConfig = {
+    // Allow integration runs to keep their build output separate from local dev.
+    distDir: process.env.NEXT_DIST_DIR ?? ".next",
     // Turbopack (next dev)
     turbopack: {
         rules: {

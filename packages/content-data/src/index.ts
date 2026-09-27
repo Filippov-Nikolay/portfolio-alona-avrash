@@ -13,6 +13,7 @@ import type {
     Tool,
     CategoryOption,
     ToolBadgeOption,
+    CvDocument,
 } from "@avrash/content-schema";
 
 import heroJson from "./hero.json";
@@ -29,6 +30,9 @@ import clientsJson from "./clients.json";
 import toolsJson from "./tools.json";
 import categoriesJson from "./categories.json";
 import toolBadgesJson from "./tool-badges.json";
+import cvJson from "./cv.json";
+
+export const cv = cvJson as CvDocument | null;
 
 // hero.floatingImages[].image and service.image are single standalone
 // images, not gallery entries - they reuse ProjectImage for its src/alt

@@ -113,5 +113,27 @@
         "alwaysActive": "Always active",
         "savePreferences": "Save preferences",
         "close": "Close"
+    },
+    "legal": {
+        "home": "Home",
+        "tableOfContents": "On this page",
+        "lastUpdated": "Last updated:",
+        "privacy": {
+            "title": "Privacy Policy",
+            "description": "How this portfolio collects and uses personal data."
+        },
+        "cookies": {
+            "title": "Cookie & Browser Storage Policy",
+            "description": "How this portfolio uses cookies, localStorage, sessionStorage and related browser storage.",
+            "manageCalloutText": "You can change your storage choice at any time.",
+            "manageCalloutButton": "Manage preferences"
+        },
+        "terms": {
+            "title": "Terms of Use",
+            "description": "Terms of use for this portfolio website."
+        }
+    },
+    "footer": {
+        "cookieSettings": "Cookie settings"
     }
 }

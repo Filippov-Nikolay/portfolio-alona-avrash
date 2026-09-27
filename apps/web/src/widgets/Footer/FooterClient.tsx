@@ -2,7 +2,9 @@
 
 import type { CSSProperties } from "react";
 import type { FooterContent, Social } from "@avrash/content-schema";
-import { usePathname } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
+import { ManagePreferencesButton } from "@/features/privacy-preferences";
 import { SocialLinks } from "@/entities/social/ui/SocialLinks";
 import { siteConfig } from "@/shared/config/site.config";
 import { Container } from "@/shared/ui";
@@ -34,6 +36,7 @@ function LegalLinkText({ text }: { text: string }) {
 }
 
 export function FooterClient({ footer, socials }: FooterClientProps) {
+    const t = useTranslations("footer");
     const pathname = usePathname();
     const playOnce = pathname === "/contact";
     const { sectionRef, leftRef, rightRef, brandRef } = useFooterAnimations({ playOnce });
@@ -74,12 +77,20 @@ export function FooterClient({ footer, socials }: FooterClientProps) {
                                     className={styles.legalItem}
                                     data-footer-legal-item
                                 >
-                                    <a href={link.href}>
+                                    <Link href={link.href}>
                                         <span className={styles.legalSrOnly}>{link.label}</span>
                                         <LegalLinkText text={link.label} />
-                                    </a>
+                                    </Link>
                                 </li>
                             ))}
+                            <li className={styles.legalItem} data-footer-legal-item>
+                                <ManagePreferencesButton className={styles.legalButton}>
+                                    <span className={styles.legalSrOnly}>
+                                        {t("cookieSettings")}
+                                    </span>
+                                    <LegalLinkText text={t("cookieSettings")} />
+                                </ManagePreferencesButton>
+                            </li>
                         </ul>
                     </div>
                 </div>

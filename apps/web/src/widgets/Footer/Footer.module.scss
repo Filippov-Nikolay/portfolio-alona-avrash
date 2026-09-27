@@ -158,7 +158,8 @@
         gap: 12px;
     }
 
-    a {
+    a,
+    .legalButton {
         position: relative;
         isolation: isolate;
         font-size: 16px;
@@ -207,6 +208,16 @@
             }
         }
     }
+}
+
+.legalButton {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    line-height: inherit;
+    cursor: pointer;
+    appearance: none;
 }
 
 .legalSrOnly {
@@ -340,6 +351,7 @@
     }
 
     .legal a::before,
+    .legal .legalButton::before,
     .legalCharTop,
     .legalCharBottom {
         transition: none;

@@ -1,0 +1,45 @@
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { siteConfig } from "@/shared/config/site.config";
+import { Container, LegalDocument } from "@/shared/ui";
+import { TERMS_OF_USE_LAST_UPDATED, TERMS_OF_USE_MARKDOWN } from "@/content/legal/terms";
+
+interface LegalPageProps {
+    params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: LegalPageProps): Promise<Metadata> {
+    const { locale } = await params;
+    const t = await getTranslations({ locale, namespace: "legal.terms" });
+    const canonical = `${siteConfig.url}/${locale}/legal/terms`;
+
+    return {
+        title: t("title"),
+        description: t("description"),
+        alternates: { canonical },
+        robots: { index: true, follow: true },
+    };
+}
+
+export default async function TermsOfUsePage() {
+    const [t, tLegal] = await Promise.all([
+        getTranslations("legal.terms"),
+        getTranslations("legal"),
+    ]);
+
+    return (
+        <main>
+            <Container>
+                <LegalDocument
+                    homeLabel={tLegal("home")}
+                    title={t("title")}
+                    lastUpdatedLabel={tLegal("lastUpdated")}
+                    lastUpdated={TERMS_OF_USE_LAST_UPDATED}
+                    tocLabel={tLegal("tableOfContents")}
+                    markdown={TERMS_OF_USE_MARKDOWN}
+                    selfSlug="terms"
+                />
+            </Container>
+        </main>
+    );
+}

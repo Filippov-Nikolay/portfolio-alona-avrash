@@ -1,5 +1,8 @@
+export { Breadcrumbs } from "./Breadcrumbs";
+export type { BreadcrumbItem } from "./Breadcrumbs";
 export { Button } from "./Button";
 export { LangSwitcher } from "./LangSwitcher";
+export { LegalDocument } from "./LegalDocument";
 export { Container } from "./Container";
 export { GlassSurface } from "./GlassSurface";
 export { GlowCard } from "./GlowCard";

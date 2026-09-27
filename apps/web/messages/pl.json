@@ -113,5 +113,27 @@
         "alwaysActive": "Zawsze aktywne",
         "savePreferences": "Zapisz ustawienia",
         "close": "Zamknij"
+    },
+    "legal": {
+        "home": "Strona główna",
+        "tableOfContents": "Na tej stronie",
+        "lastUpdated": "Ostatnia aktualizacja:",
+        "privacy": {
+            "title": "Polityka prywatności",
+            "description": "Jak to portfolio zbiera i wykorzystuje dane osobowe."
+        },
+        "cookies": {
+            "title": "Polityka plików cookie i pamięci przeglądarki",
+            "description": "Jak to portfolio korzysta z plików cookie, localStorage, sessionStorage i podobnej pamięci przeglądarki.",
+            "manageCalloutText": "W każdej chwili możesz zmienić swój wybór.",
+            "manageCalloutButton": "Zarządzaj ustawieniami"
+        },
+        "terms": {
+            "title": "Regulamin",
+            "description": "Zasady korzystania z tej strony portfolio."
+        }
+    },
+    "footer": {
+        "cookieSettings": "Ustawienia cookie"
     }
 }

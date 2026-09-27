@@ -1,22 +1,25 @@
 {
     "brandMark": "Avrash",
     "legalLinks": [
-        { "id": "terms", "href": "/terms-of-use" },
-        { "id": "privacy", "href": "/privacy-policy" }
+        { "id": "terms", "href": "/legal/terms" },
+        { "id": "privacy", "href": "/legal/privacy" },
+        { "id": "cookies", "href": "/legal/cookies" }
     ],
     "i18n": {
         "en": {
             "tagline": "Let's work together",
             "legalLinkLabels": {
                 "terms": "Terms of use",
-                "privacy": "Privacy policy"
+                "privacy": "Privacy policy",
+                "cookies": "Cookie policy"
             }
         },
         "pl": {
             "tagline": "Pracujmy razem",
             "legalLinkLabels": {
                 "terms": "Warunki korzystania",
-                "privacy": "Polityka prywatności"
+                "privacy": "Polityka prywatności",
+                "cookies": "Polityka cookies"
             }
         }
     }

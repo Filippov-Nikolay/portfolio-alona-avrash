@@ -12,11 +12,17 @@ const PANEL_CLIP_VISIBLE = "inset(0% 0% 0% 0% round 20px 20px 0px 0px)";
 const COMPACT_QUERY = "(max-width: 1023px), (pointer: coarse)";
 const DESKTOP_QUERY = "(min-width: 1024px) and (pointer: fine)";
 
+const revealedFooterKeys = new Set<string>();
+
 interface UseFooterAnimationsOptions {
     playOnce?: boolean;
+    revealKey?: string | null;
 }
 
-export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOptions = {}) {
+export function useFooterAnimations({
+    playOnce = false,
+    revealKey = null,
+}: UseFooterAnimationsOptions = {}) {
     const reduced = useReducedMotionPreference();
     useScrollTriggerAutoRefresh([reduced]);
 
@@ -59,10 +65,15 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                 ...chars,
             ].filter((target): target is HTMLElement => Boolean(target));
 
-            if (reduced) {
+            if (reduced || (revealKey && revealedFooterKeys.has(revealKey))) {
                 gsap.set(allTargets, { clearProps: "all" });
+                if (curtain) gsap.set(curtain, { autoAlpha: 0 });
                 return;
             }
+
+            const rememberReveal = () => {
+                if (revealKey) revealedFooterKeys.add(revealKey);
+            };
 
             const media = gsap.matchMedia();
             const toggleActions = playOnce ? "play none none none" : "play none none reverse";
@@ -163,7 +174,9 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                 primeAnimation(timeline);
 
                 const reveal = () => {
-                    if (timeline.progress() === 0) timeline.play();
+                    if (timeline.progress() > 0) return;
+                    rememberReveal();
+                    timeline.play();
                 };
                 const observer = new IntersectionObserver(
                     (entries) => {
@@ -213,6 +226,7 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
                             start: "top 76%",
                             toggleActions,
                             once: playOnce,
+                            onEnter: rememberReveal,
                         },
                     })
                     .to(
@@ -267,7 +281,11 @@ export function useFooterAnimations({ playOnce = false }: UseFooterAnimationsOpt
 
             return () => media.revert();
         },
-        { scope: sectionRef, dependencies: [reduced, ready, playOnce], revertOnUpdate: true }
+        {
+            scope: sectionRef,
+            dependencies: [reduced, ready, playOnce, revealKey],
+            revertOnUpdate: true,
+        }
     );
 
     return { sectionRef, leftRef, rightRef, brandRef };

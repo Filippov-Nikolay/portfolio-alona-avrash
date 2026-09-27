@@ -38,8 +38,12 @@ function LegalLinkText({ text }: { text: string }) {
 export function FooterClient({ footer, socials }: FooterClientProps) {
     const t = useTranslations("footer");
     const pathname = usePathname();
-    const playOnce = pathname === "/contact";
-    const { sectionRef, leftRef, rightRef, brandRef } = useFooterAnimations({ playOnce });
+    const isLegal = pathname === "/legal" || pathname.startsWith("/legal/");
+    const playOnce = isLegal || pathname === "/contact";
+    const { sectionRef, leftRef, rightRef, brandRef } = useFooterAnimations({
+        playOnce,
+        revealKey: isLegal ? "legal" : null,
+    });
     const year = new Date().getFullYear();
 
     return (

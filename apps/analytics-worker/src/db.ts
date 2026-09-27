@@ -15,6 +15,10 @@ export interface AnalyticsEventRow {
     device: string | null;
     os: string | null;
     browser: string | null;
+    utmSource: string | null;
+    utmMedium: string | null;
+    utmCampaign: string | null;
+    utmContent: string | null;
 }
 
 export interface EventClientContext {
@@ -54,6 +58,10 @@ export function buildEventRow(
         device: client?.device ?? null,
         os: client?.os ?? null,
         browser: client?.browser ?? null,
+        utmSource: body.utm?.source ?? null,
+        utmMedium: body.utm?.medium ?? null,
+        utmCampaign: body.utm?.campaign ?? null,
+        utmContent: body.utm?.content ?? null,
     };
 }
 
@@ -105,8 +113,8 @@ export async function insertEvent(db: D1Like, row: AnalyticsEventRow): Promise<v
         .prepare(
             `INSERT INTO analytics_events
                 (id, event_name, entity_id, path, locale, session_id, country, referrer, created_at,
-                 visitor_id, device, os, browser)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                 visitor_id, device, os, browser, utm_source, utm_medium, utm_campaign, utm_content)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .bind(
             row.id,
@@ -121,7 +129,11 @@ export async function insertEvent(db: D1Like, row: AnalyticsEventRow): Promise<v
             row.visitorId,
             row.device,
             row.os,
-            row.browser
+            row.browser,
+            row.utmSource,
+            row.utmMedium,
+            row.utmCampaign,
+            row.utmContent
         )
         .run();
 }

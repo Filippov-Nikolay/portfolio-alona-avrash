@@ -43,10 +43,18 @@ its Analytics page shows a "not connected" state until `ANALYTICS_WORKER_URL` /
 - `GET /analytics/categories?days=30` - `works_filter` counts by category, as percentages of the
   total (top 10).
 - `GET /analytics/traffic?days=30` - page views, daily visitors, views per visitor, a daily
-  timeline, the top 50 pages with their share of views, and the top 10 countries, languages,
-  referrer hosts, devices, operating systems and browsers by visitors.
-- `GET /analytics/engagement?days=30` - `cv_download` total and `social_click` counts per
-  network.
+  timeline of page views, visitors and sessions, the top 50 pages with their share of views,
+  the top 10 countries, languages, referrer hosts, devices, operating systems and browsers by
+  visitors, and the top 20 UTM campaign combinations.
+- `GET /analytics/engagement?days=30` - `cv_download` total, `social_click` counts per
+  network, and a trend of both (daily up to 30 days, weekly beyond).
+- `GET /analytics/sessions?days=30` - sessions with at least one page view, pages and events
+  per session, the single-page share, the median length of multi-page sessions, and two
+  session funnels: project open -> gallery view / external click, and contact started -> sent.
+
+Only `utm_source`, `utm_medium`, `utm_campaign` and `utm_content` are kept, each capped at 100
+characters, and only on the first page view after the visitor allows analytics - the rest of
+the landing query string is never sent.
 
 The `GET /analytics/*` routes require `Authorization: Bearer <ANALYTICS_READ_SECRET>` -
 they're read access to real (if anonymized) visitor behavior, not a public API.

@@ -83,6 +83,28 @@ export function fillDailyCounts(
     return points;
 }
 
+export function groupByWeek(points: TimelinePoint[]): TimelinePoint[] {
+    const weeks: TimelinePoint[] = [];
+    for (let end = points.length; end > 0; end -= 7) {
+        const chunk = points.slice(Math.max(0, end - 7), end);
+        weeks.unshift({
+            date: chunk[0]!.date,
+            count: chunk.reduce((sum, point) => sum + point.count, 0),
+        });
+    }
+    return weeks;
+}
+
+const WEEKLY_THRESHOLD_DAYS = 30;
+
+export function toTrendPoints(
+    rows: { day: string; count: number }[],
+    days: number
+): TimelinePoint[] {
+    const daily = fillDailyCounts(rows, days);
+    return days > WEEKLY_THRESHOLD_DAYS ? groupByWeek(daily) : daily;
+}
+
 const TOP_BREAKDOWN_LIMIT = 5;
 
 export function toCountryBreakdown(rows: { country: string; count: number }[]): CountryBreakdown[] {
@@ -288,6 +310,7 @@ export interface TrafficTimelinePoint {
     date: string;
     pageViews: number;
     visitors: number;
+    sessions: number;
 }
 
 export interface PageStat {
@@ -299,6 +322,16 @@ export interface PageStat {
 
 export interface ShareBreakdown {
     key: string;
+    visitors: number;
+    percent: number;
+}
+
+export interface CampaignStat {
+    source: string | null;
+    medium: string | null;
+    campaign: string | null;
+    content: string | null;
+    sessions: number;
     visitors: number;
     percent: number;
 }
@@ -315,9 +348,11 @@ export interface TrafficOverview {
     browsers: ShareBreakdown[];
     languages: ShareBreakdown[];
     referrers: ShareBreakdown[];
+    campaigns: CampaignStat[];
 }
 
 const TOP_PAGES_LIMIT = 50;
+const TOP_CAMPAIGNS_LIMIT = 20;
 const TOP_SHARE_LIMIT = 10;
 
 export function toShareBreakdown(
@@ -372,18 +407,23 @@ export async function getTraffic(
     const dailyRows = await db
         .prepare(
             `SELECT date(created_at / 1000, 'unixepoch') as day, COUNT(*) as views,
-                    COUNT(DISTINCT ${VISITOR_KEY}) as visitors
+                    COUNT(DISTINCT ${VISITOR_KEY}) as visitors,
+                    COUNT(DISTINCT session_id) as sessions
              ${scope}
              GROUP BY day`
         )
         .bind(since)
-        .all<{ day: string; views: number; visitors: number }>();
+        .all<{ day: string; views: number; visitors: number; sessions: number }>();
     const views = fillDailyCounts(
         dailyRows.results.map((row) => ({ day: row.day, count: row.views })),
         days
     );
     const dailyVisitors = fillDailyCounts(
         dailyRows.results.map((row) => ({ day: row.day, count: row.visitors })),
+        days
+    );
+    const dailySessions = fillDailyCounts(
+        dailyRows.results.map((row) => ({ day: row.day, count: row.sessions })),
         days
     );
 
@@ -412,6 +452,21 @@ export async function getTraffic(
 
     const referrerRows = await breakdown("referrer");
 
+    const campaignRows = await db
+        .prepare(
+            `SELECT utm_source as source, utm_medium as medium, utm_campaign as campaign,
+                    utm_content as content, COUNT(DISTINCT session_id) as sessions,
+                    COUNT(DISTINCT ${VISITOR_KEY}) as visitors
+             ${scope}
+               AND (utm_source IS NOT NULL OR utm_medium IS NOT NULL
+                    OR utm_campaign IS NOT NULL OR utm_content IS NOT NULL)
+             GROUP BY utm_source, utm_medium, utm_campaign, utm_content
+             ORDER BY visitors DESC, sessions DESC
+             LIMIT ?`
+        )
+        .bind(since, TOP_CAMPAIGNS_LIMIT)
+        .all<Omit<CampaignStat, "percent">>();
+
     return {
         pageViews,
         visitors,
@@ -420,6 +475,7 @@ export async function getTraffic(
             date: point.date,
             pageViews: point.count,
             visitors: dailyVisitors[index]!.count,
+            sessions: dailySessions[index]!.count,
         })),
         pages: pageRows.results.map((row) => ({
             ...row,
@@ -437,6 +493,10 @@ export async function getTraffic(
             })),
             visitors
         ),
+        campaigns: campaignRows.results.map((row) => ({
+            ...row,
+            percent: computeRate(row.visitors, visitors),
+        })),
     };
 }
 
@@ -446,10 +506,17 @@ export interface EntityCount {
     percent: number;
 }
 
+export interface EngagementTimelinePoint {
+    date: string;
+    cvDownloads: number;
+    socialClicks: number;
+}
+
 export interface EngagementSummary {
     cvDownloads: number;
     socialClicks: number;
     socials: EntityCount[];
+    timeline: EngagementTimelinePoint[];
 }
 
 export async function getEngagement(db: D1Like, days: number): Promise<EngagementSummary> {
@@ -469,6 +536,27 @@ export async function getEngagement(db: D1Like, days: number): Promise<Engagemen
         )
         .bind(since)
         .all<{ entityId: string; count: number }>();
+    const trendRows = await db
+        .prepare(
+            `SELECT event_name as eventName, date(created_at / 1000, 'unixepoch') as day,
+                    COUNT(*) as count
+             FROM analytics_events
+             WHERE (event_name = 'cv_download'
+                    OR (event_name = 'social_click' AND entity_id IS NOT NULL))
+               AND created_at > ?
+             GROUP BY event_name, day`
+        )
+        .bind(since)
+        .all<{ eventName: string; day: string; count: number }>();
+    const cvTrend = toTrendPoints(
+        trendRows.results.filter((row) => row.eventName === "cv_download"),
+        days
+    );
+    const socialTrend = toTrendPoints(
+        trendRows.results.filter((row) => row.eventName === "social_click"),
+        days
+    );
+
     const socialClicks = results.reduce((sum, row) => sum + row.count, 0);
     return {
         cvDownloads: cv?.count ?? 0,
@@ -476,5 +564,123 @@ export async function getEngagement(db: D1Like, days: number): Promise<Engagemen
         socials: results
             .map((row) => ({ ...row, percent: computeRate(row.count, socialClicks) }))
             .sort((a, b) => b.count - a.count),
+        timeline: cvTrend.map((point, index) => ({
+            date: point.date,
+            cvDownloads: point.count,
+            socialClicks: socialTrend[index]!.count,
+        })),
+    };
+}
+
+export interface FunnelStep {
+    key: string;
+    sessions: number;
+    ofSessions: number;
+    ofBase: number;
+}
+
+export interface SessionsSummary {
+    sessions: number;
+    pagesPerSession: number;
+    eventsPerSession: number;
+    bounceRate: number;
+    medianDurationMs: number | null;
+    projectFunnel: FunnelStep[];
+    contactFunnel: FunnelStep[];
+}
+
+const SESSIONS_CTE = `WITH sessions AS (
+    SELECT session_id,
+           MIN(created_at) AS started_at,
+           MAX(created_at) AS ended_at,
+           SUM(event_name = 'page_view') AS page_views,
+           COUNT(*) AS events,
+           MAX(event_name = 'project_open') AS opened,
+           MAX(event_name = 'project_gallery_view') AS viewed_gallery,
+           MAX(event_name = 'project_external_click') AS clicked_through,
+           MAX(event_name = 'contact_started') AS started_contact,
+           MAX(event_name = 'contact_success') AS sent_contact
+    FROM analytics_events
+    WHERE created_at > ?
+    GROUP BY session_id
+    HAVING page_views > 0
+)`;
+
+function funnelStep(key: string, sessions: number, total: number, base: number): FunnelStep {
+    return {
+        key,
+        sessions,
+        ofSessions: computeRate(sessions, total),
+        ofBase: computeRate(sessions, base),
+    };
+}
+
+export async function getSessions(db: D1Like, days: number): Promise<SessionsSummary> {
+    const since = daysAgo(days);
+
+    const totals = await db
+        .prepare(
+            `${SESSIONS_CTE}
+             SELECT COUNT(*) as sessions,
+                    SUM(page_views) as pageViews,
+                    SUM(events) as events,
+                    SUM(page_views = 1) as bounces,
+                    SUM(opened) as opened,
+                    SUM(opened AND viewed_gallery) as viewedGallery,
+                    SUM(opened AND clicked_through) as clickedThrough,
+                    SUM(started_contact) as startedContact,
+                    SUM(started_contact AND sent_contact) as sentContact
+             FROM sessions`
+        )
+        .bind(since)
+        .first<{
+            sessions: number | null;
+            pageViews: number | null;
+            events: number | null;
+            bounces: number | null;
+            opened: number | null;
+            viewedGallery: number | null;
+            clickedThrough: number | null;
+            startedContact: number | null;
+            sentContact: number | null;
+        }>();
+
+    const median = await db
+        .prepare(
+            `${SESSIONS_CTE},
+             durations AS (
+                 SELECT ended_at - started_at AS duration FROM sessions WHERE page_views > 1
+             )
+             SELECT AVG(duration) as medianMs FROM (
+                 SELECT duration FROM durations
+                 ORDER BY duration
+                 LIMIT 2 - (SELECT COUNT(*) FROM durations) % 2
+                 OFFSET ((SELECT COUNT(*) FROM durations) - 1) / 2
+             )`
+        )
+        .bind(since)
+        .first<{ medianMs: number | null }>();
+
+    const sessions = totals?.sessions ?? 0;
+    const opened = totals?.opened ?? 0;
+    const startedContact = totals?.startedContact ?? 0;
+
+    return {
+        sessions,
+        pagesPerSession: computeRate(totals?.pageViews ?? 0, sessions),
+        eventsPerSession: computeRate(totals?.events ?? 0, sessions),
+        bounceRate: computeRate(totals?.bounces ?? 0, sessions),
+        medianDurationMs: median?.medianMs ?? null,
+        projectFunnel: [
+            funnelStep("sessions", sessions, sessions, sessions),
+            funnelStep("project_open", opened, sessions, sessions),
+            funnelStep("project_gallery_view", totals?.viewedGallery ?? 0, sessions, opened),
+            funnelStep("project_external_click", totals?.clickedThrough ?? 0, sessions, opened),
+        ],
+        contactFunnel: [
+            funnelStep("sessions", sessions, sessions, sessions),
+            funnelStep("contact_started", startedContact, sessions, sessions),
+            funnelStep("contact_success", totals?.sentContact ?? 0, sessions, startedContact),
+        ],
     };
 }

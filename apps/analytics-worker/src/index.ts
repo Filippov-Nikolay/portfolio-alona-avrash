@@ -3,6 +3,7 @@ import {
     getEngagement,
     getOverview,
     getProjectDetail,
+    getSessions,
     getTopCategories,
     getTopProjects,
     getTraffic,
@@ -101,6 +102,10 @@ async function handleAnalyticsRead(
         return Response.json(await getTraffic(env.DB, days, ownHosts(env)), {
             headers: jsonHeaders,
         });
+    }
+
+    if (url.pathname === "/analytics/sessions") {
+        return Response.json(await getSessions(env.DB, days), { headers: jsonHeaders });
     }
 
     if (url.pathname === "/analytics/engagement") {

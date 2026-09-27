@@ -12,6 +12,15 @@ export const ANALYTICS_EVENTS = [
     "page_view",
 ] as const;
 
+const campaignValue = z.string().trim().min(1).max(100).optional();
+
+export const CampaignSchema = z.object({
+    source: campaignValue,
+    medium: campaignValue,
+    campaign: campaignValue,
+    content: campaignValue,
+});
+
 export const AnalyticsEventBodySchema = z.object({
     eventName: z.enum(ANALYTICS_EVENTS),
     entityId: z.string().trim().min(1).max(200).optional(),
@@ -19,6 +28,7 @@ export const AnalyticsEventBodySchema = z.object({
     locale: z.string().trim().min(1).max(20),
     sessionId: z.uuid(),
     referrer: z.string().trim().max(500).optional(),
+    utm: CampaignSchema.optional(),
 });
 
 export type AnalyticsEventBody = z.infer<typeof AnalyticsEventBodySchema>;

@@ -57,6 +57,14 @@ export async function writeJsonObject(key: string, data: unknown): Promise<void>
     );
 }
 
+export async function readObject(key: string): Promise<Uint8Array> {
+    const response = await getClient().send(
+        new GetObjectCommand({ Bucket: requiredEnv("R2_BUCKET_NAME"), Key: key })
+    );
+    if (!response.Body) throw new Error("Stored file is empty.");
+    return response.Body.transformToByteArray();
+}
+
 export async function writeObject(key: string, body: Buffer, contentType: string): Promise<void> {
     await getClient().send(
         new PutObjectCommand({

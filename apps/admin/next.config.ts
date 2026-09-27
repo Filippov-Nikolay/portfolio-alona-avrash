@@ -26,6 +26,14 @@ const nextConfig: NextConfig = {
     // Allow integration runs to keep their build output separate from local dev.
     distDir: process.env.NEXT_DIST_DIR ?? ".next",
     outputFileTracingRoot: path.join(__dirname, "../../"),
+    outputFileTracingIncludes: {
+        "/api/cv/preview-assets/*": [
+            "./node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs",
+            "./node_modules/pdfjs-dist/cmaps/**",
+            "./node_modules/pdfjs-dist/standard_fonts/**",
+            "./node_modules/pdfjs-dist/wasm/**",
+        ],
+    },
     transpilePackages: ["@avrash/content-schema", "@avrash/content-data", "@avrash/ui"],
     poweredByHeader: false,
 

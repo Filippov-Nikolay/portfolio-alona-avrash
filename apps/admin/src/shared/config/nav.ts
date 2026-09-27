@@ -46,6 +46,7 @@ export const ADMIN_NAV: AdminPage[] = [
         slug: "global",
         label: "Global",
         sections: [
+            { slug: "cv", label: "CV" },
             { slug: "socials", label: "Socials" },
             { slug: "footer", label: "Footer" },
             { slug: "categories", label: "Categories" },

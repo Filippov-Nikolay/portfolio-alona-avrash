@@ -147,11 +147,18 @@ test("legal pages render and the cookie policy opens the preferences panel", asy
     for (const [path, title] of [
         ["/en/legal/privacy", "Privacy Policy"],
         ["/en/legal/terms", "Terms of Use"],
+        ["/en/legal/privacy-preferences", "Privacy Preferences & Consent Notice"],
         ["/en/legal/cookies", "Cookie & Browser Storage Policy"],
     ] as const) {
         const response = await page.goto(path);
         expect(response?.status()).toBe(200);
         await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+        const breadcrumb = page.getByRole("navigation", { name: "Breadcrumb" });
+        await expect(breadcrumb.getByRole("link", { name: "Legal" })).toHaveAttribute(
+            "href",
+            "/en/legal"
+        );
+        await expect(breadcrumb.getByText(title)).toHaveAttribute("aria-current", "page");
     }
 
     await page.getByRole("button", { name: "Reject optional" }).click();
@@ -160,4 +167,30 @@ test("legal pages render and the cookie policy opens the preferences panel", asy
         .getByRole("button", { name: "Manage preferences" })
         .evaluate((button: HTMLElement) => button.click());
     await expect(page.getByRole("dialog", { name: "Privacy preferences" })).toBeVisible();
+});
+
+test("the legal index lists every document and links to it", async ({ page }) => {
+    const response = await page.goto("/en/legal");
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1, name: "Legal" })).toBeVisible();
+
+    const documents = page.locator("main").getByRole("listitem");
+    await expect(documents).toHaveCount(4);
+    for (const [title, href] of [
+        ["Privacy Policy", "/en/legal/privacy"],
+        ["Cookie & Browser Storage Policy", "/en/legal/cookies"],
+        ["Privacy Preferences & Consent Notice", "/en/legal/privacy-preferences"],
+        ["Terms of Use", "/en/legal/terms"],
+    ] as const) {
+        await expect(
+            page.getByRole("link").filter({ has: page.getByRole("heading", { name: title }) })
+        ).toHaveAttribute("href", href);
+    }
+
+    await page
+        .getByRole("link")
+        .filter({ has: page.getByRole("heading", { name: "Terms of Use" }) })
+        .evaluate((link: HTMLAnchorElement) => link.click());
+    await page.waitForURL("**/en/legal/terms");
+    await expect(page.getByRole("heading", { level: 1, name: "Terms of Use" })).toBeVisible();
 });

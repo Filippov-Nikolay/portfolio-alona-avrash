@@ -117,7 +117,12 @@
         "close": "Close"
     },
     "legal": {
-        "home": "Home",
+        "index": {
+            "title": "Legal",
+            "description": "Privacy, cookie and usage policies for this portfolio.",
+            "intro": "How this portfolio handles personal data, browser storage and your choices, and the terms for using the site.",
+            "open": "Read document"
+        },
         "tableOfContents": "On this page",
         "lastUpdated": "Last updated:",
         "privacy": {
@@ -128,6 +133,12 @@
             "title": "Cookie & Browser Storage Policy",
             "description": "How this portfolio uses cookies, localStorage, sessionStorage and related browser storage.",
             "manageCalloutText": "You can change your storage choice at any time.",
+            "manageCalloutButton": "Manage preferences"
+        },
+        "privacyPreferences": {
+            "title": "Privacy Preferences & Consent Notice",
+            "description": "What each privacy choice controls and how to change it at any time.",
+            "manageCalloutText": "Review or change your privacy choices here.",
             "manageCalloutButton": "Manage preferences"
         },
         "terms": {

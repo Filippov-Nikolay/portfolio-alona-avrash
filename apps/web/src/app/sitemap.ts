@@ -9,6 +9,11 @@ const ROUTES: Array<{ path: string; priority: number }> = [
     { path: "", priority: 1 },
     { path: "/works", priority: 0.8 },
     { path: "/contact", priority: 0.8 },
+    { path: "/legal", priority: 0.3 },
+    { path: "/legal/privacy", priority: 0.3 },
+    { path: "/legal/cookies", priority: 0.3 },
+    { path: "/legal/privacy-preferences", priority: 0.3 },
+    { path: "/legal/terms", priority: 0.3 },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

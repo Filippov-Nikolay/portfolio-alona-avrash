@@ -117,7 +117,12 @@
         "close": "Zamknij"
     },
     "legal": {
-        "home": "Strona główna",
+        "index": {
+            "title": "Informacje prawne",
+            "description": "Polityka prywatności, plików cookie i zasady korzystania z tego portfolio.",
+            "intro": "Jak to portfolio przetwarza dane osobowe, korzysta z pamięci przeglądarki i Twoich wyborów oraz na jakich zasadach można korzystać ze strony.",
+            "open": "Przeczytaj dokument"
+        },
         "tableOfContents": "Na tej stronie",
         "lastUpdated": "Ostatnia aktualizacja:",
         "privacy": {
@@ -128,6 +133,12 @@
             "title": "Polityka plików cookie i pamięci przeglądarki",
             "description": "Jak to portfolio korzysta z plików cookie, localStorage, sessionStorage i podobnej pamięci przeglądarki.",
             "manageCalloutText": "W każdej chwili możesz zmienić swój wybór.",
+            "manageCalloutButton": "Zarządzaj ustawieniami"
+        },
+        "privacyPreferences": {
+            "title": "Ustawienia prywatności i informacja o zgodzie",
+            "description": "Za co odpowiada każdy wybór dotyczący prywatności i jak go w każdej chwili zmienić.",
+            "manageCalloutText": "Tutaj możesz sprawdzić lub zmienić swoje wybory dotyczące prywatności.",
             "manageCalloutButton": "Zarządzaj ustawieniami"
         },
         "terms": {

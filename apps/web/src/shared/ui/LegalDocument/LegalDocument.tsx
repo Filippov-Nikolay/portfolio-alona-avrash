@@ -12,7 +12,7 @@ import { LegalToc } from "./LegalToc";
 import styles from "./LegalDocument.module.scss";
 
 interface LegalDocumentProps {
-    homeLabel: string;
+    legalLabel: string;
     title: string;
     lastUpdatedLabel: string;
     lastUpdated: string;
@@ -179,7 +179,7 @@ function renderNodes(nodes: LegalNode[], selfSlug: LegalDocSlug, keyPrefix: stri
 }
 
 export function LegalDocument({
-    homeLabel,
+    legalLabel,
     title,
     lastUpdatedLabel,
     lastUpdated,
@@ -190,7 +190,10 @@ export function LegalDocument({
 }: LegalDocumentProps) {
     const parsed = parseLegalMarkdown(markdown);
     const tocSections = parsed.sections.filter((section) => section.level === 2);
-    const breadcrumbItems: BreadcrumbItem[] = [{ label: homeLabel, href: "/" }, { label: title }];
+    const breadcrumbItems: BreadcrumbItem[] = [
+        { label: legalLabel, href: "/legal" },
+        { label: title },
+    ];
 
     return (
         <div className={styles.wrapper}>

@@ -1,0 +1,114 @@
+@use "@/shared/styles/mixins" as *;
+
+.wrapper {
+    padding: calc(var(--header-height, 104px) + 32px) 0 100px;
+}
+
+.header {
+    max-width: 800px;
+    margin: 0 0 40px;
+}
+
+.title {
+    margin: 0 0 12px;
+    font-size: 36px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+
+    @include respond-to("mobile") {
+        font-size: 28px;
+    }
+}
+
+.intro {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--color-text-secondary);
+}
+
+.list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    max-width: 1088px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    @include respond-to("tablet") {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 24px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-v-sm);
+    color: inherit;
+    text-decoration: none;
+    @include transition(border-color, background);
+    @include focus-ring;
+
+    @include can-hover {
+        &:hover {
+            border-color: var(--color-accent);
+            background: var(--color-surface-light);
+        }
+
+        &:hover .cardArrow {
+            transform: translateX(3px) rotate(-90deg);
+        }
+    }
+
+    @include respond-to("mobile") {
+        padding: 20px;
+    }
+}
+
+.cardTitle {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.cardDescription {
+    flex: 1;
+    margin: 0 0 20px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--color-text-secondary);
+}
+
+.cardFooter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+}
+
+.cardMeta {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+}
+
+.cardAction {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.cardArrow {
+    width: 10px;
+    height: 13px;
+    transform: rotate(-90deg);
+    @include transition(transform);
+}

@@ -3,7 +3,10 @@ import { getTranslations } from "next-intl/server";
 import { siteConfig } from "@/shared/config/site.config";
 import { Container, LegalDocument } from "@/shared/ui";
 import { ManagePreferencesButton } from "@/features/privacy-preferences";
-import { COOKIE_POLICY_LAST_UPDATED, COOKIE_POLICY_MARKDOWN } from "@/content/legal/cookies";
+import {
+    PRIVACY_PREFERENCES_LAST_UPDATED,
+    PRIVACY_PREFERENCES_MARKDOWN,
+} from "@/content/legal/privacyPreferences";
 import styles from "../legalCallout.module.scss";
 
 interface LegalPageProps {
@@ -12,8 +15,8 @@ interface LegalPageProps {
 
 export async function generateMetadata({ params }: LegalPageProps): Promise<Metadata> {
     const { locale } = await params;
-    const t = await getTranslations({ locale, namespace: "legal.cookies" });
-    const canonical = `${siteConfig.url}/${locale}/legal/cookies`;
+    const t = await getTranslations({ locale, namespace: "legal.privacyPreferences" });
+    const canonical = `${siteConfig.url}/${locale}/legal/privacy-preferences`;
 
     return {
         title: t("title"),
@@ -23,9 +26,9 @@ export async function generateMetadata({ params }: LegalPageProps): Promise<Meta
     };
 }
 
-export default async function CookiePolicyPage() {
+export default async function PrivacyPreferencesNoticePage() {
     const [t, tLegal] = await Promise.all([
-        getTranslations("legal.cookies"),
+        getTranslations("legal.privacyPreferences"),
         getTranslations("legal"),
     ]);
 
@@ -36,10 +39,10 @@ export default async function CookiePolicyPage() {
                     legalLabel={tLegal("index.title")}
                     title={t("title")}
                     lastUpdatedLabel={tLegal("lastUpdated")}
-                    lastUpdated={COOKIE_POLICY_LAST_UPDATED}
+                    lastUpdated={PRIVACY_PREFERENCES_LAST_UPDATED}
                     tocLabel={tLegal("tableOfContents")}
-                    markdown={COOKIE_POLICY_MARKDOWN}
-                    selfSlug="cookies"
+                    markdown={PRIVACY_PREFERENCES_MARKDOWN}
+                    selfSlug="privacy-preferences"
                     afterHeader={
                         <div className={styles.callout}>
                             <p className={styles.calloutText}>{t("manageCalloutText")}</p>

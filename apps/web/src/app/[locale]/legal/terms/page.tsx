@@ -31,7 +31,7 @@ export default async function TermsOfUsePage() {
         <main>
             <Container>
                 <LegalDocument
-                    homeLabel={tLegal("home")}
+                    legalLabel={tLegal("index.title")}
                     title={t("title")}
                     lastUpdatedLabel={tLegal("lastUpdated")}
                     lastUpdated={TERMS_LAST_UPDATED}

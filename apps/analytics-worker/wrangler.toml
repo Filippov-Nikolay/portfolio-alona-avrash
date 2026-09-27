@@ -2,6 +2,26 @@ name = "avrash-analytics-worker"
 main = "src/index.ts"
 compatibility_date = "2026-09-19"
 
+# prod
+[env.production]
+
+[env.production.vars]
+ALLOWED_ORIGIN = "https://avrash.com"
+# Events older than this many days are deleted by the daily cron below.
+RETENTION_DAYS = "730"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "avrash-analytics-prod"
+database_id = "861d8685-e8a5-4869-a365-c15191242cec"
+migrations_dir = "migrations"
+
+[[env.production.routes]]
+pattern = "analytics.avrash.com"
+custom_domain = true
+
+
+# dev
 # Enforced server-side (src/security.ts's isAllowedOrigin), not just echoed
 # in the CORS response header - a request whose Origin doesn't match this
 # gets a 403. Set to the public site's real origin before deploying.

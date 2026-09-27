@@ -3,10 +3,13 @@ import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 import bcrypt from "bcryptjs";
 import { TEST_LOGIN, TEST_PASSWORD, TEST_SESSION_SECRET } from "./fixtures/testCredentials";
+import { acceptedConsentState } from "./fixtures/consent";
 
 const REPO_ROOT = path.join(__dirname, "..");
 const SCRATCH_CONTENT_DIR = path.join(__dirname, ".scratch", "content");
 const STORAGE_STATE_PATH = path.join(__dirname, ".scratch", "admin-storage-state.json");
+const WEB_BASE_URL = "http://localhost:3100";
+const WEB_STORAGE_STATE = acceptedConsentState(WEB_BASE_URL);
 
 // Wiped and reseeded on every `playwright test` invocation, before the
 // admin dev server below even starts - so admin's filesystem storage driver
@@ -76,14 +79,22 @@ export default defineConfig({
         {
             name: "web",
             testDir: "./tests/web",
-            use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:3100" },
+            use: {
+                ...devices["Desktop Chrome"],
+                baseURL: WEB_BASE_URL,
+                storageState: WEB_STORAGE_STATE,
+            },
         },
         {
             name: "web-ios",
             testDir: "./tests/web",
             testMatch:
                 /(gsap-animation-performance|clients-tools-reviews-ios|contact-footer-mobile|footer-ios-overscroll|footer-reveal-navigation|header-menu-ios|hero-selected-work-state|hero-theme-transition|hero-scroll-performance|hero-navigation-performance|hero-raster-budget|hero-stats-selected-spacing|stats-reel-clipping|projects-ios-button|reviews-ios-reveal|services-ios-resize|services-mobile|tools-ios-scroll|tools-ios-visibility|works-filter-ios-tap|works-scroll-performance)\.spec\.ts/,
-            use: { ...devices["iPhone 13"], baseURL: "http://localhost:3100" },
+            use: {
+                ...devices["iPhone 13"],
+                baseURL: WEB_BASE_URL,
+                storageState: WEB_STORAGE_STATE,
+            },
         },
         {
             name: "web-webkit",
@@ -93,7 +104,8 @@ export default defineConfig({
             use: {
                 ...devices["iPhone 13"],
                 browserName: "webkit",
-                baseURL: "http://localhost:3100",
+                baseURL: WEB_BASE_URL,
+                storageState: WEB_STORAGE_STATE,
             },
         },
     ],

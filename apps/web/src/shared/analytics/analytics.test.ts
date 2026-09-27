@@ -74,6 +74,17 @@ describe("trackEvent", () => {
         vi.stubGlobal("window", { location: { pathname: "/en/works" } });
         vi.stubGlobal("document", { documentElement: { lang: "en" }, referrer: "" });
         vi.stubGlobal("sessionStorage", createFakeSessionStorage());
+        const localStorage = createFakeSessionStorage();
+        localStorage.setItem(
+            "avrash-privacy-preferences",
+            JSON.stringify({
+                version: 1,
+                preferences: false,
+                analytics: true,
+                updatedAt: "2026-09-27T00:00:00.000Z",
+            })
+        );
+        vi.stubGlobal("localStorage", localStorage);
         vi.stubEnv("NEXT_PUBLIC_ANALYTICS_ENDPOINT", "https://analytics.example.com/event");
     });
 
@@ -98,6 +109,16 @@ describe("trackEvent", () => {
         trackEvent("project_open", { entityId: "17" });
 
         expect(navigator.sendBeacon).toHaveBeenCalledTimes(1);
+    });
+
+    it("sends nothing without analytics consent", () => {
+        vi.stubGlobal("localStorage", createFakeSessionStorage());
+        vi.stubGlobal("navigator", { sendBeacon: vi.fn().mockReturnValue(true) });
+
+        trackEvent("page_view");
+        trackEvent("cv_download");
+
+        expect(navigator.sendBeacon).not.toHaveBeenCalled();
     });
 
     it("does nothing when no analytics endpoint is configured", () => {

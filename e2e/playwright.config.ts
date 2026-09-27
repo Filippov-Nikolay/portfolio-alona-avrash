@@ -4,9 +4,11 @@ import { defineConfig, devices } from "@playwright/test";
 import bcrypt from "bcryptjs";
 import { TEST_LOGIN, TEST_PASSWORD, TEST_SESSION_SECRET } from "./fixtures/testCredentials";
 import { acceptedConsentState } from "./fixtures/consent";
+import { createCvPdf } from "./fixtures/cv";
 
 const REPO_ROOT = path.join(__dirname, "..");
 const SCRATCH_CONTENT_DIR = path.join(__dirname, ".scratch", "content");
+const WEB_CV_DIR = path.join(SCRATCH_CONTENT_DIR, "web-cv");
 const STORAGE_STATE_PATH = path.join(__dirname, ".scratch", "admin-storage-state.json");
 const WEB_BASE_URL = "http://localhost:3100";
 const WEB_STORAGE_STATE = acceptedConsentState(WEB_BASE_URL);
@@ -33,6 +35,22 @@ function seedContentDir(): void {
         { key: "packaging", label: "Packaging" },
     ]);
     write("tool-badges.json", []);
+    write("cv.json", null);
+
+    // Header tests need a published CV, isolated from admin's replace/delete tests.
+    const cvId = "5e7207f7-b763-4071-8e1b-6c513aecfb8a";
+    const cvBytes = createCvPdf("E2E portfolio CV");
+    mkdirSync(path.join(WEB_CV_DIR, "cv", "uploads"), { recursive: true });
+    writeFileSync(path.join(WEB_CV_DIR, "cv", "uploads", `${cvId}.pdf`), cvBytes);
+    writeFileSync(
+        path.join(WEB_CV_DIR, "cv.json"),
+        JSON.stringify({
+            id: cvId,
+            fileName: "e2e-cv.pdf",
+            size: cvBytes.length,
+            updatedAt: "2026-09-27T00:00:00.000Z",
+        })
+    );
 }
 
 seedContentDir();
@@ -121,6 +139,8 @@ export default defineConfig({
             reuseExistingServer: false,
             timeout: 120_000,
             env: {
+                CONTENT_DATA_DIR: WEB_CV_DIR,
+                CONTENT_SOURCE: "local",
                 // Not a real service - specs that care intercept this exact
                 // URL with page.route() before it ever leaves the browser.
                 // Set unconditionally so the CSP connect-src it also drives
@@ -136,6 +156,7 @@ export default defineConfig({
             timeout: 120_000,
             env: {
                 ADMIN_CONTENT_DIR: SCRATCH_CONTENT_DIR,
+                ADMIN_STORAGE_DRIVER: "filesystem",
                 ADMIN_USERS: ADMIN_USERS_BASE64,
                 SESSION_SECRET: TEST_SESSION_SECRET,
             },

@@ -11,6 +11,7 @@ import { AppProviders } from "@/shared/providers";
 import { Header } from "@/widgets/Header";
 import { Footer } from "@/widgets/Footer";
 import { LOCALES, isLocale, getLocaleMeta } from "@/i18n/locales";
+import { getCv } from "@/entities/cv/api/getCv";
 import { DEFAULT_OG_IMAGES, buildPageAlternates } from "@/shared/lib/seo";
 import { getSocials } from "@/entities/social/api/getSocials";
 import { getIcon } from "@/entities/icon/api/getIcon";
@@ -159,10 +160,11 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         notFound();
     }
 
-    const [messages, cookieStore, socials] = await Promise.all([
+    const [messages, cookieStore, socials, cv] = await Promise.all([
         getMessages(),
         cookies(),
         getSocials(),
+        getCv(),
     ]);
 
     // Приоритет: кука (явный выбор пользователя через ThemeToggle)
@@ -198,7 +200,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                 )}
                 <NextIntlClientProvider messages={messages}>
                     <AppProviders initialHasSeenPreloader={hasSeenPreloader}>
-                        <Header />
+                        <Header hasCv={cv !== null} />
                         <div className={styles.pageSlot}>{children}</div>
                         <Footer locale={locale} />
                     </AppProviders>

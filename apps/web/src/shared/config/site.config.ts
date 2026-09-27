@@ -17,8 +17,8 @@ export const siteConfig = {
         // social.json (getSocials()) - that's what actually renders the
         // icons, so it's the single source of truth for those.
         email: "mailto:avrash.design@gmail.com",
-        // TODO: drop the real CV/resume PDF at this path.
-        cv: "/cv/alona-avrash-cv.pdf",
+        // Resolves the latest PDF managed in the admin's Global > CV section.
+        cv: "/api/cv",
     },
 };
 

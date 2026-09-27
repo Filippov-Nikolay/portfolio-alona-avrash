@@ -3,7 +3,9 @@
         "home": "Home",
         "works": "Works",
         "contact": "Contact",
-        "downloadCv": "Download CV"
+        "downloadCv": "Download CV",
+        "cvUnavailable": "CV currently unavailable",
+        "cvUnavailableShort": "Unavailable"
     },
     "hero": {
         "role": "Graphic designer",

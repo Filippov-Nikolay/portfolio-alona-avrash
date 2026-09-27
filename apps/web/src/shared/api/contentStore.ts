@@ -1,6 +1,7 @@
 import * as contentData from "@avrash/content-data";
 
 const CONTENT: Record<string, unknown> = {
+    cv: contentData.cv,
     hero: contentData.hero,
     cta: contentData.cta,
     footer: contentData.footer,

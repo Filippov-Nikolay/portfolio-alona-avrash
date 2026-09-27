@@ -3,7 +3,9 @@
         "home": "Strona główna",
         "works": "Prace",
         "contact": "Kontakt",
-        "downloadCv": "Pobierz CV"
+        "downloadCv": "Pobierz CV",
+        "cvUnavailable": "CV chwilowo niedostępne",
+        "cvUnavailableShort": "Niedostępne"
     },
     "hero": {
         "role": "Projektantka graficzna",

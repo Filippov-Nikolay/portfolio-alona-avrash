@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, type MouseEvent } from "react";
+import { useState, useEffect, useRef, useId, type MouseEvent } from "react";
 import { m, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -96,7 +96,103 @@ const menuItemVariants = {
     visible: { opacity: 1, y: 0, transition: { duration: 0.18 } },
 };
 
-export function Header() {
+function CvLink({
+    hasCv,
+    mobile = false,
+    clicked,
+    onDownload,
+    onAnimationEnd,
+}: {
+    hasCv: boolean;
+    mobile?: boolean;
+    clicked: boolean;
+    onDownload: (event: MouseEvent<HTMLAnchorElement>) => void;
+    onAnimationEnd: () => void;
+}) {
+    const t = useTranslations("nav");
+    const descriptionId = useId();
+    const linkRef = useRef<HTMLAnchorElement>(null);
+    const [showUnavailable, setShowUnavailable] = useState(false);
+
+    useEffect(() => {
+        if (!showUnavailable || hasCv) return;
+
+        function onOutsidePointer(event: PointerEvent) {
+            if (!linkRef.current?.contains(event.target as Node)) setShowUnavailable(false);
+        }
+        function onEscape(event: KeyboardEvent) {
+            if (event.key === "Escape") setShowUnavailable(false);
+        }
+        document.addEventListener("pointerdown", onOutsidePointer);
+        document.addEventListener("keydown", onEscape);
+        return () => {
+            document.removeEventListener("pointerdown", onOutsidePointer);
+            document.removeEventListener("keydown", onEscape);
+        };
+    }, [showUnavailable, hasCv]);
+
+    return (
+        <m.a
+            ref={linkRef}
+            href={hasCv ? siteConfig.links.cv : undefined}
+            download={hasCv || undefined}
+            role="link"
+            tabIndex={0}
+            aria-disabled={!hasCv || undefined}
+            aria-label={t("downloadCv")}
+            aria-describedby={!hasCv ? descriptionId : undefined}
+            data-unavailable-visible={!hasCv && showUnavailable ? "" : undefined}
+            className={cn(mobile ? styles.menuCv : styles.cvPill, clicked && styles.cvPillClicked)}
+            style={mobile ? undefined : pillDelay(3)}
+            variants={mobile ? menuItemVariants : undefined}
+            onClick={(event) => {
+                if (hasCv) {
+                    onDownload(event);
+                    return;
+                }
+                event.preventDefault();
+                setShowUnavailable(true);
+            }}
+            onPointerEnter={(event) => {
+                if (!hasCv && event.pointerType === "mouse") setShowUnavailable(true);
+            }}
+            onPointerLeave={(event) => {
+                if (event.pointerType === "mouse") setShowUnavailable(false);
+            }}
+            onFocus={() => {
+                if (!hasCv) setShowUnavailable(true);
+            }}
+            onBlur={() => setShowUnavailable(false)}
+            onKeyDown={(event) => {
+                if (event.key === "Escape" && showUnavailable) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setShowUnavailable(false);
+                }
+                if (!hasCv && event.key === "Enter") {
+                    event.preventDefault();
+                    setShowUnavailable(true);
+                }
+            }}
+            onAnimationEnd={onAnimationEnd}
+        >
+            <span className={mobile ? styles.menuCvLabel : styles.cvLabel} aria-hidden="true">
+                <span className={styles.cvActionText}>{t("downloadCv")}</span>
+                {!hasCv && <span className={styles.cvStatusText}>{t("cvUnavailableShort")}</span>}
+            </span>
+            <span className={mobile ? styles.menuCvIcon : styles.cvIcon} aria-hidden="true">
+                <DownloadIcon />
+            </span>
+            {!hasCv && (
+                <span id={descriptionId} className={styles.srOnly}>
+                    {t("cvUnavailable")}
+                </span>
+            )}
+        </m.a>
+    );
+}
+
+export function Header({ hasCv }: { hasCv: boolean }) {
     const safeSlideDown = useMotionVariants(slideDown);
     const t = useTranslations("nav");
     const { isReady } = usePreloader();
@@ -150,7 +246,7 @@ export function Header() {
             setMenuOpen(false);
         }
         function onEscape(e: KeyboardEvent) {
-            if (e.key === "Escape") setMenuOpen(false);
+            if (e.key === "Escape" && !e.defaultPrevented) setMenuOpen(false);
         }
         function preventScroll(e: Event) {
             e.preventDefault();
@@ -169,6 +265,10 @@ export function Header() {
     }, [menuOpen]);
 
     function handleCvClick(e: MouseEvent<HTMLAnchorElement>, { closeMenu = false } = {}) {
+        if (!hasCv) {
+            e.preventDefault();
+            return;
+        }
         if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
             return;
         }
@@ -272,19 +372,12 @@ export function Header() {
                         </div>
                     </div>
 
-                    <a
-                        href={siteConfig.links.cv}
-                        download
-                        className={cn(styles.cvPill, cvClicked && styles.cvPillClicked)}
-                        style={pillDelay(3)}
-                        onClick={handleCvClick}
+                    <CvLink
+                        hasCv={hasCv}
+                        clicked={cvClicked}
+                        onDownload={handleCvClick}
                         onAnimationEnd={() => setCvClicked(false)}
-                    >
-                        <span className={styles.cvLabel}>{t("downloadCv")}</span>
-                        <span className={styles.cvIcon} aria-hidden="true">
-                            <DownloadIcon />
-                        </span>
-                    </a>
+                    />
 
                     <button
                         ref={menuTriggerRef}
@@ -357,24 +450,13 @@ export function Header() {
                                         </ul>
                                     </nav>
 
-                                    <m.a
-                                        href={siteConfig.links.cv}
-                                        download
-                                        className={cn(
-                                            styles.menuCv,
-                                            cvClicked && styles.cvPillClicked
-                                        )}
-                                        variants={menuItemVariants}
-                                        onClick={(e) => handleCvClick(e, { closeMenu: true })}
+                                    <CvLink
+                                        hasCv={hasCv}
+                                        mobile
+                                        clicked={cvClicked}
+                                        onDownload={(e) => handleCvClick(e, { closeMenu: true })}
                                         onAnimationEnd={() => setCvClicked(false)}
-                                    >
-                                        <span className={styles.menuCvLabel}>
-                                            {t("downloadCv")}
-                                        </span>
-                                        <span className={styles.menuCvIcon} aria-hidden="true">
-                                            <DownloadIcon />
-                                        </span>
-                                    </m.a>
+                                    />
                                 </div>
                             </m.div>
                         )}

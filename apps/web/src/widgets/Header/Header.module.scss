@@ -383,6 +383,7 @@ $header-scale: 0.8;
     @include pill;
     @include flex-center;
 
+    position: relative;
     gap: $header-scale * 12px;
     padding-block: $header-scale * 4px;
     padding-left: $header-scale * 20px;
@@ -410,13 +411,13 @@ $header-scale: 0.8;
     }
 
     @include can-hover {
-        &:hover {
+        &:not([aria-disabled="true"]):hover {
             box-shadow:
                 0px 0px 40px 0px rgba(234, 253, 39, 0.35),
                 inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
         }
 
-        &:hover .cvIcon {
+        &:not([aria-disabled="true"]):hover .cvIcon {
             box-shadow: 0 0 16px rgba(234, 253, 39, 0.5);
             animation: cvIconBounce 0.7s ease-in-out 2;
         }
@@ -424,6 +425,44 @@ $header-scale: 0.8;
 
     &.cvPillClicked {
         animation: cvPillFlash 0.55s ease-out;
+    }
+
+    &[aria-disabled="true"] {
+        cursor: not-allowed;
+
+        .cvLabel,
+        .cvIcon {
+            opacity: 0.72;
+        }
+    }
+}
+
+.cvActionText,
+.cvStatusText {
+    grid-area: 1 / 1;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+
+    @include reduced-motion {
+        transition: none;
+    }
+}
+
+.cvStatusText {
+    opacity: 0;
+    transform: translateY(0.4em);
+}
+
+[data-unavailable-visible] {
+    .cvActionText {
+        opacity: 0;
+        transform: translateY(-0.4em);
+    }
+
+    .cvStatusText {
+        opacity: 1;
+        transform: none;
     }
 }
 
@@ -459,6 +498,8 @@ $header-scale: 0.8;
 }
 
 .cvLabel {
+    display: grid;
+    overflow: hidden;
     font-family: var(--font-almarai);
     font-weight: 300;
     font-size: $header-scale * 16px;
@@ -664,6 +705,7 @@ $header-scale: 0.8;
 }
 
 .menuCv {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -673,6 +715,16 @@ $header-scale: 0.8;
     border-radius: 999px;
     background: var(--color-primary);
     text-decoration: none;
+    @include focus-ring;
+
+    &[aria-disabled="true"] {
+        cursor: not-allowed;
+
+        .menuCvLabel,
+        .menuCvIcon {
+            opacity: 0.72;
+        }
+    }
 
     &.cvPillClicked {
         .menuCvIcon {
@@ -682,6 +734,8 @@ $header-scale: 0.8;
 }
 
 .menuCvLabel {
+    display: grid;
+    overflow: hidden;
     font-family: var(--font-almarai);
     font-weight: 700;
     font-size: 15px;

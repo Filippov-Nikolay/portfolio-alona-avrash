@@ -2,6 +2,7 @@ import type { ZodType } from "zod";
 import { getContentResource } from "./contentStore";
 
 const RESOURCE_FILE_NAMES: Record<string, string> = {
+    cv: "cv.json",
     hero: "hero.json",
     cta: "cta.json",
     footer: "footer.json",

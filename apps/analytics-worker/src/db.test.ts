@@ -4,6 +4,7 @@ import {
     deleteEventsBefore,
     insertEvent,
     isSessionRateLimited,
+    referrerOrigin,
     wasRecentlyTracked,
     type AnalyticsEventRow,
     type D1Like,
@@ -216,6 +217,32 @@ describe("client context", () => {
             os: "iOS",
             browser: "Safari",
         });
+    });
+});
+
+describe("referrerOrigin", () => {
+    it.each([
+        ["https://www.google.com/search?q=alona+avrash", "https://www.google.com"],
+        ["https://l.instagram.com/?u=https%3A%2F%2Fdev.avrash.com", "https://l.instagram.com"],
+        ["https://Behance.NET/gallery/123#top", "https://behance.net"],
+        ["http://localhost:3000/en", "http://localhost:3000"],
+    ])("keeps only the origin of %s", (referrer, origin) => {
+        expect(referrerOrigin(referrer)).toBe(origin);
+    });
+
+    it.each([undefined, "", "not a url", "android-app://com.google.android.gm/"])(
+        "drops %j",
+        (referrer) => {
+            expect(referrerOrigin(referrer)).toBeNull();
+        }
+    );
+
+    it("never lets a full referrer URL reach the stored row", () => {
+        const row = buildEventRow(
+            { ...BASE_BODY, referrer: "https://www.google.com/search?q=alona+avrash" },
+            { country: null, visitorId: null, client: null }
+        );
+        expect(row.referrer).toBe("https://www.google.com");
     });
 });
 

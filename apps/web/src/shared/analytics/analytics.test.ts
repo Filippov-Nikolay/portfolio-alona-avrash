@@ -51,6 +51,24 @@ describe("buildEventPayload", () => {
         expect(buildEventPayload("cv_download", {}, context).entityId).toBeUndefined();
     });
 
+    it("sends only the referrer origin, never its path or query", () => {
+        const payload = buildEventPayload(
+            "page_view",
+            {},
+            { ...context, referrer: "https://www.google.com/search?q=alona+avrash#top" }
+        );
+        expect(payload.referrer).toBe("https://www.google.com");
+    });
+
+    it("drops a referrer that is not an http(s) URL", () => {
+        const payload = buildEventPayload(
+            "page_view",
+            {},
+            { ...context, referrer: "android-app://com.google.android.gm/" }
+        );
+        expect(payload.referrer).toBeUndefined();
+    });
+
     it("turns an empty referrer into undefined instead of an empty string", () => {
         const payload = buildEventPayload(
             "social_click",

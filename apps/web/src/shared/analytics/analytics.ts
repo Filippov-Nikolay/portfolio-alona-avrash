@@ -18,6 +18,13 @@ export interface TrackOptions {
     entityId?: string;
 }
 
+export interface CampaignParams {
+    source?: string;
+    medium?: string;
+    campaign?: string;
+    content?: string;
+}
+
 export interface AnalyticsEventPayload {
     eventName: AnalyticsEvent;
     entityId?: string;
@@ -25,6 +32,7 @@ export interface AnalyticsEventPayload {
     locale: string;
     sessionId: string;
     referrer?: string;
+    utm?: CampaignParams;
 }
 
 const DEDUPE_WINDOW_MS = 30 * 60 * 1000;
@@ -46,7 +54,13 @@ export function shouldDedupe(now: number, lastTrackedAt: number | undefined): bo
 export function buildEventPayload(
     eventName: AnalyticsEvent,
     options: TrackOptions,
-    context: { path: string; locale: string; sessionId: string; referrer: string }
+    context: {
+        path: string;
+        locale: string;
+        sessionId: string;
+        referrer: string;
+        utm?: CampaignParams;
+    }
 ): AnalyticsEventPayload {
     return {
         eventName,
@@ -55,8 +69,35 @@ export function buildEventPayload(
         locale: context.locale,
         sessionId: context.sessionId,
         referrer: context.referrer || undefined,
+        utm: context.utm,
     };
 }
+
+const CAMPAIGN_QUERY_KEYS: Record<keyof CampaignParams, string> = {
+    source: "utm_source",
+    medium: "utm_medium",
+    campaign: "utm_campaign",
+    content: "utm_content",
+};
+const CAMPAIGN_VALUE_MAX_LENGTH = 100;
+
+export function readCampaign(search: string): CampaignParams | undefined {
+    const query = new URLSearchParams(search);
+    const campaign: CampaignParams = {};
+    for (const [field, queryKey] of Object.entries(CAMPAIGN_QUERY_KEYS)) {
+        const value = query.get(queryKey)?.trim().slice(0, CAMPAIGN_VALUE_MAX_LENGTH);
+        if (value) campaign[field as keyof CampaignParams] = value;
+    }
+    return Object.keys(campaign).length > 0 ? campaign : undefined;
+}
+
+let landingCampaign: CampaignParams | undefined;
+
+export function captureLandingCampaign(search: string): void {
+    landingCampaign = readCampaign(search);
+}
+
+if (typeof window !== "undefined") captureLandingCampaign(window.location.search);
 
 const SESSION_KEY = "avrash_analytics_session";
 const SEEN_KEY = "avrash_analytics_seen";
@@ -113,11 +154,13 @@ export function trackEvent(eventName: AnalyticsEvent, options: TrackOptions = {}
         if (shouldDedupe(Date.now(), readSeen()[dedupeKey])) return;
     }
 
+    const utm = eventName === "page_view" ? landingCampaign : undefined;
     const payload = buildEventPayload(eventName, options, {
         path: window.location.pathname,
         locale: document.documentElement.lang,
         sessionId: getSessionId(),
         referrer: document.referrer,
+        utm,
     });
 
     // Only mark it seen once the browser actually accepted the beacon - if
@@ -126,4 +169,5 @@ export function trackEvent(eventName: AnalyticsEvent, options: TrackOptions = {}
     // "deduped" for the rest of the 30-minute window.
     const queued = navigator.sendBeacon(endpoint, JSON.stringify(payload));
     if (queued && dedupeKey) markTracked(dedupeKey);
+    if (queued && utm) landingCampaign = undefined;
 }

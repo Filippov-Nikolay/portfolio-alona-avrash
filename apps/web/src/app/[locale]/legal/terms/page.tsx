@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { siteConfig } from "@/shared/config/site.config";
 import { Container, LegalDocument } from "@/shared/ui";
-import { TERMS_OF_USE_LAST_UPDATED, TERMS_OF_USE_MARKDOWN } from "@/content/legal/terms";
+import { TERMS_LAST_UPDATED, TERMS_MARKDOWN } from "@/content/legal/terms";
 
 interface LegalPageProps {
     params: Promise<{ locale: string }>;
@@ -34,9 +34,9 @@ export default async function TermsOfUsePage() {
                     homeLabel={tLegal("home")}
                     title={t("title")}
                     lastUpdatedLabel={tLegal("lastUpdated")}
-                    lastUpdated={TERMS_OF_USE_LAST_UPDATED}
+                    lastUpdated={TERMS_LAST_UPDATED}
                     tocLabel={tLegal("tableOfContents")}
-                    markdown={TERMS_OF_USE_MARKDOWN}
+                    markdown={TERMS_MARKDOWN}
                     selfSlug="terms"
                 />
             </Container>

@@ -192,6 +192,10 @@
         }
 
         @include can-hover {
+            &::before {
+                will-change: transform, opacity;
+            }
+
             &:hover {
                 &::before {
                     transform: scale(1);

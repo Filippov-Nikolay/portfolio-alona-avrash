@@ -221,6 +221,9 @@ export function useFooterAnimations({
 
                 const timeline = gsap
                     .timeline({
+                        onComplete: () => {
+                            gsap.set(section, { clearProps: "clipPath" });
+                        },
                         scrollTrigger: {
                             trigger: section,
                             start: "top 76%",

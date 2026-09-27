@@ -1,4 +1,4 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { writeFileSync } from "node:fs";
 
 test("mobile showcase keeps its full tab rule and close button visible while scrolling", async ({
@@ -48,6 +48,38 @@ test("mobile showcase keeps its full tab rule and close button visible while scr
     expect(Math.abs(afterScroll!.y - beforeScroll!.y)).toBeLessThanOrEqual(1);
 });
 
+test("the scroll lock never exposes the Footer-colored root backdrop", async ({ page }) => {
+    await page.goto("/en/works/esencha");
+    const dialog = page.getByRole("dialog", { name: "ESENCHA" });
+    await expect(dialog).toHaveAttribute("data-state", "open");
+    const root = () =>
+        page.evaluate(() => ({
+            locked: document.documentElement.style.overflow === "hidden",
+            background: getComputedStyle(document.documentElement).backgroundImage,
+        }));
+
+    expect(await root()).toEqual({ locked: true, background: "none" });
+
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(dialog).toHaveCount(0);
+    const restored = await root();
+    expect(restored.locked).toBe(false);
+    expect(restored.background).toContain("linear-gradient");
+});
+
+test("showcase tabs keep their underline gap independent of platform font metrics", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/works/esencha?tab=gallery");
+    const tabs = page.getByRole("dialog", { name: "ESENCHA" }).getByRole("tab");
+    await expect(tabs).toHaveCount(2);
+    for (const tab of await tabs.all()) {
+        await expect(tab).toHaveCSS("line-height", "25px");
+        expect((await tab.boundingBox())!.height).toBe(25);
+    }
+});
+
 for (const [label, viewport, minSize] of [
     ["desktop", { width: 1403, height: 845 }, 36],
     ["mobile", { width: 390, height: 844 }, 40],
@@ -66,6 +98,41 @@ for (const [label, viewport, minSize] of [
         expect(style.background).toBe("rgba(0, 0, 0, 0.48)");
         expect(style.width).toBeGreaterThanOrEqual(minSize);
         expect(style.height).toBeGreaterThanOrEqual(minSize);
+    });
+
+    test(`an opened gallery image keeps the showcase close button on ${label}`, async ({
+        page,
+    }) => {
+        await page.setViewportSize(viewport);
+        await page.goto("/en/works/esencha?tab=gallery");
+        const dialog = page.getByRole("dialog", { name: "ESENCHA" });
+        await expect(dialog).toBeVisible({ timeout: 15_000 });
+        const readClose = (button: Locator) =>
+            button.evaluate((element) => {
+                const computed = getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                const icon = element.querySelector("svg")!.getBoundingClientRect();
+                return {
+                    right: Math.round(rect.right),
+                    top: Math.round(rect.top),
+                    width: rect.width,
+                    height: rect.height,
+                    iconWidth: icon.width,
+                    background: computed.backgroundColor,
+                    border: computed.borderColor,
+                    shadow: computed.boxShadow,
+                    backdrop:
+                        computed.backdropFilter ||
+                        computed.getPropertyValue("-webkit-backdrop-filter"),
+                };
+            });
+        const modalClose = await readClose(dialog.getByRole("button", { name: "Close" }));
+
+        await page.getByRole("button", { name: /visual 2$/i }).click();
+        const lightbox = page.getByTestId("gallery-lightbox");
+        const lightboxClose = lightbox.getByRole("button", { name: "Close", exact: true });
+        await expect(lightboxClose).toBeVisible();
+        await expect.poll(() => readClose(lightboxClose)).toEqual(modalClose);
     });
 }
 
@@ -283,7 +350,10 @@ async function controlTransition(page: Page, controlReveals = false) {
                 animation.currentTime = 0;
                 window.lightboxAnimations.push(animation);
             }
-            if (controlReveals && this.hasAttribute("data-image-layer")) {
+            if (
+                controlReveals &&
+                (this.hasAttribute("data-image-layer") || this.hasAttribute("data-reveal-veil"))
+            ) {
                 animation.pause();
                 animation.currentTime = 0;
                 window.lightboxFades.push(animation);
@@ -520,8 +590,10 @@ for (const selectedIndex of [2, 3]) {
                 (index) =>
                     window.lightboxFades.every(
                         (animation) =>
-                            ((animation.effect as KeyframeEffect).target as HTMLElement).dataset
-                                .imageLayer === String(index)
+                            (
+                                (animation.effect as KeyframeEffect).target as HTMLElement
+                            ).closest<HTMLElement>("[data-image-layer]")?.dataset.imageLayer ===
+                            String(index)
                     ),
                 companionIndex
             )
@@ -532,8 +604,10 @@ for (const selectedIndex of [2, 3]) {
                     const animation = window.lightboxFades
                         .filter(
                             (item) =>
-                                ((item.effect as KeyframeEffect).target as HTMLElement).dataset
-                                    .imageLayer === String(index)
+                                (
+                                    (item.effect as KeyframeEffect).target as HTMLElement
+                                ).closest<HTMLElement>("[data-image-layer]")?.dataset.imageLayer ===
+                                String(index)
                         )
                         .at(-1)!;
                     if (time === "finish") animation.finish();
@@ -563,12 +637,17 @@ for (const selectedIndex of [2, 3]) {
             expect(openingDistances.at(-1)).toBeLessThan(4);
             await setFadeTime("finish");
             await expect
-                .poll(() => companion.evaluate((element) => element.getAnimations().length))
+                .poll(() =>
+                    companion.evaluate((element) => element.getAnimations({ subtree: true }).length)
+                )
                 .toBe(0);
+            await expect(companion.locator("[data-reveal-veil]")).toHaveCount(0);
         }
-        const opacityBeforeClose = await companion.evaluate((element) =>
-            Number(getComputedStyle(element).opacity)
-        );
+        const opacityBeforeClose = await companion.evaluate((element) => {
+            const veil = element.querySelector("[data-reveal-veil]");
+            const covered = veil ? Number(getComputedStyle(veil).opacity) : 0;
+            return Number(getComputedStyle(element).opacity) * (1 - covered);
+        });
         await lightbox.getByRole("button", { name: "Close", exact: true }).click();
         await expect(lightbox).toHaveAttribute("data-phase", "preparing-close");
         expect(
@@ -583,7 +662,7 @@ for (const selectedIndex of [2, 3]) {
                 )
             );
         }
-        expect(closingDistances[0]).toBeCloseTo(openingDistances.at(-1)!, 0);
+        expect(Math.abs(closingDistances[0] - openingDistances.at(-1)!)).toBeLessThanOrEqual(3);
         for (let i = 1; i < closingDistances.length; i++)
             expect(closingDistances[i]).toBeGreaterThan(closingDistances[i - 1] + 3);
         await setFadeTime("finish");

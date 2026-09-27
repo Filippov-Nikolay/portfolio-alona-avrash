@@ -97,5 +97,21 @@
     },
     "seo": {
         "description": "Brand identity, packaging and logo design for growing brands."
+    },
+    "privacyPreferences": {
+        "bannerText": "This site uses browser storage that is needed to show it to you. With your permission it also remembers your theme and intro screen, and measures visits and interactions to improve the portfolio. You can accept optional technologies, reject them, or manage your preferences. See the <cookies>Cookie & Browser Storage Policy</cookies>.",
+        "acceptOptional": "Accept optional",
+        "rejectOptional": "Reject optional",
+        "managePreferences": "Manage preferences",
+        "panelTitle": "Privacy preferences",
+        "categoryNecessaryTitle": "Necessary",
+        "categoryNecessaryDescription": "Always active. Keeps the site working and remembers the choice you make here.",
+        "categoryPreferencesTitle": "Preferences",
+        "categoryPreferencesDescription": "Remember convenience choices such as the light or dark theme and that you have already seen the intro screen.",
+        "categoryAnalyticsTitle": "Analytics / Performance",
+        "categoryAnalyticsDescription": "Measure page views, project interest and technical performance through our own anonymous statistics, Vercel Analytics and Speed Insights.",
+        "alwaysActive": "Always active",
+        "savePreferences": "Save preferences",
+        "close": "Close"
     }
 }

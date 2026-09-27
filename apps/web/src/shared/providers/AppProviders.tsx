@@ -5,6 +5,12 @@ import { MotionProvider } from "./MotionProvider";
 import { ThemeProvider } from "./ThemeProvider";
 import { PreloaderProvider } from "./PreloaderProvider";
 import { Preloader } from "@/widgets/Preloader";
+import {
+    ConditionalAnalytics,
+    ConsentBanner,
+    PrivacyPreferencesPanel,
+    PrivacyPreferencesProvider,
+} from "@/features/privacy-preferences";
 
 interface AppProvidersProps {
     children: React.ReactNode;
@@ -47,14 +53,19 @@ export function AppProviders({ children, initialHasSeenPreloader }: AppProviders
     }, []);
 
     return (
-        <ThemeProvider>
-            <PreloaderProvider initialHasSeenPreloader={initialHasSeenPreloader}>
-                <MotionProvider>
-                    <Preloader />
-                    {children}
-                </MotionProvider>
-            </PreloaderProvider>
-        </ThemeProvider>
+        <PrivacyPreferencesProvider>
+            <ThemeProvider>
+                <PreloaderProvider initialHasSeenPreloader={initialHasSeenPreloader}>
+                    <MotionProvider>
+                        <Preloader />
+                        <ConsentBanner />
+                        <PrivacyPreferencesPanel />
+                        <ConditionalAnalytics />
+                        {children}
+                    </MotionProvider>
+                </PreloaderProvider>
+            </ThemeProvider>
+        </PrivacyPreferencesProvider>
     );
 }
 

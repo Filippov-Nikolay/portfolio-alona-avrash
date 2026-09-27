@@ -6,8 +6,6 @@ import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Analytics } from "@vercel/analytics/next";
 import { siteConfig } from "@/shared/config/site.config";
 import { AppProviders } from "@/shared/providers";
 import { Header } from "@/widgets/Header";
@@ -16,7 +14,6 @@ import { LOCALES, isLocale, getLocaleMeta } from "@/i18n/locales";
 import { DEFAULT_OG_IMAGES, buildPageAlternates } from "@/shared/lib/seo";
 import { getSocials } from "@/entities/social/api/getSocials";
 import { getIcon } from "@/entities/icon/api/getIcon";
-import { PageViewTracker } from "@/shared/analytics/PageViewTracker";
 import packageJson from "../../../package.json";
 import styles from "./layout.module.scss";
 
@@ -205,9 +202,6 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                         <div className={styles.pageSlot}>{children}</div>
                         <Footer locale={locale} />
                     </AppProviders>
-                    <PageViewTracker />
-                    <SpeedInsights />
-                    <Analytics />
                 </NextIntlClientProvider>
                 <script
                     type="application/ld+json"

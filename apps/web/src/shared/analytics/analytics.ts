@@ -1,3 +1,5 @@
+import { hasAnalyticsConsent } from "@/shared/lib/privacyPreferences";
+
 // Custom product events, kept to a short, explicit allowlist - see apps/analytics-worker/src/schema.ts for
 // the server-side copy of this same list, which is the one that actually
 // gets enforced.
@@ -59,6 +61,13 @@ export function buildEventPayload(
 const SESSION_KEY = "avrash_analytics_session";
 const SEEN_KEY = "avrash_analytics_seen";
 
+export function clearAnalyticsStorage(): void {
+    try {
+        sessionStorage.removeItem(SESSION_KEY);
+        sessionStorage.removeItem(SEEN_KEY);
+    } catch {}
+}
+
 function getSessionId(): string {
     try {
         let id = sessionStorage.getItem(SESSION_KEY);
@@ -93,6 +102,7 @@ function markTracked(dedupeKey: string): void {
 // immediately leaving), which a regular fetch() can silently cancel.
 export function trackEvent(eventName: AnalyticsEvent, options: TrackOptions = {}): void {
     if (typeof window === "undefined" || typeof navigator.sendBeacon !== "function") return;
+    if (!hasAnalyticsConsent()) return;
 
     const endpoint = process.env.NEXT_PUBLIC_ANALYTICS_ENDPOINT;
     if (!endpoint) return;

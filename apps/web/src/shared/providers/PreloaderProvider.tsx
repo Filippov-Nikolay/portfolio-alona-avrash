@@ -1,12 +1,21 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { hasPreferencesConsent } from "@/shared/lib/privacyPreferences";
 
 const STORAGE_KEY = "site:preloader";
 const COOKIE_KEY = "site-preloader";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const DISMISS_DELAY_MS = 2250;
 const REDUCED_MOTION_DISMISS_DELAY_MS = 250;
+
+export function clearStoredPreloaderFlag(): void {
+    if (typeof window === "undefined") return;
+    try {
+        window.localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+    document.cookie = `${COOKIE_KEY}=;path=/;max-age=0;SameSite=Lax`;
+}
 
 interface PreloaderContextValue {
     isShown: boolean;
@@ -53,8 +62,10 @@ export function PreloaderProvider({ children, initialHasSeenPreloader }: Preload
             return;
         }
 
-        window.localStorage.setItem(STORAGE_KEY, "1");
-        document.cookie = `${COOKIE_KEY}=1;path=/;max-age=${COOKIE_MAX_AGE};SameSite=Lax`;
+        if (hasPreferencesConsent()) {
+            window.localStorage.setItem(STORAGE_KEY, "1");
+            document.cookie = `${COOKIE_KEY}=1;path=/;max-age=${COOKIE_MAX_AGE};SameSite=Lax`;
+        }
         setHasSeenPreloader(true);
         setDidExit(true);
     }, [didExit, hasSeenPreloader]);

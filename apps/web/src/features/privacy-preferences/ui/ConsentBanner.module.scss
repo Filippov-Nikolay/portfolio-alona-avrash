@@ -1,0 +1,89 @@
+@use "@/shared/styles/mixins" as *;
+
+.banner {
+    position: fixed;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    z-index: 190;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 24px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-v-sm);
+    background: var(--color-bg);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+
+    @include respond-to("mobile") {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        padding: 16px;
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+.text {
+    flex: 1 1 380px;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+
+    @include respond-to("mobile") {
+        flex: none;
+    }
+}
+
+.link {
+    color: var(--color-text-primary);
+    text-decoration: underline;
+    @include focus-ring;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+
+    @include respond-to("mobile") {
+        justify-content: stretch;
+
+        > * {
+            flex: 1 1 auto;
+        }
+    }
+}
+
+.manageButton,
+.rejectButton {
+    padding: 10px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-v-sm);
+    background: transparent;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+    @include transition(border-color, background);
+    @include focus-ring;
+
+    @include can-hover {
+        &:hover {
+            border-color: var(--color-accent);
+        }
+    }
+}
+
+.acceptButton {
+    white-space: nowrap;
+}

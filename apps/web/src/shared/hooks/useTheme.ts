@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { hasPreferencesConsent } from "@/shared/lib/privacyPreferences";
 
 export type Theme = "dark" | "light";
 
@@ -9,6 +10,14 @@ const STORAGE_KEY = "site-theme";
 const COOKIE_KEY = "site-theme";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const DEFAULT_THEME: Theme = "light";
+
+export function clearStoredTheme(): void {
+    if (typeof window === "undefined") return;
+    try {
+        localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+    document.cookie = `${COOKIE_KEY}=;path=/;max-age=0;SameSite=Lax`;
+}
 
 function getInitialTheme(): Theme {
     if (typeof window === "undefined") return DEFAULT_THEME;
@@ -76,6 +85,7 @@ export function useTheme() {
         pendingThemeRef.current = next;
 
         const persistTheme = () => {
+            if (!hasPreferencesConsent()) return;
             localStorage.setItem(STORAGE_KEY, next);
             document.cookie = `${COOKIE_KEY}=${next};path=/;max-age=${COOKIE_MAX_AGE};SameSite=Lax`;
         };

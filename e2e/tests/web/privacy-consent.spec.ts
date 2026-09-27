@@ -6,6 +6,7 @@ test.use({ storageState: { cookies: [], origins: [] } });
 interface CapturedBeacon {
     eventName: string;
     path: string;
+    utm?: Record<string, string>;
 }
 
 async function captureBeacons(page: Page): Promise<CapturedBeacon[]> {
@@ -63,6 +64,34 @@ test("accepting starts measurement at once and is remembered", async ({ page }) 
     await page.reload();
     await page.waitForTimeout(800);
     await expect(page.getByRole("region", { name: "Privacy preferences" })).toHaveCount(0);
+});
+
+test("a campaign landing is attributed even when consent comes after navigating", async ({
+    page,
+}) => {
+    const beacons = await captureBeacons(page);
+    await page.goto("/en?utm_source=instagram&utm_campaign=autumn&utm_term=ignored&fbclid=x");
+
+    await page
+        .locator('header a[href="/en/works"]')
+        .first()
+        .evaluate((link: HTMLAnchorElement) => link.click());
+    await page.waitForURL("**/en/works");
+    await page.getByRole("button", { name: "Accept optional" }).click();
+
+    await expect.poll(() => beacons.filter((b) => b.eventName === "page_view").length).toBe(1);
+    expect(beacons[0]).toMatchObject({
+        path: "/en/works",
+        utm: { source: "instagram", campaign: "autumn" },
+    });
+    expect(Object.keys(beacons[0]!.utm!)).toEqual(["source", "campaign"]);
+
+    await page
+        .locator('header a[href="/en/contact"]')
+        .first()
+        .evaluate((link: HTMLAnchorElement) => link.click());
+    await expect.poll(() => beacons.filter((b) => b.eventName === "page_view").length).toBe(2);
+    expect(beacons.at(-1)).not.toHaveProperty("utm");
 });
 
 test("rejecting keeps analytics off and does not persist the theme", async ({ page }) => {

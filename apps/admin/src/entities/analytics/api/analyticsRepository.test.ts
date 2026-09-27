@@ -3,6 +3,7 @@ import {
     getEngagement,
     getOverview,
     getProjectDetail,
+    getSessions,
     getTopCategories,
     getTopProjects,
     getTraffic,
@@ -107,10 +108,11 @@ describe("analyticsRepository", () => {
         });
     });
 
-    describe("traffic and engagement", () => {
+    describe("traffic, engagement and sessions", () => {
         it.each([
             ["getTraffic", getTraffic, "/analytics/traffic?days=90"],
             ["getEngagement", getEngagement, "/analytics/engagement?days=90"],
+            ["getSessions", getSessions, "/analytics/sessions?days=90"],
         ] as const)("%s reads its worker route with the bearer token", async (_, read, path) => {
             const payload = { ok: true };
             const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => payload });

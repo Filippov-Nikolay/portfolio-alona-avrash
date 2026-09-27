@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildEventPayload, shouldDedupe, trackEvent } from "./analytics";
+import {
+    buildEventPayload,
+    captureLandingCampaign,
+    readCampaign,
+    shouldDedupe,
+    trackEvent,
+} from "./analytics";
 
 describe("shouldDedupe", () => {
     it("returns false when the entity was never tracked", () => {
@@ -52,6 +58,27 @@ describe("buildEventPayload", () => {
             { ...context, referrer: "" }
         );
         expect(payload.referrer).toBeUndefined();
+    });
+});
+
+describe("readCampaign", () => {
+    it("keeps only the four allowlisted UTM parameters", () => {
+        expect(
+            readCampaign(
+                "?utm_source=instagram&utm_medium=social&utm_campaign=spring&utm_content=bio&utm_term=x&gclid=y&ref=z"
+            )
+        ).toEqual({ source: "instagram", medium: "social", campaign: "spring", content: "bio" });
+    });
+
+    it("trims, caps the length and skips empty values", () => {
+        expect(
+            readCampaign(`?utm_source=%20behance%20&utm_medium=&utm_campaign=${"a".repeat(150)}`)
+        ).toEqual({ source: "behance", campaign: "a".repeat(100) });
+    });
+
+    it("returns undefined when the address has no campaign", () => {
+        expect(readCampaign("?page=2")).toBeUndefined();
+        expect(readCampaign("")).toBeUndefined();
     });
 });
 
@@ -119,6 +146,37 @@ describe("trackEvent", () => {
         trackEvent("cv_download");
 
         expect(navigator.sendBeacon).not.toHaveBeenCalled();
+    });
+
+    it("attaches the landing campaign to the first page view only", () => {
+        vi.stubGlobal("navigator", { sendBeacon: vi.fn().mockReturnValue(true) });
+        captureLandingCampaign("?utm_source=instagram&utm_campaign=spring");
+
+        trackEvent("cv_download");
+        trackEvent("page_view");
+        trackEvent("page_view");
+
+        const sent = vi
+            .mocked(navigator.sendBeacon)
+            .mock.calls.map(([, body]) => JSON.parse(String(body)));
+        expect(sent.map((payload) => payload.utm)).toEqual([
+            undefined,
+            { source: "instagram", campaign: "spring" },
+            undefined,
+        ]);
+    });
+
+    it("keeps the landing campaign for a retry when the beacon is not queued", () => {
+        const sendBeacon = vi.fn().mockReturnValueOnce(false).mockReturnValue(true);
+        vi.stubGlobal("navigator", { sendBeacon });
+        captureLandingCampaign("?utm_source=behance");
+
+        trackEvent("page_view");
+        trackEvent("page_view");
+
+        expect(JSON.parse(String(sendBeacon.mock.calls[1]![1])).utm).toEqual({
+            source: "behance",
+        });
     });
 
     it("does nothing when no analytics endpoint is configured", () => {

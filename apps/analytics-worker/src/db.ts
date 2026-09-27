@@ -40,6 +40,16 @@ export interface D1Like {
     };
 }
 
+export function referrerOrigin(referrer: string | undefined): string | null {
+    if (!referrer) return null;
+    try {
+        const url = new URL(referrer);
+        return url.protocol === "http:" || url.protocol === "https:" ? url.origin : null;
+    } catch {
+        return null;
+    }
+}
+
 export function buildEventRow(
     body: AnalyticsEventBody,
     { country, visitorId, client }: EventClientContext
@@ -52,7 +62,7 @@ export function buildEventRow(
         locale: body.locale,
         sessionId: body.sessionId,
         country,
-        referrer: body.referrer ?? null,
+        referrer: referrerOrigin(body.referrer),
         createdAt: Date.now(),
         visitorId,
         device: client?.device ?? null,

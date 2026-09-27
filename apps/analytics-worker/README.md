@@ -56,6 +56,11 @@ Only `utm_source`, `utm_medium`, `utm_campaign` and `utm_content` are kept, each
 characters, and only on the first page view after the visitor allows analytics - the rest of
 the landing query string is never sent.
 
+The referrer is reduced to its origin (`https://www.google.com`) both in the browser and again
+in the worker before it is stored, so search terms, paths and query strings of the referring
+page never reach the database. Migration 0004 rewrites referrers stored before this rule to
+their origin as well.
+
 The `GET /analytics/*` routes require `Authorization: Bearer <ANALYTICS_READ_SECRET>` -
 they're read access to real (if anonymized) visitor behavior, not a public API.
 

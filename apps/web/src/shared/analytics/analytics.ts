@@ -51,6 +51,16 @@ export function shouldDedupe(now: number, lastTrackedAt: number | undefined): bo
     return typeof lastTrackedAt === "number" && now - lastTrackedAt < DEDUPE_WINDOW_MS;
 }
 
+export function referrerOrigin(referrer: string): string | undefined {
+    if (!referrer) return undefined;
+    try {
+        const url = new URL(referrer);
+        return url.protocol === "http:" || url.protocol === "https:" ? url.origin : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
 export function buildEventPayload(
     eventName: AnalyticsEvent,
     options: TrackOptions,
@@ -68,7 +78,7 @@ export function buildEventPayload(
         path: context.path,
         locale: context.locale,
         sessionId: context.sessionId,
-        referrer: context.referrer || undefined,
+        referrer: referrerOrigin(context.referrer),
         utm: context.utm,
     };
 }

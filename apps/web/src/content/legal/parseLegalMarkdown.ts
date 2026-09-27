@@ -1,4 +1,8 @@
-export type LegalInline = { kind: "text"; value: string } | { kind: "code"; value: string };
+export type LegalInline =
+    | { kind: "text"; value: string }
+    | { kind: "strong"; value: string }
+    | { kind: "code"; value: string }
+    | { kind: "break" };
 
 export interface LegalHeadingNode {
     type: "heading";
@@ -19,8 +23,8 @@ export interface LegalListNode {
 
 export interface LegalTableNode {
     type: "table";
-    header: string[];
-    rows: string[][];
+    header: LegalInline[][];
+    rows: LegalInline[][][];
 }
 
 export type LegalNode = LegalHeadingNode | LegalParagraphNode | LegalListNode | LegalTableNode;
@@ -46,18 +50,30 @@ function slugify(text: string): string {
         .replace(/^-+|-+$/g, "");
 }
 
-function parseInline(text: string): LegalInline[] {
-    const parts = text.split(/(`[^`]+`)/g).filter((part) => part.length > 0);
-    return parts.map((part) => {
-        if (part.startsWith("`") && part.endsWith("`") && part.length > 1) {
-            return { kind: "code", value: part.slice(1, -1) };
-        }
-        return { kind: "text", value: part };
-    });
+function parseEmphasis(text: string): LegalInline[] {
+    return text
+        .split(/(\*\*[^*]+?\*\*)/g)
+        .filter((part) => part.length > 0)
+        .map((part) =>
+            part.length > 4 && part.startsWith("**") && part.endsWith("**")
+                ? { kind: "strong", value: part.slice(2, -2) }
+                : { kind: "text", value: part }
+        );
+}
+
+export function parseInline(text: string): LegalInline[] {
+    return text
+        .split(/(`[^`]+`)/g)
+        .filter((part) => part.length > 0)
+        .flatMap((part): LegalInline[] =>
+            part.startsWith("`") && part.endsWith("`") && part.length > 1
+                ? [{ kind: "code", value: part.slice(1, -1) }]
+                : parseEmphasis(part)
+        );
 }
 
 function headingPlainText(inline: LegalInline[]): string {
-    return inline.map((part) => part.value).join("");
+    return inline.map((part) => (part.kind === "break" ? " " : part.value)).join("");
 }
 
 export function parseLegalMarkdown(markdown: string): ParsedLegalDocument {
@@ -67,7 +83,7 @@ export function parseLegalMarkdown(markdown: string): ParsedLegalDocument {
     const usedIds = new Set<string>();
 
     let currentNodes: LegalNode[] = intro;
-    let paragraphBuffer: string[] = [];
+    let paragraphBuffer: { text: string; hardBreak: boolean }[] = [];
     let listBuffer: { type: "ul" | "ol"; items: string[] } | null = null;
     let tableBuffer: { header: string[]; rows: string[][] } | null = null;
 
@@ -84,7 +100,18 @@ export function parseLegalMarkdown(markdown: string): ParsedLegalDocument {
 
     function flushParagraph() {
         if (paragraphBuffer.length === 0) return;
-        currentNodes.push({ type: "p", inline: parseInline(paragraphBuffer.join(" ")) });
+        const segments: string[][] = [[]];
+        paragraphBuffer.forEach(({ text, hardBreak }, index) => {
+            segments.at(-1)!.push(text);
+            if (hardBreak && index < paragraphBuffer.length - 1) segments.push([]);
+        });
+        currentNodes.push({
+            type: "p",
+            inline: segments.flatMap((segment, index): LegalInline[] => [
+                ...(index > 0 ? [{ kind: "break" as const }] : []),
+                ...parseInline(segment.join(" ")),
+            ]),
+        });
         paragraphBuffer = [];
     }
 
@@ -99,7 +126,11 @@ export function parseLegalMarkdown(markdown: string): ParsedLegalDocument {
 
     function flushTable() {
         if (!tableBuffer) return;
-        currentNodes.push({ type: "table", header: tableBuffer.header, rows: tableBuffer.rows });
+        currentNodes.push({
+            type: "table",
+            header: tableBuffer.header.map(parseInline),
+            rows: tableBuffer.rows.map((row) => row.map(parseInline)),
+        });
         tableBuffer = null;
     }
 
@@ -121,6 +152,11 @@ export function parseLegalMarkdown(markdown: string): ParsedLegalDocument {
     for (const rawLine of lines) {
         const line = rawLine.trimEnd();
         const trimmed = line.trim();
+
+        if (/^#\s/.test(trimmed)) {
+            flushAll();
+            continue;
+        }
 
         const headingMatch = /^(##|###)\s+(.*)$/.exec(trimmed);
         if (headingMatch) {
@@ -189,7 +225,11 @@ export function parseLegalMarkdown(markdown: string): ParsedLegalDocument {
         }
 
         flushList();
-        paragraphBuffer.push(trimmed);
+        const backslashBreak = trimmed.endsWith("\\");
+        paragraphBuffer.push({
+            text: backslashBreak ? trimmed.slice(0, -1).trimEnd() : trimmed,
+            hardBreak: backslashBreak || / {2,}\r?$/.test(rawLine),
+        });
     }
 
     flushAll();

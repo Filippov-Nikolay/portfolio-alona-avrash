@@ -87,8 +87,16 @@ function renderTextWithLegalLinks(text: string, selfSlug: LegalDocSlug, key: str
 function renderInline(inline: LegalInline[], selfSlug: LegalDocSlug, keyPrefix: string): ReactNode {
     return inline.map((token, index) => {
         const key = `${keyPrefix}-${index}`;
+        if (token.kind === "break") {
+            return <br key={key} />;
+        }
         if (token.kind === "code") {
             return <code key={key}>{token.value}</code>;
+        }
+        if (token.kind === "strong") {
+            return (
+                <strong key={key}>{renderTextWithLegalLinks(token.value, selfSlug, key)}</strong>
+            );
         }
         return (
             <Fragment key={key}>{renderTextWithLegalLinks(token.value, selfSlug, key)}</Fragment>
@@ -139,7 +147,9 @@ function renderNode(node: LegalNode, selfSlug: LegalDocSlug, key: string): React
                         <thead>
                             <tr>
                                 {node.header.map((cell, cellIndex) => (
-                                    <th key={cellIndex}>{cell}</th>
+                                    <th key={cellIndex}>
+                                        {renderInline(cell, selfSlug, `${key}-h${cellIndex}`)}
+                                    </th>
                                 ))}
                             </tr>
                         </thead>
@@ -147,7 +157,13 @@ function renderNode(node: LegalNode, selfSlug: LegalDocSlug, key: string): React
                             {node.rows.map((row, rowIndex) => (
                                 <tr key={rowIndex}>
                                     {row.map((cell, cellIndex) => (
-                                        <td key={cellIndex}>{cell}</td>
+                                        <td key={cellIndex}>
+                                            {renderInline(
+                                                cell,
+                                                selfSlug,
+                                                `${key}-${rowIndex}-${cellIndex}`
+                                            )}
+                                        </td>
                                     ))}
                                 </tr>
                             ))}

@@ -305,25 +305,34 @@ $header-scale: 0.8;
 }
 
 .langThemeDesktop {
-    display: flex;
-    align-items: center;
-    gap: 0;
+    display: grid;
+    // Keep the theme control's existing width for both full-height hit targets.
+    grid-template-columns: repeat(2, $header-scale * 65px);
+    align-items: stretch;
     height: 100%;
 }
 
 .langWrapperDesktop {
     position: static !important;
+    display: flex;
 }
 
-.langTrigger {
-    padding: ($header-scale * 4px) ($header-scale * 20px);
+.langWrapperDesktop .langTrigger {
+    width: 100%;
+    padding: 0;
     border: none !important;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
     background: transparent;
     font-family: var(--font-almarai);
     font-weight: 700;
     font-size: $header-scale * 16px;
     letter-spacing: 0;
     color: var(--_pill-text) !important;
+
+    &:hover,
+    &:active {
+        transform: none;
+    }
 
     @include can-hover {
         &:hover {
@@ -334,12 +343,25 @@ $header-scale: 0.8;
 }
 
 .themeBtnDesktop {
-    width: auto !important;
-    height: $header-scale * 32px !important;
-    padding: 0 ($header-scale * 20px) !important;
-    border-left: 1px solid rgba(128, 128, 128, 0.35) !important;
-    border-radius: 0;
+    position: relative;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     color: var(--_pill-text) !important;
+
+    &::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 1px;
+        height: $header-scale * 32px;
+        background: rgba(128, 128, 128, 0.35);
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
 
     svg {
         transform: scale(calc(#{$header-scale} * 32 / 18));

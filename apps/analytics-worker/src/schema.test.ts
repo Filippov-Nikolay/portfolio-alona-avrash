@@ -37,6 +37,28 @@ describe("AnalyticsEventBodySchema", () => {
         }
     );
 
+    it("accepts a partial UTM set and drops keys outside the allowlist", () => {
+        const result = AnalyticsEventBodySchema.safeParse({
+            ...VALID_BODY,
+            utm: { source: " instagram ", campaign: "spring", term: "portfolio", gclid: "x" },
+        });
+        expect(result.success && result.data.utm).toEqual({
+            source: "instagram",
+            campaign: "spring",
+        });
+    });
+
+    it.each([
+        ["an empty", ""],
+        ["an overlong", "x".repeat(101)],
+    ])("rejects %s UTM value", (_label, value) => {
+        const result = AnalyticsEventBodySchema.safeParse({
+            ...VALID_BODY,
+            utm: { source: value },
+        });
+        expect(result.success).toBe(false);
+    });
+
     it("rejects a sessionId that isn't a UUID", () => {
         const result = AnalyticsEventBodySchema.safeParse({
             ...VALID_BODY,

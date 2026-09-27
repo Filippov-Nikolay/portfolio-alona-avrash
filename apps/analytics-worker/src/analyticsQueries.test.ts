@@ -8,13 +8,16 @@ import {
     getTopCategories,
     getTopProjects,
     getEngagement,
+    getSessions,
     getTraffic,
+    groupByWeek,
     parseDays,
     referrerHost,
     toShareBreakdown,
     toCategoryBreakdown,
     toCountryBreakdown,
     toLocaleBreakdown,
+    toTrendPoints,
 } from "./analyticsQueries";
 import type { D1Like } from "./db";
 
@@ -331,7 +334,7 @@ describe("getTraffic", () => {
         const today = dayKey(new Date());
         const db = createSequencedDb([
             { pageViews: 10, visitors: 4 },
-            { results: [{ day: today, views: 10, visitors: 4 }] },
+            { results: [{ day: today, views: 10, visitors: 4, sessions: 5 }] },
             {
                 results: [
                     { path: "/en", views: 6, visitors: 4 },
@@ -343,6 +346,18 @@ describe("getTraffic", () => {
                     { key: "https://www.google.com/search", visitors: 2 },
                     { key: "https://dev.avrash.com/en", visitors: 1 },
                     { key: null, visitors: 1 },
+                ],
+            },
+            {
+                results: [
+                    {
+                        source: "instagram",
+                        medium: "social",
+                        campaign: "spring",
+                        content: null,
+                        sessions: 2,
+                        visitors: 1,
+                    },
                 ],
             },
             {
@@ -373,7 +388,23 @@ describe("getTraffic", () => {
         expect(traffic.visitors).toBe(4);
         expect(traffic.viewsPerVisitor).toBe(2.5);
         expect(traffic.timeline).toHaveLength(7);
-        expect(traffic.timeline.at(-1)).toEqual({ date: today, pageViews: 10, visitors: 4 });
+        expect(traffic.timeline.at(-1)).toEqual({
+            date: today,
+            pageViews: 10,
+            visitors: 4,
+            sessions: 5,
+        });
+        expect(traffic.campaigns).toEqual([
+            {
+                source: "instagram",
+                medium: "social",
+                campaign: "spring",
+                content: null,
+                sessions: 2,
+                visitors: 1,
+                percent: 0.25,
+            },
+        ]);
         expect(traffic.pages).toEqual([
             { path: "/en", views: 6, visitors: 4, percent: 0.6 },
             { path: "/en/works", views: 4, visitors: 2, percent: 0.4 },
@@ -395,11 +426,13 @@ describe("getTraffic", () => {
         expect(traffic.viewsPerVisitor).toBe(0);
         expect(traffic.pages).toEqual([]);
         expect(traffic.countries).toEqual([]);
+        expect(traffic.campaigns).toEqual([]);
     });
 });
 
 describe("getEngagement", () => {
-    it("counts CV downloads and shares social clicks by network", async () => {
+    it("counts CV downloads, shares social clicks by network and charts both", async () => {
+        const today = dayKey(new Date());
         const db = createSequencedDb([
             { count: 5 },
             {
@@ -408,9 +441,17 @@ describe("getEngagement", () => {
                     { entityId: "behance", count: 3 },
                 ],
             },
+            {
+                results: [
+                    { eventName: "cv_download", day: today, count: 5 },
+                    { eventName: "social_click", day: today, count: 4 },
+                ],
+            },
         ]);
 
-        await expect(getEngagement(db, 30)).resolves.toEqual({
+        const engagement = await getEngagement(db, 30);
+
+        expect(engagement).toMatchObject({
             cvDownloads: 5,
             socialClicks: 4,
             socials: [
@@ -418,5 +459,86 @@ describe("getEngagement", () => {
                 { entityId: "instagram", count: 1, percent: 0.25 },
             ],
         });
+        expect(engagement.timeline).toHaveLength(30);
+        expect(engagement.timeline.at(-1)).toEqual({
+            date: today,
+            cvDownloads: 5,
+            socialClicks: 4,
+        });
+    });
+
+    it("switches the trend to weekly points for periods longer than a month", async () => {
+        const engagement = await getEngagement(createSequencedDb([{ count: 0 }]), 90);
+        expect(engagement.timeline).toHaveLength(13);
+        expect(engagement.timeline.every((point) => point.cvDownloads === 0)).toBe(true);
+    });
+});
+
+describe("groupByWeek / toTrendPoints", () => {
+    it("sums seven-day chunks ending today and dates each by its first day", () => {
+        const points = Array.from({ length: 10 }, (_, index) => ({
+            date: `2026-09-${String(index + 1).padStart(2, "0")}`,
+            count: index + 1,
+        }));
+        expect(groupByWeek(points)).toEqual([
+            { date: "2026-09-01", count: 6 },
+            { date: "2026-09-04", count: 49 },
+        ]);
+    });
+
+    it("keeps daily points up to a 30-day period", () => {
+        expect(toTrendPoints([], 30)).toHaveLength(30);
+        expect(toTrendPoints([], 31)).toHaveLength(5);
+    });
+});
+
+describe("getSessions", () => {
+    it("derives per-session averages, the median duration and both funnels", async () => {
+        const db = createSequencedDb([
+            {
+                sessions: 10,
+                pageViews: 25,
+                events: 40,
+                bounces: 4,
+                opened: 6,
+                viewedGallery: 3,
+                clickedThrough: 2,
+                startedContact: 2,
+                sentContact: 1,
+            },
+            { medianMs: 45_000 },
+        ]);
+
+        const summary = await getSessions(db, 30);
+
+        expect(summary).toMatchObject({
+            sessions: 10,
+            pagesPerSession: 2.5,
+            eventsPerSession: 4,
+            bounceRate: 0.4,
+            medianDurationMs: 45_000,
+        });
+        expect(summary.projectFunnel).toEqual([
+            { key: "sessions", sessions: 10, ofSessions: 1, ofBase: 1 },
+            { key: "project_open", sessions: 6, ofSessions: 0.6, ofBase: 0.6 },
+            { key: "project_gallery_view", sessions: 3, ofSessions: 0.3, ofBase: 0.5 },
+            { key: "project_external_click", sessions: 2, ofSessions: 0.2, ofBase: 2 / 6 },
+        ]);
+        expect(summary.contactFunnel).toEqual([
+            { key: "sessions", sessions: 10, ofSessions: 1, ofBase: 1 },
+            { key: "contact_started", sessions: 2, ofSessions: 0.2, ofBase: 0.2 },
+            { key: "contact_success", sessions: 1, ofSessions: 0.1, ofBase: 0.5 },
+        ]);
+    });
+
+    it("reports zeros and no median for a period without sessions", async () => {
+        const summary = await getSessions(createSequencedDb([{ sessions: 0 }]), 7);
+        expect(summary).toMatchObject({
+            sessions: 0,
+            pagesPerSession: 0,
+            bounceRate: 0,
+            medianDurationMs: null,
+        });
+        expect(summary.contactFunnel.every((step) => step.ofBase === 0)).toBe(true);
     });
 });

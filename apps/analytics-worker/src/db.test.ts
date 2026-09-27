@@ -55,6 +55,10 @@ function createFakeDb(initialRows: AnalyticsEventRow[] = []) {
                                     device: (values[10] ?? null) as string | null,
                                     os: (values[11] ?? null) as string | null,
                                     browser: (values[12] ?? null) as string | null,
+                                    utmSource: (values[13] ?? null) as string | null,
+                                    utmMedium: (values[14] ?? null) as string | null,
+                                    utmCampaign: (values[15] ?? null) as string | null,
+                                    utmContent: (values[16] ?? null) as string | null,
                                 });
                             }
                         },
@@ -211,6 +215,38 @@ describe("client context", () => {
             device: "mobile",
             os: "iOS",
             browser: "Safari",
+        });
+    });
+});
+
+describe("campaign attribution", () => {
+    it("stores the allowlisted UTM values with the event", async () => {
+        const { db, rows } = createFakeDb();
+        const row = buildEventRow(
+            {
+                ...BASE_BODY,
+                eventName: "page_view",
+                entityId: undefined,
+                utm: { source: "instagram", medium: "social", campaign: "spring", content: "bio" },
+            },
+            { country: null, visitorId: null, client: null }
+        );
+        await insertEvent(db, row);
+        expect(rows[0]).toMatchObject({
+            utmSource: "instagram",
+            utmMedium: "social",
+            utmCampaign: "spring",
+            utmContent: "bio",
+        });
+    });
+
+    it("leaves the UTM columns empty when the event carries none", () => {
+        const row = buildEventRow(BASE_BODY, { country: null, visitorId: null, client: null });
+        expect(row).toMatchObject({
+            utmSource: null,
+            utmMedium: null,
+            utmCampaign: null,
+            utmContent: null,
         });
     });
 });

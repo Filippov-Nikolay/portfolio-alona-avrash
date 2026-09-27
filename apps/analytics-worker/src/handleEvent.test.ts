@@ -47,6 +47,10 @@ function createFakeDb(initialRows: AnalyticsEventRow[] = []) {
                                     device: (values[10] ?? null) as string | null,
                                     os: (values[11] ?? null) as string | null,
                                     browser: (values[12] ?? null) as string | null,
+                                    utmSource: (values[13] ?? null) as string | null,
+                                    utmMedium: (values[14] ?? null) as string | null,
+                                    utmCampaign: (values[15] ?? null) as string | null,
+                                    utmContent: (values[16] ?? null) as string | null,
                                 });
                             }
                         },

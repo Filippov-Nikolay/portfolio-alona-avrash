@@ -13,6 +13,10 @@ html {
     );
     background-attachment: fixed;
     background-repeat: no-repeat;
+
+    &[data-scroll-locked] {
+        background-image: none;
+    }
     // Clip horizontal overflow from GSAP x-transforms without creating
     // a new scroll container (clip preserves normal vertical scrolling).
     overflow-x: clip;

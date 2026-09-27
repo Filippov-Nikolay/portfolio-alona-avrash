@@ -191,6 +191,8 @@ function ModalContent({
         const previousHtmlOverflow = html.style.overflow;
         const previousBodyOverflow = body.style.overflow;
         const previousHtmlPaddingRight = html.style.paddingRight;
+        const wasScrollLocked = html.hasAttribute("data-scroll-locked");
+        html.setAttribute("data-scroll-locked", "");
         html.style.overflow = "hidden";
         body.style.overflow = "hidden";
         if (scrollbarWidth > 0) html.style.paddingRight = `${padding + scrollbarWidth}px`;
@@ -199,6 +201,7 @@ function ModalContent({
             html.style.overflow = previousHtmlOverflow;
             body.style.overflow = previousBodyOverflow;
             html.style.paddingRight = previousHtmlPaddingRight;
+            if (!wasScrollLocked) html.removeAttribute("data-scroll-locked");
             if (previousFocus instanceof HTMLElement && previousFocus.isConnected)
                 previousFocus.focus({ preventScroll: true });
         };

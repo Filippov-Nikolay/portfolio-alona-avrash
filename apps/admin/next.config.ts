@@ -22,6 +22,18 @@ const svgrOptions = {
     },
 };
 
+const r2PublicUrl = process.env.R2_PUBLIC_URL_BASE;
+
+const remotePatterns = r2PublicUrl
+    ? [
+          {
+              protocol: "https" as const,
+              hostname: new URL(r2PublicUrl).hostname,
+              pathname: "/**",
+          },
+      ]
+    : [];
+
 const nextConfig: NextConfig = {
     // Allow integration runs to keep their build output separate from local dev.
     distDir: process.env.NEXT_DIST_DIR ?? ".next",
@@ -86,6 +98,7 @@ const nextConfig: NextConfig = {
         // Still validated even when unoptimized - ShowcaseModal's banner
         // image asks for quality=95 (see its own comment on why).
         qualities: [75, 95],
+        remotePatterns,
     },
 };
 

@@ -377,7 +377,6 @@ export function Header({ cv }: { cv: HeaderCv | null }) {
                     <Link
                         href="/"
                         className={styles.logoPill}
-                        aria-label={`${siteConfig.name} - Home`}
                         style={pillDelay(0)}
                         data-hero-logo-target
                         onClick={(e) => {
@@ -386,6 +385,7 @@ export function Header({ cv }: { cv: HeaderCv | null }) {
                             scrollToTop();
                         }}
                     >
+                        <span className={styles.srOnly}>{`${siteConfig.name} - Home`}</span>
                         <span className={styles.logoLine} data-hero-logo-line="0">
                             <StaggerText text={LOGO_LINE_1} />
                         </span>

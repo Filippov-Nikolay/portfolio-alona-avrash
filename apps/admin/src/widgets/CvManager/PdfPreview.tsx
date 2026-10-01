@@ -53,9 +53,10 @@ export default function PdfPreview({ url, label }: { url: string; label: string 
 
     useEffect(() => {
         if (!container.current) return;
-        const observer = new ResizeObserver(([entry]) =>
-            setWidth(Math.floor(entry.contentRect.width))
-        );
+        const observer = new ResizeObserver(([entry]) => {
+            const nextWidth = Math.floor(entry.contentRect.width);
+            if (nextWidth > 0) setWidth(nextWidth);
+        });
         observer.observe(container.current);
         return () => observer.disconnect();
     }, []);

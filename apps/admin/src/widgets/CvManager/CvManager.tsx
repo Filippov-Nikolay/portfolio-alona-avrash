@@ -59,6 +59,9 @@ function initialLocale(content: CvContent): SiteLocale {
 export function CvManager({ initialContent }: { initialContent: CvContent }) {
     const [content, setContent] = useState(initialContent);
     const [selected, setSelected] = useState<SiteLocale>(() => initialLocale(initialContent));
+    const [visitedLocales, setVisitedLocales] = useState<SiteLocale[]>(() => [
+        initialLocale(initialContent),
+    ]);
     const [draft, setDraft] = useState<Draft | null>(null);
     const [pending, setPending] = useState<"saving" | "deleting" | null>(null);
     const [checking, setChecking] = useState(false);
@@ -102,6 +105,7 @@ export function CvManager({ initialContent }: { initialContent: CvContent }) {
 
     function focusLocale(locale: SiteLocale) {
         setSelected(locale);
+        setVisitedLocales((locales) => (locales.includes(locale) ? locales : [...locales, locale]));
         setConfirmDelete(null);
         setError(null);
         setNotice(null);
@@ -461,21 +465,32 @@ export function CvManager({ initialContent }: { initialContent: CvContent }) {
                             </div>
                         )}
                     </div>
+                    {visitedLocales.map((locale) => {
+                        const document = content.files[locale];
+                        if (!document) return null;
+                        return (
+                            <div
+                                key={`${locale}:${document.id}`}
+                                hidden={!!draft || selected !== locale}
+                            >
+                                <PdfPreview
+                                    label={`Saved ${languageName(locale)} CV preview`}
+                                    url={savedUrl(locale, document.id)}
+                                />
+                            </div>
+                        );
+                    })}
+                    {draft && (
+                        <PdfPreview
+                            key={draft.url}
+                            label={`Selected ${selectedName} CV preview`}
+                            url={draft.url}
+                        />
+                    )}
                     {previewUrl ? (
-                        <>
-                            <PdfPreview
-                                key={previewUrl}
-                                label={
-                                    draft
-                                        ? `Selected ${selectedName} CV preview`
-                                        : `Saved ${selectedName} CV preview`
-                                }
-                                url={previewUrl}
-                            />
-                            <p className={styles.previewHint}>
-                                Preview the layout here, or open the original PDF in a new tab.
-                            </p>
-                        </>
+                        <p className={styles.previewHint}>
+                            Preview the layout here, or open the original PDF in a new tab.
+                        </p>
                     ) : (
                         <div className={styles.emptyPreview}>
                             <FileText size={48} strokeWidth={1} aria-hidden="true" />

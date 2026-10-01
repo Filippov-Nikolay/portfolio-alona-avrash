@@ -40,16 +40,24 @@ export async function GET(request: Request) {
         const repository = getCvRepository();
         const document = (await repository.get()).files[locale];
         if (!document) return new Response("No CV uploaded for this language.", { status: 404 });
+        const params = new URL(request.url).searchParams;
+        const version = params.get("v");
+        if (version !== null && version !== document.id) {
+            return new Response("This CV version is no longer available.", {
+                status: 404,
+                headers: { "Cache-Control": "private, no-store" },
+            });
+        }
         const bytes = await repository.download(document);
-        const disposition = new URL(request.url).searchParams.has("download")
-            ? "attachment"
-            : "inline";
+        const disposition = params.has("download") ? "attachment" : "inline";
         return new Response(new Uint8Array(bytes), {
             headers: {
                 "Content-Type": "application/pdf",
                 "Content-Disposition": `${disposition}; filename="cv.pdf"; filename*=UTF-8''${encodeURIComponent(document.fileName)}`,
                 "Content-Length": String(bytes.length),
-                "Cache-Control": "private, no-store",
+                "Cache-Control": version
+                    ? "private, max-age=31536000, immutable"
+                    : "private, no-store",
                 "X-Content-Type-Options": "nosniff",
                 "X-Frame-Options": "SAMEORIGIN",
             },

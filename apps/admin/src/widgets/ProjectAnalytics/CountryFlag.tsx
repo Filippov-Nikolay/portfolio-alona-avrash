@@ -1,5 +1,5 @@
 const FLAG_FONT_STACK =
-    '"Twemoji Country Flags", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+    'var(--font-country-flags), "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
 
 interface CountryFlagProps {
     code: string;
@@ -28,6 +28,8 @@ export function CountryFlag({ code, className }: CountryFlagProps) {
                 alignItems: "center",
                 justifyContent: "center",
                 fontFamily: FLAG_FONT_STACK,
+                fontWeight: 400,
+                flexShrink: 0,
                 fontSize: flag ? "15px" : "9px",
                 lineHeight: 1,
             }}

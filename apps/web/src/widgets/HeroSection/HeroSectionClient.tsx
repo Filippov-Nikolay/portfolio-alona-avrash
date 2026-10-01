@@ -598,7 +598,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                                             transform: `scale(${floater.image.scale ?? 1})`,
                                                             transformOrigin: `${floater.image.focalPoint?.x ?? 50}% ${floater.image.focalPoint?.y ?? 50}%`,
                                                         }}
-                                                        sizes="(max-width: 768px) 42vw, 240px"
+                                                        sizes="160px"
                                                         draggable={false}
                                                     />
                                                 </m.div>
@@ -661,7 +661,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                                     transform: `scale(${ogofoliFloater.image.scale ?? 1})`,
                                                     transformOrigin: `${ogofoliFloater.image.focalPoint?.x ?? 50}% ${ogofoliFloater.image.focalPoint?.y ?? 50}%`,
                                                 }}
-                                                sizes="(max-width: 1023px) 160px, 240px"
+                                                sizes="(max-width: 1023px) 132px, 170px"
                                                 draggable={false}
                                             />
                                         </m.div>
@@ -689,7 +689,7 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                                     transform: `scale(${olvaFloater.image.scale ?? 1})`,
                                                     transformOrigin: `${olvaFloater.image.focalPoint?.x ?? 50}% ${olvaFloater.image.focalPoint?.y ?? 50}%`,
                                                 }}
-                                                sizes="(max-width: 1023px) 160px, 240px"
+                                                sizes="(max-width: 1023px) 132px, 170px"
                                                 draggable={false}
                                             />
                                         </m.div>

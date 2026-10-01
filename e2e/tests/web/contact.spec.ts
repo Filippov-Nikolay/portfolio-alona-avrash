@@ -21,9 +21,10 @@ test.describe("contact form", () => {
         await page.getByLabel("Message*").fill("Hello, this is an E2E test message.");
         await page.getByRole("button", { name: "Send message" }).click();
 
-        const toast = page.getByRole("status");
+        const toast = page
+            .getByRole("status")
+            .filter({ hasText: "Thank you! Your message has been received." });
         await expect(toast).toBeVisible();
-        await expect(toast).toContainText("Thank you! Your message has been received.");
     });
 
     test("shows an error toast when the request fails", async ({ page }) => {
@@ -41,9 +42,10 @@ test.describe("contact form", () => {
         await page.getByLabel("Message*").fill("Hello, this is an E2E test message.");
         await page.getByRole("button", { name: "Send message" }).click();
 
-        const toast = page.getByRole("status");
+        const toast = page
+            .getByRole("status")
+            .filter({ hasText: "Something went wrong. Please try again." });
         await expect(toast).toBeVisible();
-        await expect(toast).toContainText("Something went wrong. Please try again.");
     });
 
     test("leaves the honeypot field empty and out of tab order for a real user", async ({

@@ -45,7 +45,7 @@ test("Works to Home keeps the compact camera and defers refresh throughout a tou
     });
     await page.goto("/en/works");
     await expect(page.getByTestId("works-card").first()).toBeVisible();
-    await page.getByRole("link", { name: "Home", exact: true }).click();
+    await page.getByRole("link", { name: "Alona Avrash - Home", exact: true }).click();
     await expect(page).toHaveURL(/\/en\/?$/);
     const plane = page.locator('[class*="statsDepthPlane"]');
     await expect

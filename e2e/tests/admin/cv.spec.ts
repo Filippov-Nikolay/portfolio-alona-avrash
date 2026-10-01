@@ -27,9 +27,12 @@ test("previews locally, saves, replaces and deletes the CV of each language", as
     const first = pdf("Alona Avrash - CV preview", true);
     const file = { name: "Alona CV.pdf", mimeType: "application/pdf", buffer: first };
     const uploads: string[] = [];
+    const previewRequests: string[] = [];
     page.on("request", (request) => {
         if (request.method() === "POST" && request.url().includes("/api/cv"))
             uploads.push(request.url());
+        if (request.method() === "GET" && new URL(request.url()).pathname.startsWith("/api/cv"))
+            previewRequests.push(request.url());
     });
 
     await input.setInputFiles(file);
@@ -79,6 +82,27 @@ test("previews locally, saves, replaces and deletes the CV of each language", as
     await expect(page.getByRole("img", { name: /Saved English CV preview/ })).toBeVisible({
         timeout: 15_000,
     });
+    await page.getByRole("button", { name: "Next PDF page" }).click();
+    const englishCanvas = await page
+        .getByRole("img", { name: /Saved English CV preview, page 2 of 2/ })
+        .elementHandle();
+    await expect(
+        page.getByRole("img", { name: /Saved English CV preview, page 2 of 2/ })
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Select Polish CV" }).click();
+    await expect(page.getByRole("img", { name: /Saved Polish CV preview/ })).toBeVisible();
+    const loadedRequests = previewRequests.length;
+    for (const name of ["English", "Polish", "English"]) {
+        await page.getByRole("button", { name: `Select ${name} CV` }).click();
+        await expect(
+            page.getByRole("img", { name: new RegExp(`Saved ${name} CV preview`) })
+        ).toBeVisible();
+    }
+    expect(previewRequests).toHaveLength(loadedRequests);
+    expect(await englishCanvas!.evaluate((canvas) => canvas.isConnected)).toBeTruthy();
+    await expect(
+        page.getByRole("img", { name: /Saved English CV preview, page 2 of 2/ })
+    ).toBeVisible();
     const saved = await request.get("/api/cv?locale=en&download=1");
     expect(saved.headers()["content-disposition"]).toContain("attachment;");
     expect(await saved.body()).toEqual(first);
@@ -103,6 +127,7 @@ test("previews locally, saves, replaces and deletes the CV of each language", as
     await page.unroute("**/api/cv");
     await page.getByRole("button", { name: "Save CV", exact: true }).click();
     await expect(page.getByRole("img", { name: /Saved English CV preview/ })).toBeVisible();
+    expect(await englishCanvas!.evaluate((canvas) => canvas.isConnected)).toBeFalsy();
     expect(await (await request.get("/api/cv?locale=en")).body()).toEqual(replacement);
     expect(await (await request.get("/api/cv?locale=pl")).body()).toEqual(polishCv);
 
@@ -118,6 +143,7 @@ test("previews locally, saves, replaces and deletes the CV of each language", as
     await page.getByRole("button", { name: "Delete Polish CV" }).click();
     await page.getByRole("button", { name: "Delete permanently", exact: true }).click();
     await expect(polish.getByText("The download button is disabled.")).toBeVisible();
+    await expect(page.locator("canvas")).toHaveCount(0);
     await page.reload();
     await expect(page.locator("canvas")).toHaveCount(0);
 });

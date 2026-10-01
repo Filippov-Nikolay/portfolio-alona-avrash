@@ -30,6 +30,7 @@ describe("CV API", () => {
     it("rejects unauthenticated reads and writes", async () => {
         mocks.auth.mockRejectedValue(new Error("no session"));
         expect((await GET(new Request(`${origin}/api/cv?locale=en`))).status).toBe(401);
+        expect((await GET(new Request(`${origin}/api/cv?locale=en&v=x`))).status).toBe(401);
         expect((await POST(upload("%PDF-1.7\n%%EOF"))).status).toBe(401);
         expect(
             (
@@ -94,5 +95,21 @@ describe("CV API", () => {
         );
         expect(response.status).toBe(200);
         expect(mocks.remove).toHaveBeenCalledWith("pl");
+    });
+    it("allows private caching only for the current document's versioned URL", async () => {
+        mocks.get.mockResolvedValue({ files: { en: { id: "current", fileName: "en.pdf" } } });
+        mocks.download.mockResolvedValue(new Uint8Array([37]));
+        const versioned = await GET(new Request(`${origin}/api/cv?locale=en&v=current`));
+        expect(versioned.status).toBe(200);
+        expect(versioned.headers.get("cache-control")).toBe("private, max-age=31536000, immutable");
+        const latest = await GET(new Request(`${origin}/api/cv?locale=en`));
+        expect(latest.headers.get("cache-control")).toBe("private, no-store");
+    });
+    it("does not serve a replacement under an old document's cache key", async () => {
+        mocks.get.mockResolvedValue({ files: { en: { id: "replacement", fileName: "en.pdf" } } });
+        const old = await GET(new Request(`${origin}/api/cv?locale=en&v=old`));
+        expect(old.status).toBe(404);
+        expect(old.headers.get("cache-control")).toBe("private, no-store");
+        expect(mocks.download).not.toHaveBeenCalled();
     });
 });

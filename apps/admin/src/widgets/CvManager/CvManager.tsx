@@ -85,6 +85,12 @@ export function CvManager({ initialContent }: { initialContent: CvContent }) {
     }, [draft]);
 
     useEffect(() => {
+        if (!notice) return;
+        const timeout = window.setTimeout(() => setNotice(null), 15_000);
+        return () => window.clearTimeout(timeout);
+    }, [notice]);
+
+    useEffect(() => {
         if (!draft) return;
         const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
             event.preventDefault();
@@ -178,7 +184,15 @@ export function CvManager({ initialContent }: { initialContent: CvContent }) {
                 {notice && (
                     <p className={styles.success}>
                         <Check size={17} aria-hidden="true" />
-                        {notice}
+                        <span className={styles.noticeText}>{notice}</span>
+                        <button
+                            type="button"
+                            className={styles.dismissNotice}
+                            aria-label="Dismiss success message"
+                            onClick={() => setNotice(null)}
+                        >
+                            <X size={17} aria-hidden="true" />
+                        </button>
                     </p>
                 )}
                 {error && (

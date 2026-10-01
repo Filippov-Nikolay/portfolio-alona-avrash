@@ -47,6 +47,35 @@
     flex-shrink: 0;
     margin-top: 1px;
 }
+.noticeText {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.dismissNotice {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    margin: -10px -8px -10px 0;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+.dismissNotice svg {
+    margin: 0;
+}
+.dismissNotice:hover {
+    background: #16653412;
+}
+.dismissNotice:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
 .layout {
     display: grid;
     grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);

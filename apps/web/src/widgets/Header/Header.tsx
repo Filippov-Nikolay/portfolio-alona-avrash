@@ -377,7 +377,7 @@ export function Header({ cv }: { cv: HeaderCv | null }) {
                     <Link
                         href="/"
                         className={styles.logoPill}
-                        aria-label="Home"
+                        aria-label={`${siteConfig.name} - Home`}
                         style={pillDelay(0)}
                         data-hero-logo-target
                         onClick={(e) => {

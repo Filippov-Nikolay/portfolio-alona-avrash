@@ -107,6 +107,7 @@ export interface EngagementTimelinePoint {
 
 export interface EngagementSummary {
     cvDownloads: number;
+    cvLanguages?: EntityCount[];
     socialClicks: number;
     socials: EntityCount[];
     timeline: EngagementTimelinePoint[];

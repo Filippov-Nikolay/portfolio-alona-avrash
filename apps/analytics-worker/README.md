@@ -46,8 +46,9 @@ its Analytics page shows a "not connected" state until `ANALYTICS_WORKER_URL` /
   timeline of page views, visitors and sessions, the top 50 pages with their share of views,
   the top 10 countries, languages, referrer hosts, devices, operating systems and browsers by
   visitors, and the top 20 UTM campaign combinations.
-- `GET /analytics/engagement?days=30` - `cv_download` total, `social_click` counts per
-  network, and a trend of both (daily up to 30 days, weekly beyond).
+- `GET /analytics/engagement?days=30` - `cv_download` total and its split by the language of
+  the downloaded CV, `social_click` counts per network, and a trend of both (daily up to 30
+  days, weekly beyond).
 - `GET /analytics/sessions?days=30` - sessions with at least one page view, pages and events
   per session, the single-page share, the median length of multi-page sessions, and two
   session funnels: project open -> gallery view / external click, and contact started -> sent.

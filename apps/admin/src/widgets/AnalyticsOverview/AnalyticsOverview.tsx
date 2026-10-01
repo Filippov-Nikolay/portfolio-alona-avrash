@@ -12,6 +12,7 @@ import {
     Share2,
     TrendingUp,
 } from "lucide-react";
+import { SITE_LOCALES } from "@avrash/content-schema/locale";
 import { ReportTabs } from "@/shared/ui/ReportTabs/ReportTabs";
 import { LineChart } from "@/shared/ui/LineChart";
 import { TopProjectsTable } from "@/widgets/TopProjectsTable";
@@ -53,6 +54,10 @@ interface AnalyticsOverviewProps {
     engagement: EngagementSummary | null;
     sessions: SessionsSummary | null;
     days: PeriodDays;
+}
+
+function cvLanguageName(code: string): string {
+    return SITE_LOCALES.find((locale) => locale.code === code)?.name ?? code.toUpperCase();
 }
 
 function socialName(id: string): string {
@@ -305,6 +310,39 @@ export function AnalyticsOverview({
                                         <span className={styles.statMeta}>
                                             Clicks on Download CV in the header and mobile menu
                                         </span>
+                                        {!!engagement.cvLanguages?.length && (
+                                            <ol
+                                                className={styles.breakdownList}
+                                                aria-label="CV downloads by language"
+                                            >
+                                                {engagement.cvLanguages.map((row) => (
+                                                    <li key={row.entityId}>
+                                                        <div className={styles.breakdownRow}>
+                                                            <span className={styles.breakdownLabel}>
+                                                                {cvLanguageName(row.entityId)}
+                                                            </span>
+                                                            <strong>
+                                                                {formatNumber(row.count)} /{" "}
+                                                                {formatPercent(row.percent)}
+                                                            </strong>
+                                                        </div>
+                                                        <span
+                                                            className={styles.barTrack}
+                                                            aria-hidden="true"
+                                                        >
+                                                            <span
+                                                                className={styles.barFill}
+                                                                style={
+                                                                    {
+                                                                        "--bar-width": `${Math.min(row.percent * 100, 100)}%`,
+                                                                    } as CSSProperties
+                                                                }
+                                                            />
+                                                        </span>
+                                                    </li>
+                                                ))}
+                                            </ol>
+                                        )}
                                     </section>
 
                                     <section className={styles.breakdown}>

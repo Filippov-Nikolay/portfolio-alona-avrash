@@ -514,6 +514,7 @@ export interface EngagementTimelinePoint {
 
 export interface EngagementSummary {
     cvDownloads: number;
+    cvLanguages: EntityCount[];
     socialClicks: number;
     socials: EntityCount[];
     timeline: EngagementTimelinePoint[];
@@ -523,11 +524,12 @@ export async function getEngagement(db: D1Like, days: number): Promise<Engagemen
     const since = daysAgo(days);
     const cv = await db
         .prepare(
-            `SELECT COUNT(*) as count FROM analytics_events
-             WHERE event_name = 'cv_download' AND created_at > ?`
+            `SELECT entity_id as entityId, COUNT(*) as count FROM analytics_events
+             WHERE event_name = 'cv_download' AND created_at > ?
+             GROUP BY entity_id`
         )
         .bind(since)
-        .first<{ count: number | null }>();
+        .all<{ entityId: string | null; count: number }>();
     const { results } = await db
         .prepare(
             `SELECT entity_id as entityId, COUNT(*) as count FROM analytics_events
@@ -558,8 +560,17 @@ export async function getEngagement(db: D1Like, days: number): Promise<Engagemen
     );
 
     const socialClicks = results.reduce((sum, row) => sum + row.count, 0);
+    const cvDownloads = cv.results.reduce((sum, row) => sum + row.count, 0);
     return {
-        cvDownloads: cv?.count ?? 0,
+        cvDownloads,
+        cvLanguages: cv.results
+            .filter((row): row is { entityId: string; count: number } => row.entityId !== null)
+            .map((row) => ({
+                entityId: row.entityId,
+                count: row.count,
+                percent: computeRate(row.count, cvDownloads),
+            }))
+            .sort((a, b) => b.count - a.count),
         socialClicks,
         socials: results
             .map((row) => ({ ...row, percent: computeRate(row.count, socialClicks) }))

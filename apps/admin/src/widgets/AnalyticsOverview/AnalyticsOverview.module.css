@@ -117,6 +117,10 @@
     align-self: flex-start;
 }
 
+.cvCard .breakdownList {
+    margin-top: 20px;
+}
+
 .statIconInline {
     display: inline-flex;
     align-items: center;

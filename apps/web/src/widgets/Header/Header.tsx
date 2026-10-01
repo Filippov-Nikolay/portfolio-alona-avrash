@@ -281,7 +281,7 @@ export function Header({ cv }: { cv: HeaderCv | null }) {
         e.preventDefault();
         setCvClicked(true);
         if (closeMenu) setMenuOpen(false);
-        trackEvent("cv_download");
+        trackEvent("cv_download", { entityId: cv.locale });
         setTimeout(() => triggerCvDownload(cv.href), CV_DOWNLOAD_DELAY_MS);
     }
 

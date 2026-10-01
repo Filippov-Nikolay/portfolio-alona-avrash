@@ -1,3 +1,7 @@
+import { config as configureZod } from "zod/v4/core";
+
+configureZod({ jitless: true });
+
 type GuardedWindow = Window & { __avrashPerformanceMeasureGuard?: boolean };
 
 if (process.env.NODE_ENV === "development") {

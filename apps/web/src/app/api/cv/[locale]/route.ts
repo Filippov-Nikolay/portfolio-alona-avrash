@@ -1,7 +1,6 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import { CV_LOCALE_PATTERN, cvFileKey } from "@avrash/content-schema";
-import { cvContentDirectory, getCv } from "@/entities/cv/api/getCv";
+import { CV_LOCALE_PATTERN, type ResolvedCv } from "@avrash/content-schema";
+import { getCv } from "@/entities/cv/api/getCv";
+import { getCvFile } from "@/entities/cv/api/getCvFile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,36 +15,43 @@ const unavailable = () =>
         headers: { "Cache-Control": "no-store" },
     });
 
-export async function GET(_request: Request, { params }: RouteContext) {
+function downloadHeaders(cv: ResolvedCv) {
+    return {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="alona-avrash-cv-${cv.locale}.pdf"; filename*=UTF-8''${encodeURIComponent(cv.document.fileName)}`,
+        "Cache-Control": "private, no-cache",
+        "Content-Language": cv.locale,
+        ETag: `"${cv.document.id}"`,
+        "X-Content-Type-Options": "nosniff",
+    };
+}
+
+export async function GET(request: Request, { params }: RouteContext) {
     const { locale } = await params;
     if (!CV_LOCALE_PATTERN.test(locale)) return unavailable();
-    const cv = await getCv(locale);
-    if (!cv) return unavailable();
-    const { document } = cv;
     try {
+        let cv = await getCv(locale, { fresh: true });
+        if (!cv) return unavailable();
+        const etag = downloadHeaders(cv).ETag;
+        const matches = request.headers
+            .get("if-none-match")
+            ?.split(",")
+            .some((tag) => tag.trim().replace(/^W\//, "") === etag || tag.trim() === "*");
+        if (matches) return new Response(null, { status: 304, headers: downloadHeaders(cv) });
         let bytes: Uint8Array;
-        if (process.env.CONTENT_SOURCE === "remote") {
-            const base = process.env.CONTENT_CDN_URL;
-            if (!base) throw new Error("CONTENT_CDN_URL is not configured.");
-            const response = await fetch(`${base.replace(/\/$/, "")}/${cvFileKey(document)}`, {
-                cache: "no-store",
-                signal: AbortSignal.timeout(10_000),
-                redirect: "error",
-            });
-            if (!response.ok) throw new Error(`PDF request failed (${response.status}).`);
-            bytes = new Uint8Array(await response.arrayBuffer());
-        } else {
-            bytes = await readFile(path.join(cvContentDirectory(), cvFileKey(document)));
+        try {
+            bytes = await getCvFile(cv.document);
+        } catch (error) {
+            const latest = await getCv(locale, { fresh: true });
+            if (!latest) return unavailable();
+            if (latest.document.id === cv.document.id) throw error;
+            cv = latest;
+            bytes = await getCvFile(cv.document);
         }
         return new Response(new Uint8Array(bytes), {
             headers: {
-                "Content-Type": "application/pdf",
-                "Content-Disposition": `attachment; filename="alona-avrash-cv-${cv.locale}.pdf"; filename*=UTF-8''${encodeURIComponent(document.fileName)}`,
+                ...downloadHeaders(cv),
                 "Content-Length": String(bytes.length),
-                // The URL always means the latest saved CV, including after deletion.
-                "Cache-Control": "no-store",
-                "Content-Language": cv.locale,
-                "X-Content-Type-Options": "nosniff",
             },
         });
     } catch (error) {

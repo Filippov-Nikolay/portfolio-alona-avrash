@@ -152,7 +152,7 @@ test("a CV download falls back to the uploaded language and reports it", async (
 
     await page.goto("/pl");
     const link = page.locator("header").getByRole("link", { name: "Pobierz CV" }).first();
-    await expect(link).toHaveAttribute("href", "/api/cv/en");
+    await expect(link).toHaveAttribute("href", "/api/cv/pl");
     const download = page.waitForEvent("download");
     await link.click();
 

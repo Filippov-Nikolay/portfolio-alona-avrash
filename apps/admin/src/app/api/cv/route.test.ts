@@ -15,8 +15,9 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/shared/lib/notifyWeb", () => ({ notifyContentChanged: vi.fn() }));
 
 const origin = "http://localhost:3001";
-function upload(bytes: string, name = "cv.pdf", type = "application/pdf") {
+function upload(bytes: string, name = "cv.pdf", type = "application/pdf", locale = "en") {
     const form = new FormData();
+    form.set("locale", locale);
     form.set("file", new File([bytes], name, { type }));
     return new Request(`${origin}/api/cv`, { method: "POST", headers: { origin }, body: form });
 }
@@ -28,12 +29,15 @@ beforeEach(() => {
 describe("CV API", () => {
     it("rejects unauthenticated reads and writes", async () => {
         mocks.auth.mockRejectedValue(new Error("no session"));
-        expect((await GET(new Request(`${origin}/api/cv`))).status).toBe(401);
+        expect((await GET(new Request(`${origin}/api/cv?locale=en`))).status).toBe(401);
         expect((await POST(upload("%PDF-1.7\n%%EOF"))).status).toBe(401);
         expect(
             (
                 await DELETE(
-                    new Request(`${origin}/api/cv`, { method: "DELETE", headers: { origin } })
+                    new Request(`${origin}/api/cv?locale=en`, {
+                        method: "DELETE",
+                        headers: { origin },
+                    })
                 )
             ).status
         ).toBe(401);
@@ -44,9 +48,9 @@ describe("CV API", () => {
         const request = upload("%PDF-1.7\n%%EOF");
         request.headers.set("origin", "https://untrusted.example");
         expect((await POST(request)).status).toBe(403);
-        expect((await DELETE(new Request(`${origin}/api/cv`, { method: "DELETE" }))).status).toBe(
-            403
-        );
+        expect(
+            (await DELETE(new Request(`${origin}/api/cv?locale=en`, { method: "DELETE" }))).status
+        ).toBe(403);
         expect(mocks.save).not.toHaveBeenCalled();
         expect(mocks.remove).not.toHaveBeenCalled();
     });
@@ -63,14 +67,32 @@ describe("CV API", () => {
         expect(mocks.save).not.toHaveBeenCalled();
     });
     it("accepts a PDF after validating the actual bytes", async () => {
-        mocks.save.mockResolvedValue({ fileName: "cv.pdf" });
+        mocks.save.mockResolvedValue({ files: {} });
         const bytes = "%PDF-1.7\n1 0 obj\n<<>>\nendobj\n%%EOF\n";
-        const response = await POST(upload(bytes));
+        const response = await POST(upload(bytes, "cv.pdf", "application/pdf", "pl"));
         expect(response.status).toBe(200);
-        expect(mocks.save).toHaveBeenCalledWith("cv.pdf", Buffer.from(bytes));
+        expect(mocks.save).toHaveBeenCalledWith("pl", "cv.pdf", Buffer.from(bytes));
     });
-    it("returns 404 when nothing is published", async () => {
-        mocks.get.mockResolvedValue(null);
-        expect((await GET(new Request(`${origin}/api/cv`))).status).toBe(404);
+    it("only accepts uploads for a language the website offers", async () => {
+        const bytes = "%PDF-1.7\n%%EOF\n";
+        for (const locale of ["", "xx", "../en"]) {
+            expect((await POST(upload(bytes, "cv.pdf", "application/pdf", locale))).status).toBe(
+                400
+            );
+        }
+        expect(mocks.save).not.toHaveBeenCalled();
+    });
+    it("previews and deletes the CV of the requested language only", async () => {
+        mocks.get.mockResolvedValue({ files: { en: { id: "x", fileName: "en.pdf" } } });
+        mocks.download.mockResolvedValue(new Uint8Array([37]));
+        expect((await GET(new Request(`${origin}/api/cv?locale=en`))).status).toBe(200);
+        expect((await GET(new Request(`${origin}/api/cv?locale=pl`))).status).toBe(404);
+        expect((await GET(new Request(`${origin}/api/cv?locale=../en`))).status).toBe(400);
+        mocks.remove.mockResolvedValue({ files: {} });
+        const response = await DELETE(
+            new Request(`${origin}/api/cv?locale=pl`, { method: "DELETE", headers: { origin } })
+        );
+        expect(response.status).toBe(200);
+        expect(mocks.remove).toHaveBeenCalledWith("pl");
     });
 });

@@ -35,7 +35,7 @@ function seedContentDir(): void {
         { key: "packaging", label: "Packaging" },
     ]);
     write("tool-badges.json", []);
-    write("cv.json", null);
+    write("cv.json", { files: {} });
 
     // Header tests need a published CV, isolated from admin's replace/delete tests.
     const cvId = "5e7207f7-b763-4071-8e1b-6c513aecfb8a";
@@ -45,10 +45,14 @@ function seedContentDir(): void {
     writeFileSync(
         path.join(WEB_CV_DIR, "cv.json"),
         JSON.stringify({
-            id: cvId,
-            fileName: "e2e-cv.pdf",
-            size: cvBytes.length,
-            updatedAt: "2026-09-27T00:00:00.000Z",
+            files: {
+                en: {
+                    id: cvId,
+                    fileName: "e2e-cv.pdf",
+                    size: cvBytes.length,
+                    updatedAt: "2026-09-27T00:00:00.000Z",
+                },
+            },
         })
     );
 }

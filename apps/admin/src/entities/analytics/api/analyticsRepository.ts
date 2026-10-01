@@ -21,7 +21,7 @@ async function fetchFromWorker<T>(path: string): Promise<T | null> {
     try {
         response = await fetch(`${base}${path}`, {
             headers: { Authorization: `Bearer ${process.env.ANALYTICS_READ_SECRET}` },
-            cache: "no-store",
+            next: { revalidate: 30 },
         });
     } catch (error) {
         console.error(`Analytics worker request failed: ${path}`, error);

@@ -23,14 +23,18 @@ export default async function ProjectAnalyticsPage({
     const days = parseDaysParam(rawDays);
     const backHref = `/dashboard/analytics?days=${days}&view=projects`;
 
-    const allProjects = await listProjects();
+    const configured = isAnalyticsConfigured();
+    const [allProjects, detail] = await Promise.all([
+        listProjects(),
+        configured ? getProjectDetail(id, days) : null,
+    ]);
     // entityId is the project's own numeric id (see WorksCatalog.tsx's
     // trackEvent calls), not its slug - a slug changes if the project is
     // renamed, which would silently split its analytics history in two.
     const matchingProject = allProjects.find((project) => String(project.id) === id);
     const title = matchingProject?.name ?? id;
 
-    if (!isAnalyticsConfigured()) {
+    if (!configured) {
         return (
             <div className={styles.page}>
                 <PageHeader title={title} backHref={backHref} backLabel="Analytics" />
@@ -41,8 +45,6 @@ export default async function ProjectAnalyticsPage({
             </div>
         );
     }
-
-    const detail = await getProjectDetail(id, days);
 
     if (!detail) {
         return (

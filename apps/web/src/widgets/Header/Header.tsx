@@ -11,6 +11,7 @@ import { slideDown } from "@/shared/lib/motion/slide-down";
 import { scrollToTop } from "@/shared/lib/scroll";
 import { usePreloader } from "@/shared/providers";
 import { trackEvent } from "@/shared/analytics/analytics";
+import { downloadCv } from "@/entities/cv/api/downloadCv";
 import { cn } from "@/shared/lib/cn";
 import styles from "./Header.module.scss";
 import { useServicesHeaderBandController } from "./useServicesHeaderBandController";
@@ -33,13 +34,15 @@ function isActiveLink(pathname: string, item: NavItem) {
 
 const CV_DOWNLOAD_DELAY_MS = 250;
 
-function triggerCvDownload(href: string) {
+function triggerCvDownload(blob: Blob, fileName: string) {
+    const href = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = href;
-    link.download = "";
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(href), 1_000);
 }
 
 const PILL_ENTRANCE_STEP_MS = 90;
@@ -105,12 +108,14 @@ function CvLink({
     href,
     mobile = false,
     clicked,
+    downloadState,
     onDownload,
     onAnimationEnd,
 }: {
     href: string | null;
     mobile?: boolean;
     clicked: boolean;
+    downloadState: "idle" | "loading" | "error";
     onDownload: (event: MouseEvent<HTMLAnchorElement>) => void;
     onAnimationEnd: () => void;
 }) {
@@ -144,10 +149,13 @@ function CvLink({
             download={hasCv || undefined}
             role="link"
             tabIndex={0}
-            aria-disabled={!hasCv || undefined}
+            aria-disabled={!hasCv || downloadState === "loading" || undefined}
+            aria-busy={downloadState === "loading" || undefined}
             aria-label={t("downloadCv")}
-            aria-describedby={!hasCv ? descriptionId : undefined}
-            data-unavailable-visible={!hasCv && showUnavailable ? "" : undefined}
+            aria-describedby={!hasCv || downloadState !== "idle" ? descriptionId : undefined}
+            data-unavailable-visible={
+                (!hasCv && showUnavailable) || downloadState !== "idle" ? "" : undefined
+            }
             className={cn(mobile ? styles.menuCv : styles.cvPill, clicked && styles.cvPillClicked)}
             style={mobile ? undefined : pillDelay(3)}
             variants={mobile ? menuItemVariants : undefined}
@@ -184,16 +192,30 @@ function CvLink({
         >
             <span className={mobile ? styles.menuCvLabel : styles.cvLabel} aria-hidden="true">
                 <span className={styles.cvActionText}>{t("downloadCv")}</span>
-                {!hasCv && <span className={styles.cvStatusText}>{t("cvUnavailableShort")}</span>}
+                {(!hasCv || downloadState !== "idle") && (
+                    <span className={styles.cvStatusText}>
+                        {t(
+                            !hasCv
+                                ? "cvUnavailableShort"
+                                : downloadState === "loading"
+                                  ? "cvDownloading"
+                                  : "cvDownloadRetry"
+                        )}
+                    </span>
+                )}
             </span>
             <span className={mobile ? styles.menuCvIcon : styles.cvIcon} aria-hidden="true">
                 <DownloadIcon />
             </span>
-            {!hasCv && (
-                <span id={descriptionId} className={styles.srOnly}>
-                    {t("cvUnavailable")}
-                </span>
-            )}
+            <span id={descriptionId} className={styles.srOnly} role="status">
+                {!hasCv
+                    ? t("cvUnavailable")
+                    : downloadState === "error"
+                      ? t("cvDownloadFailed")
+                      : downloadState === "loading"
+                        ? t("cvDownloading")
+                        : ""}
+            </span>
         </m.a>
     );
 }
@@ -204,6 +226,9 @@ export function Header({ cv }: { cv: HeaderCv | null }) {
     const { isReady } = usePreloader();
     const pathname = usePathname();
     const [cvClicked, setCvClicked] = useState(false);
+    const [cvDownloadState, setCvDownloadState] = useState<"idle" | "loading" | "error">("idle");
+    const cvDownloadController = useRef<AbortController | null>(null);
+    const nextCvDownloadAt = useRef(0);
     const [menuOpen, setMenuOpen] = useState(false);
     const previousPathnameRef = useRef(pathname);
     const headerRef = useRef<HTMLElement>(null);
@@ -212,6 +237,14 @@ export function Header({ cv }: { cv: HeaderCv | null }) {
     const menuTriggerRef = useRef<HTMLButtonElement>(null);
     const { bandY, bandVisibility } = useServicesHeaderBandController(headerRef, sceneBackdropRef);
     useHeaderHeightVar(headerRef);
+
+    useEffect(
+        () => () => {
+            cvDownloadController.current?.abort();
+            cvDownloadController.current = null;
+        },
+        []
+    );
 
     // Keep the pills hidden for at least one committed frame after `isReady`
     // so the browser always sees a real "before" state. This is what makes
@@ -270,7 +303,7 @@ export function Header({ cv }: { cv: HeaderCv | null }) {
         };
     }, [menuOpen]);
 
-    function handleCvClick(e: MouseEvent<HTMLAnchorElement>, { closeMenu = false } = {}) {
+    async function handleCvClick(e: MouseEvent<HTMLAnchorElement>, { closeMenu = false } = {}) {
         if (!cv) {
             e.preventDefault();
             return;
@@ -279,10 +312,31 @@ export function Header({ cv }: { cv: HeaderCv | null }) {
             return;
         }
         e.preventDefault();
+        if (cvDownloadController.current || Date.now() < nextCvDownloadAt.current) return;
+        const controller = new AbortController();
+        cvDownloadController.current = controller;
+        const timeout = window.setTimeout(() => controller.abort(), 20_000);
         setCvClicked(true);
-        if (closeMenu) setMenuOpen(false);
-        trackEvent("cv_download", { entityId: cv.locale });
-        setTimeout(() => triggerCvDownload(cv.href), CV_DOWNLOAD_DELAY_MS);
+        setCvDownloadState("loading");
+        try {
+            const [file] = await Promise.all([
+                downloadCv(cv.href, controller.signal),
+                new Promise((resolve) => window.setTimeout(resolve, CV_DOWNLOAD_DELAY_MS)),
+            ]);
+            if (controller.signal.aborted) return;
+            triggerCvDownload(file.blob, file.fileName);
+            trackEvent("cv_download", { entityId: file.locale ?? cv.locale });
+            setCvDownloadState("idle");
+            if (closeMenu) setMenuOpen(false);
+        } catch {
+            if (cvDownloadController.current === controller) setCvDownloadState("error");
+        } finally {
+            window.clearTimeout(timeout);
+            if (cvDownloadController.current === controller) {
+                cvDownloadController.current = null;
+                nextCvDownloadAt.current = Date.now() + 1_000;
+            }
+        }
     }
 
     return (
@@ -381,6 +435,7 @@ export function Header({ cv }: { cv: HeaderCv | null }) {
                     <CvLink
                         href={cv?.href ?? null}
                         clicked={cvClicked}
+                        downloadState={cvDownloadState}
                         onDownload={handleCvClick}
                         onAnimationEnd={() => setCvClicked(false)}
                     />
@@ -460,6 +515,7 @@ export function Header({ cv }: { cv: HeaderCv | null }) {
                                         href={cv?.href ?? null}
                                         mobile
                                         clicked={cvClicked}
+                                        downloadState={cvDownloadState}
                                         onDownload={(e) => handleCvClick(e, { closeMenu: true })}
                                         onAnimationEnd={() => setCvClicked(false)}
                                     />

@@ -5,7 +5,10 @@
         "contact": "Contact",
         "downloadCv": "Download CV",
         "cvUnavailable": "CV currently unavailable",
-        "cvUnavailableShort": "Unavailable"
+        "cvUnavailableShort": "Unavailable",
+        "cvDownloading": "Loading…",
+        "cvDownloadRetry": "Try again",
+        "cvDownloadFailed": "Couldn't download the CV. Please try again."
     },
     "hero": {
         "role": "Graphic designer",

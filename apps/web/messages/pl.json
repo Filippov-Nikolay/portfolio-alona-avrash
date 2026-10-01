@@ -5,7 +5,10 @@
         "contact": "Kontakt",
         "downloadCv": "Pobierz CV",
         "cvUnavailable": "CV chwilowo niedostępne",
-        "cvUnavailableShort": "Niedostępne"
+        "cvUnavailableShort": "Niedostępne",
+        "cvDownloading": "Pobieranie…",
+        "cvDownloadRetry": "Ponów",
+        "cvDownloadFailed": "Nie udało się pobrać CV. Spróbuj ponownie."
     },
     "hero": {
         "role": "Projektantka graficzna",

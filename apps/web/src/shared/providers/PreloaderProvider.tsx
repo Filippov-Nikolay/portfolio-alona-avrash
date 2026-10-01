@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+    useSyncExternalStore,
+} from "react";
+import { hasSeenPreloaderBefore } from "@/shared/lib/documentState";
 import { hasPreferencesConsent } from "@/shared/lib/privacyPreferences";
 
 const STORAGE_KEY = "site:preloader";
@@ -27,11 +35,14 @@ const PreloaderContext = createContext<PreloaderContextValue | null>(null);
 
 interface PreloaderProviderProps {
     children: React.ReactNode;
-    initialHasSeenPreloader: boolean;
 }
 
-export function PreloaderProvider({ children, initialHasSeenPreloader }: PreloaderProviderProps) {
-    const [hasSeenPreloader, setHasSeenPreloader] = useState(initialHasSeenPreloader);
+const subscribeNever = () => () => {};
+
+export function PreloaderProvider({ children }: PreloaderProviderProps) {
+    const seenBefore = useSyncExternalStore(subscribeNever, hasSeenPreloaderBefore, () => false);
+    const [hasSeenThisVisit, setHasSeenPreloader] = useState(false);
+    const hasSeenPreloader = seenBefore || hasSeenThisVisit;
     const [shouldHide, setShouldHide] = useState(false);
     const [didExit, setDidExit] = useState(false);
 

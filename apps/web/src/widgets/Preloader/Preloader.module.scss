@@ -13,6 +13,10 @@
 .firstVisitOverlay {
     z-index: 310;
 
+    :global(html[data-preloader-seen]) & {
+        display: none;
+    }
+
     .char {
         transform: translateY(112%);
     }

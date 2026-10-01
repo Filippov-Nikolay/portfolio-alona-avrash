@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { HeroSection } from "@/widgets/HeroSection";
 import { ProjectsSection } from "@/widgets/ProjectsSection";
 import { ClientsSection } from "@/widgets/ClientsSection";
@@ -30,6 +30,7 @@ interface HomePageProps {
 
 export default async function HomePage({ params }: HomePageProps) {
     const { locale } = await params;
+    setRequestLocale(locale);
 
     const [
         tCategories,

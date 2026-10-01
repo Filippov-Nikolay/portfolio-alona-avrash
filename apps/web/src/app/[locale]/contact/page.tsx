@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getSocials } from "@/entities/social/api/getSocials";
 import { ContactSection } from "@/widgets/ContactSection";
 import { siteConfig } from "@/shared/config/site.config";
@@ -36,7 +36,8 @@ export async function generateMetadata({ params }: ContactPageProps): Promise<Me
     };
 }
 
-export default async function ContactPage() {
+export default async function ContactPage({ params }: ContactPageProps) {
+    setRequestLocale((await params).locale);
     const socials = await getSocials();
 
     return (

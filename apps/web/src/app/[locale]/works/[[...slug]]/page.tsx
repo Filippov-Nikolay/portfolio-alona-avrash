@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { WorksCatalog } from "@/widgets/WorksCatalog";
 import type { CategoryKey } from "@/shared/types";
 import { getAllProjects, toShowcaseItem } from "@/entities/project/lib/resolveProjects";
@@ -90,6 +90,7 @@ export async function generateMetadata({ params }: WorksPageProps): Promise<Meta
 
 export default async function WorksPage({ params }: WorksPageProps) {
     const { locale, slug } = await params;
+    setRequestLocale(locale);
 
     if (slug && slug.length > 1) notFound();
 

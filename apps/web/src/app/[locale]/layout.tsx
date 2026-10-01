@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Almarai, Geist_Mono, Zalando_Sans_SemiExpanded } from "next/font/google";
 import localFont from "next/font/local";
-import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, getTranslations } from "next-intl/server";
+import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { siteConfig } from "@/shared/config/site.config";
 import { AppProviders } from "@/shared/providers";
@@ -14,6 +13,7 @@ import { DEFAULT_OG_IMAGES, buildPageAlternates } from "@/shared/lib/seo";
 import { getSocials } from "@/entities/social/api/getSocials";
 import { getIcon } from "@/entities/icon/api/getIcon";
 import { getCv } from "@/entities/cv/api/getCv";
+import { DOCUMENT_STATE_SCRIPT } from "@/shared/lib/documentState";
 import packageJson from "../../../package.json";
 import styles from "./layout.module.scss";
 
@@ -135,21 +135,9 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     if (!isLocale(locale)) {
         notFound();
     }
+    setRequestLocale(locale);
 
-    const [messages, cookieStore, socials, cv] = await Promise.all([
-        getMessages(),
-        cookies(),
-        getSocials(),
-        getCv(locale),
-    ]);
-
-    // Приоритет: кука (явный выбор пользователя через ThemeToggle)
-    //          → "light" (дефолт сайта, ВСЕГДА - системная тема пользователя
-    //             намеренно не учитывается, см. useTheme.ts на клиенте)
-    const savedTheme = cookieStore.get("site-theme")?.value;
-    const hasSeenPreloader = cookieStore.get("site-preloader")?.value === "1";
-    const theme: "dark" | "light" =
-        savedTheme === "light" || savedTheme === "dark" ? savedTheme : "light";
+    const [messages, socials, cv] = await Promise.all([getMessages(), getSocials(), getCv(locale)]);
 
     // Personal-portfolio structured data — see README > Customization > SEO.
     const jsonLd = {
@@ -164,13 +152,16 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     return (
         <html
             lang={locale}
-            data-theme={theme}
+            data-theme="light"
             suppressHydrationWarning
             className={`${almarai.variable} ${zalandoSansSemiExpanded.variable} ${geistMono.variable} ${countryFlags.variable}`}
         >
+            <head>
+                <script dangerouslySetInnerHTML={{ __html: DOCUMENT_STATE_SCRIPT }} />
+            </head>
             <body>
                 <NextIntlClientProvider messages={messages}>
-                    <AppProviders initialHasSeenPreloader={hasSeenPreloader}>
+                    <AppProviders>
                         <Header cv={cv ? { href: `/api/cv/${locale}`, locale: cv.locale } : null} />
                         <div className={styles.pageSlot}>{children}</div>
                         <Footer locale={locale} />

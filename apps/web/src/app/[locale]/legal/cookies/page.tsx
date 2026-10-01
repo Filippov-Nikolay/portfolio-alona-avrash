@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { siteConfig } from "@/shared/config/site.config";
 import { Container, LegalDocument } from "@/shared/ui";
 import { ManagePreferencesButton } from "@/features/privacy-preferences";
@@ -23,7 +23,8 @@ export async function generateMetadata({ params }: LegalPageProps): Promise<Meta
     };
 }
 
-export default async function CookiePolicyPage() {
+export default async function CookiePolicyPage({ params }: LegalPageProps) {
+    setRequestLocale((await params).locale);
     const [t, tLegal] = await Promise.all([
         getTranslations("legal.cookies"),
         getTranslations("legal"),

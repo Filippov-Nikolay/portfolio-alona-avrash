@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { siteConfig } from "@/shared/config/site.config";
 import { Container, LegalDocument } from "@/shared/ui";
 import { TERMS_LAST_UPDATED, TERMS_MARKDOWN } from "@/content/legal/terms";
@@ -21,7 +21,8 @@ export async function generateMetadata({ params }: LegalPageProps): Promise<Meta
     };
 }
 
-export default async function TermsOfUsePage() {
+export default async function TermsOfUsePage({ params }: LegalPageProps) {
+    setRequestLocale((await params).locale);
     const [t, tLegal] = await Promise.all([
         getTranslations("legal.terms"),
         getTranslations("legal"),

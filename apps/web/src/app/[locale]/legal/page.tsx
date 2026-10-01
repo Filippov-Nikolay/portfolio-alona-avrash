@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { siteConfig } from "@/shared/config/site.config";
 import { ArrowIcon, Container } from "@/shared/ui";
@@ -37,7 +37,8 @@ export async function generateMetadata({ params }: LegalIndexPageProps): Promise
     };
 }
 
-export default async function LegalIndexPage() {
+export default async function LegalIndexPage({ params }: LegalIndexPageProps) {
+    setRequestLocale((await params).locale);
     const t = await getTranslations("legal");
 
     return (

@@ -1,7 +1,12 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { cache } from "react";
-import { CvContentSchema, type CvDocument } from "@avrash/content-schema";
+import {
+    CvContentSchema,
+    resolveCv,
+    type CvContent,
+    type ResolvedCv,
+} from "@avrash/content-schema";
 import { fetchContent } from "@/shared/api/contentClient";
 
 export function cvContentDirectory(): string {
@@ -11,7 +16,7 @@ export function cvContentDirectory(): string {
     );
 }
 
-export const getCv = cache(async (): Promise<CvDocument | null> => {
+const getCvContent = cache(async (): Promise<CvContent> => {
     try {
         if (process.env.CONTENT_SOURCE === "remote") {
             return await fetchContent("cv", "cv", CvContentSchema);
@@ -24,6 +29,10 @@ export const getCv = cache(async (): Promise<CvDocument | null> => {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
             console.error("[cv] Could not read CV metadata", error);
         }
-        return null;
+        return { files: {} };
     }
 });
+
+export async function getCv(locale: string): Promise<ResolvedCv | null> {
+    return resolveCv(await getCvContent(), locale);
+}

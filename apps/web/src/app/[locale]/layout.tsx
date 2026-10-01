@@ -140,7 +140,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         getMessages(),
         cookies(),
         getSocials(),
-        getCv(),
+        getCv(locale),
     ]);
 
     // Приоритет: кука (явный выбор пользователя через ThemeToggle)
@@ -171,7 +171,9 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             <body>
                 <NextIntlClientProvider messages={messages}>
                     <AppProviders initialHasSeenPreloader={hasSeenPreloader}>
-                        <Header hasCv={cv !== null} />
+                        <Header
+                            cv={cv ? { href: `/api/cv/${cv.locale}`, locale: cv.locale } : null}
+                        />
                         <div className={styles.pageSlot}>{children}</div>
                         <Footer locale={locale} />
                     </AppProviders>

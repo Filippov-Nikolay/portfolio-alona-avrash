@@ -5,14 +5,14 @@ import { CvManager } from "@/widgets/CvManager/CvManager";
 
 export default async function GlobalCvPage() {
     await requireAdminSession();
-    const document = await getCvRepository().get();
+    const content = await getCvRepository().get();
     return (
         <div>
             <PageHeader
                 title="CV"
-                description="Manage the PDF visitors download from your website."
+                description="Manage the PDF visitors download in each website language."
             />
-            <CvManager initialDocument={document} />
+            <CvManager initialContent={content} />
         </div>
     );
 }

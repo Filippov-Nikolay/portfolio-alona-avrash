@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_SITE_LOCALE, SITE_LOCALES } from "./locale";
 
 // Fits within the request limit of the serverless deployment, including multipart overhead.
 export const MAX_CV_BYTES = 4 * 1024 * 1024;
@@ -11,8 +12,44 @@ export const CvDocumentSchema = z.object({
     updatedAt: z.iso.datetime(),
 });
 
-export const CvContentSchema = CvDocumentSchema.nullable();
 export type CvDocument = z.infer<typeof CvDocumentSchema>;
+
+export const CV_LOCALE_PATTERN = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$/;
+
+const CvFilesSchema = z.object({
+    files: z.record(z.string().regex(CV_LOCALE_PATTERN), CvDocumentSchema),
+});
+
+export type CvContent = z.infer<typeof CvFilesSchema>;
+
+function upgradeSingleCv(value: unknown): unknown {
+    if (value === null) return { files: {} };
+    if (typeof value === "object" && !("files" in value)) {
+        return { files: { [DEFAULT_SITE_LOCALE]: value } };
+    }
+    return value;
+}
+
+export const CvContentSchema = z.preprocess(upgradeSingleCv, CvFilesSchema);
+
+export interface ResolvedCv {
+    locale: string;
+    document: CvDocument;
+}
+
+export function resolveCv(content: CvContent, locale: string): ResolvedCv | null {
+    const candidates = [
+        locale,
+        DEFAULT_SITE_LOCALE,
+        ...SITE_LOCALES.map((site) => site.code),
+        ...Object.keys(content.files).sort(),
+    ];
+    for (const code of candidates) {
+        const document = content.files[code];
+        if (document) return { locale: code, document };
+    }
+    return null;
+}
 
 export function cvFileKey(document: CvDocument): string {
     return `${CV_STORAGE_PREFIX}/${document.id}.pdf`;

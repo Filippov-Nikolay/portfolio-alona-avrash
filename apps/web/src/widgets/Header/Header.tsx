@@ -96,20 +96,26 @@ const menuItemVariants = {
     visible: { opacity: 1, y: 0, transition: { duration: 0.18 } },
 };
 
+export interface HeaderCv {
+    href: string;
+    locale: string;
+}
+
 function CvLink({
-    hasCv,
+    href,
     mobile = false,
     clicked,
     onDownload,
     onAnimationEnd,
 }: {
-    hasCv: boolean;
+    href: string | null;
     mobile?: boolean;
     clicked: boolean;
     onDownload: (event: MouseEvent<HTMLAnchorElement>) => void;
     onAnimationEnd: () => void;
 }) {
     const t = useTranslations("nav");
+    const hasCv = href !== null;
     const descriptionId = useId();
     const linkRef = useRef<HTMLAnchorElement>(null);
     const [showUnavailable, setShowUnavailable] = useState(false);
@@ -134,7 +140,7 @@ function CvLink({
     return (
         <m.a
             ref={linkRef}
-            href={hasCv ? siteConfig.links.cv : undefined}
+            href={href ?? undefined}
             download={hasCv || undefined}
             role="link"
             tabIndex={0}
@@ -192,7 +198,7 @@ function CvLink({
     );
 }
 
-export function Header({ hasCv }: { hasCv: boolean }) {
+export function Header({ cv }: { cv: HeaderCv | null }) {
     const safeSlideDown = useMotionVariants(slideDown);
     const t = useTranslations("nav");
     const { isReady } = usePreloader();
@@ -265,7 +271,7 @@ export function Header({ hasCv }: { hasCv: boolean }) {
     }, [menuOpen]);
 
     function handleCvClick(e: MouseEvent<HTMLAnchorElement>, { closeMenu = false } = {}) {
-        if (!hasCv) {
+        if (!cv) {
             e.preventDefault();
             return;
         }
@@ -276,7 +282,7 @@ export function Header({ hasCv }: { hasCv: boolean }) {
         setCvClicked(true);
         if (closeMenu) setMenuOpen(false);
         trackEvent("cv_download");
-        setTimeout(() => triggerCvDownload(siteConfig.links.cv), CV_DOWNLOAD_DELAY_MS);
+        setTimeout(() => triggerCvDownload(cv.href), CV_DOWNLOAD_DELAY_MS);
     }
 
     return (
@@ -373,7 +379,7 @@ export function Header({ hasCv }: { hasCv: boolean }) {
                     </div>
 
                     <CvLink
-                        hasCv={hasCv}
+                        href={cv?.href ?? null}
                         clicked={cvClicked}
                         onDownload={handleCvClick}
                         onAnimationEnd={() => setCvClicked(false)}
@@ -451,7 +457,7 @@ export function Header({ hasCv }: { hasCv: boolean }) {
                                     </nav>
 
                                     <CvLink
-                                        hasCv={hasCv}
+                                        href={cv?.href ?? null}
                                         mobile
                                         clicked={cvClicked}
                                         onDownload={(e) => handleCvClick(e, { closeMenu: true })}

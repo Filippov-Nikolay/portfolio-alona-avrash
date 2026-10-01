@@ -125,39 +125,94 @@
 .description:last-child {
     margin-bottom: 0;
 }
-.details {
-    border-top: 1px solid #f4f4f5;
-    padding-top: 16px;
-    margin: 18px 0;
-    display: grid;
-    gap: 12px;
-    font-size: 12px;
-    line-height: 1.5;
-}
-.details div {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 4px 12px;
-}
-.details dt {
-    color: #71717a;
-}
-.details dd {
-    margin: 0;
-    color: #3f3f46;
-}
-.fileActions,
 .actions {
     display: flex;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
 }
-.fileActions {
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f4f4f5;
-    margin-bottom: 10px;
+.languages {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.language {
+    position: relative;
+    padding: 14px;
+    border: 1px solid #e4e4e7;
+    border-radius: 10px;
+    transition:
+        border-color 0.15s ease,
+        background-color 0.15s ease;
+}
+.languageSelected {
+    border-color: #93c5fd;
+    background: #f8fbff;
+}
+.languageSelect {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.languageSelect:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+.languageSelect:disabled {
+    cursor: wait;
+}
+@media (hover: hover) {
+    .languageSelect:hover:not(:disabled) {
+        box-shadow: inset 0 0 0 1px #93c5fd;
+    }
+}
+.languageHeading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.languageHeading h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+.localeCode {
+    padding: 2px 6px;
+    border: 1px solid #e4e4e7;
+    border-radius: 4px;
+    background: #fff;
+    color: #52525b;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+}
+.language .fileName {
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+.languageActions {
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 10px -8px -6px;
+}
+.languageActions > * {
+    pointer-events: auto;
 }
 .link {
     display: inline-flex;
@@ -178,11 +233,12 @@
     background: #f4f4f5;
 }
 .deleteButton {
-    padding-left: 0;
     color: #b91c1c;
 }
 .confirm {
-    padding-top: 2px;
+    position: relative;
+    z-index: 2;
+    padding-top: 10px;
 }
 .confirm p {
     font-size: 13px;

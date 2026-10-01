@@ -1,7 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { CvContentSchema, cvFileKey, type CvDocument } from "@avrash/content-schema";
+import {
+    CvContentSchema,
+    cvFileKey,
+    SITE_LOCALES,
+    type CvContent,
+    type CvDocument,
+} from "@avrash/content-schema";
 import { contentDataDir } from "@/shared/storage/contentDir";
 import { getStorageDriver } from "@/shared/storage/driver";
 import { deleteFile, readJsonFile } from "@/shared/storage/fs";
@@ -15,7 +21,7 @@ import {
 
 interface CvStorage {
     read(): Promise<unknown>;
-    write(document: CvDocument | null): Promise<void>;
+    write(content: CvContent): Promise<void>;
     upload(key: string, bytes: Buffer): Promise<void>;
     download(key: string): Promise<Uint8Array>;
     remove(key: string): Promise<void>;
@@ -34,12 +40,22 @@ function isMissing(error: unknown): boolean {
     );
 }
 
+function ordered(files: CvContent["files"]): CvContent["files"] {
+    const rank = (code: string) => {
+        const index = SITE_LOCALES.findIndex((locale) => locale.code === code);
+        return index === -1 ? SITE_LOCALES.length : index;
+    };
+    return Object.fromEntries(
+        Object.entries(files).sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b))
+    );
+}
+
 export function createCvRepository(storage: CvStorage) {
-    async function get(): Promise<CvDocument | null> {
+    async function get(): Promise<CvContent> {
         try {
             return CvContentSchema.parse(await storage.read());
         } catch (error) {
-            if (isMissing(error)) return null;
+            if (isMissing(error)) return { files: {} };
             throw error;
         }
     }
@@ -57,8 +73,7 @@ export function createCvRepository(storage: CvStorage) {
     return {
         get,
         download: (document: CvDocument) => storage.download(cvFileKey(document)),
-        async save(fileName: string, bytes: Buffer): Promise<CvDocument> {
-            const previous = await get();
+        async save(locale: string, fileName: string, bytes: Buffer): Promise<CvContent> {
             const document: CvDocument = {
                 id: randomUUID(),
                 fileName: fileName.replace(/[\x00-\x1f\x7f/\\]/g, "_").slice(0, 180),
@@ -66,32 +81,43 @@ export function createCvRepository(storage: CvStorage) {
                 updatedAt: new Date().toISOString(),
             };
             await storage.upload(cvFileKey(document), bytes);
+            let previous: CvDocument | undefined;
+            let content: CvContent;
             try {
-                await storage.write(document);
+                const current = await get();
+                previous = current.files[locale];
+                content = { files: ordered({ ...current.files, [locale]: document }) };
+                await storage.write(content);
             } catch (error) {
                 await cleanup(document);
                 throw error;
             }
             if (previous) await cleanup(previous);
-            return document;
+            return content;
         },
-        async remove(): Promise<void> {
-            const previous = await get();
+        async remove(locale: string): Promise<CvContent> {
+            const current = await get();
+            const previous = current.files[locale];
+            if (!previous) return current;
+            const files = { ...current.files };
+            delete files[locale];
+            const content = { files };
             // Unpublish first, so the website never advertises a deleted file.
-            await storage.write(null);
-            if (previous) await cleanup(previous);
+            await storage.write(content);
+            await cleanup(previous);
+            return content;
         },
     };
 }
 
 const filesystem: CvStorage = {
     read: () => readJsonFile(path.join(contentDataDir(), "cv.json")),
-    async write(document) {
+    async write(content) {
         const dir = contentDataDir();
         await mkdir(dir, { recursive: true });
         const temporary = path.join(dir, `cv.${randomUUID()}.tmp`);
         try {
-            await writeFile(temporary, `${JSON.stringify(document, null, 4)}\n`);
+            await writeFile(temporary, `${JSON.stringify(content, null, 4)}\n`);
             await rename(temporary, path.join(dir, "cv.json"));
         } finally {
             await deleteFile(temporary);
@@ -108,7 +134,7 @@ const filesystem: CvStorage = {
 
 const r2: CvStorage = {
     read: () => readJsonObject("content/cv.json"),
-    write: (document) => writeJsonObject("content/cv.json", document),
+    write: (content) => writeJsonObject("content/cv.json", content),
     upload: (key, bytes) => writeObject(key, bytes, "application/pdf"),
     download: readObject,
     remove: deleteObject,

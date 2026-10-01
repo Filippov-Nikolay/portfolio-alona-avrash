@@ -8,6 +8,7 @@ import {
     Download,
     ExternalLink,
     FileText,
+    Languages,
     Trash2,
     Upload,
     X,
@@ -15,11 +16,16 @@ import {
 import {
     CvContentSchema,
     cvFileError,
+    DEFAULT_SITE_LOCALE,
     hasPdfSignature,
-    type CvDocument,
+    resolveCv,
+    SITE_LOCALES,
+    type CvContent,
+    type SiteLocale,
 } from "@avrash/content-schema";
 import { Button } from "@/shared/ui/Button";
 import { cn } from "@/shared/lib/cn";
+import { CvLanguageSelect } from "./CvLanguageSelect";
 import styles from "./CvManager.module.css";
 
 type Draft = { file: File; url: string };
@@ -35,18 +41,36 @@ function formatSize(bytes: number) {
         : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function CvManager({ initialDocument }: { initialDocument: CvDocument | null }) {
-    const [document, setDocument] = useState(initialDocument);
+const formatDate = (value: string) =>
+    new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "UTC" }).format(
+        new Date(value)
+    );
+
+const languageName = (code: string) =>
+    SITE_LOCALES.find((locale) => locale.code === code)?.name ?? code.toUpperCase();
+
+const savedUrl = (locale: string, id: string) =>
+    `/api/cv?locale=${encodeURIComponent(locale)}&v=${id}`;
+
+function initialLocale(content: CvContent): SiteLocale {
+    return SITE_LOCALES.find((locale) => content.files[locale.code])?.code ?? DEFAULT_SITE_LOCALE;
+}
+
+export function CvManager({ initialContent }: { initialContent: CvContent }) {
+    const [content, setContent] = useState(initialContent);
+    const [selected, setSelected] = useState<SiteLocale>(() => initialLocale(initialContent));
     const [draft, setDraft] = useState<Draft | null>(null);
     const [pending, setPending] = useState<"saving" | "deleting" | null>(null);
     const [checking, setChecking] = useState(false);
     const [dragging, setDragging] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState<SiteLocale | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const input = useRef<HTMLInputElement>(null);
     const selectionRun = useRef(0);
     const busy = !!pending || checking;
+    const selectedName = languageName(selected);
+    const current = content.files[selected];
 
     useEffect(
         () => () => {
@@ -70,6 +94,13 @@ export function CvManager({ initialDocument }: { initialDocument: CvDocument | n
         return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
     }, [draft]);
 
+    function focusLocale(locale: SiteLocale) {
+        setSelected(locale);
+        setConfirmDelete(null);
+        setError(null);
+        setNotice(null);
+    }
+
     async function selectFile(files: FileList | null) {
         if (!files?.length || busy) return;
         setError(null);
@@ -92,7 +123,7 @@ export function CvManager({ initialDocument }: { initialDocument: CvDocument | n
             if (!hasPdfSignature(bytes))
                 throw new Error("This file is not a valid PDF. Please export it again.");
             setDraft({ file, url: URL.createObjectURL(file) });
-            setConfirmDelete(false);
+            setConfirmDelete(null);
         } catch (error) {
             setError(error instanceof Error ? error.message : "Could not read this file.");
         } finally {
@@ -100,30 +131,35 @@ export function CvManager({ initialDocument }: { initialDocument: CvDocument | n
         }
     }
 
-    async function mutate(method: "POST" | "DELETE") {
+    async function mutate(method: "POST" | "DELETE", locale: SiteLocale) {
         if (busy || (method === "POST" && !draft)) return;
         setPending(method === "POST" ? "saving" : "deleting");
         setError(null);
         setNotice(null);
         const body = new FormData();
+        body.set("locale", locale);
         if (draft) body.set("file", draft.file);
         try {
-            const response = await fetch("/api/cv", {
-                method,
-                body: method === "POST" ? body : undefined,
-            });
+            const response = await fetch(
+                method === "POST" ? "/api/cv" : `/api/cv?locale=${encodeURIComponent(locale)}`,
+                { method, body: method === "POST" ? body : undefined }
+            );
             if (response.redirected)
                 throw new Error("Your session expired. Sign in again before saving.");
             const result = await response.json();
             if (!response.ok)
                 throw new Error(result.error || "Something went wrong. Please try again.");
-            setDocument(CvContentSchema.parse(result.document));
+            const next = CvContentSchema.parse(result.content);
+            setContent(next);
             setDraft(null);
-            setConfirmDelete(false);
+            setConfirmDelete(null);
+            const fallback = resolveCv(next, locale);
             setNotice(
                 method === "POST"
-                    ? "CV saved. This is now the file linked on your website."
-                    : "CV deleted. The download button will show that CV is unavailable."
+                    ? `${languageName(locale)} CV saved. Visitors browsing in ${languageName(locale)} now download this file.`
+                    : fallback
+                      ? `${languageName(locale)} CV deleted. Visitors browsing in ${languageName(locale)} now get the ${languageName(fallback.locale)} CV.`
+                      : `${languageName(locale)} CV deleted. The download button will show that CV is unavailable.`
             );
         } catch (error) {
             setError(
@@ -134,8 +170,7 @@ export function CvManager({ initialDocument }: { initialDocument: CvDocument | n
         }
     }
 
-    const savedUrl = document ? `/api/cv?v=${document.id}` : null;
-    const previewUrl = draft?.url ?? savedUrl;
+    const previewUrl = draft?.url ?? (current ? savedUrl(selected, current.id) : null);
 
     return (
         <div className={styles.manager}>
@@ -155,107 +190,124 @@ export function CvManager({ initialDocument }: { initialDocument: CvDocument | n
             </div>
             <div className={styles.layout}>
                 <div className={styles.sidebar}>
-                    <section className={styles.card} aria-labelledby="current-cv-title">
+                    <section className={styles.card} aria-labelledby="cv-documents-title">
                         <div className={styles.cardHeading}>
-                            <h2 id="current-cv-title">
-                                <FileText size={18} aria-hidden="true" />
-                                Website CV
+                            <h2 id="cv-documents-title">
+                                <Languages size={18} aria-hidden="true" />
+                                CV documents
                             </h2>
-                            <span className={cn(styles.badge, document && styles.published)}>
-                                {document ? "Published" : "Not uploaded"}
+                            <span className={styles.badge}>
+                                {Object.keys(content.files).length} of {SITE_LOCALES.length}
                             </span>
                         </div>
-                        {document ? (
-                            <>
-                                <p className={styles.fileName}>{document.fileName}</p>
-                                <p className={styles.meta}>PDF · {formatSize(document.size)}</p>
-                                <dl className={styles.details}>
-                                    <div>
-                                        <dt>Last updated</dt>
-                                        <dd>
-                                            <time dateTime={document.updatedAt}>
-                                                {new Intl.DateTimeFormat("en-GB", {
-                                                    dateStyle: "medium",
-                                                    timeZone: "UTC",
-                                                }).format(new Date(document.updatedAt))}
-                                            </time>
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt>Used in</dt>
-                                        <dd>Header & mobile menu</dd>
-                                    </div>
-                                    <div>
-                                        <dt>Languages</dt>
-                                        <dd>One CV for all languages</dd>
-                                    </div>
-                                </dl>
-                                <div className={styles.fileActions}>
-                                    <a
-                                        href={savedUrl!}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={styles.link}
+                        <ul className={styles.languages}>
+                            {SITE_LOCALES.map(({ code, label, name }) => {
+                                const document = content.files[code];
+                                const fallback = document ? null : resolveCv(content, code);
+                                const isSelected = selected === code;
+                                return (
+                                    <li
+                                        key={code}
+                                        className={cn(
+                                            styles.language,
+                                            isSelected && styles.languageSelected
+                                        )}
+                                        aria-label={`${name} CV`}
                                     >
-                                        <ExternalLink size={15} aria-hidden="true" />
-                                        Open PDF
-                                    </a>
-                                    <a
-                                        href={`${savedUrl}&download=1`}
-                                        download
-                                        className={styles.link}
-                                    >
-                                        <Download size={15} aria-hidden="true" />
-                                        Download
-                                    </a>
-                                </div>
-                                {confirmDelete ? (
-                                    <div
-                                        className={styles.confirm}
-                                        role="group"
-                                        aria-label="Confirm CV deletion"
-                                    >
-                                        <p>
-                                            Delete this CV? The download button will stay visible,
-                                            but disabled until you upload a new CV.
-                                        </p>
-                                        <div className={styles.actions}>
-                                            <Button
-                                                variant="danger"
-                                                disabled={busy}
-                                                onClick={() => void mutate("DELETE")}
+                                        <button
+                                            type="button"
+                                            className={styles.languageSelect}
+                                            aria-label={`Select ${name} CV`}
+                                            aria-pressed={isSelected}
+                                            aria-controls="cv-preview"
+                                            disabled={busy}
+                                            onClick={() => focusLocale(code)}
+                                        />
+                                        <div className={styles.languageHeading}>
+                                            <h3>
+                                                {name}
+                                                <span className={styles.localeCode}>{label}</span>
+                                            </h3>
+                                            <span
+                                                className={cn(
+                                                    styles.badge,
+                                                    document && styles.published
+                                                )}
                                             >
-                                                {pending === "deleting"
-                                                    ? "Deleting…"
-                                                    : "Delete permanently"}
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                disabled={busy}
-                                                onClick={() => setConfirmDelete(false)}
-                                            >
-                                                Keep CV
-                                            </Button>
+                                                {document ? "Published" : "Not uploaded"}
+                                            </span>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <Button
-                                        variant="ghost"
-                                        className={styles.deleteButton}
-                                        disabled={busy || !!draft}
-                                        onClick={() => setConfirmDelete(true)}
-                                    >
-                                        <Trash2 size={15} aria-hidden="true" />
-                                        Delete CV
-                                    </Button>
-                                )}
-                            </>
-                        ) : (
-                            <p className={styles.description}>
-                                Upload your CV to enable the download button on the website.
-                                Visitors will always get the last saved version.
-                            </p>
-                        )}
+                                        {document ? (
+                                            <>
+                                                <p className={styles.fileName}>
+                                                    {document.fileName}
+                                                </p>
+                                                <p className={styles.meta}>
+                                                    {formatSize(document.size)} · Updated{" "}
+                                                    <time dateTime={document.updatedAt}>
+                                                        {formatDate(document.updatedAt)}
+                                                    </time>
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <p className={styles.meta}>
+                                                {fallback
+                                                    ? `Visitors get the ${languageName(fallback.locale)} CV instead.`
+                                                    : "The download button is disabled."}
+                                            </p>
+                                        )}
+                                        {confirmDelete === code && document ? (
+                                            <div
+                                                className={styles.confirm}
+                                                role="group"
+                                                aria-label={`Confirm ${name} CV deletion`}
+                                            >
+                                                <p>
+                                                    Delete the {name} CV?{" "}
+                                                    {Object.keys(content.files).length > 1
+                                                        ? "Visitors browsing in this language will get another uploaded CV."
+                                                        : "The download button will stay visible, but disabled until you upload a new CV."}
+                                                </p>
+                                                <div className={styles.actions}>
+                                                    <Button
+                                                        variant="danger"
+                                                        disabled={busy}
+                                                        onClick={() => void mutate("DELETE", code)}
+                                                    >
+                                                        {pending === "deleting"
+                                                            ? "Deleting…"
+                                                            : "Delete permanently"}
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        disabled={busy}
+                                                        onClick={() => setConfirmDelete(null)}
+                                                    >
+                                                        Keep CV
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ) : document ? (
+                                            <div className={styles.languageActions}>
+                                                <Button
+                                                    variant="ghost"
+                                                    className={styles.deleteButton}
+                                                    aria-label={`Delete ${name} CV`}
+                                                    disabled={busy || !!draft}
+                                                    onClick={() => {
+                                                        focusLocale(code);
+                                                        setConfirmDelete(code);
+                                                    }}
+                                                >
+                                                    <Trash2 size={15} aria-hidden="true" />
+                                                    Delete
+                                                </Button>
+                                            </div>
+                                        ) : null}
+                                    </li>
+                                );
+                            })}
+                        </ul>
                     </section>
 
                     <section
@@ -266,13 +318,14 @@ export function CvManager({ initialDocument }: { initialDocument: CvDocument | n
                         <div className={styles.cardHeading}>
                             <h2 id="upload-cv-title">
                                 <Upload size={18} aria-hidden="true" />
-                                {document ? "Replace CV" : "Upload CV"}
+                                {current ? `Replace ${selectedName} CV` : "Upload CV"}
                             </h2>
                         </div>
+                        <CvLanguageSelect value={selected} disabled={busy} onChange={focusLocale} />
                         <p className={styles.description}>
                             Choose a PDF, check the preview, then save.{" "}
-                            {document
-                                ? "Your current CV stays available until you save the replacement."
+                            {current
+                                ? `The current ${selectedName} CV stays available until you save the replacement.`
                                 : "The file is only uploaded when you save."}
                         </p>
                         <input
@@ -323,13 +376,14 @@ export function CvManager({ initialDocument }: { initialDocument: CvDocument | n
                                 </span>
                                 <p className={styles.fileName}>{draft.file.name}</p>
                                 <p className={styles.meta}>
-                                    {formatSize(draft.file.size)} · Ready to save
+                                    {formatSize(draft.file.size)} · Ready to save as the{" "}
+                                    {selectedName} CV
                                 </p>
                                 <div className={styles.actions}>
                                     <Button
                                         variant="primary"
                                         disabled={busy}
-                                        onClick={() => void mutate("POST")}
+                                        onClick={() => void mutate("POST", selected)}
                                     >
                                         <Check size={16} aria-hidden="true" />
                                         {pending === "saving" ? "Saving…" : "Save CV"}
@@ -351,35 +405,57 @@ export function CvManager({ initialDocument }: { initialDocument: CvDocument | n
                     </section>
                 </div>
 
-                <section className={styles.preview} aria-labelledby="cv-preview-title">
+                <section
+                    id="cv-preview"
+                    className={styles.preview}
+                    aria-labelledby="cv-preview-title"
+                >
                     <div className={styles.previewHeading}>
                         <div>
                             <h2 id="cv-preview-title">
-                                {draft ? "Preview before saving" : "Document preview"}
+                                {draft
+                                    ? `${selectedName} CV · preview before saving`
+                                    : `${selectedName} CV`}
                             </h2>
                             <p>
                                 {draft
                                     ? draft.file.name
-                                    : (document?.fileName ?? "Your CV will appear here")}
+                                    : (current?.fileName ?? "No PDF uploaded for this language")}
                             </p>
                         </div>
                         {previewUrl && (
-                            <a
-                                className={styles.link}
-                                href={previewUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                <ExternalLink size={16} aria-hidden="true" />
-                                <span>Open in new tab</span>
-                            </a>
+                            <div className={styles.actions}>
+                                <a
+                                    className={styles.link}
+                                    href={previewUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <ExternalLink size={16} aria-hidden="true" />
+                                    <span>Open in new tab</span>
+                                </a>
+                                {!draft && current && (
+                                    <a
+                                        className={styles.link}
+                                        href={`${previewUrl}&download=1`}
+                                        download
+                                    >
+                                        <Download size={16} aria-hidden="true" />
+                                        <span>Download</span>
+                                    </a>
+                                )}
+                            </div>
                         )}
                     </div>
                     {previewUrl ? (
                         <>
                             <PdfPreview
                                 key={previewUrl}
-                                label={draft ? "Selected CV preview" : "Saved CV preview"}
+                                label={
+                                    draft
+                                        ? `Selected ${selectedName} CV preview`
+                                        : `Saved ${selectedName} CV preview`
+                                }
                                 url={previewUrl}
                             />
                             <p className={styles.previewHint}>
@@ -391,8 +467,8 @@ export function CvManager({ initialDocument }: { initialDocument: CvDocument | n
                             <FileText size={48} strokeWidth={1} aria-hidden="true" />
                             <h3>A first look, before it goes live</h3>
                             <p>
-                                Select your PDF to check its layout and content before publishing
-                                it.
+                                Select a PDF for the {selectedName} CV to check its layout and
+                                content before publishing it.
                             </p>
                         </div>
                     )}

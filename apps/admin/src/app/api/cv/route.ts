@@ -1,5 +1,11 @@
 import { revalidatePath } from "next/cache";
-import { cvFileError, hasPdfSignature, MAX_CV_BYTES } from "@avrash/content-schema";
+import {
+    CV_LOCALE_PATTERN,
+    cvFileError,
+    hasPdfSignature,
+    isSiteLocale,
+    MAX_CV_BYTES,
+} from "@avrash/content-schema";
 import { getCvRepository } from "@/entities/cv/api/cvRepository";
 import { requireAdminSession } from "@/shared/auth/requireAdminSession";
 import { notifyContentChanged } from "@/shared/lib/notifyWeb";
@@ -18,13 +24,22 @@ async function authorize(request: Request, mutation = false): Promise<Response |
     return null;
 }
 
+function requestedLocale(request: Request): string | null {
+    const locale = new URL(request.url).searchParams.get("locale") ?? "";
+    return CV_LOCALE_PATTERN.test(locale) ? locale : null;
+}
+
+const missingLanguage = () => Response.json({ error: "Choose a CV language." }, { status: 400 });
+
 export async function GET(request: Request) {
     const unauthorized = await authorize(request);
     if (unauthorized) return unauthorized;
+    const locale = requestedLocale(request);
+    if (!locale) return missingLanguage();
     try {
         const repository = getCvRepository();
-        const document = await repository.get();
-        if (!document) return new Response("No CV uploaded.", { status: 404 });
+        const document = (await repository.get()).files[locale];
+        if (!document) return new Response("No CV uploaded for this language.", { status: 404 });
         const bytes = await repository.download(document);
         const disposition = new URL(request.url).searchParams.has("download")
             ? "attachment"
@@ -60,6 +75,8 @@ export async function POST(request: Request) {
     } catch {
         return Response.json({ error: "Choose a PDF document." }, { status: 400 });
     }
+    const locale = form.get("locale");
+    if (typeof locale !== "string" || !isSiteLocale(locale)) return missingLanguage();
     const file = form.get("file");
     if (!(file instanceof File))
         return Response.json({ error: "Choose a PDF document." }, { status: 400 });
@@ -73,10 +90,10 @@ export async function POST(request: Request) {
         );
     }
     try {
-        const document = await getCvRepository().save(file.name, bytes);
+        const content = await getCvRepository().save(locale, file.name, bytes);
         revalidatePath("/global/cv");
         await notifyContentChanged("cv");
-        return Response.json({ document });
+        return Response.json({ content });
     } catch (error) {
         console.error("[cv] Save failed", error);
         return Response.json(
@@ -89,11 +106,13 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
     const unauthorized = await authorize(request, true);
     if (unauthorized) return unauthorized;
+    const locale = requestedLocale(request);
+    if (!locale) return missingLanguage();
     try {
-        await getCvRepository().remove();
+        const content = await getCvRepository().remove(locale);
         revalidatePath("/global/cv");
         await notifyContentChanged("cv");
-        return Response.json({ document: null });
+        return Response.json({ content });
     } catch (error) {
         console.error("[cv] Delete failed", error);
         return Response.json(

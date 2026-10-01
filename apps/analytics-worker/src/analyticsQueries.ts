@@ -387,74 +387,86 @@ export function referrerHost(referrer: string | null, ownHosts: readonly string[
 
 const VISITOR_KEY = "COALESCE(visitor_id, session_id)";
 
+type AnalyticsReadDatabase = Pick<D1Database, "prepare" | "batch">;
+type TrafficBreakdownRow = { key: string | null; visitors: number };
+
+async function readBatch<Rows extends unknown[]>(
+    db: AnalyticsReadDatabase,
+    statements: { [K in keyof Rows]: D1PreparedStatement }
+): Promise<{ [K in keyof Rows]: Rows[K][] }> {
+    const results = await db.batch(statements);
+    return results.map((result) => result.results) as { [K in keyof Rows]: Rows[K][] };
+}
+
 export async function getTraffic(
-    db: D1Like,
+    db: AnalyticsReadDatabase,
     days: number,
     ownHosts: readonly string[] = []
 ): Promise<TrafficOverview> {
     const since = daysAgo(days);
     const scope = `FROM analytics_events WHERE event_name = 'page_view' AND created_at > ?`;
 
-    const totals = await db
-        .prepare(
-            `SELECT COUNT(*) as pageViews, COUNT(DISTINCT ${VISITOR_KEY}) as visitors ${scope}`
-        )
-        .bind(since)
-        .first<{ pageViews: number | null; visitors: number | null }>();
-    const pageViews = totals?.pageViews ?? 0;
-    const visitors = totals?.visitors ?? 0;
+    const breakdown = (column: string) =>
+        db
+            .prepare(
+                `SELECT ${column} as key, COUNT(DISTINCT ${VISITOR_KEY}) as visitors
+             ${scope}
+             GROUP BY ${column}`
+            )
+            .bind(since);
 
-    const dailyRows = await db
-        .prepare(
-            `SELECT date(created_at / 1000, 'unixepoch') as day, COUNT(*) as views,
+    const [
+        totalsRows,
+        dailyRows,
+        pageRows,
+        referrerRows,
+        campaignRows,
+        countryRows,
+        deviceRows,
+        osRows,
+        browserRows,
+        localeRows,
+    ] = await readBatch<
+        [
+            { pageViews: number | null; visitors: number | null },
+            { day: string; views: number; visitors: number; sessions: number },
+            { path: string; views: number; visitors: number },
+            TrafficBreakdownRow,
+            Omit<CampaignStat, "percent">,
+            TrafficBreakdownRow,
+            TrafficBreakdownRow,
+            TrafficBreakdownRow,
+            TrafficBreakdownRow,
+            TrafficBreakdownRow,
+        ]
+    >(db, [
+        db
+            .prepare(
+                `SELECT COUNT(*) as pageViews, COUNT(DISTINCT ${VISITOR_KEY}) as visitors ${scope}`
+            )
+            .bind(since),
+        db
+            .prepare(
+                `SELECT date(created_at / 1000, 'unixepoch') as day, COUNT(*) as views,
                     COUNT(DISTINCT ${VISITOR_KEY}) as visitors,
                     COUNT(DISTINCT session_id) as sessions
              ${scope}
              GROUP BY day`
-        )
-        .bind(since)
-        .all<{ day: string; views: number; visitors: number; sessions: number }>();
-    const views = fillDailyCounts(
-        dailyRows.results.map((row) => ({ day: row.day, count: row.views })),
-        days
-    );
-    const dailyVisitors = fillDailyCounts(
-        dailyRows.results.map((row) => ({ day: row.day, count: row.visitors })),
-        days
-    );
-    const dailySessions = fillDailyCounts(
-        dailyRows.results.map((row) => ({ day: row.day, count: row.sessions })),
-        days
-    );
-
-    const pageRows = await db
-        .prepare(
-            `SELECT path, COUNT(*) as views, COUNT(DISTINCT ${VISITOR_KEY}) as visitors
+            )
+            .bind(since),
+        db
+            .prepare(
+                `SELECT path, COUNT(*) as views, COUNT(DISTINCT ${VISITOR_KEY}) as visitors
              ${scope}
              GROUP BY path
              ORDER BY views DESC
              LIMIT ?`
-        )
-        .bind(since, TOP_PAGES_LIMIT)
-        .all<{ path: string; views: number; visitors: number }>();
-
-    const breakdown = async (column: string) =>
-        (
-            await db
-                .prepare(
-                    `SELECT ${column} as key, COUNT(DISTINCT ${VISITOR_KEY}) as visitors
-                     ${scope}
-                     GROUP BY ${column}`
-                )
-                .bind(since)
-                .all<{ key: string | null; visitors: number }>()
-        ).results;
-
-    const referrerRows = await breakdown("referrer");
-
-    const campaignRows = await db
-        .prepare(
-            `SELECT utm_source as source, utm_medium as medium, utm_campaign as campaign,
+            )
+            .bind(since, TOP_PAGES_LIMIT),
+        breakdown("referrer"),
+        db
+            .prepare(
+                `SELECT utm_source as source, utm_medium as medium, utm_campaign as campaign,
                     utm_content as content, COUNT(DISTINCT session_id) as sessions,
                     COUNT(DISTINCT ${VISITOR_KEY}) as visitors
              ${scope}
@@ -463,9 +475,29 @@ export async function getTraffic(
              GROUP BY utm_source, utm_medium, utm_campaign, utm_content
              ORDER BY visitors DESC, sessions DESC
              LIMIT ?`
-        )
-        .bind(since, TOP_CAMPAIGNS_LIMIT)
-        .all<Omit<CampaignStat, "percent">>();
+            )
+            .bind(since, TOP_CAMPAIGNS_LIMIT),
+        breakdown("country"),
+        breakdown("device"),
+        breakdown("os"),
+        breakdown("browser"),
+        breakdown("locale"),
+    ]);
+
+    const pageViews = totalsRows[0]?.pageViews ?? 0;
+    const visitors = totalsRows[0]?.visitors ?? 0;
+    const views = fillDailyCounts(
+        dailyRows.map((row) => ({ day: row.day, count: row.views })),
+        days
+    );
+    const dailyVisitors = fillDailyCounts(
+        dailyRows.map((row) => ({ day: row.day, count: row.visitors })),
+        days
+    );
+    const dailySessions = fillDailyCounts(
+        dailyRows.map((row) => ({ day: row.day, count: row.sessions })),
+        days
+    );
 
     return {
         pageViews,
@@ -477,15 +509,15 @@ export async function getTraffic(
             visitors: dailyVisitors[index]!.count,
             sessions: dailySessions[index]!.count,
         })),
-        pages: pageRows.results.map((row) => ({
+        pages: pageRows.map((row) => ({
             ...row,
             percent: computeRate(row.views, pageViews),
         })),
-        countries: toShareBreakdown(await breakdown("country"), visitors),
-        devices: toShareBreakdown(await breakdown("device"), visitors),
-        operatingSystems: toShareBreakdown(await breakdown("os"), visitors),
-        browsers: toShareBreakdown(await breakdown("browser"), visitors),
-        languages: toShareBreakdown(await breakdown("locale"), visitors),
+        countries: toShareBreakdown(countryRows, visitors),
+        devices: toShareBreakdown(deviceRows, visitors),
+        operatingSystems: toShareBreakdown(osRows, visitors),
+        browsers: toShareBreakdown(browserRows, visitors),
+        languages: toShareBreakdown(localeRows, visitors),
         referrers: toShareBreakdown(
             referrerRows.map((row) => ({
                 key: referrerHost(row.key, ownHosts),
@@ -493,7 +525,7 @@ export async function getTraffic(
             })),
             visitors
         ),
-        campaigns: campaignRows.results.map((row) => ({
+        campaigns: campaignRows.map((row) => ({
             ...row,
             percent: computeRate(row.visitors, visitors),
         })),

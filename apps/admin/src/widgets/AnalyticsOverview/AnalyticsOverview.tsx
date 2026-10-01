@@ -196,6 +196,9 @@ export function AnalyticsOverview({
                                     <LineChart
                                         points={chartPoints}
                                         label={`${METRICS.find((option) => option.value === metric)?.label} over time`}
+                                        seriesLabel={
+                                            METRICS.find((option) => option.value === metric)?.label
+                                        }
                                     />
                                 </section>
 
@@ -445,6 +448,12 @@ export function AnalyticsOverview({
                                                 value: point[engagementMetric],
                                             }))}
                                             label={`${ENGAGEMENT_METRICS.find((option) => option.value === engagementMetric)?.label} over time`}
+                                            seriesLabel={
+                                                ENGAGEMENT_METRICS.find(
+                                                    (option) => option.value === engagementMetric
+                                                )?.label
+                                            }
+                                            interval={days > WEEKLY_THRESHOLD_DAYS ? "week" : "day"}
                                         />
                                     </section>
                                 )}

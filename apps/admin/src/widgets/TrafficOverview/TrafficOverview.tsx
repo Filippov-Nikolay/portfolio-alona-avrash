@@ -339,6 +339,9 @@ export function TrafficOverview({ traffic, sessions }: TrafficOverviewProps) {
                                             value: point[metric] ?? 0,
                                         }))}
                                         label={`${METRICS.find((option) => option.value === metric)?.label} over time`}
+                                        seriesLabel={
+                                            METRICS.find((option) => option.value === metric)?.label
+                                        }
                                     />
                                 </section>
                                 {sessions && <SessionStats sessions={sessions} />}

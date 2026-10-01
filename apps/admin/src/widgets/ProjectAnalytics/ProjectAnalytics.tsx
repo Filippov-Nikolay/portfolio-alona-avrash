@@ -137,6 +137,7 @@ export function ProjectAnalytics({ detail }: ProjectAnalyticsProps) {
                         value: point.count,
                     }))}
                     label="Project opens over time"
+                    seriesLabel="Project opens"
                 />
             </section>
 

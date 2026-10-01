@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
     computeRate,
     dayKey,
@@ -19,11 +19,12 @@ import {
     toLocaleBreakdown,
     toTrendPoints,
 } from "./analyticsQueries";
-import type { D1Like } from "./db";
-
-function createSequencedDb(responses: unknown[]): D1Like {
+function createSequencedDb(responses: unknown[]): Pick<D1Database, "prepare" | "batch"> {
     let index = 0;
     return {
+        async batch<T>(statements: D1PreparedStatement[]) {
+            return Promise.all(statements.map((statement) => statement.all<T>()));
+        },
         prepare() {
             return {
                 bind() {
@@ -33,13 +34,14 @@ function createSequencedDb(responses: unknown[]): D1Like {
                             return (responses[index++] ?? null) as T | null;
                         },
                         async all<T>() {
-                            return (responses[index++] ?? { results: [] }) as { results: T[] };
+                            const response = responses[index++] as { results?: T[] } | null;
+                            return { results: response?.results ?? (response ? [response] : []) };
                         },
                     };
                 },
             };
         },
-    };
+    } as unknown as Pick<D1Database, "prepare" | "batch">;
 }
 
 describe("computeRate", () => {
@@ -382,7 +384,11 @@ describe("getTraffic", () => {
             { results: [{ key: "en", visitors: 4 }] },
         ]);
 
+        const batch = vi.spyOn(db, "batch");
         const traffic = await getTraffic(db, 7, ["dev.avrash.com"]);
+
+        expect(batch).toHaveBeenCalledTimes(1);
+        expect(batch.mock.calls[0]![0]).toHaveLength(10);
 
         expect(traffic.pageViews).toBe(10);
         expect(traffic.visitors).toBe(4);

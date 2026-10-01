@@ -56,6 +56,8 @@ describe("analyticsRepository", () => {
             const [url, init] = fetchMock.mock.calls[0]!;
             expect(url).toBe("https://analytics.example.com/analytics/overview?days=30");
             expect(init.headers.Authorization).toBe("Bearer test-secret");
+            expect(init.next).toEqual({ revalidate: 30 });
+            expect(init.cache).not.toBe("no-store");
         });
 
         it("returns null when the worker responds with a non-ok status", async () => {

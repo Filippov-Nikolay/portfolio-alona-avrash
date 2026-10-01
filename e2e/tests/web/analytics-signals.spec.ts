@@ -139,3 +139,25 @@ test("a Hero social link fires social_click", async ({ page, context }, testInfo
     await expect.poll(() => beacons.some((b) => b.eventName === "social_click")).toBe(true);
     expect(beacons.find((b) => b.eventName === "social_click")!.entityId).toBeTruthy();
 });
+
+test("a CV download falls back to the uploaded language and reports it", async ({
+    page,
+    context,
+}, testInfo) => {
+    await context.addCookies([
+        { name: "site-preloader", value: "1", url: String(testInfo.project.use.baseURL) },
+    ]);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    const beacons = await captureBeacons(page);
+
+    await page.goto("/pl");
+    const link = page.locator("header").getByRole("link", { name: "Pobierz CV" }).first();
+    await expect(link).toHaveAttribute("href", "/api/cv/en");
+    const download = page.waitForEvent("download");
+    await link.click();
+
+    expect((await download).suggestedFilename()).toBe("e2e-cv.pdf");
+    await expect
+        .poll(() => beacons.find((b) => b.eventName === "cv_download")?.entityId)
+        .toBe("en");
+});

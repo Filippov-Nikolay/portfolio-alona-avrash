@@ -434,7 +434,13 @@ describe("getEngagement", () => {
     it("counts CV downloads, shares social clicks by network and charts both", async () => {
         const today = dayKey(new Date());
         const db = createSequencedDb([
-            { count: 5 },
+            {
+                results: [
+                    { entityId: null, count: 1 },
+                    { entityId: "pl", count: 1 },
+                    { entityId: "en", count: 3 },
+                ],
+            },
             {
                 results: [
                     { entityId: "instagram", count: 1 },
@@ -453,6 +459,10 @@ describe("getEngagement", () => {
 
         expect(engagement).toMatchObject({
             cvDownloads: 5,
+            cvLanguages: [
+                { entityId: "en", count: 3, percent: 0.6 },
+                { entityId: "pl", count: 1, percent: 0.2 },
+            ],
             socialClicks: 4,
             socials: [
                 { entityId: "behance", count: 3, percent: 0.75 },
@@ -468,7 +478,7 @@ describe("getEngagement", () => {
     });
 
     it("switches the trend to weekly points for periods longer than a month", async () => {
-        const engagement = await getEngagement(createSequencedDb([{ count: 0 }]), 90);
+        const engagement = await getEngagement(createSequencedDb([]), 90);
         expect(engagement.timeline).toHaveLength(13);
         expect(engagement.timeline.every((point) => point.cvDownloads === 0)).toBe(true);
     });

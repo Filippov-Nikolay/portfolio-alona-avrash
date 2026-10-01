@@ -20,7 +20,11 @@ function formatNumber(value: number): string {
 function formatDateRange(points: ProjectDetail["timeline"]): string {
     if (points.length === 0) return "No activity recorded";
     const format = (date: string) =>
-        new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        new Date(date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            timeZone: "UTC",
+        });
     return `${format(points[0]!.date)} - ${format(points.at(-1)!.date)}`;
 }
 

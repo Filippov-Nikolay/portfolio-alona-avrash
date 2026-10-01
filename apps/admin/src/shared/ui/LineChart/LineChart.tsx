@@ -10,7 +10,11 @@ interface LineChartProps {
 const WIDTH = 600;
 
 function formatAxisDate(iso: string): string {
-    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return new Date(iso).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+    });
 }
 
 export function LineChart({ points, height = 220, label = "Activity over time" }: LineChartProps) {

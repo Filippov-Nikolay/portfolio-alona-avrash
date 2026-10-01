@@ -134,7 +134,7 @@ const filesystem: CvStorage = {
 
 const r2: CvStorage = {
     read: () => readJsonObject("content/cv.json"),
-    write: (content) => writeJsonObject("content/cv.json", content),
+    write: (content) => writeJsonObject("content/cv.json", content, "no-cache"),
     upload: (key, bytes) => writeObject(key, bytes, "application/pdf"),
     download: readObject,
     remove: deleteObject,

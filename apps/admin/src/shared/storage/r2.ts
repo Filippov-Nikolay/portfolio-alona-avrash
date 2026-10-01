@@ -46,13 +46,18 @@ export async function readJsonObject<T>(key: string): Promise<T> {
     return JSON.parse(raw) as T;
 }
 
-export async function writeJsonObject(key: string, data: unknown): Promise<void> {
+export async function writeJsonObject(
+    key: string,
+    data: unknown,
+    cacheControl?: string
+): Promise<void> {
     await getClient().send(
         new PutObjectCommand({
             Bucket: requiredEnv("R2_BUCKET_NAME"),
             Key: key,
             Body: `${JSON.stringify(data, null, 4)}\n`,
             ContentType: "application/json",
+            ...(cacheControl ? { CacheControl: cacheControl } : {}),
         })
     );
 }

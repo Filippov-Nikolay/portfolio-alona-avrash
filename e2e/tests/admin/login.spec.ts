@@ -25,10 +25,21 @@ test.describe("login", () => {
         await page.goto("/login", { waitUntil: "networkidle" });
         await page.getByLabel("Login").fill(TEST_LOGIN);
         await page.getByLabel("Password").fill(TEST_PASSWORD);
+        await page.evaluate(() => {
+            const state = window as unknown as { signedInShown?: boolean };
+            state.signedInShown = false;
+            new MutationObserver(() => {
+                if (document.body.innerText.includes("Signed in")) state.signedInShown = true;
+            }).observe(document.body, { childList: true, subtree: true, characterData: true });
+        });
         await page.getByRole("button", { name: "Sign in" }).click();
 
-        await page.getByText("Signed in").waitFor();
         await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
+        expect(
+            await page.evaluate(
+                () => (window as unknown as { signedInShown?: boolean }).signedInShown
+            )
+        ).toBe(true);
         await expect(page).not.toHaveURL(/\/login$/);
     });
 });

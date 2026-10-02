@@ -123,7 +123,7 @@ export default defineConfig({
             name: "web-ios",
             testDir: "./tests/web",
             testMatch:
-                /(gsap-animation-performance|clients-tools-reviews-ios|contact-footer-mobile|footer-ios-overscroll|footer-reveal-navigation|header-menu-ios|hero-selected-work-state|hero-theme-transition|hero-scroll-performance|hero-navigation-performance|hero-raster-budget|hero-stats-selected-spacing|stats-reel-clipping|projects-ios-button|reviews-ios-reveal|services-ios-resize|services-mobile|tools-ios-scroll|tools-ios-visibility|works-filter-ios-tap|works-scroll-performance)\.spec\.ts/,
+                /(gsap-animation-performance|document-integrity|clients-tools-reviews-ios|contact-footer-mobile|footer-ios-overscroll|footer-reveal-navigation|header-menu-ios|hero-selected-work-state|hero-theme-transition|hero-scroll-performance|hero-navigation-performance|hero-raster-budget|hero-stats-selected-spacing|stats-reel-clipping|projects-ios-button|reviews-ios-reveal|services-ios-resize|services-mobile|tools-ios-scroll|tools-ios-visibility|works-filter-ios-tap|works-scroll-performance)\.spec\.ts/,
             use: {
                 ...devices["iPhone 13"],
                 baseURL: WEB_BASE_URL,
@@ -134,7 +134,7 @@ export default defineConfig({
             name: "web-webkit",
             testDir: "./tests/web",
             testMatch:
-                /(gsap-animation-performance|hero-selected-work-state|hero-theme-transition|hero-scroll-performance|hero-navigation-performance|hero-raster-budget|hero-stats-selected-spacing|stats-reel-clipping|showcase-mobile|works-scroll-performance|works-filter-ios-tap)\.spec\.ts/,
+                /(gsap-animation-performance|document-integrity|hero-selected-work-state|hero-theme-transition|hero-scroll-performance|hero-navigation-performance|hero-raster-budget|hero-stats-selected-spacing|stats-reel-clipping|showcase-mobile|works-scroll-performance|works-filter-ios-tap)\.spec\.ts/,
             use: {
                 ...devices["iPhone 13"],
                 browserName: "webkit",

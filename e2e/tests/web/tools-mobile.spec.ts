@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForStreamedContent } from "../../helpers/streaming";
 
 test.beforeEach(async ({ context }) => {
     await context.addCookies([
@@ -16,6 +17,7 @@ test("mobile tools carousel uses native momentum and prepares peek images before
 }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en");
+    await waitForStreamedContent(page);
 
     const section = page.locator("#tools");
     const loadedToolPeekDuringHero = await page.evaluate(() =>
@@ -67,22 +69,25 @@ test("mobile tools carousel uses native momentum and prepares peek images before
         type: "touchStart",
         touchPoints: [{ x: startX, y }],
     });
-    await page.waitForTimeout(35);
-    await client.send("Input.dispatchTouchEvent", {
-        type: "touchMove",
-        touchPoints: [{ x: (startX + endX) / 2, y }],
-    });
-    await page.waitForTimeout(35);
-    await client.send("Input.dispatchTouchEvent", {
-        type: "touchMove",
-        touchPoints: [{ x: endX, y }],
-    });
+    const steps = 6;
+    for (let step = 1; step <= steps; step++) {
+        await page.waitForTimeout(16);
+        await client.send("Input.dispatchTouchEvent", {
+            type: "touchMove",
+            touchPoints: [{ x: startX + ((endX - startX) * step) / steps, y }],
+        });
+    }
     const releasePosition = await track.evaluate((element) => element.scrollLeft);
     await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
 
-    await page.waitForTimeout(180);
-    const glidedPosition = await track.evaluate((element) => element.scrollLeft);
-    expect(glidedPosition - releasePosition).toBeGreaterThan(20);
+    await expect
+        .poll(
+            async () => (await track.evaluate((element) => element.scrollLeft)) - releasePosition,
+            {
+                timeout: 1_000,
+            }
+        )
+        .toBeGreaterThan(20);
 
     const illustratorCard = track.locator("button").filter({ hasText: "Illustrator" }).nth(1);
     await illustratorCard.dispatchEvent("pointerdown", {

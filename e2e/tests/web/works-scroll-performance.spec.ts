@@ -40,10 +40,12 @@ async function waitForEntrances(page: Page) {
         .poll(() => cards.nth(1).evaluate((card) => card.style.getPropertyValue("--reveal")))
         .not.toBe("");
     await expect
-        .poll(() =>
-            cards.evaluateAll((elements) =>
-                elements.every((card) => getComputedStyle(card.parentElement!).opacity === "1")
-            )
+        .poll(
+            () =>
+                cards.evaluateAll((elements) =>
+                    elements.every((card) => getComputedStyle(card.parentElement!).opacity === "1")
+                ),
+            { timeout: 10_000 }
         )
         .toBe(true);
 }

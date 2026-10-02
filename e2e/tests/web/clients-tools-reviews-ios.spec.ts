@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { waitForStreamedContent } from "../../helpers/streaming";
 
 async function placeSectionAt(page: Page, section: Locator, viewportRatio: number) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -191,6 +192,7 @@ test("Clients rows slide in without fading while the marquee keeps moving", asyn
     for (const width of [243, 390, 820, 1440]) {
         await page.setViewportSize({ width, height: 900 });
         await page.goto("/en");
+        await waitForStreamedContent(page);
 
         const clients = page.locator("#clients");
         const rows = clients.locator("[data-direction]");

@@ -1,9 +1,5 @@
 import type { Page } from "@playwright/test";
 
-export async function waitForStreamedContent(page: Page) {
-    await page.waitForFunction(() => !document.querySelector('div[hidden][id^="S:"]'));
-}
-
 export async function waitForStableDocumentHeight(page: Page) {
     await page.evaluate(async () => {
         let previous = -1;

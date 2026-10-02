@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { waitForStreamedContent } from "../../helpers/streaming";
+import { expect, test } from "../../fixtures/test";
 
 interface CapturedBeacon {
     eventName: string;
@@ -16,7 +15,6 @@ test.beforeEach(async ({ context }, testInfo) => {
 
 test("every Services card links to its filtered Works category", async ({ page }) => {
     await page.goto("/en");
-    await waitForStreamedContent(page);
 
     const links = page.locator("[data-service-link]");
     await expect(links).toHaveCount(expectedFilters.length);
@@ -36,7 +34,6 @@ test("a Services category click is tracked and opens the matching filtered catal
         await route.fulfill({ status: 204, body: "" });
     });
     await page.goto("/en");
-    await waitForStreamedContent(page);
 
     const uiUxCard = page.locator('[data-service-card="ui-ux"]');
     const uiUxLink = page.locator('[data-service-link="ui-ux"]');
@@ -97,7 +94,6 @@ test("a Services category click is tracked and opens the matching filtered catal
 
 test("desktop Services follows scroll without a trailing animation loop", async ({ page }) => {
     await page.goto("/en");
-    await waitForStreamedContent(page);
     await page.waitForTimeout(1_200);
 
     const secondCard = page.locator("#services article").nth(1);
@@ -134,7 +130,6 @@ test("desktop Services follows scroll without a trailing animation loop", async 
 
 test("desktop Services retires old layers after the third card reveal", async ({ page }) => {
     await page.goto("/en");
-    await waitForStreamedContent(page);
     await page.waitForTimeout(1_200);
 
     const cards = page.locator("#services article");

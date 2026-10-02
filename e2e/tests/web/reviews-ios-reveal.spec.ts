@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "../../fixtures/test";
 
 async function placeSectionAt(page: Page, section: Locator, viewportRatio: number) {
     for (let attempt = 0; attempt < 2; attempt += 1) {

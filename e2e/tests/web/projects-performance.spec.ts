@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../fixtures/test";
 
 test("project images are ready before the pinned animation enters the viewport", async ({
     page,

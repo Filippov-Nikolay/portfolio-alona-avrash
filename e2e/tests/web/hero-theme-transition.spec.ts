@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../fixtures/test";
 
 test.beforeEach(async ({ context, page }, testInfo) => {
     await context.addCookies([

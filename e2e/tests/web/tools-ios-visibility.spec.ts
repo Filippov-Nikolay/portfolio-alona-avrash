@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { waitForStreamedContent } from "../../helpers/streaming";
+import { expect, test } from "../../fixtures/test";
 
 test.beforeEach(async ({ context }, testInfo) => {
     await context.addCookies([
@@ -110,7 +109,6 @@ test("Tools finishes its reveal when an iOS scroll reverses at the boundary", as
 
 test("Tools auto-scroll only runs near the section", async ({ page }) => {
     await page.goto("/en");
-    await waitForStreamedContent(page);
 
     const section = page.locator("#tools");
     const track = section.locator("[data-tools-track]");

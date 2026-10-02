@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../fixtures/test";
 
 // Reads the site's real, checked-in project content (packages/content-data)
 // rather than anything admin's isolated test dataset writes - this is a

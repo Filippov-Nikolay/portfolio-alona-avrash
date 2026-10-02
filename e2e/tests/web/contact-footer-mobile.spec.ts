@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { waitForStableDocumentHeight, waitForStreamedContent } from "../../helpers/streaming";
+import { expect, test } from "../../fixtures/test";
+import { waitForStableDocumentHeight } from "../../helpers/documentHeight";
 
 test("contact footer keeps its background intact and reveals once on mobile", async ({
     page,
@@ -13,7 +13,6 @@ test("contact footer keeps its background intact and reveals once on mobile", as
         },
     ]);
     await page.goto("/en/contact");
-    await waitForStreamedContent(page);
 
     const footer = page.locator("[data-site-footer]");
     const curtain = footer.locator("[data-footer-curtain]");

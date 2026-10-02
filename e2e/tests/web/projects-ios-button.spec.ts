@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../fixtures/test";
 
 test.beforeEach(async ({ context, hasTouch }, testInfo) => {
     test.skip(!hasTouch, "desktop intentionally enables velocity-based snapping");

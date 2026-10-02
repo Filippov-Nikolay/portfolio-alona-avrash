@@ -32,13 +32,13 @@ const fileSystemImageStorage: ImageStorage = {
     async upload(fileName, buffer) {
         const dir = uploadDir();
         await mkdir(dir, { recursive: true });
-        await writeFile(path.join(dir, fileName), buffer);
+        await writeFile(path.join(/*turbopackIgnore: true*/ dir, fileName), buffer);
         return { src: `${PUBLIC_PATH_PREFIX}/${fileName}` };
     },
     async delete(src) {
         if (!src.startsWith(`${PUBLIC_PATH_PREFIX}/`)) return;
         const fileName = src.slice(PUBLIC_PATH_PREFIX.length + 1);
-        await deleteFile(path.join(uploadDir(), fileName));
+        await deleteFile(path.join(/*turbopackIgnore: true*/ uploadDir(), fileName));
     },
 };
 

@@ -10,7 +10,8 @@ test.beforeEach(async ({ context }, testInfo) => {
     ]);
 });
 
-test("the first iOS tap keeps the menu open after navigation", async ({ page }) => {
+test("the first iOS tap keeps the menu open after navigation", async ({ page, hasTouch }) => {
+    test.skip(!hasTouch, "drives the menu with touch taps");
     await page.goto("/en");
 
     await page.getByRole("button", { name: "Open menu" }).tap();

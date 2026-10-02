@@ -13,7 +13,9 @@ async function placeSectionAt(page: Page, section: Locator, viewportRatio: numbe
 
 test("Reviews reveal stays settled while scrolling around its iPhone threshold", async ({
     page,
+    hasTouch,
 }, testInfo) => {
+    test.skip(!hasTouch, "asserts the compact touch reveal, which desktop layouts do not use");
     const baseURL = String(testInfo.project.use.baseURL);
     await page.context().addCookies([
         {

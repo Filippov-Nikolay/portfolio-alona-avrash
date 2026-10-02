@@ -11,7 +11,8 @@ test.beforeEach(async ({ context }, testInfo) => {
     ]);
 });
 
-test("Tools stays visible after its first reveal on iOS", async ({ page }) => {
+test("Tools stays visible after its first reveal on iOS", async ({ page, hasTouch }) => {
+    test.skip(!hasTouch, "asserts the compact touch reveal, which desktop layouts do not use");
     await page.goto("/en");
 
     const section = page.locator("#tools");
@@ -51,7 +52,11 @@ test("Tools stays visible after its first reveal on iOS", async ({ page }) => {
     }
 });
 
-test("Tools finishes its reveal when an iOS scroll reverses at the boundary", async ({ page }) => {
+test("Tools finishes its reveal when an iOS scroll reverses at the boundary", async ({
+    page,
+    hasTouch,
+}) => {
+    test.skip(!hasTouch, "asserts the compact touch reveal, which desktop layouts do not use");
     await page.goto("/en");
 
     const section = page.locator("#tools");

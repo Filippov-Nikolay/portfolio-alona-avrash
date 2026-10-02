@@ -28,7 +28,20 @@ test("Services stays anchored during an iOS-style height-only resize", async ({ 
             (root, scrollY) => root.ownerDocument.defaultView!.scrollTo(0, scrollY),
             serviceScroll
         );
-    await page.waitForTimeout(700);
+    await page.locator("#services").evaluate(async (section) => {
+        const view = section.ownerDocument.defaultView!;
+        const articles = [...section.querySelectorAll<HTMLElement>("article")];
+        const snapshot = () =>
+            articles.map((item) => `${item.style.opacity}:${item.style.transform}`).join("|");
+        let previous = "";
+        let stableFrames = 0;
+        for (let frame = 0; frame < 300 && stableFrames < 10; frame++) {
+            await new Promise<void>((resolve) => view.requestAnimationFrame(() => resolve()));
+            const current = snapshot();
+            stableFrames = current === previous ? stableFrames + 1 : 0;
+            previous = current;
+        }
+    });
 
     const before = await cards.first().evaluate((card) => {
         const view = card.ownerDocument.defaultView!;

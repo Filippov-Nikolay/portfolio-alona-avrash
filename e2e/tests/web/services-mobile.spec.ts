@@ -123,7 +123,16 @@ test("mobile Services follows a slow scroll directly after the second card", asy
 
         view.scrollTo(0, startScroll);
         view.dispatchEvent(new Event("scroll"));
-        await new Promise<void>((resolve) => view.requestAnimationFrame(() => resolve()));
+        const cards = [...card.parentElement!.querySelectorAll<HTMLElement>("article")];
+        const snapshot = () => cards.map((item) => item.style.opacity).join("|");
+        let previous = "";
+        let stableFrames = 0;
+        for (let frame = 0; frame < 240 && stableFrames < 10; frame++) {
+            await new Promise<void>((resolve) => view.requestAnimationFrame(() => resolve()));
+            const current = snapshot();
+            stableFrames = current === previous ? stableFrames + 1 : 0;
+            previous = current;
+        }
 
         for (let position = startScroll + 6; position <= targetScroll; position += 6) {
             view.scrollTo(0, position);

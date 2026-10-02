@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForStreamedContent } from "../../helpers/streaming";
 
 interface CapturedBeacon {
     eventName: string;
@@ -7,8 +8,15 @@ interface CapturedBeacon {
 
 const expectedFilters = ["ui-ux", "branding", "logo", "packaging", "web-design"];
 
+test.beforeEach(async ({ context }, testInfo) => {
+    await context.addCookies([
+        { name: "site-preloader", value: "1", url: String(testInfo.project.use.baseURL) },
+    ]);
+});
+
 test("every Services card links to its filtered Works category", async ({ page }) => {
     await page.goto("/en");
+    await waitForStreamedContent(page);
 
     const links = page.locator("[data-service-link]");
     await expect(links).toHaveCount(expectedFilters.length);
@@ -28,6 +36,7 @@ test("a Services category click is tracked and opens the matching filtered catal
         await route.fulfill({ status: 204, body: "" });
     });
     await page.goto("/en");
+    await waitForStreamedContent(page);
 
     const uiUxCard = page.locator('[data-service-card="ui-ux"]');
     const uiUxLink = page.locator('[data-service-link="ui-ux"]');
@@ -88,6 +97,7 @@ test("a Services category click is tracked and opens the matching filtered catal
 
 test("desktop Services follows scroll without a trailing animation loop", async ({ page }) => {
     await page.goto("/en");
+    await waitForStreamedContent(page);
     await page.waitForTimeout(1_200);
 
     const secondCard = page.locator("#services article").nth(1);
@@ -124,6 +134,7 @@ test("desktop Services follows scroll without a trailing animation loop", async 
 
 test("desktop Services retires old layers after the third card reveal", async ({ page }) => {
     await page.goto("/en");
+    await waitForStreamedContent(page);
     await page.waitForTimeout(1_200);
 
     const cards = page.locator("#services article");
@@ -151,6 +162,7 @@ test("desktop Services retires old layers after the third card reveal", async ({
         );
 
     await expect(cards.first()).toHaveCSS("visibility", "hidden");
+    await expect(cards.first()).toHaveCSS("will-change", "auto");
     await expect(thirdCard).toHaveCSS("visibility", "visible");
-    await expect(thirdCard).toHaveCSS("will-change", "auto");
+    await expect(thirdCard).toHaveCSS("will-change", "transform, opacity");
 });

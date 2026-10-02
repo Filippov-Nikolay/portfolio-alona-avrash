@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices, type PlaywrightTestConfig } from "@playwright/test";
 import bcrypt from "bcryptjs";
 import { TEST_LOGIN, TEST_PASSWORD, TEST_SESSION_SECRET } from "./fixtures/testCredentials";
 import { acceptedConsentState } from "./fixtures/consent";
@@ -58,6 +58,18 @@ function seedContentDir(): void {
 }
 
 seedContentDir();
+
+type WebServer = Extract<NonNullable<PlaywrightTestConfig["webServer"]>, unknown[]>[number];
+
+const PRODUCTION_SERVER = process.env.E2E_SERVER === "production";
+const SERVED_APPS = new Set((process.env.E2E_APPS ?? "web,admin").split(","));
+const SERVER_TIMEOUT = PRODUCTION_SERVER ? 600_000 : 120_000;
+
+function serveCommand(port: number): string {
+    return PRODUCTION_SERVER
+        ? `pnpm exec next build && pnpm exec next start -p ${port}`
+        : `pnpm exec next dev -p ${port}`;
+}
 
 const ADMIN_USERS_BASE64 = Buffer.from(
     JSON.stringify([{ login: TEST_LOGIN, passwordHash: bcrypt.hashSync(TEST_PASSWORD, 10) }])
@@ -135,35 +147,39 @@ export default defineConfig({
     // 3001 dev ports - so this suite never attaches to (or fights over a
     // port with) a developer's own already-running `pnpm dev`, and always
     // spawns its own fresh, isolated server instead.
-    webServer: [
-        {
-            command: "pnpm exec next dev -p 3100",
-            cwd: path.join(REPO_ROOT, "apps", "web"),
-            url: "http://localhost:3100",
-            reuseExistingServer: false,
-            timeout: 120_000,
-            env: {
-                CONTENT_DATA_DIR: WEB_CV_DIR,
-                CONTENT_SOURCE: "local",
-                // Not a real service - specs that care intercept this exact
-                // URL with page.route() before it ever leaves the browser.
-                // Set unconditionally so the CSP connect-src it also drives
-                // (see next.config.ts) matches what analytics specs expect.
-                NEXT_PUBLIC_ANALYTICS_ENDPOINT: "https://analytics.e2e.test/event",
+    webServer: (
+        [
+            {
+                name: "web",
+                command: serveCommand(3100),
+                cwd: path.join(REPO_ROOT, "apps", "web"),
+                url: "http://localhost:3100",
+                reuseExistingServer: false,
+                timeout: SERVER_TIMEOUT,
+                env: {
+                    CONTENT_DATA_DIR: WEB_CV_DIR,
+                    CONTENT_SOURCE: "local",
+                    // Not a real service - specs that care intercept this exact
+                    // URL with page.route() before it ever leaves the browser.
+                    // Set unconditionally so the CSP connect-src it also drives
+                    // (see next.config.ts) matches what analytics specs expect.
+                    NEXT_PUBLIC_ANALYTICS_ENDPOINT: "https://analytics.e2e.test/event",
+                },
             },
-        },
-        {
-            command: "pnpm exec next dev -p 3101",
-            cwd: path.join(REPO_ROOT, "apps", "admin"),
-            url: "http://localhost:3101/login",
-            reuseExistingServer: false,
-            timeout: 120_000,
-            env: {
-                ADMIN_CONTENT_DIR: SCRATCH_CONTENT_DIR,
-                ADMIN_STORAGE_DRIVER: "filesystem",
-                ADMIN_USERS: ADMIN_USERS_BASE64,
-                SESSION_SECRET: TEST_SESSION_SECRET,
+            {
+                name: "admin",
+                command: serveCommand(3101),
+                cwd: path.join(REPO_ROOT, "apps", "admin"),
+                url: "http://localhost:3101/login",
+                reuseExistingServer: false,
+                timeout: SERVER_TIMEOUT,
+                env: {
+                    ADMIN_CONTENT_DIR: SCRATCH_CONTENT_DIR,
+                    ADMIN_STORAGE_DRIVER: "filesystem",
+                    ADMIN_USERS: ADMIN_USERS_BASE64,
+                    SESSION_SECRET: TEST_SESSION_SECRET,
+                },
             },
-        },
-    ],
+        ] as WebServer[]
+    ).filter((server) => SERVED_APPS.has(server.name ?? "")),
 });

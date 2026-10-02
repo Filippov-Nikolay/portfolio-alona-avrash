@@ -95,6 +95,7 @@ const nextConfig: NextConfig = {
     staticPageGenerationTimeout: 180,
 
     poweredByHeader: false,
+    agentRules: false,
 
     images: {
         // Uploaded image URLs are immutable (their keys include a timestamp),

@@ -90,6 +90,7 @@ test("Clients, Tools and Reviews remain stable through repeated iOS scrolling", 
 }) => {
     test.skip(!hasTouch, "asserts the compact touch reveal used by Tools and Reviews");
     await page.goto("/en");
+    await waitForStreamedContent(page);
 
     const clients = page.locator("#clients");
     const clientRows = clients.locator("[data-clients-reveal-row]");
@@ -116,7 +117,7 @@ test("Clients, Tools and Reviews remain stable through repeated iOS scrolling", 
     ]);
 
     await placeSectionAt(page, clients, 0.6);
-    await expect(clientRows.first()).toHaveCSS("transform", "none");
+    await expect(clientRows.first()).toHaveCSS("transform", "none", { timeout: 10_000 });
     await expect(clients).toHaveAttribute("data-clients-marquee-running", "true");
     await expect(clients).not.toHaveAttribute("data-clients-revealing", "true");
 

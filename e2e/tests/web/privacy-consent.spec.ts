@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "../../fixtures/test";
 import { CONSENT_STORAGE_KEY } from "../../fixtures/consent";
 
 test.use({ storageState: { cookies: [], origins: [] } });

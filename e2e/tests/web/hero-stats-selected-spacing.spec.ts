@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../fixtures/test";
 
 test("Selected Work stays below Stats throughout entry, reversal and the sticky exit", async ({
     page,

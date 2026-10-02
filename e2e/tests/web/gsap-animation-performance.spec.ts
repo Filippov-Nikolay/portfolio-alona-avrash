@@ -1,5 +1,5 @@
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../fixtures/test";
 import poses from "../../fixtures/projects-animation-poses.json";
 
 interface Trigger {

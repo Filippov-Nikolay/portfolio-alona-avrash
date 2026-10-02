@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "../../fixtures/test";
 import { writeFileSync } from "node:fs";
 
 test("mobile showcase keeps its full tab rule and close button visible while scrolling", async ({

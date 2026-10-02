@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../fixtures/test";
 
 test.beforeEach(async ({ context }, testInfo) => {
     await context.addCookies([
@@ -226,8 +226,6 @@ test("Stats reels settle after a reversed touch scroll without lingering movemen
         }
         await new Promise<void>((resolve) => view.requestAnimationFrame(() => resolve()));
 
-        await new Promise<void>((resolve) => view.setTimeout(resolve, 260));
-
         type Dataset = { dataset: Record<string, string | undefined> };
         const reels = Array.from(track.querySelectorAll("#stats [data-reel-place]"));
         const sample = () =>
@@ -236,6 +234,18 @@ test("Stats reels settle after a reversed touch scroll without lingering movemen
                 transition: view.getComputedStyle(reel).transitionProperty,
                 continuous: (reel as unknown as Dataset).dataset.reelContinuous,
             }));
+        const transforms = () =>
+            sample()
+                .map(({ transform }) => transform)
+                .join("|");
+        let previous = "";
+        let stableFrames = 0;
+        for (let frame = 0; frame < 300 && stableFrames < 10; frame++) {
+            await new Promise<void>((resolve) => view.requestAnimationFrame(() => resolve()));
+            const current = transforms();
+            stableFrames = current === previous ? stableFrames + 1 : 0;
+            previous = current;
+        }
         const settled = sample();
 
         await new Promise<void>((resolve) => view.setTimeout(resolve, 260));

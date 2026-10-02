@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../fixtures/test";
 
 for (const theme of ["light", "dark"] as const) {
     test(`client navigation keeps the ${theme} theme without a route loader`, async ({

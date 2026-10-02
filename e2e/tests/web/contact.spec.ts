@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../fixtures/test";
 
 // The route handler is mocked rather than hit for real - a Playwright run
 // should never send an actual email through Resend (no real API key in

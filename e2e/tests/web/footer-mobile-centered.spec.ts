@@ -1,5 +1,5 @@
-import { expect, type Locator, type Page } from "@playwright/test";
-import { test } from "@playwright/test";
+import { expect, type Locator, type Page } from "../../fixtures/test";
+import { test } from "../../fixtures/test";
 
 const VIEWPORT_WIDTH = 390;
 

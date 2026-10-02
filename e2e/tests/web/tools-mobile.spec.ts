@@ -1,5 +1,4 @@
-import { expect, test } from "@playwright/test";
-import { waitForStreamedContent } from "../../helpers/streaming";
+import { expect, test } from "../../fixtures/test";
 
 test.beforeEach(async ({ context }) => {
     await context.addCookies([
@@ -17,7 +16,6 @@ test("mobile tools carousel uses native momentum and prepares peek images before
 }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/en");
-    await waitForStreamedContent(page);
 
     const section = page.locator("#tools");
     const loadedToolPeekDuringHero = await page.evaluate(() =>

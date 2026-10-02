@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../fixtures/test";
 // Captured from the original inline camera before moving it to keyframes.
 import cameraPoses from "../../fixtures/stats-camera-poses.json";
 

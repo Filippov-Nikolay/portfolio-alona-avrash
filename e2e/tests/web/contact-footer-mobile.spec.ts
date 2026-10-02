@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { waitForStreamedContent } from "../../helpers/streaming";
+import { waitForStableDocumentHeight, waitForStreamedContent } from "../../helpers/streaming";
 
 test("contact footer keeps its background intact and reveals once on mobile", async ({
     page,
@@ -27,6 +27,7 @@ test("contact footer keeps its background intact and reveals once on mobile", as
     await expect(left.locator("[data-footer-mask]")).not.toHaveCSS("transform", "none");
     await expect(left.locator("[data-footer-social-item]").first()).toHaveCSS("opacity", "0");
 
+    await waitForStableDocumentHeight(page);
     await page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)");
     await expect(left).toHaveCSS("opacity", "1");
     await expect(right).toHaveCSS("opacity", "1");

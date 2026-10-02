@@ -1,13 +1,28 @@
-// Custom product events, separate from Vercel Analytics (which already
-// covers visitors/pageviews/countries/referrers on its own). Kept to a
-// short, explicit allowlist - see apps/analytics-worker/src/schema.ts for
+import { hasAnalyticsConsent } from "@/shared/lib/privacyPreferences";
+
+// Custom product events, kept to a short, explicit allowlist - see apps/analytics-worker/src/schema.ts for
 // the server-side copy of this same list, which is the one that actually
 // gets enforced.
 export type AnalyticsEvent =
-    "project_open" | "project_external_click" | "cv_download" | "contact_success" | "social_click";
+    | "project_open"
+    | "project_gallery_view"
+    | "project_external_click"
+    | "works_filter"
+    | "cv_download"
+    | "contact_started"
+    | "contact_success"
+    | "social_click"
+    | "page_view";
 
 export interface TrackOptions {
     entityId?: string;
+}
+
+export interface CampaignParams {
+    source?: string;
+    medium?: string;
+    campaign?: string;
+    content?: string;
 }
 
 export interface AnalyticsEventPayload {
@@ -17,21 +32,45 @@ export interface AnalyticsEventPayload {
     locale: string;
     sessionId: string;
     referrer?: string;
+    utm?: CampaignParams;
 }
 
 const DEDUPE_WINDOW_MS = 30 * 60 * 1000;
 
-// Re-opening the same project within the window doesn't count as another
-// view - otherwise a visitor clicking one card open/closed a few times would
-// inflate "Views" far past how many people actually looked at it.
+// Events where re-triggering the same entityId within the window doesn't
+// count as a new signal - a visitor opening/closing one project a few times,
+// flipping to its gallery tab and back, or toggling one filter on and off
+// shouldn't inflate that entity's count past how many people actually did it.
+const DEDUPED_EVENTS = new Set<AnalyticsEvent>([
+    "project_open",
+    "project_gallery_view",
+    "works_filter",
+]);
+
 export function shouldDedupe(now: number, lastTrackedAt: number | undefined): boolean {
     return typeof lastTrackedAt === "number" && now - lastTrackedAt < DEDUPE_WINDOW_MS;
+}
+
+export function referrerOrigin(referrer: string): string | undefined {
+    if (!referrer) return undefined;
+    try {
+        const url = new URL(referrer);
+        return url.protocol === "http:" || url.protocol === "https:" ? url.origin : undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 export function buildEventPayload(
     eventName: AnalyticsEvent,
     options: TrackOptions,
-    context: { path: string; locale: string; sessionId: string; referrer: string }
+    context: {
+        path: string;
+        locale: string;
+        sessionId: string;
+        referrer: string;
+        utm?: CampaignParams;
+    }
 ): AnalyticsEventPayload {
     return {
         eventName,
@@ -39,12 +78,46 @@ export function buildEventPayload(
         path: context.path,
         locale: context.locale,
         sessionId: context.sessionId,
-        referrer: context.referrer || undefined,
+        referrer: referrerOrigin(context.referrer),
+        utm: context.utm,
     };
 }
 
+const CAMPAIGN_QUERY_KEYS: Record<keyof CampaignParams, string> = {
+    source: "utm_source",
+    medium: "utm_medium",
+    campaign: "utm_campaign",
+    content: "utm_content",
+};
+const CAMPAIGN_VALUE_MAX_LENGTH = 100;
+
+export function readCampaign(search: string): CampaignParams | undefined {
+    const query = new URLSearchParams(search);
+    const campaign: CampaignParams = {};
+    for (const [field, queryKey] of Object.entries(CAMPAIGN_QUERY_KEYS)) {
+        const value = query.get(queryKey)?.trim().slice(0, CAMPAIGN_VALUE_MAX_LENGTH);
+        if (value) campaign[field as keyof CampaignParams] = value;
+    }
+    return Object.keys(campaign).length > 0 ? campaign : undefined;
+}
+
+let landingCampaign: CampaignParams | undefined;
+
+export function captureLandingCampaign(search: string): void {
+    landingCampaign = readCampaign(search);
+}
+
+if (typeof window !== "undefined") captureLandingCampaign(window.location.search);
+
 const SESSION_KEY = "avrash_analytics_session";
 const SEEN_KEY = "avrash_analytics_seen";
+
+export function clearAnalyticsStorage(): void {
+    try {
+        sessionStorage.removeItem(SESSION_KEY);
+        sessionStorage.removeItem(SEEN_KEY);
+    } catch {}
+}
 
 function getSessionId(): string {
     try {
@@ -80,27 +153,31 @@ function markTracked(dedupeKey: string): void {
 // immediately leaving), which a regular fetch() can silently cancel.
 export function trackEvent(eventName: AnalyticsEvent, options: TrackOptions = {}): void {
     if (typeof window === "undefined" || typeof navigator.sendBeacon !== "function") return;
+    if (!hasAnalyticsConsent()) return;
 
     const endpoint = process.env.NEXT_PUBLIC_ANALYTICS_ENDPOINT;
     if (!endpoint) return;
 
     let dedupeKey: string | undefined;
-    if (eventName === "project_open" && options.entityId) {
+    if (DEDUPED_EVENTS.has(eventName) && options.entityId) {
         dedupeKey = `${eventName}:${options.entityId}`;
         if (shouldDedupe(Date.now(), readSeen()[dedupeKey])) return;
     }
 
+    const utm = eventName === "page_view" ? landingCampaign : undefined;
     const payload = buildEventPayload(eventName, options, {
         path: window.location.pathname,
         locale: document.documentElement.lang,
         sessionId: getSessionId(),
         referrer: document.referrer,
+        utm,
     });
 
     // Only mark it seen once the browser actually accepted the beacon - if
-    // sendBeacon() returns false (e.g. its queue is full), the next
-    // project_open should still get a real chance to be sent instead of
-    // silently staying "deduped" for the rest of the 30-minute window.
+    // sendBeacon() returns false (e.g. its queue is full), the next attempt
+    // should still get a real chance to be sent instead of silently staying
+    // "deduped" for the rest of the 30-minute window.
     const queued = navigator.sendBeacon(endpoint, JSON.stringify(payload));
     if (queued && dedupeKey) markTracked(dedupeKey);
+    if (queued && utm) landingCampaign = undefined;
 }

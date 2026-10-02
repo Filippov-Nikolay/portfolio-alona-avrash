@@ -5,11 +5,11 @@ import {
     isSessionRateLimited,
     wasRecentlyTracked,
     type D1Like,
+    type EventClientContext,
 } from "./db";
 
-export interface HandleEventInput {
+export interface HandleEventInput extends EventClientContext {
     body: unknown;
-    country: string | null;
     db: D1Like;
 }
 
@@ -20,15 +20,15 @@ export type HandleEventResult = { status: 204 } | { status: 400 };
 // src/index.ts is the thin Workers-runtime adapter around this.
 export async function handleEvent({
     body,
-    country,
     db,
+    ...context
 }: HandleEventInput): Promise<HandleEventResult> {
     const parsed = AnalyticsEventBodySchema.safeParse(body);
     if (!parsed.success) return { status: 400 };
 
     if (await isSessionRateLimited(db, parsed.data.sessionId)) return { status: 204 };
 
-    const row = buildEventRow(parsed.data, country);
+    const row = buildEventRow(parsed.data, context);
     if (await wasRecentlyTracked(db, row)) return { status: 204 };
 
     await insertEvent(db, row);

@@ -1,16 +1,23 @@
 "use client";
 
 import { useRef } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
+import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
+import { primeAnimation } from "@/shared/lib/animation/primeAnimation";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
-const isCompact = () => window.matchMedia("(max-width: 767px)").matches;
+const isCompact = () => window.matchMedia("(max-width: 768px)").matches;
 const getStart = () => (isCompact() ? "top 88%" : "top 72%");
 const getEnd = () => (isCompact() ? "top 62%" : "top 38%");
+const COMPACT_QUERY = "(max-width: 1024px), (pointer: coarse)";
+const DESKTOP_QUERY = "(min-width: 1025px) and (pointer: fine)";
+const COMPACT_REVEAL_ROOT_MARGIN = "0px 0px -12% 0px";
+
+export const TOOLS_REVEAL_COMPLETE_EVENT = "tools:reveal-complete";
 
 export function useToolsSectionAnimations() {
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
 
     useScrollTriggerAutoRefresh([reduced]);
 
@@ -27,30 +34,134 @@ export function useToolsSectionAnimations() {
             const track = trackRef.current;
             if (!section || !title || !description || !track) return;
 
+            const finishReveal = () => {
+                section.dataset.toolsRevealStarted = "true";
+                section.dataset.toolsRevealed = "true";
+                section.dataset.toolsRevealComplete = "true";
+                section.dispatchEvent(new Event(TOOLS_REVEAL_COMPLETE_EVENT));
+            };
+
             if (reduced) {
                 gsap.set([title, description, track], { clearProps: "all" });
+                finishReveal();
                 return;
             }
 
-            gsap.timeline({
-                defaults: { ease: "none", force3D: true },
-                scrollTrigger: {
-                    trigger: section,
-                    start: getStart,
-                    end: getEnd,
-                    scrub: 0.9,
-                    invalidateOnRefresh: true,
-                    fastScrollEnd: true,
-                },
-            })
-                .fromTo(title, { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 1 }, 0)
-                .fromTo(
-                    description,
-                    { autoAlpha: 0, y: 28 },
-                    { autoAlpha: 1, y: 0, duration: 1 },
-                    0.12
-                )
-                .fromTo(track, { autoAlpha: 0 }, { autoAlpha: 1, duration: 1 }, 0.22);
+            const media = gsap.matchMedia();
+
+            media.add(COMPACT_QUERY, () => {
+                const revealCards = gsap.utils.toArray<HTMLElement>(
+                    "[data-tools-reveal-card]",
+                    track
+                );
+                const targets = [title, description, ...revealCards];
+
+                if (
+                    section.dataset.toolsRevealStarted === "true" ||
+                    section.dataset.toolsRevealComplete === "true"
+                ) {
+                    gsap.set(targets, {
+                        clearProps: "transform,opacity,visibility,willChange",
+                    });
+                    finishReveal();
+                    return;
+                }
+
+                prepareTransformTargets([title, description]);
+
+                gsap.set([title, description], {
+                    autoAlpha: 0,
+                    y: 28,
+                });
+                gsap.set(revealCards, { autoAlpha: 0 });
+                section.dataset.toolsRevealReady = "true";
+
+                const timeline = gsap
+                    .timeline({
+                        paused: true,
+                        defaults: { force3D: true },
+                        onComplete: () => {
+                            gsap.set(targets, {
+                                clearProps: "transform,opacity,visibility,willChange",
+                            });
+                            finishReveal();
+                        },
+                    })
+                    .to(title, { autoAlpha: 1, y: 0, duration: 0.72, ease: "power3.out" }, 0)
+                    .to(
+                        description,
+                        { autoAlpha: 1, y: 0, duration: 0.72, ease: "power3.out" },
+                        0.1
+                    )
+                    .to(revealCards, { autoAlpha: 1, duration: 0.76, ease: "power2.out" }, 0.2);
+                primeAnimation(timeline);
+
+                let hasStarted = false;
+                let observer: IntersectionObserver | null = null;
+                const reveal = () => {
+                    if (hasStarted) return;
+                    hasStarted = true;
+                    section.dataset.toolsRevealStarted = "true";
+                    [title, description].forEach((target) =>
+                        target.style.setProperty("will-change", "transform, opacity")
+                    );
+                    revealCards.forEach((card) => card.style.setProperty("will-change", "opacity"));
+                    observer?.disconnect();
+                    timeline.play(0);
+                };
+
+                if (typeof IntersectionObserver === "undefined") {
+                    reveal();
+                } else {
+                    observer = new IntersectionObserver(
+                        ([entry]) => {
+                            if (entry?.isIntersecting) reveal();
+                        },
+                        { rootMargin: COMPACT_REVEAL_ROOT_MARGIN, threshold: 0 }
+                    );
+                    observer.observe(section);
+                }
+
+                return () => {
+                    observer?.disconnect();
+                    timeline.kill();
+                };
+            });
+
+            media.add(DESKTOP_QUERY, () => {
+                prepareTransformTargets([title, description]);
+
+                track.style.setProperty("will-change", "opacity");
+
+                const timeline = gsap
+                    .timeline({
+                        defaults: { ease: "none" },
+                        onComplete: () => {
+                            track.style.removeProperty("will-change");
+                            finishReveal();
+                        },
+                        onReverseComplete: () => track.style.removeProperty("will-change"),
+                        scrollTrigger: {
+                            trigger: section,
+                            start: getStart,
+                            end: getEnd,
+                            scrub: 0.9,
+                            fastScrollEnd: true,
+                        },
+                    })
+                    .fromTo(title, { autoAlpha: 0, y: 28 }, { autoAlpha: 1, y: 0, duration: 1 }, 0)
+                    .fromTo(
+                        description,
+                        { autoAlpha: 0, y: 28 },
+                        { autoAlpha: 1, y: 0, duration: 1 },
+                        0.12
+                    )
+                    .fromTo(track, { opacity: 0 }, { opacity: 1, duration: 1 }, 0.22);
+
+                return () => timeline.kill();
+            });
+
+            return () => media.revert();
         },
         { scope: sectionRef, dependencies: [reduced], revertOnUpdate: true }
     );

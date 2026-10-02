@@ -1,25 +1,27 @@
 import styles from "@/widgets/Preloader/Preloader.module.scss";
-import { siteConfig, siteInitials } from "@/shared/config/site.config";
+import { siteConfig } from "@/shared/config/site.config";
+
+const nameParts = siteConfig.name.split(" ").filter(Boolean);
+const FIRST_NAME = nameParts[0] ?? siteConfig.name;
+const LAST_NAME = nameParts.at(-1) ?? siteConfig.name;
 
 export default function LoadingPage() {
     return (
-        <div className={styles.overlay}>
-            <div className={styles.center}>
-                <div className={styles.logo} aria-hidden="true">
-                    {siteInitials}
+        <div
+            className={`${styles.overlay} ${styles.routeOverlay}`}
+            role="status"
+            aria-label={`Loading ${siteConfig.name}'s portfolio`}
+        >
+            <div className={styles.quickLoader} aria-hidden="true">
+                <div className={styles.quickBrand}>
+                    <span className={styles.quickFirstName}>{FIRST_NAME}</span>
+                    <span className={styles.quickLastName}>{LAST_NAME}</span>
                 </div>
-                <p className={styles.name}>{siteConfig.name}</p>
-                <div className={styles.terminal} aria-label="Loading">
-                    <span className={styles.termPrompt}>{">"}</span>
-                    <span className={styles.termText}>loading</span>
-                    <span className={styles.termCursor} aria-hidden="true">
-                        _
-                    </span>
-                </div>
-                <div className={styles.barTrack}>
-                    <div className={`${styles.barFill} ${styles.barFillLoop}`} />
+                <div className={styles.quickTrack}>
+                    <span className={styles.quickProgress} />
                 </div>
             </div>
+            <span className={styles.srOnly}>Loading {siteConfig.name}&apos;s portfolio</span>
         </div>
     );
 }

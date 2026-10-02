@@ -63,6 +63,25 @@ describe("getSelectedWork", () => {
 describe("toShowcaseItem", () => {
     const translate = (key: CategoryKey) => key.toUpperCase();
 
+    it("provides same-origin GIF previews even for CDN artwork", () => {
+        const item = toShowcaseItem(
+            makeProject({
+                image: [
+                    { id: 1, order: 0, src: "https://cdn.test/projects/a.gif" },
+                    { id: 2, order: 1, src: "/projects/b.png" },
+                ],
+            }),
+            0,
+            translate,
+            false,
+            []
+        );
+        expect(item.gallery[0].posterSrc).toBe(
+            "/api/gallery-poster?src=https%3A%2F%2Fcdn.test%2Fprojects%2Fa.gif"
+        );
+        expect(item.gallery[1].posterSrc).toBeUndefined();
+    });
+
     it("picks the isHero image as src, falling back to the first image", () => {
         const withHero = toShowcaseItem(
             makeProject({

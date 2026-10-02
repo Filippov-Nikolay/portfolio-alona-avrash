@@ -3,7 +3,12 @@
         "home": "Home",
         "works": "Works",
         "contact": "Contact",
-        "downloadCv": "Download CV"
+        "downloadCv": "Download CV",
+        "cvUnavailable": "CV currently unavailable",
+        "cvUnavailableShort": "Unavailable",
+        "cvDownloading": "Loading…",
+        "cvDownloadRetry": "Try again",
+        "cvDownloadFailed": "Couldn't download the CV. Please try again."
     },
     "hero": {
         "role": "Graphic designer",
@@ -89,11 +94,62 @@
         "title": "Reviews"
     },
     "notFound": {
+        "eyebrow": "Error 404 / Page not found",
         "title": "This page went off-brand",
         "description": "The page you're looking for doesn't exist, was moved, or never launched. Let's get you back to the work that does.",
-        "button": "Back to home"
+        "button": "Back to home",
+        "worksButton": "View projects"
     },
     "seo": {
         "description": "Brand identity, packaging and logo design for growing brands."
+    },
+    "privacyPreferences": {
+        "bannerText": "This site uses browser storage that is needed to show it to you. With your permission it also remembers your theme and intro screen, and measures visits and interactions to improve the portfolio. You can accept optional technologies, reject them, or manage your preferences. See the <cookies>Cookie & Browser Storage Policy</cookies>.",
+        "acceptOptional": "Accept optional",
+        "rejectOptional": "Reject optional",
+        "managePreferences": "Manage preferences",
+        "panelTitle": "Privacy preferences",
+        "categoryNecessaryTitle": "Necessary",
+        "categoryNecessaryDescription": "Always active. Keeps the site working and remembers the choice you make here.",
+        "categoryPreferencesTitle": "Preferences",
+        "categoryPreferencesDescription": "Remember convenience choices such as the light or dark theme and that you have already seen the intro screen.",
+        "categoryAnalyticsTitle": "Analytics / Performance",
+        "categoryAnalyticsDescription": "Measure page views, project interest and technical performance through our own anonymous statistics, Vercel Analytics and Speed Insights.",
+        "alwaysActive": "Always active",
+        "savePreferences": "Save preferences",
+        "close": "Close"
+    },
+    "legal": {
+        "index": {
+            "title": "Legal",
+            "description": "Privacy, cookie and usage policies for this portfolio.",
+            "intro": "How this portfolio handles personal data, browser storage and your choices, and the terms for using the site.",
+            "open": "Read document"
+        },
+        "tableOfContents": "On this page",
+        "lastUpdated": "Last updated:",
+        "privacy": {
+            "title": "Privacy Policy",
+            "description": "How this portfolio collects and uses personal data."
+        },
+        "cookies": {
+            "title": "Cookie & Browser Storage Policy",
+            "description": "How this portfolio uses cookies, localStorage, sessionStorage and related browser storage.",
+            "manageCalloutText": "You can change your storage choice at any time.",
+            "manageCalloutButton": "Manage preferences"
+        },
+        "privacyPreferences": {
+            "title": "Privacy Preferences & Consent Notice",
+            "description": "What each privacy choice controls and how to change it at any time.",
+            "manageCalloutText": "Review or change your privacy choices here.",
+            "manageCalloutButton": "Manage preferences"
+        },
+        "terms": {
+            "title": "Terms of Use",
+            "description": "Terms of use for this portfolio website."
+        }
+    },
+    "footer": {
+        "cookieSettings": "Cookie settings"
     }
 }

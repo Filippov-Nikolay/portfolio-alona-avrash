@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import { getBuildInfo } from "@/shared/config/buildInfo";
 import { AdminNav } from "@/widgets/AdminNav";
 import "./globals.css";
@@ -7,6 +8,13 @@ import "./globals.css";
 // so it doesn't affect the rest of the admin's look.
 import "@avrash/ui/styles/tokens.scss";
 
+const countryFlags = localFont({
+    src: "../../node_modules/country-flag-emoji-polyfill/dist/TwemojiCountryFlags.woff2",
+    variable: "--font-country-flags",
+    display: "swap",
+    preload: false,
+});
+
 export const metadata: Metadata = {
     title: "Alona Avrash - Admin",
     robots: { index: false, follow: false },
@@ -14,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en">
+        <html lang="en" className={countryFlags.variable}>
             <body>
                 <AdminNav buildInfo={getBuildInfo()} />
                 <main>{children}</main>

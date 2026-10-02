@@ -7,7 +7,7 @@ const eslintConfig = defineConfig([
     ...nextTs,
     {
         rules: {
-            // Defaults to auto-detecting pages/app under the CWD - now that
+            // Defaults to auto-detecting pages/app under the CWD - now that.
             // this config lives at the monorepo root instead of next to each
             // Next.js app, it can't find their app dirs on its own.
             "@next/next/no-html-link-for-pages": [

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { m } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -31,7 +31,7 @@ export interface SelectedWorkSectionProps {
 
 const CONTENT_REVEAL_PROGRESS = 0.3;
 
-export function SelectedWorkSection({
+export const SelectedWorkSection = memo(function SelectedWorkSection({
     projects,
     modalItems,
     categoryLabels,
@@ -52,34 +52,52 @@ export function SelectedWorkSection({
     const [isContentRevealed, setIsContentRevealed] = useState(
         () => !choreographyProgress || choreographyProgress.get() >= CONTENT_REVEAL_PROGRESS
     );
+    const revealFrameRef = useRef(0);
 
     useEffect(() => {
         if (!choreographyProgress || isContentRevealed) {
             return;
         }
 
+        const revealContent = () => {
+            if (revealFrameRef.current) return;
+
+            revealFrameRef.current = requestAnimationFrame(() => {
+                revealFrameRef.current = 0;
+                setIsContentRevealed(true);
+            });
+        };
         const unsubscribe = choreographyProgress.on("change", (latest) => {
             if (latest >= CONTENT_REVEAL_PROGRESS) {
-                setIsContentRevealed(true);
+                revealContent();
             }
         });
 
-        return unsubscribe;
+        if (choreographyProgress.get() >= CONTENT_REVEAL_PROGRESS) {
+            revealContent();
+        }
+
+        return () => {
+            unsubscribe();
+            cancelAnimationFrame(revealFrameRef.current);
+            revealFrameRef.current = 0;
+        };
     }, [choreographyProgress, isContentRevealed]);
+
+    const selectedItem = selectedIndex === null ? null : (modalItems[selectedIndex] ?? null);
+
+    useEffect(() => {
+        if (!selectedItem) return;
+
+        trackEvent("project_open", { entityId: String(selectedItem.id) });
+    }, [selectedItem]);
 
     if (projects.length === 0) {
         return null;
     }
 
-    const selectedItem = selectedIndex === null ? null : (modalItems[selectedIndex] ?? null);
-
     const openProject = (index: number) => {
         setSelectedIndex(index);
-        // The project's own numeric id, not its slug - a slug changes if the
-        // project is ever renamed, which would silently split that
-        // project's analytics history in two.
-        const item = modalItems[index];
-        trackEvent("project_open", { entityId: item ? String(item.id) : undefined });
     };
 
     return (
@@ -166,6 +184,15 @@ export function SelectedWorkSection({
                 item={selectedItem}
                 onClose={() => setSelectedIndex(null)}
                 labels={modalLabels}
+                onTabChange={(tab) => {
+                    // Only the switch-to-gallery direction is a deeper-
+                    // engagement signal - going back to overview isn't.
+                    if (tab === "gallery" && selectedItem) {
+                        trackEvent("project_gallery_view", {
+                            entityId: String(selectedItem.id),
+                        });
+                    }
+                }}
                 onVisitWebsite={() =>
                     trackEvent("project_external_click", {
                         entityId: selectedItem ? String(selectedItem.id) : undefined,
@@ -174,4 +201,4 @@ export function SelectedWorkSection({
             />
         </Section>
     );
-}
+});

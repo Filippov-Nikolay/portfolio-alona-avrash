@@ -1,4 +1,12 @@
-import type { AnalyticsOverview, ProjectDetail, ProjectSummary } from "../model/types";
+import type {
+    AnalyticsOverview,
+    CategoryBreakdown,
+    EngagementSummary,
+    ProjectDetail,
+    ProjectSummary,
+    SessionsSummary,
+    TrafficOverview,
+} from "../model/types";
 
 export function isAnalyticsConfigured(): boolean {
     return Boolean(process.env.ANALYTICS_WORKER_URL && process.env.ANALYTICS_READ_SECRET);
@@ -13,7 +21,7 @@ async function fetchFromWorker<T>(path: string): Promise<T | null> {
     try {
         response = await fetch(`${base}${path}`, {
             headers: { Authorization: `Bearer ${process.env.ANALYTICS_READ_SECRET}` },
-            cache: "no-store",
+            next: { revalidate: 30 },
         });
     } catch (error) {
         console.error(`Analytics worker request failed: ${path}`, error);
@@ -43,4 +51,20 @@ export async function getProjectDetail(
     return fetchFromWorker<ProjectDetail>(
         `/analytics/projects/${encodeURIComponent(entityId)}?days=${days}`
     );
+}
+
+export async function getTopCategories(days: number): Promise<CategoryBreakdown[] | null> {
+    return fetchFromWorker<CategoryBreakdown[]>(`/analytics/categories?days=${days}`);
+}
+
+export async function getTraffic(days: number): Promise<TrafficOverview | null> {
+    return fetchFromWorker<TrafficOverview>(`/analytics/traffic?days=${days}`);
+}
+
+export async function getEngagement(days: number): Promise<EngagementSummary | null> {
+    return fetchFromWorker<EngagementSummary>(`/analytics/engagement?days=${days}`);
+}
+
+export async function getSessions(days: number): Promise<SessionsSummary | null> {
+    return fetchFromWorker<SessionsSummary>(`/analytics/sessions?days=${days}`);
 }

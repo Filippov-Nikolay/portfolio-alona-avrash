@@ -1,7 +1,8 @@
 "use client";
 
 import { useLayoutEffect, useState } from "react";
-import { useScroll, useTransform } from "framer-motion";
+import { useTransform, type MotionValue } from "framer-motion";
+import { createViewportResizeGuard } from "@/shared/lib/motion";
 
 interface StatsSelectedRange {
     start: number;
@@ -24,12 +25,13 @@ const DEFAULT_RANGE: StatsSelectedRange = {
 };
 
 export function useStatsSelectedProgress(
+    scrollY: MotionValue<number>,
     stageId = "hero-transition-track",
     cameraTrackId = "stats-camera-track",
     selectedMotionTrackId = "selected-motion-track",
-    selectedFocusTrackId = "selected-focus-track"
+    selectedFocusTrackId = "selected-focus-track",
+    viewportId = "hero-sticky-stage"
 ) {
-    const { scrollY } = useScroll();
     const [range, setRange] = useState(DEFAULT_RANGE);
 
     useLayoutEffect(() => {
@@ -37,23 +39,28 @@ export function useStatsSelectedProgress(
         const cameraTrack = document.getElementById(cameraTrackId);
         const selectedMotionTrack = document.getElementById(selectedMotionTrackId);
         const selectedFocusTrack = document.getElementById(selectedFocusTrackId);
+        const viewport = document.getElementById(viewportId);
 
-        if (!stage || !cameraTrack || !selectedMotionTrack || !selectedFocusTrack) {
+        if (!stage || !cameraTrack || !selectedMotionTrack || !selectedFocusTrack || !viewport) {
             return;
         }
 
+        let measureFrame = 0;
+        const shouldMeasureViewportResize = createViewportResizeGuard();
+
         const measure = () => {
+            measureFrame = 0;
             const stageRect = stage.getBoundingClientRect();
             const cameraTrackRect = cameraTrack.getBoundingClientRect();
             const selectedMotionTrackRect = selectedMotionTrack.getBoundingClientRect();
             const selectedFocusTrackRect = selectedFocusTrack.getBoundingClientRect();
+            const viewportHeight = viewport.getBoundingClientRect().height;
             const stageTop = stageRect.top + window.scrollY;
-            const nextStart = stageTop + Math.max(cameraTrackRect.height - window.innerHeight, 1);
-            const nextEnd =
-                stageTop + Math.max(selectedMotionTrackRect.height - window.innerHeight, 1);
+            const nextStart = stageTop + Math.max(cameraTrackRect.height - viewportHeight, 1);
+            const nextEnd = stageTop + Math.max(selectedMotionTrackRect.height - viewportHeight, 1);
             const nextFocusEnd =
-                stageTop + Math.max(selectedFocusTrackRect.height - window.innerHeight, 1);
-            const nextHandoffEnd = stageTop + Math.max(stageRect.height - window.innerHeight, 1);
+                stageTop + Math.max(selectedFocusTrackRect.height - viewportHeight, 1);
+            const nextHandoffEnd = stageTop + Math.max(stageRect.height - viewportHeight, 1);
             const nextRange = Math.max(nextEnd - nextStart, 1);
             const nextFocusRunway = Math.max(nextFocusEnd - nextEnd, 1);
             const nextHandoffRunway = Math.max(nextHandoffEnd - nextFocusEnd, 1);
@@ -76,22 +83,32 @@ export function useStatsSelectedProgress(
             );
         };
 
+        const scheduleMeasure = () => {
+            if (measureFrame) return;
+            measureFrame = requestAnimationFrame(measure);
+        };
+
+        const handleResize = () => {
+            if (shouldMeasureViewportResize()) scheduleMeasure();
+        };
+
         const resizeObserver =
-            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-        const frame = requestAnimationFrame(measure);
+            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleMeasure);
+        scheduleMeasure();
 
         resizeObserver?.observe(stage);
         resizeObserver?.observe(cameraTrack);
         resizeObserver?.observe(selectedMotionTrack);
         resizeObserver?.observe(selectedFocusTrack);
-        window.addEventListener("resize", measure);
+        resizeObserver?.observe(viewport);
+        window.addEventListener("resize", handleResize);
 
         return () => {
-            cancelAnimationFrame(frame);
+            cancelAnimationFrame(measureFrame);
             resizeObserver?.disconnect();
-            window.removeEventListener("resize", measure);
+            window.removeEventListener("resize", handleResize);
         };
-    }, [cameraTrackId, selectedFocusTrackId, selectedMotionTrackId, stageId]);
+    }, [cameraTrackId, selectedFocusTrackId, selectedMotionTrackId, stageId, viewportId]);
 
     const rawProgress = useTransform(scrollY, [range.start, range.end], [0, 1], {
         clamp: false,

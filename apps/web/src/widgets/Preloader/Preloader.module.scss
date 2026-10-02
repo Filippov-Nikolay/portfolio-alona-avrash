@@ -1,165 +1,371 @@
 @use "@/shared/styles/mixins" as *;
 
-// =============================================
-// Overlay
-// =============================================
-
 .overlay {
     @include fixed-fill;
-    z-index: 100;
-    background: var(--color-bg);
-    @include flex-center;
-    flex-direction: column;
 
-    // Ambient purple glow — same language as hero section
-    &::before {
-        content: "";
-        position: absolute;
-        width: 560px;
-        height: 560px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(234, 253, 39, 0.14) 0%, transparent 65%);
-        pointer-events: none;
-        filter: blur(var(--blur-lg));
+    overflow: hidden;
+    background: #050505;
+    color: #fff;
+    isolation: isolate;
+    will-change: transform;
+}
+
+.firstVisitOverlay {
+    z-index: 310;
+
+    :global(html[data-preloader-seen]) & {
+        display: none;
+    }
+
+    .char {
+        transform: translateY(112%);
+    }
+
+    .wordFill {
+        clip-path: inset(0 100% 0 0);
     }
 }
 
-// =============================================
-// Center content
-// =============================================
+.routeOverlay {
+    --_quick-track: #e6e6e6;
 
-.center {
-    @include flex-center;
-    flex-direction: column;
-    gap: 20px;
-    position: relative;
-    z-index: 1;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+
+    [data-theme="dark"] & {
+        --_quick-track: rgba(255, 255, 255, 0.14);
+    }
 }
 
-// =============================================
-// NF logo — scaled-up version of header avatar
-// =============================================
+.frame {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    padding: clamp(22px, 3.5vw, 56px);
+}
 
-.logo {
-    @include flex-center;
-    width: 80px;
-    height: 80px;
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(234, 253, 39, 0.5);
-    background: rgba(234, 253, 39, 0.08);
-    color: var(--color-primary);
-    font-size: 22px;
+.topLine {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.brandLockup {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    min-width: 0;
+}
+
+.brandName {
+    flex: 0 0 auto;
+    font-family: var(--font-title-accent);
+    font-size: 18px;
     font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: var(--color-primary);
+}
+
+.brandRole,
+.edition,
+.progressMeta {
     font-family: var(--font-mono);
-    letter-spacing: 0.08em;
-    box-shadow:
-        0 0 48px rgba(234, 253, 39, 0.18),
-        inset 0 0 1px rgba(234, 253, 39, 0.3);
-}
-
-// =============================================
-// Name
-// =============================================
-
-.name {
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 500;
-    color: var(--color-text-secondary);
-    letter-spacing: 0.06em;
-    margin: 0;
+    line-height: 1.2;
+    letter-spacing: 0;
+    text-transform: uppercase;
 }
 
-// =============================================
-// Progress bar
-// =============================================
+.brandRole {
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.5);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.edition {
+    flex: 0 0 auto;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    padding-block: 28px;
+}
+
+.kicker {
+    margin-bottom: 18px;
+    font-family: var(--font-body);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.word {
+    position: relative;
+    display: grid;
+    width: 100%;
+    overflow: hidden;
+}
+
+.wordBase,
+.wordFill {
+    grid-area: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    font-family: var(--font-title-accent);
+    font-size: 220px;
+    font-weight: 700;
+    line-height: 0.82;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.wordBase {
+    color: rgba(255, 255, 255, 0.11);
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.36);
+}
+
+.wordFill {
+    color: var(--color-primary);
+    will-change: clip-path;
+}
+
+.wordGlyphs {
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
+}
+
+.charMask {
+    display: inline-block;
+    overflow: hidden;
+    padding-block: 0.09em;
+    margin-block: -0.09em;
+}
+
+.char,
+.staticChar {
+    display: inline-block;
+}
+
+.char {
+    will-change: transform;
+}
+
+.progressDock {
+    align-self: end;
+}
+
+.progressMeta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 10px;
+}
+
+.progressLabel {
+    color: rgba(255, 255, 255, 0.56);
+}
+
+.percent {
+    min-width: 3ch;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--color-primary);
+}
 
 .barTrack {
-    width: 180px;
-    height: 2px;
-    background: var(--color-border);
-    border-radius: 2px;
+    width: 100%;
+    height: 4px;
     overflow: hidden;
-    margin-top: 4px;
+    background: rgba(255, 255, 255, 0.16);
 }
 
 .barFill {
-    height: 100%;
     width: 100%;
+    height: 100%;
     background: var(--color-primary);
-    border-radius: 2px;
     transform-origin: left center;
-    box-shadow: 0 0 10px rgba(234, 253, 39, 0.7);
-
-    @include reduced-motion {
-        transition: none;
-    }
+    will-change: transform;
 }
 
-// Used by loading.tsx — terminal line above the bar
-.terminal {
+.wipeEdge {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 5px;
+    background: var(--color-primary);
+}
+
+.srOnly {
+    @include sr-only;
+}
+
+.quickLoader {
+    display: grid;
+    width: min(230px, calc(100% - 48px));
+    justify-items: center;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: quick-loader-enter 0.28s 0.06s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.quickBrand {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    user-select: none;
+    align-items: baseline;
+    justify-content: center;
+    gap: 8px;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
-.termPrompt {
-    color: var(--color-primary);
+.quickFirstName {
+    font-family: var(--font-body);
+    font-size: 13px;
     font-weight: 700;
 }
 
-.termText {
-    color: var(--color-text-secondary);
+.quickLastName {
+    font-family: var(--font-title-accent);
+    font-size: 30px;
+    font-weight: 700;
 }
 
-.termCursor {
-    color: var(--color-primary);
-    animation: cursor-blink 1.1s step-start infinite;
-
-    @include reduced-motion {
-        animation: none;
-    }
+.quickTrack {
+    position: relative;
+    width: 100%;
+    height: 3px;
+    margin-top: 14px;
+    overflow: hidden;
+    background: var(--_quick-track);
 }
 
-@keyframes cursor-blink {
-    0%,
-    100% {
+.quickProgress {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 38%;
+    background: var(--color-accent);
+    transform: translateX(-110%);
+    will-change: transform;
+    animation: quick-progress 0.82s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes quick-loader-enter {
+    to {
         opacity: 1;
-    }
-    50% {
-        opacity: 0;
+        transform: translateY(0);
     }
 }
 
-// Used by loading.tsx — infinite loop instead of one-shot framer-motion fill
-.barFillLoop {
-    width: 0%;
-    transform-origin: left center;
-    animation: bar-loop 2.4s cubic-bezier(0.4, 0, 0.2, 1) 0.6s infinite;
-
-    @include reduced-motion {
-        animation: none;
-        width: 45%;
-    }
-}
-
-@keyframes bar-loop {
+@keyframes quick-progress {
     0% {
-        width: 0%;
-        opacity: 1;
+        transform: translateX(-110%);
     }
-    72% {
-        width: 100%;
-        opacity: 1;
-    }
-    88% {
-        width: 100%;
-        opacity: 0;
-    }
+
     100% {
-        width: 0%;
-        opacity: 0;
+        transform: translateX(290%);
+    }
+}
+
+@media (max-width: 1279px) {
+    .wordBase,
+    .wordFill {
+        font-size: 156px;
+    }
+}
+
+@media (max-width: 899px) {
+    .wordBase,
+    .wordFill {
+        font-size: 112px;
+    }
+}
+
+@media (max-width: 599px) {
+    .frame {
+        padding: 22px 18px 26px;
+    }
+
+    .topLine {
+        padding-bottom: 14px;
+    }
+
+    .brandLockup {
+        display: block;
+    }
+
+    .brandName {
+        font-size: 16px;
+    }
+
+    .brandRole {
+        display: none;
+    }
+
+    .edition,
+    .progressMeta {
+        font-size: 10px;
+    }
+
+    .kicker {
+        margin-bottom: 12px;
+        font-size: 14px;
+    }
+
+    .wordBase,
+    .wordFill {
+        font-size: 68px;
+    }
+
+    .barTrack {
+        height: 3px;
+    }
+}
+
+@media (max-width: 379px) {
+    .wordBase,
+    .wordFill {
+        font-size: 56px;
+    }
+}
+
+@include reduced-motion {
+    .quickLoader,
+    .quickProgress {
+        animation: none;
+    }
+
+    .quickLoader {
+        opacity: 1;
+        transform: none;
+    }
+
+    .quickProgress {
+        transform: translateX(82%);
     }
 }

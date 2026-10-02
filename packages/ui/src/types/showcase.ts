@@ -1,6 +1,8 @@
 export interface ShowcaseGalleryImage {
     src: string;
     alt: string;
+    // Static first frame for animated artwork; must retain the original aspect ratio.
+    posterSrc?: string;
     // Pairs this image with the next one in the lightbox - see ProjectImage.
     pairMode?: "row" | "stack";
 }

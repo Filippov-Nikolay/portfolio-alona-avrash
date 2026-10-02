@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import type { OptionItem } from "@/entities/optionList/api/optionListRepository";
 import { ToggleChip } from "@/shared/ui/ToggleChip";
 import { Button } from "@/shared/ui/Button";
@@ -103,7 +104,7 @@ export function ChipsField({
                         aria-label={`Add new ${addNoun}`}
                         title={`Add new ${addNoun}`}
                     >
-                        +
+                        <Plus size={15} strokeWidth={1.8} aria-hidden="true" />
                     </button>
                 )}
             </div>

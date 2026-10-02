@@ -1,15 +1,17 @@
-export const LOCALES = [
-    { code: "en", label: "EN", ogLocale: "en_US" },
-    { code: "pl", label: "PL", ogLocale: "pl_PL" },
-] as const;
+import {
+    DEFAULT_SITE_LOCALE,
+    isSiteLocale,
+    SITE_LOCALES,
+    type SiteLocale,
+} from "@avrash/content-schema/locale";
 
-export const DEFAULT_LOCALE = "en" satisfies (typeof LOCALES)[number]["code"];
+export const LOCALES = SITE_LOCALES;
 
-export type Locale = (typeof LOCALES)[number]["code"];
+export const DEFAULT_LOCALE = DEFAULT_SITE_LOCALE;
 
-export function isLocale(value: string): value is Locale {
-    return LOCALES.some((l) => l.code === value);
-}
+export type Locale = SiteLocale;
+
+export const isLocale = isSiteLocale;
 
 export function getLocaleMeta(code: string) {
     return LOCALES.find((l) => l.code === code) ?? LOCALES.find((l) => l.code === DEFAULT_LOCALE)!;

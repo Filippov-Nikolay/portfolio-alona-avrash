@@ -17,6 +17,10 @@ $header-scale: 0.8;
         --_pill-text: #ffffff;
         --_pill-border: rgba(255, 255, 255, 0.1);
         --_pill-blur: blur(16px) saturate(140%);
+
+        @media (hover: none) and (pointer: coarse) {
+            --_pill-blur: none;
+        }
     }
 }
 
@@ -48,16 +52,21 @@ $header-scale: 0.8;
     position: fixed;
     inset: 0;
     z-index: 115;
+    pointer-events: all;
+    will-change: opacity;
+}
+
+.menuOverlayBlur {
+    position: absolute;
+    inset: 0;
     background: rgba(255, 255, 255, 0.1);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
-    pointer-events: all;
+    pointer-events: none;
 }
 
-[data-theme="dark"] .menuOverlay {
+[data-theme="dark"] .menuOverlayBlur {
     background: rgba(0, 0, 0, 0.2);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
 }
 
 .main {
@@ -67,7 +76,7 @@ $header-scale: 0.8;
     gap: $header-scale * 12px;
     pointer-events: none;
 
-    > * {
+    > :not(.menuPanel) {
         opacity: 0;
         transform: translateY(-18px) scale(0.94);
         transition:
@@ -80,9 +89,15 @@ $header-scale: 0.8;
         }
     }
 
-    &.mainReady > * {
+    &.mainReady > :not(.menuPanel) {
         opacity: 1;
         transform: none;
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+        > :not(.menuPanel) {
+            will-change: transform;
+        }
     }
 }
 
@@ -290,25 +305,34 @@ $header-scale: 0.8;
 }
 
 .langThemeDesktop {
-    display: flex;
-    align-items: center;
-    gap: 0;
+    display: grid;
+    // Keep the theme control's existing width for both full-height hit targets.
+    grid-template-columns: repeat(2, $header-scale * 65px);
+    align-items: stretch;
     height: 100%;
 }
 
 .langWrapperDesktop {
     position: static !important;
+    display: flex;
 }
 
-.langTrigger {
-    padding: ($header-scale * 4px) ($header-scale * 20px);
+.langWrapperDesktop .langTrigger {
+    width: 100%;
+    padding: 0;
     border: none !important;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
     background: transparent;
     font-family: var(--font-almarai);
     font-weight: 700;
     font-size: $header-scale * 16px;
     letter-spacing: 0;
     color: var(--_pill-text) !important;
+
+    &:hover,
+    &:active {
+        transform: none;
+    }
 
     @include can-hover {
         &:hover {
@@ -319,12 +343,25 @@ $header-scale: 0.8;
 }
 
 .themeBtnDesktop {
-    width: auto !important;
-    height: $header-scale * 32px !important;
-    padding: 0 ($header-scale * 20px) !important;
-    border-left: 1px solid rgba(128, 128, 128, 0.35) !important;
-    border-radius: 0;
+    position: relative;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     color: var(--_pill-text) !important;
+
+    &::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 1px;
+        height: $header-scale * 32px;
+        background: rgba(128, 128, 128, 0.35);
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
 
     svg {
         transform: scale(calc(#{$header-scale} * 32 / 18));
@@ -346,6 +383,7 @@ $header-scale: 0.8;
     @include pill;
     @include flex-center;
 
+    position: relative;
     gap: $header-scale * 12px;
     padding-block: $header-scale * 4px;
     padding-left: $header-scale * 20px;
@@ -373,13 +411,13 @@ $header-scale: 0.8;
     }
 
     @include can-hover {
-        &:hover {
+        &:not([aria-disabled="true"]):hover {
             box-shadow:
                 0px 0px 40px 0px rgba(234, 253, 39, 0.35),
                 inset 0px 0px 2px 0px rgba(255, 255, 255, 0.15);
         }
 
-        &:hover .cvIcon {
+        &:not([aria-disabled="true"]):hover .cvIcon {
             box-shadow: 0 0 16px rgba(234, 253, 39, 0.5);
             animation: cvIconBounce 0.7s ease-in-out 2;
         }
@@ -387,6 +425,44 @@ $header-scale: 0.8;
 
     &.cvPillClicked {
         animation: cvPillFlash 0.55s ease-out;
+    }
+
+    &[aria-disabled="true"] {
+        cursor: not-allowed;
+
+        .cvLabel,
+        .cvIcon {
+            opacity: 0.72;
+        }
+    }
+}
+
+.cvActionText,
+.cvStatusText {
+    grid-area: 1 / 1;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+
+    @include reduced-motion {
+        transition: none;
+    }
+}
+
+.cvStatusText {
+    opacity: 0;
+    transform: translateY(0.4em);
+}
+
+[data-unavailable-visible] {
+    .cvActionText {
+        opacity: 0;
+        transform: translateY(-0.4em);
+    }
+
+    .cvStatusText {
+        opacity: 1;
+        transform: none;
     }
 }
 
@@ -422,6 +498,8 @@ $header-scale: 0.8;
 }
 
 .cvLabel {
+    display: grid;
+    overflow: hidden;
     font-family: var(--font-almarai);
     font-weight: 300;
     font-size: $header-scale * 16px;
@@ -569,6 +647,14 @@ $header-scale: 0.8;
     right: 0;
     z-index: 100;
     padding: 8px;
+    pointer-events: all;
+    will-change: opacity, transform;
+}
+
+.menuPanelSurface {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
     border-radius: 0 0 var(--radius-md) var(--radius-md);
     background: var(--_pill-bg);
     border: 1px solid var(--_pill-border);
@@ -577,7 +663,12 @@ $header-scale: 0.8;
     box-shadow:
         0 20px 45px rgba(0, 0, 0, 0.25),
         inset 0 0 2px rgba(255, 255, 255, 0.15);
-    pointer-events: all;
+    pointer-events: none;
+}
+
+.menuPanelContent {
+    position: relative;
+    z-index: 1;
 }
 
 .menuNavList {
@@ -614,6 +705,7 @@ $header-scale: 0.8;
 }
 
 .menuCv {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -623,6 +715,16 @@ $header-scale: 0.8;
     border-radius: 999px;
     background: var(--color-primary);
     text-decoration: none;
+    @include focus-ring;
+
+    &[aria-disabled="true"] {
+        cursor: not-allowed;
+
+        .menuCvLabel,
+        .menuCvIcon {
+            opacity: 0.72;
+        }
+    }
 
     &.cvPillClicked {
         .menuCvIcon {
@@ -632,6 +734,8 @@ $header-scale: 0.8;
 }
 
 .menuCvLabel {
+    display: grid;
+    overflow: hidden;
     font-family: var(--font-almarai);
     font-weight: 700;
     font-size: 15px;

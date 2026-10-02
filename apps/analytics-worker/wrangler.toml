@@ -2,16 +2,45 @@ name = "avrash-analytics-worker"
 main = "src/index.ts"
 compatibility_date = "2026-09-19"
 
+# prod
+[env.production]
+
+[env.production.vars]
+ALLOWED_ORIGIN = "https://avrash.com"
+# Events older than this many days are deleted by the daily cron below.
+RETENTION_DAYS = "730"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "avrash-analytics-prod"
+database_id = "861d8685-e8a5-4869-a365-c15191242cec"
+migrations_dir = "migrations"
+
+[[env.production.routes]]
+pattern = "analytics.avrash.com"
+custom_domain = true
+
+
+# dev
 # Enforced server-side (src/security.ts's isAllowedOrigin), not just echoed
 # in the CORS response header - a request whose Origin doesn't match this
 # gets a 403. Set to the public site's real origin before deploying.
 [vars]
-ALLOWED_ORIGIN = "https://your-domain.com"
+ALLOWED_ORIGIN = "https://dev.avrash.com"
+# Events older than this many days are deleted by the daily cron below.
+RETENTION_DAYS = "730"
+
+[triggers]
+crons = ["17 3 * * *"]
 
 # ANALYTICS_READ_SECRET (the bearer token admin's GET /analytics/* reads
 # authenticate with) is NOT set here - this file is committed. Set it with:
 #   wrangler secret put ANALYTICS_READ_SECRET
 # Give apps/admin this exact same value as its ANALYTICS_READ_SECRET env var.
+#
+# VISITOR_SALT (optional, recommended) salts the daily visitor hash. Set it
+# with: wrangler secret put VISITOR_SALT
+# Without it the read secret is used as the salt.
 
 # Created once with: wrangler d1 create avrash-analytics
 # Then paste the printed database_id below, and run migrations with:
@@ -19,11 +48,11 @@ ALLOWED_ORIGIN = "https://your-domain.com"
 #   wrangler d1 migrations apply avrash-analytics --remote  (production)
 [[d1_databases]]
 binding = "DB"
-database_name = "avrash-analytics"
-database_id = "REPLACE_WITH_REAL_DATABASE_ID"
+database_name = "avrash-analytics-dev"
+database_id = "d4fad309-f0c3-4c81-a83c-360ab929fa92"
 migrations_dir = "migrations"
 
 # Uncomment once a route is ready to receive traffic - see README.md.
-# [[routes]]
-# pattern = "analytics.your-domain.com/event"
-# custom_domain = true
+[[routes]]
+pattern = "analytics-dev.avrash.com"
+custom_domain = true

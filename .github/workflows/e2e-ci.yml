@@ -30,18 +30,47 @@ on:
 
 jobs:
     e2e:
+        name: e2e (${{ matrix.name }})
         runs-on: ubuntu-latest
-        # The suite spins up both apps' dev servers cold (next dev, not a
-        # prebuilt server) inside this one job - generous headroom over the
-        # ~30s a local run takes, for a colder cache/slower runner.
-        timeout-minutes: 15
+        timeout-minutes: 30
+
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - name: web 1/2
+                      project: web
+                      shard: 1/2
+                      apps: web
+                      browser: chromium
+                    - name: web 2/2
+                      project: web
+                      shard: 2/2
+                      apps: web
+                      browser: chromium
+                    - name: web-ios
+                      project: web-ios
+                      apps: web
+                      browser: webkit
+                    - name: web-webkit
+                      project: web-webkit
+                      apps: web
+                      browser: webkit
+                    - name: admin
+                      project: admin
+                      apps: admin
+                      browser: chromium
+
+        env:
+            E2E_SERVER: production
+            E2E_APPS: ${{ matrix.apps }}
 
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
 
-            - uses: pnpm/action-setup@v4
+            - uses: pnpm/action-setup@v6
 
-            - uses: actions/setup-node@v4
+            - uses: actions/setup-node@v7
               with:
                   node-version: 22
                   cache: "pnpm"
@@ -50,25 +79,28 @@ jobs:
 
             - name: Cache Playwright browsers
               id: playwright-cache
-              uses: actions/cache@v4
+              uses: actions/cache@v6
               with:
                   path: ~/.cache/ms-playwright
-                  key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+                  key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('pnpm-lock.yaml') }}
 
-            - name: Install Playwright Chromium (+ OS deps)
+            - name: Install Playwright browser (+ OS deps)
               if: steps.playwright-cache.outputs.cache-hit != 'true'
-              run: pnpm --filter @avrash/e2e exec playwright install --with-deps chromium
+              run: pnpm --filter @avrash/e2e exec playwright install --with-deps ${{ matrix.browser }}
 
             - name: Install Playwright's OS dependencies only
               if: steps.playwright-cache.outputs.cache-hit == 'true'
-              run: pnpm --filter @avrash/e2e exec playwright install-deps chromium
+              run: pnpm --filter @avrash/e2e exec playwright install-deps ${{ matrix.browser }}
 
-            - run: pnpm --filter @avrash/e2e run test
+            - name: Run E2E against a production build
+              run: >-
+                  pnpm --filter @avrash/e2e exec playwright test
+                  --project=${{ matrix.project }}
+                  ${{ matrix.shard && format('--shard={0}', matrix.shard) || '' }}
 
             - name: Upload Playwright report
               if: always()
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v7
               with:
-                  name: playwright-report
+                  name: playwright-report-${{ matrix.project }}${{ matrix.shard && format('-{0}', strategy.job-index) || '' }}
                   path: e2e/playwright-report/
-                  retention-days: 14

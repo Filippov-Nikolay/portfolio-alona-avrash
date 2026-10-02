@@ -17,7 +17,7 @@ test.describe("works filtering", () => {
         const totalCount = await cards.count();
         expect(totalCount).toBeGreaterThan(0);
 
-        await page.getByRole("button", { name: "Branding", exact: true }).click();
+        await page.getByRole("radio", { name: "Branding", exact: true }).click();
         await expect(page).toHaveURL(/filter=branding/);
 
         await expect(async () => {
@@ -31,7 +31,42 @@ test.describe("works filtering", () => {
         );
         expect(categories.every((category) => category === "Branding")).toBe(true);
 
-        await page.getByRole("button", { name: "All", exact: true }).click();
+        await page.getByRole("radio", { name: "Packaging", exact: true }).click();
+        await expect(page).toHaveURL(/filter=packaging/);
+        await expect(page).not.toHaveURL(/filter=branding/);
+        await expect(cards.first()).toBeVisible();
+        const packagingCategories = await cards.evaluateAll((elements) =>
+            elements.map((element) => element.getAttribute("data-category"))
+        );
+        expect(packagingCategories.every((category) => category === "Packaging")).toBe(true);
+
+        await page.getByRole("radio", { name: "Web Design", exact: true }).click();
+        await expect(page).toHaveURL(/filter=web-design/);
+        await expect(cards.first()).toBeVisible();
+        const webDesignCategories = await cards.evaluateAll((elements) =>
+            elements.map((element) => element.getAttribute("data-category"))
+        );
+        expect(webDesignCategories.every((category) => category === "Web Design")).toBe(true);
+
+        await page.getByRole("radio", { name: "All", exact: true }).click();
         await expect(cards).toHaveCount(totalCount);
+    });
+
+    test("category filters from a direct URL include secondary project categories", async ({
+        page,
+    }) => {
+        await page.goto("/en/works?filter=web-design");
+
+        const cards = page.getByTestId("works-card");
+        await expect(cards.first()).toBeVisible();
+        expect(await cards.count()).toBeGreaterThan(0);
+        await expect(page.getByRole("radio", { name: "Web Design", exact: true })).toHaveAttribute(
+            "aria-checked",
+            "true"
+        );
+
+        await page.goto("/en/works?filter=packaging");
+        await expect(cards.first()).toBeVisible();
+        expect(await cards.count()).toBeGreaterThan(0);
     });
 });

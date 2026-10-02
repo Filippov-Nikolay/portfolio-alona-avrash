@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useState } from "react";
 import { HERO_DEPTH_TRANSITION_START } from "@/shared/config/heroDepthHandoff";
+import { createViewportResizeGuard } from "@/shared/lib/motion";
 
 interface HeroDepthHandoffRange {
     entry: number;
@@ -19,12 +20,14 @@ interface UseHeroDepthHandoffRangeOptions {
     stageId?: string;
     heroTrackId?: string;
     cameraTrackId?: string;
+    viewportId?: string;
 }
 
 export function useHeroDepthHandoffRange({
     stageId = "hero-transition-track",
     heroTrackId = "hero-scroll-track",
     cameraTrackId = "stats-camera-track",
+    viewportId = "hero-sticky-stage",
 }: UseHeroDepthHandoffRangeOptions = {}) {
     const [range, setRange] = useState(DEFAULT_RANGE);
 
@@ -32,18 +35,24 @@ export function useHeroDepthHandoffRange({
         const stageRoot = document.getElementById(stageId);
         const heroTrack = document.getElementById(heroTrackId);
         const cameraTrack = document.getElementById(cameraTrackId);
+        const viewport = document.getElementById(viewportId);
 
-        if (!stageRoot || !heroTrack || !cameraTrack) {
+        if (!stageRoot || !heroTrack || !cameraTrack || !viewport) {
             return;
         }
 
+        let measureFrame = 0;
+        const shouldMeasureViewportResize = createViewportResizeGuard();
+
         const measure = () => {
+            measureFrame = 0;
             const stageRect = stageRoot.getBoundingClientRect();
             const heroTrackRect = heroTrack.getBoundingClientRect();
             const cameraTrackRect = cameraTrack.getBoundingClientRect();
+            const viewportHeight = viewport.getBoundingClientRect().height;
             const stageTop = stageRect.top + window.scrollY;
-            const heroScrollableRange = Math.max(heroTrackRect.height - window.innerHeight, 1);
-            const cameraScrollableRange = Math.max(cameraTrackRect.height - window.innerHeight, 1);
+            const heroScrollableRange = Math.max(heroTrackRect.height - viewportHeight, 1);
+            const cameraScrollableRange = Math.max(cameraTrackRect.height - viewportHeight, 1);
             const nextEntry = stageTop + heroScrollableRange;
             const nextStart = stageTop + heroScrollableRange * HERO_DEPTH_TRANSITION_START;
             const nextEnd = stageTop + cameraScrollableRange;
@@ -57,26 +66,32 @@ export function useHeroDepthHandoffRange({
             );
         };
 
-        const resizeObserver =
-            typeof ResizeObserver === "undefined"
-                ? null
-                : new ResizeObserver(() => {
-                      measure();
-                  });
+        const scheduleMeasure = () => {
+            if (measureFrame) return;
+            measureFrame = requestAnimationFrame(measure);
+        };
 
-        const rafId = requestAnimationFrame(measure);
+        const handleResize = () => {
+            if (shouldMeasureViewportResize()) scheduleMeasure();
+        };
+
+        const resizeObserver =
+            typeof ResizeObserver === "undefined" ? null : new ResizeObserver(scheduleMeasure);
+
+        scheduleMeasure();
 
         resizeObserver?.observe(stageRoot);
         resizeObserver?.observe(heroTrack);
         resizeObserver?.observe(cameraTrack);
-        window.addEventListener("resize", measure);
+        resizeObserver?.observe(viewport);
+        window.addEventListener("resize", handleResize);
 
         return () => {
-            cancelAnimationFrame(rafId);
+            cancelAnimationFrame(measureFrame);
             resizeObserver?.disconnect();
-            window.removeEventListener("resize", measure);
+            window.removeEventListener("resize", handleResize);
         };
-    }, [cameraTrackId, heroTrackId, stageId]);
+    }, [cameraTrackId, heroTrackId, stageId, viewportId]);
 
     return range;
 }

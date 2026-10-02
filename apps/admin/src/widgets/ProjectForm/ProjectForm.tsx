@@ -2,6 +2,21 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+    ArrowLeft,
+    ChevronDown,
+    Eye,
+    FileText,
+    Images,
+    Palette,
+    RotateCcw,
+    Save,
+    Star,
+    Tags,
+    Trash2,
+    Wrench,
+    X,
+} from "lucide-react";
 import type {
     Project,
     CategoryOption,
@@ -31,99 +46,6 @@ import { ChipsField } from "./ChipsField";
 import { ImageGalleryEditor } from "./ImageGalleryEditor";
 import { toImageDrafts, fromImageDrafts, type ImageDraft } from "./ImageDraft";
 import styles from "./ProjectForm.module.css";
-
-function CancelIcon() {
-    return (
-        <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-        >
-            <path d="M18 6 6 18" />
-            <path d="M6 6l12 12" />
-        </svg>
-    );
-}
-
-function RestoreIcon() {
-    return (
-        <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-        >
-            <path d="M3 12a9 9 0 1 0 3-6.7" />
-            <path d="M3 4v5h5" />
-        </svg>
-    );
-}
-
-function PreviewIcon() {
-    return (
-        <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-        >
-            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-            <circle cx="12" cy="12" r="3" />
-        </svg>
-    );
-}
-
-function SaveIcon() {
-    return (
-        <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-        >
-            <path d="M20 6 9 17l-5-5" />
-        </svg>
-    );
-}
-
-function ChevronIcon() {
-    return (
-        <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-        >
-            <path d="m6 9 6 6 6-6" />
-        </svg>
-    );
-}
 
 interface ProjectFormProps {
     project?: Project;
@@ -409,12 +331,38 @@ export function ProjectForm({
 
     return (
         <div className={styles.page}>
-            <div className={styles.topBar}>
-                <button type="button" className={styles.backLink} onClick={requestLeave}>
-                    &larr; Projects
-                </button>
-                <h1 className={styles.pageTitle}>{isEditing ? project!.name : "New project"}</h1>
-            </div>
+            <header className={styles.editorHeader}>
+                <div className={styles.titleBlock}>
+                    <button type="button" className={styles.backLink} onClick={requestLeave}>
+                        <ArrowLeft size={15} strokeWidth={1.8} aria-hidden="true" />
+                        Projects
+                    </button>
+                    <span className={styles.eyebrow}>
+                        {isEditing ? `Project #${project!.id}` : "Portfolio project"}
+                    </span>
+                    <h1 className={styles.pageTitle}>{name.trim() || "New project"}</h1>
+                    <p className={styles.pageSubtitle}>
+                        {isEditing
+                            ? "Update the project content, presentation and gallery."
+                            : "Create a new case study for the portfolio."}
+                    </p>
+                </div>
+                <div className={styles.headerStatus} aria-label="Project status">
+                    <span
+                        className={cn(
+                            styles.saveStatus,
+                            isDirty ? styles.saveStatusDirty : styles.saveStatusSaved
+                        )}
+                    >
+                        <span className={styles.statusDot} aria-hidden="true" />
+                        {isDirty ? "Unsaved changes" : "All changes saved"}
+                    </span>
+                    <span className={styles.headerMetric}>
+                        <Images size={15} strokeWidth={1.8} aria-hidden="true" />
+                        {images.length} {images.length === 1 ? "image" : "images"}
+                    </span>
+                </div>
+            </header>
 
             {restoredDraftAt && (
                 <div className={styles.draftNotice}>
@@ -432,183 +380,276 @@ export function ProjectForm({
             )}
 
             <form className={styles.form} onSubmit={handleSubmit}>
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Basic info</h2>
-
-                    <div className={styles.field}>
-                        <label htmlFor={nameId} className={styles.label}>
-                            Name
-                        </label>
-                        <input
-                            id={nameId}
-                            className={styles.input}
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Project name"
-                        />
-                        {name.trim() && (
-                            <span className={styles.hint}>URL: /works/{slugify(name)}</span>
-                        )}
-                    </div>
-
-                    <div className={styles.fieldRow}>
-                        <div className={styles.field}>
-                            <label htmlFor={createdAtId} className={styles.label}>
-                                Created at
-                            </label>
-                            <input
-                                id={createdAtId}
-                                type="date"
-                                className={styles.input}
-                                value={createdAt}
-                                onChange={(e) => setCreatedAt(e.target.value)}
-                            />
-                        </div>
-
-                        <div className={styles.field}>
-                            <label htmlFor={websiteUrlId} className={styles.label}>
-                                Website URL
-                            </label>
-                            <input
-                                id={websiteUrlId}
-                                className={styles.input}
-                                value={websiteUrl}
-                                onChange={(e) => setWebsiteUrl(e.target.value)}
-                                placeholder="https://www.behance.net/gallery/..."
-                            />
-                        </div>
-                    </div>
-                </section>
-
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Categories</h2>
-                    <ChipsField
-                        options={categoryOptions}
-                        selected={categories}
-                        onToggle={toggleCategory}
-                        onAdd={addCategoryAction}
-                        onAdded={(option) => {
-                            setCategoryOptions((current) => [...current, option]);
-                            setCategories((current) => [...current, option.key]);
-                        }}
-                        addNoun="category"
-                    />
-                </section>
-
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Tools</h2>
-                    <ChipsField
-                        options={toolOptions}
-                        selected={tools}
-                        onToggle={toggleTool}
-                        onAdd={addToolBadgeAction}
-                        onAdded={(option) => {
-                            setToolOptions((current) => [...current, option]);
-                            setTools((current) => [...current, option.key]);
-                        }}
-                        addNoun="tool"
-                    />
-                </section>
-
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Selected work</h2>
-                    <label className={styles.checkboxRow}>
-                        <input
-                            type="checkbox"
-                            checked={featured}
-                            onChange={(e) => setFeatured(e.target.checked)}
-                        />
-                        Feature on the home page&apos;s Selected Work
-                    </label>
-                    {featured && (
-                        <div className={styles.field}>
-                            <label htmlFor={rankId} className={styles.label}>
-                                Rank (lower shows first)
-                            </label>
-                            <input
-                                id={rankId}
-                                type="number"
-                                min={1}
-                                className={styles.inputSmall}
-                                value={rank}
-                                onChange={(e) => setRank(Number(e.target.value))}
-                            />
-                        </div>
-                    )}
-                </section>
-
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Card hover colors</h2>
-                    <div className={styles.colorGrid}>
-                        <ColorField
-                            label="Background"
-                            value={hoverBackground}
-                            onChange={setHoverBackground}
-                        />
-                        <ColorField
-                            label="Accent (title/text)"
-                            value={hoverAccentColor}
-                            onChange={setHoverAccentColor}
-                        />
-                        <ColorField
-                            label="Button background"
-                            value={hoverButtonBackground}
-                            onChange={setHoverButtonBackground}
-                        />
-                        <ColorField
-                            label="Button text"
-                            value={hoverButtonTextColor}
-                            onChange={setHoverButtonTextColor}
-                        />
-                    </div>
-                </section>
-
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Modal accent color</h2>
-                    <p className={styles.sectionHint}>
-                        Defaults to the hover background above when unset.
+                {error && (
+                    <p className={styles.error} role="alert">
+                        {error}
                     </p>
-                    <ColorField
-                        label="Accent"
-                        value={accentColorModal}
-                        onChange={setAccentColorModal}
-                        allowEmpty
-                    />
-                </section>
+                )}
 
-                <section className={styles.section} ref={galleryScrollBoundsRef}>
-                    <button
-                        type="button"
-                        className={styles.collapsibleHeader}
-                        onClick={() => setGalleryExpanded((expanded) => !expanded)}
-                        aria-expanded={galleryExpanded}
-                    >
-                        <h2 className={styles.sectionTitle}>
-                            Gallery images
-                            {images.length > 0 && (
-                                <span className={styles.sectionCount}>{images.length}</span>
-                            )}
-                        </h2>
-                        <span
-                            className={cn(
-                                styles.collapseIcon,
-                                !galleryExpanded && styles.collapseIconCollapsed
-                            )}
-                        >
-                            <ChevronIcon />
-                        </span>
-                    </button>
-                    {galleryExpanded && (
-                        <ImageGalleryEditor
-                            images={images}
-                            onChange={setImages}
-                            onDraggingChange={setGalleryDragging}
-                            scrollBoundsRef={galleryScrollBoundsRef}
-                        />
-                    )}
-                </section>
+                <div className={styles.editorGrid}>
+                    <div className={styles.mainColumn}>
+                        <section className={styles.section}>
+                            <div className={styles.sectionHeader}>
+                                <span className={styles.sectionIcon} aria-hidden="true">
+                                    <FileText size={17} strokeWidth={1.8} />
+                                </span>
+                                <div>
+                                    <h2 className={styles.sectionTitle}>Project details</h2>
+                                    <p className={styles.sectionDescription}>
+                                        The public name, date and destination for this work.
+                                    </p>
+                                </div>
+                            </div>
 
-                {error && <p className={styles.error}>{error}</p>}
+                            <div className={styles.field}>
+                                <label htmlFor={nameId} className={styles.label}>
+                                    Name
+                                </label>
+                                <input
+                                    id={nameId}
+                                    className={styles.input}
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Project name"
+                                />
+                                {name.trim() && (
+                                    <span className={styles.hint}>URL: /works/{slugify(name)}</span>
+                                )}
+                            </div>
+
+                            <div className={styles.fieldRow}>
+                                <div className={styles.field}>
+                                    <label htmlFor={createdAtId} className={styles.label}>
+                                        Created at
+                                    </label>
+                                    <input
+                                        id={createdAtId}
+                                        type="date"
+                                        className={styles.input}
+                                        value={createdAt}
+                                        onChange={(e) => setCreatedAt(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className={styles.field}>
+                                    <label htmlFor={websiteUrlId} className={styles.label}>
+                                        Website URL
+                                    </label>
+                                    <input
+                                        id={websiteUrlId}
+                                        className={styles.input}
+                                        value={websiteUrl}
+                                        onChange={(e) => setWebsiteUrl(e.target.value)}
+                                        placeholder="https://www.behance.net/gallery/..."
+                                    />
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className={styles.section} ref={galleryScrollBoundsRef}>
+                            <button
+                                type="button"
+                                className={styles.collapsibleHeader}
+                                onClick={() => setGalleryExpanded((expanded) => !expanded)}
+                                aria-expanded={galleryExpanded}
+                            >
+                                <span className={styles.sectionHeader}>
+                                    <span className={styles.sectionIcon} aria-hidden="true">
+                                        <Images size={17} strokeWidth={1.8} />
+                                    </span>
+                                    <span>
+                                        <span
+                                            className={styles.sectionTitle}
+                                            role="heading"
+                                            aria-level={2}
+                                        >
+                                            Gallery images
+                                            {images.length > 0 && (
+                                                <span className={styles.sectionCount}>
+                                                    {images.length}
+                                                </span>
+                                            )}
+                                        </span>
+                                        <span className={styles.sectionDescription}>
+                                            Upload, describe and arrange project media.
+                                        </span>
+                                    </span>
+                                </span>
+                                <span
+                                    className={cn(
+                                        styles.collapseIcon,
+                                        !galleryExpanded && styles.collapseIconCollapsed
+                                    )}
+                                >
+                                    <ChevronDown size={17} strokeWidth={1.8} aria-hidden="true" />
+                                </span>
+                            </button>
+                            {galleryExpanded && (
+                                <ImageGalleryEditor
+                                    images={images}
+                                    onChange={setImages}
+                                    onDraggingChange={setGalleryDragging}
+                                    scrollBoundsRef={galleryScrollBoundsRef}
+                                />
+                            )}
+                        </section>
+                    </div>
+
+                    <aside className={styles.sidebar} aria-label="Project settings">
+                        <section className={styles.section}>
+                            <div className={styles.sectionHeader}>
+                                <span className={styles.sectionIcon} aria-hidden="true">
+                                    <Tags size={17} strokeWidth={1.8} />
+                                </span>
+                                <div>
+                                    <h2 className={styles.sectionTitle}>Categories</h2>
+                                    <p className={styles.sectionDescription}>
+                                        Choose where this project appears.
+                                    </p>
+                                </div>
+                            </div>
+                            <ChipsField
+                                options={categoryOptions}
+                                selected={categories}
+                                onToggle={toggleCategory}
+                                onAdd={addCategoryAction}
+                                onAdded={(option) => {
+                                    setCategoryOptions((current) => [...current, option]);
+                                    setCategories((current) => [...current, option.key]);
+                                }}
+                                addNoun="category"
+                            />
+                        </section>
+
+                        <section className={styles.section}>
+                            <div className={styles.sectionHeader}>
+                                <span className={styles.sectionIcon} aria-hidden="true">
+                                    <Wrench size={17} strokeWidth={1.8} />
+                                </span>
+                                <div>
+                                    <h2 className={styles.sectionTitle}>Tools</h2>
+                                    <p className={styles.sectionDescription}>
+                                        Add the software used in the project.
+                                    </p>
+                                </div>
+                            </div>
+                            <ChipsField
+                                options={toolOptions}
+                                selected={tools}
+                                onToggle={toggleTool}
+                                onAdd={addToolBadgeAction}
+                                onAdded={(option) => {
+                                    setToolOptions((current) => [...current, option]);
+                                    setTools((current) => [...current, option.key]);
+                                }}
+                                addNoun="tool"
+                            />
+                        </section>
+
+                        <section className={styles.section}>
+                            <div className={styles.sectionHeader}>
+                                <span className={styles.sectionIcon} aria-hidden="true">
+                                    <Star size={17} strokeWidth={1.8} />
+                                </span>
+                                <div>
+                                    <h2 className={styles.sectionTitle}>Publication</h2>
+                                    <p className={styles.sectionDescription}>
+                                        Control featured placement on the home page.
+                                    </p>
+                                </div>
+                            </div>
+                            <label className={styles.toggleRow}>
+                                <input
+                                    type="checkbox"
+                                    className={styles.toggleInput}
+                                    checked={featured}
+                                    onChange={(e) => setFeatured(e.target.checked)}
+                                />
+                                <span className={styles.toggleControl} aria-hidden="true">
+                                    <span className={styles.toggleThumb} />
+                                </span>
+                                <span className={styles.toggleCopy}>
+                                    <strong>Featured project</strong>
+                                    <span>Show in Selected Work</span>
+                                </span>
+                            </label>
+                            {featured && (
+                                <div className={styles.field}>
+                                    <label htmlFor={rankId} className={styles.label}>
+                                        Rank (lower shows first)
+                                    </label>
+                                    <input
+                                        id={rankId}
+                                        type="number"
+                                        min={1}
+                                        className={styles.inputSmall}
+                                        value={rank}
+                                        onChange={(e) => setRank(Number(e.target.value))}
+                                    />
+                                </div>
+                            )}
+                        </section>
+
+                        <section className={styles.section}>
+                            <div className={styles.sectionHeader}>
+                                <span className={styles.sectionIcon} aria-hidden="true">
+                                    <Palette size={17} strokeWidth={1.8} />
+                                </span>
+                                <div>
+                                    <h2 className={styles.sectionTitle}>Card appearance</h2>
+                                    <p className={styles.sectionDescription}>
+                                        Colors used by the project card on hover.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className={styles.colorGrid}>
+                                <ColorField
+                                    label="Background"
+                                    value={hoverBackground}
+                                    onChange={setHoverBackground}
+                                />
+                                <ColorField
+                                    label="Accent (title/text)"
+                                    value={hoverAccentColor}
+                                    onChange={setHoverAccentColor}
+                                />
+                                <ColorField
+                                    label="Button background"
+                                    value={hoverButtonBackground}
+                                    onChange={setHoverButtonBackground}
+                                />
+                                <ColorField
+                                    label="Button text"
+                                    value={hoverButtonTextColor}
+                                    onChange={setHoverButtonTextColor}
+                                />
+                            </div>
+                        </section>
+
+                        <section className={styles.section}>
+                            <div className={styles.sectionHeader}>
+                                <span className={styles.sectionIcon} aria-hidden="true">
+                                    <Palette size={17} strokeWidth={1.8} />
+                                </span>
+                                <div>
+                                    <h2 className={styles.sectionTitle}>Showcase accent</h2>
+                                    <p className={styles.sectionDescription}>
+                                        Optional accent for the project modal.
+                                    </p>
+                                </div>
+                            </div>
+                            <p className={styles.sectionHint}>
+                                Defaults to the hover background above when unset.
+                            </p>
+                            <ColorField
+                                label="Accent"
+                                value={accentColorModal}
+                                onChange={setAccentColorModal}
+                                allowEmpty
+                            />
+                        </section>
+                    </aside>
+                </div>
 
                 {isEditing && (
                     <section className={styles.dangerZone}>
@@ -618,22 +659,39 @@ export function ProjectForm({
                                 Permanently delete this project. This can&apos;t be undone.
                             </p>
                         </div>
-                        <Button variant="danger" onClick={() => setConfirmingDelete(true)}>
+                        <Button
+                            variant="danger"
+                            onClick={() => setConfirmingDelete(true)}
+                            className={styles.deleteProjectButton}
+                        >
+                            <Trash2 size={15} strokeWidth={1.8} aria-hidden="true" />
                             Delete project
                         </Button>
                     </section>
                 )}
 
                 <div className={cn(styles.actions, galleryDragging && styles.actionsDragging)}>
-                    <div className={styles.actionsLeft}>
+                    <div className={styles.actionState} aria-live="polite">
+                        <span
+                            className={cn(styles.statusDot, isDirty && styles.actionStateDotDirty)}
+                            aria-hidden="true"
+                        />
+                        {saving
+                            ? "Saving project..."
+                            : isDirty
+                              ? "Changes not saved"
+                              : "Up to date"}
+                    </div>
+                    <div className={styles.actionButtons}>
                         <Button
                             variant="ghost"
                             onClick={requestLeave}
                             className={styles.cancelButton}
                             aria-label="Cancel"
+                            title="Cancel"
                         >
                             <span className={styles.actionIcon}>
-                                <CancelIcon />
+                                <X size={17} strokeWidth={1.8} aria-hidden="true" />
                             </span>
                             <span className={styles.actionLabel}>Cancel</span>
                         </Button>
@@ -643,11 +701,24 @@ export function ProjectForm({
                             disabled={!isDirty}
                             className={styles.restoreButton}
                             aria-label="Restore changes"
+                            title="Restore changes"
                         >
                             <span className={styles.actionIcon}>
-                                <RestoreIcon />
+                                <RotateCcw size={16} strokeWidth={1.8} aria-hidden="true" />
                             </span>
-                            <span className={styles.actionLabel}>Restore changes</span>
+                            <span className={styles.actionLabel}>Restore</span>
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            onClick={handlePreview}
+                            className={styles.previewButton}
+                            aria-label="Preview"
+                            title="Preview"
+                        >
+                            <span className={styles.actionIcon}>
+                                <Eye size={17} strokeWidth={1.8} aria-hidden="true" />
+                            </span>
+                            <span className={styles.actionLabel}>Preview</span>
                         </Button>
                         <Button
                             variant="primary"
@@ -659,7 +730,7 @@ export function ProjectForm({
                             }
                         >
                             <span className={styles.actionIcon}>
-                                <SaveIcon />
+                                <Save size={16} strokeWidth={1.8} aria-hidden="true" />
                             </span>
                             <span className={styles.actionLabel}>
                                 {saving
@@ -670,17 +741,6 @@ export function ProjectForm({
                             </span>
                         </Button>
                     </div>
-                    <Button
-                        variant="secondary"
-                        onClick={handlePreview}
-                        className={styles.previewButton}
-                        aria-label="Preview"
-                    >
-                        <span className={styles.actionIcon}>
-                            <PreviewIcon />
-                        </span>
-                        <span className={styles.actionLabel}>Preview</span>
-                    </Button>
                 </div>
             </form>
 

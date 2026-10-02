@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1254" height="1254" viewBox="0 0 1254 1254" fill="none">
+  <defs>
+    <linearGradient id="whiteFill" x1="60" y1="266" x2="780" y2="937" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F1F1F1"/>
+    </linearGradient>
+
+    <filter id="limeGlow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="0" stdDeviation="20" flood-color="#E8FF00" flood-opacity="0.30"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#E8FF00" flood-opacity="0.18"/>
+    </filter>
+
+    <filter id="whiteGlow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#FFFFFF" flood-opacity="0.14"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+
+    <filter id="mist" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect
+    x="0"
+    y="0"
+    width="1254"
+    height="1254"
+    rx="120"
+    ry="120"
+    fill="#000000"
+    />
+
+  <!-- Soft central haze -->
+  <path d="M610 520C635 575 640 655 622 735C608 798 591 845 570 885" stroke="#E8FF00" stroke-opacity="0.18" stroke-width="34" stroke-linecap="round" filter="url(#mist)"/>
+  <path d="M575 500C598 560 602 650 584 730" stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="22" stroke-linecap="round" filter="url(#mist)"/>
+
+  <!-- Rear lime A -->
+  <g filter="url(#limeGlow)">
+    <path fill-rule="evenodd" clip-rule="evenodd"
+      d="M733 266L439 937H597L663 786H947L1007 937H1159L900 266H733ZM811 437L910 674H704L811 437Z"
+      fill="#E8FF00"/>
+  </g>
+
+  <!-- Front white A -->
+  <g filter="url(#whiteGlow)">
+    <path fill-rule="evenodd" clip-rule="evenodd"
+      d="M354 266L60 937H218L284 786H568L628 937H780L521 266H354ZM432 437L531 674H325L432 437Z"
+      fill="url(#whiteFill)"/>
+  </g>
+</svg>

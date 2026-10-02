@@ -1,7 +1,7 @@
 @use "@/shared/styles/mixins" as *;
 
 .hero {
-    --_pad-top: 30px;
+    --_pad-top: 0px;
     --_pad-bottom: 0px;
     --hero-title-start-offset: 6vw;
     --stats-camera-runway: clamp(1120px, 148svh, 1540px);
@@ -142,6 +142,7 @@
 .stage {
     position: sticky;
     top: 0;
+    z-index: 1;
     height: 100svh;
     overflow: visible;
 }
@@ -158,8 +159,18 @@
 
 .heroLayer {
     position: absolute;
-    inset: 0;
+    inset: 0 0 calc(100svh - 100lvh);
     overflow: clip;
+    will-change: opacity;
+    padding-top: 30px;
+}
+
+.heroVeil {
+    position: absolute;
+    inset: 0 0 calc(100svh - 100lvh);
+    background: var(--color-bg);
+    opacity: 0;
+    pointer-events: none;
     will-change: opacity;
 }
 
@@ -184,14 +195,23 @@
 }
 
 .statsDepthPlane {
+    // Keep SSR hidden until the camera effect is installed before paint.
+    opacity: 0;
     width: 100%;
-    min-height: 100%;
-    display: flex;
-    align-items: center;
     transform-origin: 50% 50%;
     transform-style: preserve-3d;
     will-change: transform, opacity;
     backface-visibility: hidden;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .statsViewport {
+        perspective: none;
+    }
+
+    .statsDepthPlane {
+        transform-style: flat;
+    }
 }
 
 .statsSection {
@@ -224,7 +244,7 @@
 
 .glow {
     position: absolute;
-    top: -18%;
+    top: -18svh;
     left: -8%;
     width: 700px;
     height: 700px;
@@ -240,7 +260,7 @@
     }
 
     @media (max-width: 767px) {
-        top: -10%;
+        top: -10svh;
         left: -18%;
         width: 360px;
         height: 360px;
@@ -249,7 +269,7 @@
 
 .glowSecondary {
     position: absolute;
-    top: 8%;
+    top: 8svh;
     right: -12%;
     width: 620px;
     height: 620px;
@@ -266,10 +286,17 @@
     }
 
     @media (max-width: 767px) {
-        top: 2%;
+        top: 2svh;
         right: -24%;
         width: 320px;
         height: 320px;
+    }
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .glow,
+    .glowSecondary {
+        filter: none;
     }
 }
 
@@ -292,6 +319,7 @@
 .topRow {
     position: relative;
     z-index: 6;
+    will-change: transform;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -396,6 +424,7 @@
 .nameStage {
     position: relative;
     z-index: 2;
+    will-change: transform;
     width: calc(100% - var(--hero-title-start-offset));
     margin-top: clamp(34px, 7vh, 88px);
     margin-inline-start: var(--hero-title-start-offset);
@@ -408,7 +437,6 @@
 
 .nameTrack {
     width: 100%;
-    will-change: transform;
 }
 
 .name {
@@ -430,6 +458,7 @@
     display: inline-block;
     align-self: flex-start;
     backface-visibility: hidden;
+    will-change: transform;
 }
 
 .nameLineEnd {
@@ -551,8 +580,13 @@
     font-size: 16px;
     font-weight: 300;
     line-height: 1.5;
-    color: rgba(255, 255, 255, 0.92);
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
+    color: #080808;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.22);
+
+    [data-theme="dark"] & {
+        color: rgba(255, 255, 255, 0.94);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.26);
+    }
 
     @include respond-from("tablet") {
         max-width: 290px;
@@ -714,54 +748,73 @@
     }
 
     .titleArea {
+        --hero-mobile-name-size: clamp(68px, 21vw, 104px);
+        --hero-mobile-name-block-size: clamp(111.52px, 34.44vw, 170.56px);
+
         display: block;
         width: 100%;
     }
 
     .nameStage {
         width: 100%;
-        margin-top: var(--hero-title-gap);
+        margin-top: calc(var(--hero-title-gap) + 25px);
         margin-inline-start: 0;
     }
 
     .name {
-        font-size: clamp(62px, 17.5vw, 84px);
+        font-size: var(--hero-mobile-name-size);
         line-height: 0.82;
         letter-spacing: -0.045em;
     }
 
+    .nameLine,
     .nameLineEnd {
-        align-self: flex-start;
+        align-self: center;
     }
 
     .titleFloaters {
+        --title-floaters-gap: calc(var(--hero-project-gap) + 16px);
+
         position: relative;
         inset: auto;
-        display: flex;
-        align-items: flex-start;
-        justify-content: flex-end;
-        gap: 12px;
-        min-height: clamp(100px, 27vw, 112px);
-        margin-top: calc(var(--hero-project-gap) + 16px);
+        display: block;
+        min-height: clamp(184px, 50vw, 224px);
+        margin-top: var(--title-floaters-gap);
     }
 
     .floaterVariantA,
-    .floaterVariantB {
-        position: relative;
-        right: auto;
-        left: auto;
-        width: clamp(120px, 26vw, 115px);
+    .floaterVariantB,
+    .floaterVariantC {
+        position: absolute;
         height: auto;
-        aspect-ratio: 1;
     }
 
     .floaterVariantA {
-        top: -10px;
-        left: -15px;
+        top: 0;
+        left: 48%;
+        width: clamp(132px, 35vw, 160px);
+        aspect-ratio: 1;
+        transform: rotate(-3deg);
     }
 
     .floaterVariantB {
-        top: -15px;
+        top: auto;
+        right: 0;
+        bottom: calc(
+            100% + var(--title-floaters-gap) +
+                max(140px, calc(var(--hero-mobile-name-block-size) + 12px))
+        );
+        width: clamp(62px, 25vw, 118px);
+        aspect-ratio: 1;
+        transform: rotate(6deg);
+    }
+
+    .floaterVariantC {
+        top: clamp(30px, 9vw, 46px);
+        left: 10px;
+        width: clamp(52px, 27vw, 128px);
+        aspect-ratio: 1;
+        transform: rotate(-6deg);
     }
 
     .lowerArea {
@@ -821,10 +874,14 @@
 @include reduced-motion {
     .stage,
     .heroLayer,
+    .heroVeil,
+    .topRow,
+    .nameStage,
     .statsLiftLayer,
     .statsDepthPlane,
     .selectedMotionLayer,
     .nameTrack,
+    .nameLine,
     .floater,
     .introCardWrap,
     .availability {

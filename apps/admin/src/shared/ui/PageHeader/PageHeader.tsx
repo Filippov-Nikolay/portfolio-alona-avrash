@@ -4,12 +4,19 @@ import styles from "./PageHeader.module.css";
 
 interface PageHeaderProps {
     title: string;
+    description?: string;
     backHref?: string;
     backLabel?: string;
     actions?: ReactNode;
 }
 
-export function PageHeader({ title, backHref, backLabel = "Back", actions }: PageHeaderProps) {
+export function PageHeader({
+    title,
+    description,
+    backHref,
+    backLabel = "Back",
+    actions,
+}: PageHeaderProps) {
     return (
         <div className={styles.header}>
             {backHref && (
@@ -18,7 +25,10 @@ export function PageHeader({ title, backHref, backLabel = "Back", actions }: Pag
                 </Link>
             )}
             <div className={styles.titleRow}>
-                <h1 className={styles.title}>{title}</h1>
+                <div>
+                    <h1 className={styles.title}>{title}</h1>
+                    {description && <p className={styles.description}>{description}</p>}
+                </div>
                 {actions && <div className={styles.actions}>{actions}</div>}
             </div>
         </div>

@@ -1,4 +1,5 @@
 import type { AnalyticsEventBody } from "./schema";
+import type { ClientInfo } from "./userAgent";
 
 export interface AnalyticsEventRow {
     id: string;
@@ -10,6 +11,20 @@ export interface AnalyticsEventRow {
     country: string | null;
     referrer: string | null;
     createdAt: number;
+    visitorId: string | null;
+    device: string | null;
+    os: string | null;
+    browser: string | null;
+    utmSource: string | null;
+    utmMedium: string | null;
+    utmCampaign: string | null;
+    utmContent: string | null;
+}
+
+export interface EventClientContext {
+    country: string | null;
+    visitorId: string | null;
+    client: ClientInfo | null;
 }
 
 // The slice of the D1Database client this module actually calls - narrowed
@@ -25,7 +40,20 @@ export interface D1Like {
     };
 }
 
-export function buildEventRow(body: AnalyticsEventBody, country: string | null): AnalyticsEventRow {
+export function referrerOrigin(referrer: string | undefined): string | null {
+    if (!referrer) return null;
+    try {
+        const url = new URL(referrer);
+        return url.protocol === "http:" || url.protocol === "https:" ? url.origin : null;
+    } catch {
+        return null;
+    }
+}
+
+export function buildEventRow(
+    body: AnalyticsEventBody,
+    { country, visitorId, client }: EventClientContext
+): AnalyticsEventRow {
     return {
         id: crypto.randomUUID(),
         eventName: body.eventName,
@@ -34,12 +62,21 @@ export function buildEventRow(body: AnalyticsEventBody, country: string | null):
         locale: body.locale,
         sessionId: body.sessionId,
         country,
-        referrer: body.referrer ?? null,
+        referrer: referrerOrigin(body.referrer),
         createdAt: Date.now(),
+        visitorId,
+        device: client?.device ?? null,
+        os: client?.os ?? null,
+        browser: client?.browser ?? null,
+        utmSource: body.utm?.source ?? null,
+        utmMedium: body.utm?.medium ?? null,
+        utmCampaign: body.utm?.campaign ?? null,
+        utmContent: body.utm?.content ?? null,
     };
 }
 
 const DEDUPE_WINDOW_MS = 30 * 60 * 1000;
+const DEDUPED_EVENTS = new Set(["project_open", "project_gallery_view", "works_filter"]);
 
 // Server-side backstop for the same "re-opening a project doesn't count as
 // another view" rule the client already applies via sessionStorage - a
@@ -49,7 +86,7 @@ export async function wasRecentlyTracked(
     db: D1Like,
     row: { sessionId: string; eventName: string; entityId?: string | null }
 ): Promise<boolean> {
-    if (!row.entityId) return false;
+    if (!row.entityId || !DEDUPED_EVENTS.has(row.eventName)) return false;
 
     const since = Date.now() - DEDUPE_WINDOW_MS;
     const existing = await db
@@ -85,8 +122,9 @@ export async function insertEvent(db: D1Like, row: AnalyticsEventRow): Promise<v
     await db
         .prepare(
             `INSERT INTO analytics_events
-                (id, event_name, entity_id, path, locale, session_id, country, referrer, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                (id, event_name, entity_id, path, locale, session_id, country, referrer, created_at,
+                 visitor_id, device, os, browser, utm_source, utm_medium, utm_campaign, utm_content)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .bind(
             row.id,
@@ -97,7 +135,19 @@ export async function insertEvent(db: D1Like, row: AnalyticsEventRow): Promise<v
             row.sessionId,
             row.country,
             row.referrer,
-            row.createdAt
+            row.createdAt,
+            row.visitorId,
+            row.device,
+            row.os,
+            row.browser,
+            row.utmSource,
+            row.utmMedium,
+            row.utmCampaign,
+            row.utmContent
         )
         .run();
+}
+
+export async function deleteEventsBefore(db: D1Like, cutoff: number): Promise<void> {
+    await db.prepare("DELETE FROM analytics_events WHERE created_at < ?").bind(cutoff).run();
 }

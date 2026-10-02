@@ -23,7 +23,7 @@ export function parallaxY({
     start = "top bottom",
     end = "bottom top",
     scrub = 0.8,
-    invalidateOnRefresh = true,
+    invalidateOnRefresh = false,
 }: ParallaxYOptions) {
     if (!target) {
         return;

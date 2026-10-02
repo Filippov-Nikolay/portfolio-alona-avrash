@@ -61,9 +61,9 @@ const SORT_PARAM = "sort";
 const TAB_PARAM = "tab";
 const IMAGE_PARAM = "image";
 
-function parseFilterParam(raw: string | null, validKeys: Set<string>): CategoryKey[] {
-    if (!raw) return [];
-    return raw.split(",").filter((value) => validKeys.has(value));
+function parseFilterParam(raw: string | null, validKeys: Set<string>): CategoryKey | null {
+    if (!raw || !validKeys.has(raw)) return null;
+    return raw as CategoryKey;
 }
 
 function parseSortParam(raw: string | null): SortOrder {
@@ -126,13 +126,12 @@ export function WorksCatalog({
     const safeStagger = useMotionVariants(staggerContainer);
     const safeFadeIn = useMotionVariants(fadeIn);
     const safeReveal = useMotionVariants(reveal);
-    const registerCard = useWorksCardReveal();
 
     const [sortOrder, setSortOrder] = useState<SortOrder>(() =>
         parseSortParam(searchParams.get(SORT_PARAM))
     );
     const validCategoryKeys = useMemo(() => new Set(categoryKeys), [categoryKeys]);
-    const [selectedCategories, setSelectedCategories] = useState<CategoryKey[]>(() =>
+    const [selectedCategory, setSelectedCategory] = useState<CategoryKey | null>(() =>
         parseFilterParam(searchParams.get(FILTER_PARAM), validCategoryKeys)
     );
 
@@ -160,10 +159,6 @@ export function WorksCatalog({
         setSelectedId(id);
         setActiveTab("overview");
         setLightboxIndex(null);
-        // The project's own numeric id, not its slug - a slug changes if the
-        // project is ever renamed, which would silently split that
-        // project's analytics history in two.
-        trackEvent("project_open", { entityId: String(id) });
     }, []);
 
     const closeProject = useCallback(() => {
@@ -174,7 +169,7 @@ export function WorksCatalog({
 
     useEffect(() => {
         const params = new URLSearchParams();
-        if (selectedCategories.length > 0) params.set(FILTER_PARAM, selectedCategories.join(","));
+        if (selectedCategory) params.set(FILTER_PARAM, selectedCategory);
         if (sortOrder !== "latest") params.set(SORT_PARAM, sortOrder);
 
         let path = worksBasePath;
@@ -189,16 +184,27 @@ export function WorksCatalog({
         window.history.replaceState(window.history.state, "", url);
         // selectedItem is read for its (stable) slug - see selectedSlug above.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedCategories, sortOrder, selectedSlug, activeTab, lightboxIndex, worksBasePath]);
+    }, [selectedCategory, sortOrder, selectedSlug, activeTab, lightboxIndex, worksBasePath]);
 
-    const toggleCategory = useCallback((key: CategoryKey) => {
-        setSelectedCategories((prev) =>
-            prev.includes(key) ? prev.filter((value) => value !== key) : [...prev, key]
-        );
+    useEffect(() => {
+        if (!selectedItem) return;
+
+        trackEvent("project_open", { entityId: String(selectedItem.id) });
+    }, [selectedItem]);
+
+    useEffect(() => {
+        if (!selectedItem || activeTab !== "gallery") return;
+
+        trackEvent("project_gallery_view", { entityId: String(selectedItem.id) });
+    }, [selectedItem, activeTab]);
+
+    const selectCategory = useCallback((key: CategoryKey) => {
+        trackEvent("works_filter", { entityId: key });
+        setSelectedCategory(key);
     }, []);
 
     const clearCategories = useCallback(() => {
-        setSelectedCategories([]);
+        setSelectedCategory(null);
     }, []);
 
     const sortedProjects = useMemo(() => {
@@ -210,20 +216,21 @@ export function WorksCatalog({
 
     const visibleProjects = useMemo(
         () =>
-            selectedCategories.length === 0
+            selectedCategory === null
                 ? sortedProjects
-                : sortedProjects.filter((project) =>
-                      selectedCategories.includes(
-                          getPrimaryCategory(project.categories, categoryKeys)
-                      )
-                  ),
-        [sortedProjects, selectedCategories, categoryKeys]
+                : sortedProjects.filter((project) => project.categories.includes(selectedCategory)),
+        [sortedProjects, selectedCategory]
     );
 
     const groups = useMemo(
-        () => groupProjectsByPrimaryCategory(visibleProjects, categoryKeys),
-        [visibleProjects, categoryKeys]
+        () =>
+            selectedCategory === null
+                ? groupProjectsByPrimaryCategory(visibleProjects, categoryKeys)
+                : [{ category: selectedCategory, projects: visibleProjects }],
+        [visibleProjects, selectedCategory, categoryKeys]
     );
+
+    const registerCard = useWorksCardReveal(groups);
 
     // The very first card on the page sits above the reveal effect's own
     // "settled" line before any scrolling happens at all, so it would
@@ -245,13 +252,14 @@ export function WorksCatalog({
                 </m.header>
 
                 <m.div className={styles.controls} variants={safeFadeIn}>
-                    <div className={styles.filters} role="group" aria-label={labels.sortLabel}>
+                    <div className={styles.filters} role="radiogroup" aria-label={labels.sortLabel}>
                         <button
                             type="button"
-                            aria-pressed={selectedCategories.length === 0}
+                            role="radio"
+                            aria-checked={selectedCategory === null}
                             className={cn(
                                 styles.filterPill,
-                                selectedCategories.length === 0 && styles.filterPillActive
+                                selectedCategory === null && styles.filterPillActive
                             )}
                             onClick={clearCategories}
                         >
@@ -261,12 +269,13 @@ export function WorksCatalog({
                             <button
                                 key={key}
                                 type="button"
-                                aria-pressed={selectedCategories.includes(key)}
+                                role="radio"
+                                aria-checked={selectedCategory === key}
                                 className={cn(
                                     styles.filterPill,
-                                    selectedCategories.includes(key) && styles.filterPillActive
+                                    selectedCategory === key && styles.filterPillActive
                                 )}
-                                onClick={() => toggleCategory(key)}
+                                onClick={() => selectCategory(key)}
                             >
                                 {categoryLabels[key]}
                             </button>
@@ -309,11 +318,16 @@ export function WorksCatalog({
                                         rank={i + 1}
                                         categoryLabel={
                                             categoryLabels[
-                                                getPrimaryCategory(project.categories, categoryKeys)
+                                                selectedCategory ??
+                                                    getPrimaryCategory(
+                                                        project.categories,
+                                                        categoryKeys
+                                                    )
                                             ]
                                         }
                                         viewLabel={labels.viewProject}
                                         onOpen={() => openProject(project.id)}
+                                        revealOnScroll={project.id !== firstCardId}
                                         cardRef={
                                             project.id === firstCardId
                                                 ? undefined

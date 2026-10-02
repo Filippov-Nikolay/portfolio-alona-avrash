@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
 import { ScrollTrigger, useGSAP, gsap } from "@/shared/lib/gsap";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 
@@ -28,6 +28,8 @@ const FINAL_TAIL_TRACK_ADVANCE = 0.25;
 const FINAL_COMPOSITION_VISUAL_OFFSET = 20;
 const FINAL_STOP_VELOCITY = 1400;
 const FINAL_HOLD_SCROLL_DISTANCE = 0.9;
+const COMPACT_MEDIA_QUERY = "(max-width: 479px)";
+const PATH_SAMPLES_PER_CARD = 64;
 
 const clamp = (value: number, min = 0, max = 1) => Math.min(Math.max(value, min), max);
 const lerp = (from: number, to: number, progress: number) => from + (to - from) * progress;
@@ -39,10 +41,12 @@ const smoothstep = (value: number) => {
 };
 
 function useCompactViewport() {
-    const [compact, setCompact] = useState(false);
+    const [compact, setCompact] = useState(
+        () => typeof window !== "undefined" && window.matchMedia(COMPACT_MEDIA_QUERY).matches
+    );
 
     useEffect(() => {
-        const media = window.matchMedia("(max-width: 479px)");
+        const media = window.matchMedia(COMPACT_MEDIA_QUERY);
         const update = () => setCompact(media.matches);
 
         update();
@@ -78,12 +82,12 @@ interface FinalCompositionLayout {
 }
 
 export function useProjectsSectionAnimations() {
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
     const compact = useCompactViewport();
     const sectionRef = useRef<HTMLElement>(null);
     const sceneRef = useRef<HTMLDivElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null);
-    const viewAllRef = useRef<HTMLAnchorElement>(null);
+    const viewAllRef = useRef<HTMLDivElement>(null);
 
     useScrollTriggerAutoRefresh([reduced, compact]);
 
@@ -109,16 +113,22 @@ export function useProjectsSectionAnimations() {
             const galleryCorridorY = compact
                 ? MOBILE_GALLERY_CORRIDOR_Y
                 : DESKTOP_GALLERY_CORRIDOR_Y;
+            const allowVelocitySnap = window.matchMedia(
+                "(hover: hover) and (pointer: fine)"
+            ).matches;
+            let viewportWidth = window.innerWidth;
+            let viewportHeight = scene.clientHeight;
 
             const getSceneDistance = () => {
                 const logicalSteps = Math.max(finalTailStart + 2.6, 6);
+                const sceneHeight = scene.clientHeight || viewportHeight;
 
                 return (
                     Math.max(
-                        window.innerHeight * 4.5,
+                        sceneHeight * 4.5,
                         logicalSteps * cardWidth * 0.84 + window.innerWidth * 0.35
                     ) +
-                    window.innerHeight * FINAL_HOLD_SCROLL_DISTANCE
+                    sceneHeight * FINAL_HOLD_SCROLL_DISTANCE
                 );
             };
             const getFocusInfluence = (relative: number) =>
@@ -173,21 +183,33 @@ export function useProjectsSectionAnimations() {
                 // Its asymptotic compression keeps the full small-card tail inside the viewport.
                 return lerp(projectedStep, passedCardStep, nearFocus);
             };
+            const maxPathRelative = cards.length + 4;
+            const pathStep = 1 / PATH_SAMPLES_PER_CARD;
+            const pathDistances = new Float64Array(
+                Math.ceil(maxPathRelative * PATH_SAMPLES_PER_CARD) + 1
+            );
+
+            for (let index = 1; index < pathDistances.length; index += 1) {
+                const midpoint = (index - 0.5) * pathStep;
+                pathDistances[index] =
+                    pathDistances[index - 1] + getSpacingDensity(midpoint) * pathStep;
+            }
+
             const getPathDistance = (relative: number) => {
-                if (relative === 0) return 0;
+                if (relative <= 0) return relative * passedCardStep;
 
-                const direction = Math.sign(relative);
-                const length = Math.abs(relative);
-                const segments = Math.max(12, Math.ceil(length * 18));
-                const segmentLength = length / segments;
-                let distance = 0;
+                const tablePosition = Math.min(relative, maxPathRelative) / pathStep;
+                const lowerIndex = Math.floor(tablePosition);
+                const upperIndex = Math.min(lowerIndex + 1, pathDistances.length - 1);
+                const distance = lerp(
+                    pathDistances[lowerIndex],
+                    pathDistances[upperIndex],
+                    tablePosition - lowerIndex
+                );
 
-                for (let segment = 0; segment < segments; segment += 1) {
-                    const position = direction * (segment + 0.5) * segmentLength;
-                    distance += getSpacingDensity(position) * segmentLength;
-                }
+                if (relative <= maxPathRelative) return distance;
 
-                return direction * distance;
+                return distance + (relative - maxPathRelative) * getSpacingDensity(maxPathRelative);
             };
             const getFocusCorridorOffset = (relative: number) => {
                 if (relative === 0) return 0;
@@ -217,7 +239,7 @@ export function useProjectsSectionAnimations() {
                 const relative = index - getLogicalScrollPosition(galleryProgress);
                 const base = getCardDepthState(relative, focusScaleAccent);
                 const centerX =
-                    window.innerWidth * FOCUS_X_RATIO +
+                    viewportWidth * FOCUS_X_RATIO +
                     getPathDistance(relative) +
                     getFocusCorridorOffset(relative);
 
@@ -237,7 +259,7 @@ export function useProjectsSectionAnimations() {
                 const remaining = 1 - entryProgress;
 
                 return {
-                    x: gallery.x + window.innerWidth * 0.65 * remaining,
+                    x: gallery.x + viewportWidth * 0.65 * remaining,
                     y: gallery.y,
                     z: 0,
                     scale: gallery.scale * lerp(0.62, 1, entryProgress),
@@ -249,10 +271,9 @@ export function useProjectsSectionAnimations() {
                 if (entryProgress === 1) return 1;
 
                 // A narrow right-edge reveal hides only cards that are still outside the scene.
-                return clamp((window.innerWidth + 32 - state.x) / 120);
+                return clamp((viewportWidth + 32 - state.x) / 120);
             };
             const getFinalCompositionLayout = (): FinalCompositionLayout => {
-                const viewportWidth = window.innerWidth;
                 const gutter = Math.max(
                     (viewportWidth - Math.min(viewportWidth - 40, 1280)) / 2,
                     20
@@ -274,9 +295,9 @@ export function useProjectsSectionAnimations() {
                 // an independent backdrop, so it does not pull the card composition upward.
                 const finalStackHeight = cardHeight + maxRise;
                 const firstCardTop =
-                    (window.innerHeight - finalStackHeight) / 2 + FINAL_COMPOSITION_VISUAL_OFFSET;
+                    (viewportHeight - finalStackHeight) / 2 + FINAL_COMPOSITION_VISUAL_OFFSET;
                 const compositionTop = firstCardTop + maxRise;
-                const baseY = compositionTop + cardHeight / 2 - window.innerHeight / 2;
+                const baseY = compositionTop + cardHeight / 2 - viewportHeight / 2;
 
                 return {
                     left,
@@ -303,6 +324,74 @@ export function useProjectsSectionAnimations() {
                     zIndex: count - index,
                 };
             };
+            const handoffLogicalPosition = getLogicalScrollPosition(HANDOFF_TRACK_END);
+            const handoffScales = cards.map(
+                (_, index) => getCardDepthState(index - handoffLogicalPosition).scale
+            );
+            let finalLayout = getFinalCompositionLayout();
+            let finalTransforms = Array.from({ length: finalCount }, (_, index) =>
+                getFinalTransform(index, finalCount, finalLayout)
+            );
+
+            const measureScene = () => {
+                viewportWidth = window.innerWidth;
+                viewportHeight = scene.clientHeight;
+                finalLayout = getFinalCompositionLayout();
+                finalTransforms = Array.from({ length: finalCount }, (_, index) =>
+                    getFinalTransform(index, finalCount, finalLayout)
+                );
+            };
+
+            gsap.set(cards, { yPercent: -50, force3D: true });
+            const cardSetters = cards.map((card) => gsap.quickSetter(card, "css"));
+            const titleSetter = gsap.quickSetter(title, "css");
+            const viewAllSetter = gsap.quickSetter(viewAll, "css");
+            const zIndexSetters = cards.map((card) => gsap.quickSetter(card, "zIndex"));
+            const visibilitySetters = cards.map((card) => gsap.quickSetter(card, "visibility"));
+            const pointerEventSetters = cards.map((card) =>
+                gsap.quickSetter(card, "pointerEvents")
+            );
+            const renderedZIndices = new Array<number>(cards.length).fill(Number.NaN);
+            const renderedVisibility = new Array<boolean | null>(cards.length).fill(null);
+            let renderedTitleOpacity = Number.NaN;
+            let renderedTitleY = Number.NaN;
+            let renderedButtonOpacity = Number.NaN;
+            let renderedButtonX = Number.NaN;
+            let renderedButtonY = Number.NaN;
+            let renderedPhase = "";
+
+            const setCardState = (
+                index: number,
+                x: number,
+                y: number,
+                scale: number,
+                rotationY: number,
+                opacity: number,
+                zIndex: number
+            ) => {
+                const isVisible = opacity !== 0;
+                if (!isVisible && renderedVisibility[index] === false) return;
+
+                cardSetters[index]({
+                    x,
+                    y,
+                    scale,
+                    rotationY,
+                    opacity,
+                });
+
+                if (renderedZIndices[index] !== zIndex) {
+                    renderedZIndices[index] = zIndex;
+                    zIndexSetters[index](zIndex);
+                }
+
+                if (renderedVisibility[index] !== isVisible) {
+                    renderedVisibility[index] = isVisible;
+                    visibilitySetters[index](isVisible ? "inherit" : "hidden");
+                    pointerEventSetters[index](isVisible ? "auto" : "none");
+                }
+            };
+
             const render = (progress: number) => {
                 const entryProgress = smoothstep(remap(progress, 0, ENTRY_END));
                 const finalMorphProgress = smoothstep(
@@ -316,7 +405,6 @@ export function useProjectsSectionAnimations() {
                 const viewAllProgress = smoothstep(remap(finalMorphProgress, 0.78, 1));
                 const mobileViewAllProgress = smoothstep(remap(progress, 0.02, 0.16));
                 const buttonProgress = compact ? mobileViewAllProgress : viewAllProgress;
-                const finalLayout = getFinalCompositionLayout();
                 const trackProgress = Math.min(
                     mapRange(progress, ENTRY_END, FIVE_ROW_START) * HANDOFF_TRACK_END,
                     HANDOFF_TRACK_END
@@ -329,7 +417,7 @@ export function useProjectsSectionAnimations() {
                               FINAL_TAIL_TRACK_ADVANCE;
                 const isFinalMorph = progress >= FINAL_MORPH_START;
 
-                scene.dataset.phase =
+                const phase =
                     progress < ENTRY_END
                         ? "entry"
                         : isFinalMorph
@@ -338,34 +426,46 @@ export function useProjectsSectionAnimations() {
                             ? "gallery"
                             : "five-row";
 
-                // Final-tail instances keep moving while main cards exit, so the two tracks
-                // hand off asynchronously instead of leaving a static waiting phase.
-                const galleryStates = cards.map((_, index) => {
+                if (renderedPhase !== phase) {
+                    renderedPhase = phase;
+                    scene.dataset.phase = phase;
+                }
+
+                const titleOpacity = clamp(entryProgress * 1.5);
+                const titleY = (1 - entryProgress) * 22;
+                if (titleOpacity !== renderedTitleOpacity || titleY !== renderedTitleY) {
+                    renderedTitleOpacity = titleOpacity;
+                    renderedTitleY = titleY;
+                    titleSetter({ autoAlpha: titleOpacity, y: titleY });
+                }
+
+                const buttonX = finalLayout.viewAllX;
+                const buttonY = finalLayout.viewAllY + (1 - buttonProgress) * 8;
+                if (
+                    buttonProgress !== renderedButtonOpacity ||
+                    buttonX !== renderedButtonX ||
+                    buttonY !== renderedButtonY
+                ) {
+                    renderedButtonOpacity = buttonProgress;
+                    renderedButtonX = buttonX;
+                    renderedButtonY = buttonY;
+                    viewAllSetter({ autoAlpha: buttonProgress, x: buttonX, y: buttonY });
+                }
+
+                cards.forEach((_, index) => {
+                    // Final-tail instances keep moving while main cards exit, so the two
+                    // tracks hand off asynchronously instead of leaving a waiting phase.
                     const cardTrackProgress =
                         index < finalTailStart && progress >= FIVE_ROW_START
                             ? trackProgress + extraExitProgress * 0.32
                             : index < finalTailStart
                               ? trackProgress
                               : finalTailTrackProgress;
-
-                    return getGalleryTransform(
+                    const gallery = getGalleryTransform(
                         index,
                         cardTrackProgress,
                         index >= finalTailStart ? 1 - finalMorphProgress : 1
                     );
-                });
-                gsap.set(title, {
-                    autoAlpha: clamp(entryProgress * 1.5),
-                    y: (1 - entryProgress) * 22,
-                });
-                gsap.set(viewAll, {
-                    autoAlpha: buttonProgress,
-                    x: finalLayout.viewAllX,
-                    y: finalLayout.viewAllY + (1 - buttonProgress) * 8,
-                });
-
-                cards.forEach((card, index) => {
-                    const gallery = galleryStates[index];
                     const entryScale = 0.78 + entryProgress * 0.22;
                     const entryState = getEntryTransform(gallery, entryProgress);
                     const entryOpacity = getEntryOpacity(entryState, entryProgress);
@@ -374,58 +474,39 @@ export function useProjectsSectionAnimations() {
                         const rightEdge = entryState.x + cardWidth * entryState.scale;
                         const opacity = Math.min(entryOpacity, clamp((rightEdge + 80) / 80));
 
-                        gsap.set(card, {
-                            x: entryState.x,
-                            y: entryState.y,
-                            yPercent: -50,
-                            z: entryState.z,
-                            scale: entryState.scale * entryScale,
-                            rotationY: entryState.rotationY,
-                            autoAlpha: opacity,
-                            pointerEvents: opacity === 0 ? "none" : "auto",
-                            zIndex: entryState.zIndex,
-                        });
+                        setCardState(
+                            index,
+                            entryState.x,
+                            entryState.y,
+                            entryState.scale * entryScale,
+                            entryState.rotationY,
+                            opacity,
+                            entryState.zIndex
+                        );
                         return;
                     }
 
-                    const final = getFinalTransform(
-                        index - finalTailStart,
-                        finalCount,
-                        finalLayout
-                    );
-                    const flatRow: TransformState = {
-                        ...final,
-                        y: finalLayout.baseY,
-                        zIndex: gallery.zIndex,
-                    };
-                    // Keep the handoff scale fixed while the tail continues to travel.
-                    // Otherwise a card crossing the focal point can grow once more before
-                    // the final composition pulls it back to the common size.
-                    const handoffScale = getGalleryTransform(index, HANDOFF_TRACK_END).scale;
-
-                    gsap.set(card, {
-                        x: lerp(entryState.x, flatRow.x, flattenProgress),
-                        y: lerp(
-                            lerp(entryState.y, flatRow.y, flattenProgress),
+                    const final = finalTransforms[index - finalTailStart];
+                    setCardState(
+                        index,
+                        lerp(entryState.x, final.x, flattenProgress),
+                        lerp(
+                            lerp(entryState.y, finalLayout.baseY, flattenProgress),
                             final.y,
                             staircaseProgress
                         ),
-                        yPercent: -50,
-                        z: lerp(entryState.z, flatRow.z, flattenProgress),
                         // Scale is decoupled from the moving depth path during the handoff.
                         // Every final card now converges from its handoff size to one common
                         // final size without a second focal-scale peak.
-                        scale:
-                            progress < FIVE_ROW_START
-                                ? entryState.scale * entryScale
-                                : lerp(handoffScale, final.scale, finalMorphProgress),
-                        rotationY: lerp(entryState.rotationY, flatRow.rotationY, flattenProgress),
+                        progress < FIVE_ROW_START
+                            ? entryState.scale * entryScale
+                            : lerp(handoffScales[index], final.scale, finalMorphProgress),
+                        lerp(entryState.rotationY, final.rotationY, flattenProgress),
+                        entryOpacity,
                         // Final-tail cards keep this order from the first morph frame to the
                         // static composition; only positions interpolate during the handoff.
-                        zIndex: isFinalMorph ? final.zIndex : gallery.zIndex,
-                        autoAlpha: entryOpacity,
-                        pointerEvents: entryOpacity === 0 ? "none" : "auto",
-                    });
+                        isFinalMorph ? final.zIndex : gallery.zIndex
+                    );
                 });
             };
 
@@ -439,21 +520,29 @@ export function useProjectsSectionAnimations() {
                 pinSpacing: true,
                 scrub: true,
                 anticipatePin: 1,
+                refreshPriority: 1,
                 invalidateOnRefresh: true,
-                snap: {
-                    delay: 0.02,
-                    duration: { min: 0.1, max: 0.22 },
-                    ease: "power1.out",
-                    inertia: false,
-                    snapTo: (progress) => {
-                        if (!fastFinalApproach || finalStopConsumed) return progress;
+                snap: allowVelocitySnap
+                    ? {
+                          delay: 0.02,
+                          duration: { min: 0.1, max: 0.22 },
+                          ease: "power1.out",
+                          inertia: false,
+                          snapTo: (progress: number) => {
+                              if (!fastFinalApproach || finalStopConsumed) return progress;
 
-                        fastFinalApproach = false;
-                        finalStopConsumed = true;
-                        return FINAL_HOLD_START;
-                    },
-                },
+                              fastFinalApproach = false;
+                              finalStopConsumed = true;
+                              return FINAL_HOLD_START;
+                          },
+                      }
+                    : undefined,
                 onUpdate: (self) => {
+                    if (!allowVelocitySnap) {
+                        render(self.progress);
+                        return;
+                    }
+
                     const hasReachedFinalPhase = self.progress >= FINAL_MORPH_START;
 
                     if (!hasReachedFinalPhase || self.direction < 0) {
@@ -465,6 +554,7 @@ export function useProjectsSectionAnimations() {
 
                     render(self.progress);
                 },
+                onRefreshInit: measureScene,
                 onRefresh: (self) => render(self.progress),
             });
 

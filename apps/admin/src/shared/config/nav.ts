@@ -13,7 +13,10 @@ export const ADMIN_NAV: AdminPage[] = [
     {
         slug: "dashboard",
         label: "Dashboard",
-        sections: [{ slug: "analytics", label: "Analytics" }],
+        sections: [
+            { slug: "analytics", label: "Analytics" },
+            { slug: "traffic", label: "Traffic" },
+        ],
     },
     {
         slug: "home",
@@ -43,6 +46,7 @@ export const ADMIN_NAV: AdminPage[] = [
         slug: "global",
         label: "Global",
         sections: [
+            { slug: "cv", label: "CV" },
             { slug: "socials", label: "Socials" },
             { slug: "footer", label: "Footer" },
             { slug: "categories", label: "Categories" },

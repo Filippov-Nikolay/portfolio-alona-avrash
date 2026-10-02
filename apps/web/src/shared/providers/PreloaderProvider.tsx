@@ -1,11 +1,29 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+    useSyncExternalStore,
+} from "react";
+import { hasSeenPreloaderBefore } from "@/shared/lib/documentState";
+import { hasPreferencesConsent } from "@/shared/lib/privacyPreferences";
 
 const STORAGE_KEY = "site:preloader";
 const COOKIE_KEY = "site-preloader";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const DISMISS_DELAY_MS = 2250;
+const REDUCED_MOTION_DISMISS_DELAY_MS = 250;
+
+export function clearStoredPreloaderFlag(): void {
+    if (typeof window === "undefined") return;
+    try {
+        window.localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+    document.cookie = `${COOKIE_KEY}=;path=/;max-age=0;SameSite=Lax`;
+}
 
 interface PreloaderContextValue {
     isShown: boolean;
@@ -17,25 +35,33 @@ const PreloaderContext = createContext<PreloaderContextValue | null>(null);
 
 interface PreloaderProviderProps {
     children: React.ReactNode;
-    initialHasSeenPreloader: boolean;
 }
 
-export function PreloaderProvider({ children, initialHasSeenPreloader }: PreloaderProviderProps) {
-    const [hasSeenPreloader, setHasSeenPreloader] = useState(initialHasSeenPreloader);
+const subscribeNever = () => () => {};
+
+export function PreloaderProvider({ children }: PreloaderProviderProps) {
+    const seenBefore = useSyncExternalStore(subscribeNever, hasSeenPreloaderBefore, () => false);
+    const [hasSeenThisVisit, setHasSeenPreloader] = useState(false);
+    const hasSeenPreloader = seenBefore || hasSeenThisVisit;
     const [shouldHide, setShouldHide] = useState(false);
     const [didExit, setDidExit] = useState(false);
 
     const isShown = !hasSeenPreloader && !shouldHide;
-    const isReady = hasSeenPreloader || didExit;
+    // Start the page choreography underneath the outgoing preloader so its
+    // upward wipe reveals an already-living scene instead of an empty page.
+    const isReady = hasSeenPreloader || shouldHide || didExit;
 
     useEffect(() => {
         if (hasSeenPreloader || shouldHide) {
             return;
         }
 
+        const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? REDUCED_MOTION_DISMISS_DELAY_MS
+            : DISMISS_DELAY_MS;
         const timer = window.setTimeout(() => {
             setShouldHide(true);
-        }, DISMISS_DELAY_MS);
+        }, delay);
 
         return () => {
             window.clearTimeout(timer);
@@ -47,8 +73,10 @@ export function PreloaderProvider({ children, initialHasSeenPreloader }: Preload
             return;
         }
 
-        window.localStorage.setItem(STORAGE_KEY, "1");
-        document.cookie = `${COOKIE_KEY}=1;path=/;max-age=${COOKIE_MAX_AGE};SameSite=Lax`;
+        if (hasPreferencesConsent()) {
+            window.localStorage.setItem(STORAGE_KEY, "1");
+            document.cookie = `${COOKIE_KEY}=1;path=/;max-age=${COOKIE_MAX_AGE};SameSite=Lax`;
+        }
         setHasSeenPreloader(true);
         setDidExit(true);
     }, [didExit, hasSeenPreloader]);

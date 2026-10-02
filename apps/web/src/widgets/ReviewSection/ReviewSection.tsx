@@ -39,9 +39,6 @@ export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
             loop: true,
             align: "center",
             startIndex: middleStartIndex,
-            breakpoints: {
-                "(max-width: 767px)": { align: "start" },
-            },
         },
         emblaPlugins
     );
@@ -125,7 +122,7 @@ export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
                 </div>
             </Container>
 
-            <div ref={trackRef} className={styles.carouselWrap}>
+            <div ref={trackRef} className={styles.carouselWrap} data-review-carousel>
                 <div
                     ref={viewportRef}
                     className={styles.viewport}
@@ -169,6 +166,9 @@ export function ReviewSection({ reviews, labels }: ReviewSectionProps) {
                                     <blockquote
                                         className={cn(styles.card, isActive && styles.cardActive)}
                                         data-review-card
+                                        data-review-reveal-card={
+                                            Math.abs(index - middleStartIndex) <= 2 ? "" : undefined
+                                        }
                                     >
                                         <div className={styles.cardTop}>
                                             <QuoteIcon className={styles.quoteIcon} />

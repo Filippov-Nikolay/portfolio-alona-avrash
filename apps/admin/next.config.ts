@@ -22,10 +22,33 @@ const svgrOptions = {
     },
 };
 
+const r2PublicUrl = process.env.R2_PUBLIC_URL_BASE;
+
+const remotePatterns = r2PublicUrl
+    ? [
+          {
+              protocol: "https" as const,
+              hostname: new URL(r2PublicUrl).hostname,
+              pathname: "/**",
+          },
+      ]
+    : [];
+
 const nextConfig: NextConfig = {
+    // Allow integration runs to keep their build output separate from local dev.
+    distDir: process.env.NEXT_DIST_DIR ?? ".next",
     outputFileTracingRoot: path.join(__dirname, "../../"),
+    outputFileTracingIncludes: {
+        "/api/cv/preview-assets/*": [
+            "./node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs",
+            "./node_modules/pdfjs-dist/cmaps/**",
+            "./node_modules/pdfjs-dist/standard_fonts/**",
+            "./node_modules/pdfjs-dist/wasm/**",
+        ],
+    },
     transpilePackages: ["@avrash/content-schema", "@avrash/content-data", "@avrash/ui"],
     poweredByHeader: false,
+    agentRules: false,
 
     // Baked in once at build time (Next's `env` replaces these references at
     // compile time, unlike process.env.X read at runtime) - the System info
@@ -41,7 +64,7 @@ const nextConfig: NextConfig = {
         rules: {
             "*.svg": {
                 loaders: [{ loader: "@svgr/webpack", options: svgrOptions }],
-                as: "*.tsx",
+                as: "*.js",
             },
         },
     },
@@ -76,6 +99,7 @@ const nextConfig: NextConfig = {
         // Still validated even when unoptimized - ShowcaseModal's banner
         // image asks for quality=95 (see its own comment on why).
         qualities: [75, 95],
+        remotePatterns,
     },
 };
 

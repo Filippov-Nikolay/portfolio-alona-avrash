@@ -7,9 +7,10 @@
         "node": ">=22"
     },
     "scripts": {
-        "dev": "pnpm --parallel --filter @avrash/web --filter @avrash/admin run dev",
+        "dev": "pnpm --parallel --filter @avrash/web --filter @avrash/admin --filter @avrash/analytics-worker run dev",
         "dev:web": "pnpm --filter @avrash/web run dev",
         "dev:admin": "pnpm --filter @avrash/admin run dev",
+        "dev:analytics": "pnpm --filter @avrash/analytics-worker run dev",
         "build": "pnpm -r --if-present run build",
         "start": "pnpm --filter @avrash/web run start",
         "lint": "pnpm -r --if-present run lint",
@@ -32,7 +33,7 @@
     },
     "devDependencies": {
         "eslint": "^9",
-        "eslint-config-next": "16.2.6",
+        "eslint-config-next": "16.3.8",
         "husky": "^9.1.7",
         "lint-staged": "^16.4.0",
         "prettier": "^3.8.3"

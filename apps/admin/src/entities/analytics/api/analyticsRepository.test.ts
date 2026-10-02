@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+    getEngagement,
     getOverview,
     getProjectDetail,
+    getSessions,
+    getTopCategories,
     getTopProjects,
+    getTraffic,
     isAnalyticsConfigured,
 } from "./analyticsRepository";
 
@@ -52,6 +56,8 @@ describe("analyticsRepository", () => {
             const [url, init] = fetchMock.mock.calls[0]!;
             expect(url).toBe("https://analytics.example.com/analytics/overview?days=30");
             expect(init.headers.Authorization).toBe("Bearer test-secret");
+            expect(init.next).toEqual({ revalidate: 30 });
+            expect(init.cache).not.toBe("no-store");
         });
 
         it("returns null when the worker responds with a non-ok status", async () => {
@@ -78,6 +84,19 @@ describe("analyticsRepository", () => {
         });
     });
 
+    describe("getTopCategories", () => {
+        it("requests the /analytics/categories path", async () => {
+            const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => [] });
+            vi.stubGlobal("fetch", fetchMock);
+
+            await getTopCategories(7);
+
+            expect(fetchMock.mock.calls[0]![0]).toBe(
+                "https://analytics.example.com/analytics/categories?days=7"
+            );
+        });
+    });
+
     describe("getProjectDetail", () => {
         it("URL-encodes the entityId into the path", async () => {
             const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
@@ -88,6 +107,23 @@ describe("analyticsRepository", () => {
             expect(fetchMock.mock.calls[0]![0]).toBe(
                 "https://analytics.example.com/analytics/projects/crusty%20%26%20co?days=30"
             );
+        });
+    });
+
+    describe("traffic, engagement and sessions", () => {
+        it.each([
+            ["getTraffic", getTraffic, "/analytics/traffic?days=90"],
+            ["getEngagement", getEngagement, "/analytics/engagement?days=90"],
+            ["getSessions", getSessions, "/analytics/sessions?days=90"],
+        ] as const)("%s reads its worker route with the bearer token", async (_, read, path) => {
+            const payload = { ok: true };
+            const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => payload });
+            vi.stubGlobal("fetch", fetchMock);
+
+            await expect(read(90)).resolves.toEqual(payload);
+            const [url, init] = fetchMock.mock.calls[0]!;
+            expect(url).toBe(`https://analytics.example.com${path}`);
+            expect(init.headers.Authorization).toBe("Bearer test-secret");
         });
     });
 });

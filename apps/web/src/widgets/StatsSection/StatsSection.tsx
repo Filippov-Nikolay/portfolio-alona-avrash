@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { memo, useMemo, type CSSProperties, type RefObject } from "react";
 import { type MotionValue } from "framer-motion";
 import type { StatItem } from "@avrash/content-schema";
 import { Container, Section } from "@/shared/ui";
@@ -15,7 +15,7 @@ function DigitReel({ place, continuous }: { place: number; continuous: boolean }
     return (
         <span className={styles.reel}>
             <span
-                className={cn(styles.reelTrack, !continuous && styles.reelTrackDiscrete)}
+                className={styles.reelTrack}
                 data-reel-place={place}
                 data-reel-continuous={continuous}
             >
@@ -35,14 +35,20 @@ interface StatsSectionProps {
     as?: "section" | "footer" | "div" | "article";
     className?: string;
     depthProgress?: MotionValue<number> | null;
+    cameraRef?: RefObject<HTMLDivElement | null>;
+    cameraClassName?: string;
+    integratedReveal?: boolean;
 }
 
-export function StatsSection({
+export const StatsSection = memo(function StatsSection({
     items,
     id = "stats",
     as = "section",
     className,
     depthProgress,
+    cameraRef,
+    cameraClassName,
+    integratedReveal = false,
 }: StatsSectionProps) {
     const parsedValues = useMemo(() => items.map((item) => parseStatValue(item.value)), [items]);
     const digitPlans = useMemo(
@@ -51,55 +57,74 @@ export function StatsSection({
     );
     const { sectionRef, gridRef, setValueRef } = useStatsSectionAnimations(
         parsedValues,
-        depthProgress
+        depthProgress,
+        integratedReveal
+    );
+
+    const grid = (
+        <div
+            ref={gridRef}
+            className={styles.grid}
+            style={
+                {
+                    "--stats-count": Math.max(items.length, 1),
+                } as CSSProperties
+            }
+        >
+            {items.map(({ id: itemId, value, label }, index) => {
+                const parsed = parsedValues[index];
+
+                return (
+                    <div key={itemId} className={styles.stat}>
+                        <span className={styles.value} style={{ minWidth: `${value.length}ch` }}>
+                            <span className={styles.srOnly}>{value}</span>
+                            {parsed.isAnimatable ? (
+                                <span
+                                    ref={setValueRef(index)}
+                                    className={styles.digits}
+                                    data-stat-index={index}
+                                    aria-hidden="true"
+                                >
+                                    {parsed.prefix}
+                                    {digitPlans[index].map((token, i) =>
+                                        token.type === "digit" ? (
+                                            <DigitReel
+                                                key={i}
+                                                place={token.place}
+                                                continuous={token.continuous}
+                                            />
+                                        ) : (
+                                            <span key={i}>{token.value}</span>
+                                        )
+                                    )}
+                                    {parsed.suffix}
+                                </span>
+                            ) : (
+                                <span aria-hidden="true">{value}</span>
+                            )}
+                        </span>
+                        <span className={styles.label}>{label}</span>
+                    </div>
+                );
+            })}
+        </div>
     );
 
     return (
         <Section as={as} id={id} className={cn(styles.section, className)}>
             <Container>
                 <div ref={sectionRef} className={styles.content}>
-                    <div ref={gridRef} className={styles.grid}>
-                        {items.map(({ id: itemId, value, label }, index) => {
-                            const parsed = parsedValues[index];
-
-                            return (
-                                <div key={itemId} className={styles.stat}>
-                                    <span
-                                        className={styles.value}
-                                        style={{ minWidth: `${value.length}ch` }}
-                                    >
-                                        <span className={styles.srOnly}>{value}</span>
-                                        {parsed.isAnimatable ? (
-                                            <span
-                                                ref={setValueRef(index)}
-                                                className={styles.digits}
-                                                aria-hidden="true"
-                                            >
-                                                {parsed.prefix}
-                                                {digitPlans[index].map((token, i) =>
-                                                    token.type === "digit" ? (
-                                                        <DigitReel
-                                                            key={i}
-                                                            place={token.place}
-                                                            continuous={token.continuous}
-                                                        />
-                                                    ) : (
-                                                        <span key={i}>{token.value}</span>
-                                                    )
-                                                )}
-                                                {parsed.suffix}
-                                            </span>
-                                        ) : (
-                                            <span aria-hidden="true">{value}</span>
-                                        )}
-                                    </span>
-                                    <span className={styles.label}>{label}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    {cameraRef ? (
+                        <div className={styles.cameraSlot}>
+                            <div ref={cameraRef} className={cameraClassName} inert>
+                                {grid}
+                            </div>
+                        </div>
+                    ) : (
+                        grid
+                    )}
                 </div>
             </Container>
         </Section>
     );
-}
+});

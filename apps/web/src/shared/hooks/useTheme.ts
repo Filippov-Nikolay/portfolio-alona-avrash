@@ -1,111 +1,185 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { hasPreferencesConsent } from "@/shared/lib/privacyPreferences";
 
 export type Theme = "dark" | "light";
 
 const STORAGE_KEY = "site-theme";
 const COOKIE_KEY = "site-theme";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const DEFAULT_THEME: Theme = "light";
 
-function getSystemTheme(): Theme {
-    if (typeof window === "undefined") return DEFAULT_THEME;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+export function clearStoredTheme(): void {
+    if (typeof window === "undefined") return;
+    try {
+        localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+    document.cookie = `${COOKIE_KEY}=;path=/;max-age=0;SameSite=Lax`;
 }
 
 function getInitialTheme(): Theme {
     if (typeof window === "undefined") return DEFAULT_THEME;
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    return stored ?? getSystemTheme();
+
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === "dark" || stored === "light" ? stored : DEFAULT_THEME;
 }
 
-// Временно отключает CSS transition на весь документ.
-// Нужно при первом mount — чтобы начальная тема применялась мгновенно,
-// без анимации из dark → light при загрузке страницы.
-function withoutTransition(fn: () => void) {
+function withoutTransition(update: () => void) {
     const style = document.createElement("style");
     style.textContent = "*, *::before, *::after { transition: none !important; }";
     document.head.appendChild(style);
-    fn();
-    // Убираем после следующего paint — transition снова работает
+    update();
+
     requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            document.head.removeChild(style);
-        });
+        requestAnimationFrame(() => style.remove());
     });
+}
+
+function isWebKitEngine() {
+    const userAgent = navigator.userAgent;
+
+    return (
+        /AppleWebKit/i.test(userAgent) &&
+        !/(Chrome|Chromium|Edg|OPR|SamsungBrowser)/i.test(userAgent)
+    );
 }
 
 export function useTheme() {
     const [theme, setTheme] = useState<Theme>(DEFAULT_THEME);
-    const cssTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const cssCleanupRef = useRef<(() => void) | null>(null);
+    const transitionRunRef = useRef(0);
+    const pendingThemeRef = useRef<Theme | null>(null);
 
     useEffect(() => {
         return () => {
-            if (cssTimerRef.current) {
-                clearTimeout(cssTimerRef.current);
-                cssTimerRef.current = null;
-            }
+            cssCleanupRef.current?.();
+            cssCleanupRef.current = null;
 
-            document.documentElement.classList.remove("is-theme-changing");
+            transitionRunRef.current += 1;
+            pendingThemeRef.current = null;
+            document.documentElement.classList.remove("is-theme-changing", "vt-running");
         };
     }, []);
 
-    // Первый mount — читаем сохранённую тему и применяем БЕЗ анимации
     useEffect(() => {
         const initial = getInitialTheme();
         withoutTransition(() => {
             document.documentElement.setAttribute("data-theme", initial);
         });
-        // Syncing React state with localStorage + DOM after mount - legitimate external system.
+
+        // Sync React with localStorage and the server-rendered DOM after mount.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setTheme(initial);
     }, []);
 
     const toggle = useCallback(() => {
-        const next =
-            document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        const html = document.documentElement;
+        const current =
+            pendingThemeRef.current ??
+            (html.getAttribute("data-theme") === "dark" ? "dark" : "light");
+        const next: Theme = current === "dark" ? "light" : "dark";
+        pendingThemeRef.current = next;
+        cssCleanupRef.current?.();
+        cssCleanupRef.current = null;
 
-        const applyTheme = () => {
-            document.documentElement.setAttribute("data-theme", next);
+        const persistTheme = () => {
+            if (!hasPreferencesConsent()) return;
             localStorage.setItem(STORAGE_KEY, next);
-            // Кука нужна серверу — при следующем запросе layout читает её и рендерит
-            // правильный data-theme без inline-скрипта (нет FART, нет React-предупреждений)
             document.cookie = `${COOKIE_KEY}=${next};path=/;max-age=${COOKIE_MAX_AGE};SameSite=Lax`;
         };
 
-        setTheme(next as Theme);
+        const applyTheme = (synchronous: boolean) => {
+            const update = () => {
+                html.setAttribute("data-theme", next);
+                setTheme(next);
+            };
 
-        // View Transitions API — Chrome/Edge/Safari 18+.
-        // Браузер делает снимок «до» и «после» и кросс-фейдит их на уровне
-        // композитора: никаких конфликтов специфичности, никаких рывков.
-        // vt-running отключает индивидуальные CSS transition на время VT —
-        // иначе элементы анимируются дважды (CSS + снимок одновременно).
+            if (synchronous) {
+                flushSync(update);
+            } else {
+                update();
+            }
+
+            persistTheme();
+        };
+
         const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const hasLiveBackdrop = document.querySelector('[data-preset="hero"]') !== null;
 
-        if (!prefersReduced && "startViewTransition" in document) {
-            const html = document.documentElement;
-            html.classList.add("vt-running");
-            const vt = (
-                document as Document & {
-                    startViewTransition: (cb: () => void) => { finished: Promise<void> };
-                }
-            ).startViewTransition(applyTheme);
-            vt.finished.finally(() => html.classList.remove("vt-running"));
+        if (prefersReduced) {
+            transitionRunRef.current += 1;
+            html.classList.remove("is-theme-changing", "vt-running");
+            withoutTransition(() => applyTheme(false));
+            pendingThemeRef.current = null;
             return;
         }
 
-        // CSS-фолбек для Firefox / prefers-reduced-motion.
-        // is-theme-changing * имеет специфичность 11 — перекрывает любой
-        // компонентный класс (10), поэтому все свойства анимируются синхронно.
-        const html = document.documentElement;
-        if (cssTimerRef.current) clearTimeout(cssTimerRef.current);
-        html.classList.add("is-theme-changing");
-        applyTheme();
-        cssTimerRef.current = setTimeout(() => {
+        // Avoid capturing WebKit's live Hero/backdrop layers, which can produce
+        // a blank compositor frame. Use the CSS color transition below instead
+        // of disabling the animation on that engine.
+        const avoidSnapshots = hasLiveBackdrop && isWebKitEngine();
+        if (!avoidSnapshots && "startViewTransition" in document) {
+            const runId = ++transitionRunRef.current;
             html.classList.remove("is-theme-changing");
-            cssTimerRef.current = null;
-        }, 450);
+            html.classList.add("vt-running");
+
+            const finish = () => {
+                if (transitionRunRef.current !== runId) return;
+
+                pendingThemeRef.current = null;
+                html.classList.remove("vt-running");
+            };
+
+            try {
+                const transition = (
+                    document as Document & {
+                        startViewTransition: (callback: () => void) => {
+                            finished: Promise<void>;
+                        };
+                    }
+                ).startViewTransition(() => {
+                    if (transitionRunRef.current !== runId) return;
+                    applyTheme(true);
+                });
+
+                // Handle both completion and skipped/aborted transitions without
+                // creating an unhandled rejected promise from Promise.finally().
+                void transition.finished.then(finish, finish);
+            } catch {
+                finish();
+                applyTheme(false);
+                pendingThemeRef.current = null;
+            }
+
+            return;
+        }
+
+        const runId = ++transitionRunRef.current;
+        html.classList.remove("vt-running");
+        html.classList.add("is-theme-changing");
+        const finishCss = () => {
+            if (transitionRunRef.current !== runId) return;
+            cssCleanupRef.current?.();
+            cssCleanupRef.current = null;
+            html.classList.remove("is-theme-changing");
+        };
+        const onTransitionEnd = (event: TransitionEvent) => {
+            if (event.target === document.body && event.propertyName === "background-color") {
+                finishCss();
+            }
+        };
+        // Follow the rendered transition, not a 450ms wall-clock deadline:
+        // WebKit can start the first painted frame later on a busy page.
+        document.body.addEventListener("transitionend", onTransitionEnd);
+        const timeout = setTimeout(finishCss, 2000);
+        cssCleanupRef.current = () => {
+            document.body.removeEventListener("transitionend", onTransitionEnd);
+            clearTimeout(timeout);
+        };
+        applyTheme(false);
+        pendingThemeRef.current = null;
     }, []);
 
     return { theme, toggle };

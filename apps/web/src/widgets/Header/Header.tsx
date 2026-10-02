@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, type MouseEvent } from "react";
+import { useState, useEffect, useRef, useId, type MouseEvent } from "react";
 import { m, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -11,6 +11,7 @@ import { slideDown } from "@/shared/lib/motion/slide-down";
 import { scrollToTop } from "@/shared/lib/scroll";
 import { usePreloader } from "@/shared/providers";
 import { trackEvent } from "@/shared/analytics/analytics";
+import { downloadCv } from "@/entities/cv/api/downloadCv";
 import { cn } from "@/shared/lib/cn";
 import styles from "./Header.module.scss";
 import { useServicesHeaderBandController } from "./useServicesHeaderBandController";
@@ -33,13 +34,15 @@ function isActiveLink(pathname: string, item: NavItem) {
 
 const CV_DOWNLOAD_DELAY_MS = 250;
 
-function triggerCvDownload(href: string) {
+function triggerCvDownload(blob: Blob, fileName: string) {
+    const href = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = href;
-    link.download = "";
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(href), 1_000);
 }
 
 const PILL_ENTRANCE_STEP_MS = 90;
@@ -96,20 +99,152 @@ const menuItemVariants = {
     visible: { opacity: 1, y: 0, transition: { duration: 0.18 } },
 };
 
-export function Header() {
+export interface HeaderCv {
+    href: string;
+    locale: string;
+}
+
+function CvLink({
+    href,
+    mobile = false,
+    clicked,
+    downloadState,
+    onDownload,
+    onAnimationEnd,
+}: {
+    href: string | null;
+    mobile?: boolean;
+    clicked: boolean;
+    downloadState: "idle" | "loading" | "error";
+    onDownload: (event: MouseEvent<HTMLAnchorElement>) => void;
+    onAnimationEnd: () => void;
+}) {
+    const t = useTranslations("nav");
+    const hasCv = href !== null;
+    const descriptionId = useId();
+    const linkRef = useRef<HTMLAnchorElement>(null);
+    const [showUnavailable, setShowUnavailable] = useState(false);
+
+    useEffect(() => {
+        if (!showUnavailable || hasCv) return;
+
+        function onOutsidePointer(event: PointerEvent) {
+            if (!linkRef.current?.contains(event.target as Node)) setShowUnavailable(false);
+        }
+        function onEscape(event: KeyboardEvent) {
+            if (event.key === "Escape") setShowUnavailable(false);
+        }
+        document.addEventListener("pointerdown", onOutsidePointer);
+        document.addEventListener("keydown", onEscape);
+        return () => {
+            document.removeEventListener("pointerdown", onOutsidePointer);
+            document.removeEventListener("keydown", onEscape);
+        };
+    }, [showUnavailable, hasCv]);
+
+    return (
+        <m.a
+            ref={linkRef}
+            href={href ?? undefined}
+            download={hasCv || undefined}
+            role="link"
+            tabIndex={0}
+            aria-disabled={!hasCv || downloadState === "loading" || undefined}
+            aria-busy={downloadState === "loading" || undefined}
+            aria-label={t("downloadCv")}
+            aria-describedby={!hasCv || downloadState !== "idle" ? descriptionId : undefined}
+            data-unavailable-visible={
+                (!hasCv && showUnavailable) || downloadState !== "idle" ? "" : undefined
+            }
+            className={cn(mobile ? styles.menuCv : styles.cvPill, clicked && styles.cvPillClicked)}
+            style={mobile ? undefined : pillDelay(3)}
+            variants={mobile ? menuItemVariants : undefined}
+            onClick={(event) => {
+                if (hasCv) {
+                    onDownload(event);
+                    return;
+                }
+                event.preventDefault();
+                setShowUnavailable(true);
+            }}
+            onPointerEnter={(event) => {
+                if (!hasCv && event.pointerType === "mouse") setShowUnavailable(true);
+            }}
+            onPointerLeave={(event) => {
+                if (event.pointerType === "mouse") setShowUnavailable(false);
+            }}
+            onFocus={() => {
+                if (!hasCv) setShowUnavailable(true);
+            }}
+            onBlur={() => setShowUnavailable(false)}
+            onKeyDown={(event) => {
+                if (event.key === "Escape" && showUnavailable) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setShowUnavailable(false);
+                }
+                if (!hasCv && event.key === "Enter") {
+                    event.preventDefault();
+                    setShowUnavailable(true);
+                }
+            }}
+            onAnimationEnd={onAnimationEnd}
+        >
+            <span className={mobile ? styles.menuCvLabel : styles.cvLabel} aria-hidden="true">
+                <span className={styles.cvActionText}>{t("downloadCv")}</span>
+                {(!hasCv || downloadState !== "idle") && (
+                    <span className={styles.cvStatusText}>
+                        {t(
+                            !hasCv
+                                ? "cvUnavailableShort"
+                                : downloadState === "loading"
+                                  ? "cvDownloading"
+                                  : "cvDownloadRetry"
+                        )}
+                    </span>
+                )}
+            </span>
+            <span className={mobile ? styles.menuCvIcon : styles.cvIcon} aria-hidden="true">
+                <DownloadIcon />
+            </span>
+            <span id={descriptionId} className={styles.srOnly} role="status">
+                {!hasCv
+                    ? t("cvUnavailable")
+                    : downloadState === "error"
+                      ? t("cvDownloadFailed")
+                      : downloadState === "loading"
+                        ? t("cvDownloading")
+                        : ""}
+            </span>
+        </m.a>
+    );
+}
+
+export function Header({ cv }: { cv: HeaderCv | null }) {
     const safeSlideDown = useMotionVariants(slideDown);
     const t = useTranslations("nav");
     const { isReady } = usePreloader();
     const pathname = usePathname();
     const [cvClicked, setCvClicked] = useState(false);
+    const [cvDownloadState, setCvDownloadState] = useState<"idle" | "loading" | "error">("idle");
+    const cvDownloadController = useRef<AbortController | null>(null);
+    const nextCvDownloadAt = useRef(0);
     const [menuOpen, setMenuOpen] = useState(false);
-    const [menuPathname, setMenuPathname] = useState(pathname);
+    const previousPathnameRef = useRef(pathname);
     const headerRef = useRef<HTMLElement>(null);
     const sceneBackdropRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const menuTriggerRef = useRef<HTMLButtonElement>(null);
-    const bandY = useServicesHeaderBandController(headerRef, sceneBackdropRef);
+    const { bandY, bandVisibility } = useServicesHeaderBandController(headerRef, sceneBackdropRef);
     useHeaderHeightVar(headerRef);
+
+    useEffect(
+        () => () => {
+            cvDownloadController.current?.abort();
+            cvDownloadController.current = null;
+        },
+        []
+    );
 
     // Keep the pills hidden for at least one committed frame after `isReady`
     // so the browser always sees a real "before" state. This is what makes
@@ -131,10 +266,14 @@ export function Header() {
         };
     }, [isReady]);
 
-    if (pathname !== menuPathname) {
-        setMenuPathname(pathname);
+    useEffect(() => {
+        if (previousPathnameRef.current === pathname) return;
+
+        previousPathnameRef.current = pathname;
+        // Route changes are an external navigation event. Closing here keeps
+        // the render phase pure and avoids a delayed reset racing the first tap.
         setMenuOpen(false);
-    }
+    }, [pathname]);
 
     useEffect(() => {
         if (!menuOpen) return;
@@ -146,7 +285,7 @@ export function Header() {
             setMenuOpen(false);
         }
         function onEscape(e: KeyboardEvent) {
-            if (e.key === "Escape") setMenuOpen(false);
+            if (e.key === "Escape" && !e.defaultPrevented) setMenuOpen(false);
         }
         function preventScroll(e: Event) {
             e.preventDefault();
@@ -164,15 +303,40 @@ export function Header() {
         };
     }, [menuOpen]);
 
-    function handleCvClick(e: MouseEvent<HTMLAnchorElement>, { closeMenu = false } = {}) {
+    async function handleCvClick(e: MouseEvent<HTMLAnchorElement>, { closeMenu = false } = {}) {
+        if (!cv) {
+            e.preventDefault();
+            return;
+        }
         if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
             return;
         }
         e.preventDefault();
+        if (cvDownloadController.current || Date.now() < nextCvDownloadAt.current) return;
+        const controller = new AbortController();
+        cvDownloadController.current = controller;
+        const timeout = window.setTimeout(() => controller.abort(), 20_000);
         setCvClicked(true);
-        if (closeMenu) setMenuOpen(false);
-        trackEvent("cv_download");
-        setTimeout(() => triggerCvDownload(siteConfig.links.cv), CV_DOWNLOAD_DELAY_MS);
+        setCvDownloadState("loading");
+        try {
+            const [file] = await Promise.all([
+                downloadCv(cv.href, controller.signal),
+                new Promise((resolve) => window.setTimeout(resolve, CV_DOWNLOAD_DELAY_MS)),
+            ]);
+            if (controller.signal.aborted) return;
+            triggerCvDownload(file.blob, file.fileName);
+            trackEvent("cv_download", { entityId: file.locale ?? cv.locale });
+            setCvDownloadState("idle");
+            if (closeMenu) setMenuOpen(false);
+        } catch {
+            if (cvDownloadController.current === controller) setCvDownloadState("error");
+        } finally {
+            window.clearTimeout(timeout);
+            if (cvDownloadController.current === controller) {
+                cvDownloadController.current = null;
+                nextCvDownloadAt.current = Date.now() + 1_000;
+            }
+        }
     }
 
     return (
@@ -180,7 +344,7 @@ export function Header() {
             <m.div
                 ref={sceneBackdropRef}
                 className={styles.sceneBackdrop}
-                style={{ y: bandY }}
+                style={{ y: bandY, visibility: bandVisibility }}
                 data-services-header-band
                 data-services-header-controller
                 aria-hidden="true"
@@ -195,7 +359,10 @@ export function Header() {
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.25, ease: "easeOut" }}
                         aria-hidden="true"
-                    />
+                        data-menu-overlay
+                    >
+                        <div className={styles.menuOverlayBlur} data-menu-overlay-blur />
+                    </m.div>
                 )}
             </AnimatePresence>
 
@@ -210,7 +377,6 @@ export function Header() {
                     <Link
                         href="/"
                         className={styles.logoPill}
-                        aria-label="Home"
                         style={pillDelay(0)}
                         data-hero-logo-target
                         onClick={(e) => {
@@ -219,6 +385,7 @@ export function Header() {
                             scrollToTop();
                         }}
                     >
+                        <span className={styles.srOnly}>{`${siteConfig.name} - Home`}</span>
                         <span className={styles.logoLine} data-hero-logo-line="0">
                             <StaggerText text={LOGO_LINE_1} />
                         </span>
@@ -265,19 +432,13 @@ export function Header() {
                         </div>
                     </div>
 
-                    <a
-                        href={siteConfig.links.cv}
-                        download
-                        className={cn(styles.cvPill, cvClicked && styles.cvPillClicked)}
-                        style={pillDelay(3)}
-                        onClick={handleCvClick}
+                    <CvLink
+                        href={cv?.href ?? null}
+                        clicked={cvClicked}
+                        downloadState={cvDownloadState}
+                        onDownload={handleCvClick}
                         onAnimationEnd={() => setCvClicked(false)}
-                    >
-                        <span className={styles.cvLabel}>{t("downloadCv")}</span>
-                        <span className={styles.cvIcon} aria-hidden="true">
-                            <DownloadIcon />
-                        </span>
-                    </a>
+                    />
 
                     <button
                         ref={menuTriggerRef}
@@ -306,53 +467,59 @@ export function Header() {
                                 animate="visible"
                                 exit="hidden"
                                 style={{ transformOrigin: "top" }}
+                                data-menu-panel
                             >
-                                <nav aria-label="Mobile navigation">
-                                    <ul className={styles.menuNavList}>
-                                        {navigation.map((item) => {
-                                            const isActive = isActiveLink(pathname, item);
+                                <div
+                                    className={styles.menuPanelSurface}
+                                    aria-hidden="true"
+                                    data-menu-panel-surface
+                                />
+                                <div className={styles.menuPanelContent}>
+                                    <nav aria-label="Mobile navigation">
+                                        <ul className={styles.menuNavList}>
+                                            {navigation.map((item) => {
+                                                const isActive = isActiveLink(pathname, item);
 
-                                            return (
-                                                <m.li key={item.href} variants={menuItemVariants}>
-                                                    <Link
-                                                        href={item.href}
-                                                        onClick={(e) => {
-                                                            setMenuOpen(false);
-                                                            if (
-                                                                !isHomeLink(item) ||
-                                                                pathname !== "/"
-                                                            ) {
-                                                                return;
-                                                            }
-                                                            e.preventDefault();
-                                                            scrollToTop();
-                                                        }}
-                                                        className={cn(
-                                                            styles.menuNavLink,
-                                                            isActive && styles.menuNavLinkActive
-                                                        )}
+                                                return (
+                                                    <m.li
+                                                        key={item.href}
+                                                        variants={menuItemVariants}
                                                     >
-                                                        <span>{t(item.key)}</span>
-                                                    </Link>
-                                                </m.li>
-                                            );
-                                        })}
-                                    </ul>
-                                </nav>
+                                                        <Link
+                                                            href={item.href}
+                                                            onClick={(e) => {
+                                                                setMenuOpen(false);
+                                                                if (
+                                                                    !isHomeLink(item) ||
+                                                                    pathname !== "/"
+                                                                ) {
+                                                                    return;
+                                                                }
+                                                                e.preventDefault();
+                                                                scrollToTop();
+                                                            }}
+                                                            className={cn(
+                                                                styles.menuNavLink,
+                                                                isActive && styles.menuNavLinkActive
+                                                            )}
+                                                        >
+                                                            <span>{t(item.key)}</span>
+                                                        </Link>
+                                                    </m.li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </nav>
 
-                                <m.a
-                                    href={siteConfig.links.cv}
-                                    download
-                                    className={cn(styles.menuCv, cvClicked && styles.cvPillClicked)}
-                                    variants={menuItemVariants}
-                                    onClick={(e) => handleCvClick(e, { closeMenu: true })}
-                                    onAnimationEnd={() => setCvClicked(false)}
-                                >
-                                    <span className={styles.menuCvLabel}>{t("downloadCv")}</span>
-                                    <span className={styles.menuCvIcon} aria-hidden="true">
-                                        <DownloadIcon />
-                                    </span>
-                                </m.a>
+                                    <CvLink
+                                        href={cv?.href ?? null}
+                                        mobile
+                                        clicked={cvClicked}
+                                        downloadState={cvDownloadState}
+                                        onDownload={(e) => handleCvClick(e, { closeMenu: true })}
+                                        onAnimationEnd={() => setCvClicked(false)}
+                                    />
+                                </div>
                             </m.div>
                         )}
                     </AnimatePresence>

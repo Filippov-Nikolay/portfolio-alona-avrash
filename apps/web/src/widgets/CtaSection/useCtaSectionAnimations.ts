@@ -1,15 +1,17 @@
 "use client";
 
 import { useRef } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotionPreference } from "@/shared/hooks/useReducedMotionPreference";
+import { prepareTransformTargets } from "@/shared/lib/animation/prepareTransformTargets";
+import { primeAnimation } from "@/shared/lib/animation/primeAnimation";
 import { useScrollTriggerAutoRefresh } from "@/shared/hooks";
 import { useGSAP, gsap } from "@/shared/lib/gsap";
 
-const isCompact = () => window.matchMedia("(max-width: 767px)").matches;
+const isCompact = () => window.matchMedia("(max-width: 768px)").matches;
 const getStart = () => (isCompact() ? "top 88%" : "top 68%");
 
 export function useCtaSectionAnimations() {
-    const reduced = useReducedMotion();
+    const reduced = useReducedMotionPreference();
     useScrollTriggerAutoRefresh([reduced]);
 
     const sectionRef = useRef<HTMLElement>(null);
@@ -35,6 +37,8 @@ export function useCtaSectionAnimations() {
                 return;
             }
 
+            prepareTransformTargets(allTargets);
+
             gsap.set(heading, {
                 autoAlpha: 0,
                 scale: 1.06,
@@ -50,12 +54,10 @@ export function useCtaSectionAnimations() {
 
             const tl = gsap
                 .timeline({
-                    defaults: { force3D: true },
                     scrollTrigger: {
                         trigger: section,
                         start: getStart,
                         toggleActions: "play none none reverse",
-                        invalidateOnRefresh: true,
                     },
                 })
                 .to(
@@ -80,6 +82,7 @@ export function useCtaSectionAnimations() {
             if (arrow) {
                 tl.to(arrow, { autoAlpha: 1, scale: 1, duration: 0.4, ease: "back.out(3)" }, 0.75);
             }
+            primeAnimation(tl);
         },
         { scope: sectionRef, dependencies: [reduced], revertOnUpdate: true }
     );

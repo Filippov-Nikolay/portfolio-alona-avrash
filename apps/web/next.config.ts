@@ -5,6 +5,20 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const isDev = process.env.NODE_ENV === "development";
+const isVercel = process.env.VERCEL === "1";
+
+// Preview deployments inject the Vercel Toolbar from vercel.live. Keep the
+// production CSP strict everywhere else while allowing the toolbar's own
+// scripts, iframe, assets and feedback connection when Vercel adds it.
+const vercelScriptSource = isVercel ? " https://vercel.live" : "";
+const vercelStyleSource = isVercel ? " https://vercel.live" : "";
+const vercelFontSources = isVercel ? " https://vercel.live https://assets.vercel.com" : "";
+const vercelImageSources = isVercel ? " https://vercel.live https://vercel.com" : "";
+const vercelConnectSources = isVercel ? " https://vercel.live wss://ws-us3.pusher.com" : "";
+
+const analyticsEndpoint = process.env.NEXT_PUBLIC_ANALYTICS_ENDPOINT;
+
+const analyticsConnectSource = analyticsEndpoint ? ` ${new URL(analyticsEndpoint).origin}` : "";
 
 // Single source of truth for the R2/CDN origin admin's uploaded images (and,
 // via CONTENT_SOURCE=remote, JSON content) are served from - see
@@ -34,6 +48,8 @@ const svgrOptions = {
 };
 
 const nextConfig: NextConfig = {
+    // Allow integration runs to keep their build output separate from local dev.
+    distDir: process.env.NEXT_DIST_DIR ?? ".next",
     // Turbopack (next dev)
     turbopack: {
         rules: {
@@ -79,8 +95,13 @@ const nextConfig: NextConfig = {
     staticPageGenerationTimeout: 180,
 
     poweredByHeader: false,
+    agentRules: false,
 
     images: {
+        // Uploaded image URLs are immutable (their keys include a timestamp),
+        // so keep generated Next Image variants across ordinary revisits and
+        // reduce repeat reads from the R2 origin.
+        minimumCacheTTL: 31 * 24 * 60 * 60,
         remotePatterns: cdnOrigin
             ? [
                   {
@@ -92,8 +113,10 @@ const nextConfig: NextConfig = {
         // Next only serves qualities explicitly allow-listed here (else 400s).
         // 75 stays the project-wide default; 95 is opted into per-Image where
         // the default's visible softening actually matters (e.g. the
-        // full-bleed ShowcaseModal banner).
-        qualities: [75, 95],
+        // full-bleed ShowcaseModal banner); 72 is the small peek-preview
+        // thumbnails in ToolsSection, where a touch of extra compression is
+        // invisible at their rendered size.
+        qualities: [72, 75, 95],
     },
 
     async headers() {
@@ -129,11 +152,12 @@ const nextConfig: NextConfig = {
                         key: "Content-Security-Policy",
                         value: [
                             "default-src 'self'",
-                            `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
-                            "style-src 'self' 'unsafe-inline'",
-                            "font-src 'self' https://fonts.gstatic.com",
-                            `img-src 'self' data: blob:${cdnOrigin ? ` ${cdnOrigin.origin}` : ""}`,
-                            "connect-src 'self'",
+                            `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}${vercelScriptSource}`,
+                            `style-src 'self' 'unsafe-inline'${vercelStyleSource}`,
+                            `font-src 'self' https://fonts.gstatic.com${vercelFontSources}`,
+                            `img-src 'self' data: blob:${cdnOrigin ? ` ${cdnOrigin.origin}` : ""}${vercelImageSources}`,
+                            `connect-src 'self'${vercelConnectSources}${analyticsConnectSource}`,
+                            ...(isVercel ? ["frame-src https://vercel.live"] : []),
                             "frame-ancestors 'none'",
                         ].join("; "),
                     },

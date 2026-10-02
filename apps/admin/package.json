@@ -1,6 +1,6 @@
 {
     "name": "@avrash/admin",
-    "version": "0.6.0",
+    "version": "0.26.2",
     "private": true,
     "scripts": {
         "dev": "next dev -p 3001",
@@ -17,9 +17,12 @@
         "@avrash/ui": "workspace:*",
         "@aws-sdk/client-s3": "^3.1136.0",
         "bcryptjs": "^3.0.3",
+        "country-flag-emoji-polyfill": "0.1.10",
         "framer-motion": "^12.38.0",
         "jose": "^6.2.12",
-        "next": "16.2.6",
+        "lucide-react": "^1.47.0",
+        "next": "16.3.8",
+        "pdfjs-dist": "^6.3.289",
         "react": "19.2.4",
         "react-dom": "19.2.4",
         "sass": "^1.99.0",

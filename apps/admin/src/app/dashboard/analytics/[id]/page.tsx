@@ -8,6 +8,7 @@ import { ProjectAnalytics } from "@/widgets/ProjectAnalytics";
 import { AnalyticsNotice } from "@/widgets/AnalyticsNotice";
 import { PeriodSwitcher } from "@/widgets/PeriodSwitcher";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import styles from "../analytics.module.css";
 
 interface ProjectAnalyticsPageProps {
     params: Promise<{ id: string }>;
@@ -20,18 +21,22 @@ export default async function ProjectAnalyticsPage({
 }: ProjectAnalyticsPageProps) {
     const [{ id }, { days: rawDays }] = await Promise.all([params, searchParams]);
     const days = parseDaysParam(rawDays);
-    const backHref = `/dashboard/analytics?days=${days}`;
+    const backHref = `/dashboard/analytics?days=${days}&view=projects`;
 
-    const allProjects = await listProjects();
+    const configured = isAnalyticsConfigured();
+    const [allProjects, detail] = await Promise.all([
+        listProjects(),
+        configured ? getProjectDetail(id, days) : null,
+    ]);
     // entityId is the project's own numeric id (see WorksCatalog.tsx's
     // trackEvent calls), not its slug - a slug changes if the project is
     // renamed, which would silently split its analytics history in two.
     const matchingProject = allProjects.find((project) => String(project.id) === id);
     const title = matchingProject?.name ?? id;
 
-    if (!isAnalyticsConfigured()) {
+    if (!configured) {
         return (
-            <div>
+            <div className={styles.page}>
                 <PageHeader title={title} backHref={backHref} backLabel="Analytics" />
                 <AnalyticsNotice>
                     Not connected yet - set <code>ANALYTICS_WORKER_URL</code> and{" "}
@@ -41,11 +46,9 @@ export default async function ProjectAnalyticsPage({
         );
     }
 
-    const detail = await getProjectDetail(id, days);
-
     if (!detail) {
         return (
-            <div>
+            <div className={styles.page}>
                 <PageHeader title={title} backHref={backHref} backLabel="Analytics" />
                 <AnalyticsNotice>
                     Couldn&apos;t reach the analytics worker - check it&apos;s deployed and
@@ -56,7 +59,7 @@ export default async function ProjectAnalyticsPage({
     }
 
     return (
-        <div>
+        <div className={styles.page}>
             <PageHeader
                 title={title}
                 backHref={backHref}

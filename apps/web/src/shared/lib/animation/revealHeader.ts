@@ -38,7 +38,6 @@ export function revealHeader({
             trigger,
             start,
             toggleActions: "play none none reverse",
-            invalidateOnRefresh: true,
         },
     });
 

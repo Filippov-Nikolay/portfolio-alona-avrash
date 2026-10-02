@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState, type CSSProperties } from "react";
+import { FocusEvent, FormEvent, useEffect, useRef, useState, type CSSProperties } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { Social } from "@avrash/content-schema";
 import { SocialLinks } from "@/entities/social/ui/SocialLinks";
@@ -50,12 +50,26 @@ export function ContactSection({ socials }: ContactSectionProps) {
     const { isReady } = usePreloader();
     const sectionRef = useContactSectionAnimations(isReady);
     const [submitState, setSubmitState] = useState<SubmitState>("idle");
+    const hasStartedRef = useRef(false);
 
     useEffect(() => {
         if (submitState !== "success" && submitState !== "error") return;
         const timer = window.setTimeout(() => setSubmitState("idle"), TOAST_AUTO_DISMISS_MS);
         return () => window.clearTimeout(timer);
     }, [submitState]);
+
+    // Fires once, the first time a visitor actually engages with a real
+    // field - not the honeypot, which only a bot would ever reach since it's
+    // excluded from tab order. Paired with contact_success, this is how a
+    // "started but never sent" drop-off becomes visible instead of only ever
+    // seeing the completed submissions.
+    function handleFormFocus(event: FocusEvent<HTMLFormElement>) {
+        if (hasStartedRef.current) return;
+        if (!(event.target instanceof HTMLElement) || event.target.dataset.honeypot) return;
+
+        hasStartedRef.current = true;
+        trackEvent("contact_started");
+    }
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -139,6 +153,7 @@ export function ContactSection({ socials }: ContactSectionProps) {
                         <form
                             className={styles.form}
                             onSubmit={handleSubmit}
+                            onFocus={handleFormFocus}
                             data-contact-form
                             noValidate
                         >
@@ -147,6 +162,7 @@ export function ContactSection({ socials }: ContactSectionProps) {
                                 <input
                                     id="contact-company"
                                     name="company"
+                                    data-honeypot
                                     type="text"
                                     tabIndex={-1}
                                     autoComplete="off"

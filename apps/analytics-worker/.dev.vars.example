@@ -1,0 +1,5 @@
+# Copy this file to .dev.vars (already gitignored) for local `wrangler dev`.
+# Any value works locally - it only has to match what you put in
+# apps/admin/.env's ANALYTICS_READ_SECRET. Never reuse this for a real
+# deployment; that secret is set separately with `wrangler secret put`.
+ANALYTICS_READ_SECRET=local-dev-secret

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
-import { m, animate, AnimatePresence, useInView } from "framer-motion";
+import { m, AnimatePresence, useInView, useIsPresent, useReducedMotion } from "framer-motion";
 import type { ShowcaseItem } from "../../types/showcase";
 import { useMounted } from "../../hooks/useMounted";
 import { Button } from "../Button";
@@ -11,11 +11,14 @@ import { ArrowIcon, CloseIcon } from "../../icons";
 import { ACCENT_COLORS } from "../../constants/colors";
 import { ToolBadge } from "../ToolBadge";
 import { cn } from "../../lib/cn";
-import { GalleryLightbox, CLOSE_TRANSITION, type LightboxRect } from "./GalleryLightbox";
+import { GalleryLightbox, type LightboxRect } from "./GalleryLightbox";
+import { GalleryImages } from "./galleryImages";
 import { useGalleryTilt } from "./useGalleryTilt";
 import styles from "./ShowcaseModal.module.scss";
 
 const GALLERY_PREVIEW_COUNT = 3;
+const STATIC_IMAGE_PRELOAD_MARGIN = "1200px 0px";
+const ANIMATED_IMAGE_PRELOAD_MARGIN = "500px 0px";
 
 export type Tab = "overview" | "gallery";
 
@@ -42,74 +45,82 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 function TileImage({
+    imagePool,
+    index,
     src,
-    alt,
     scrollRoot,
-    enabled,
+    frozen,
 }: {
+    imagePool: GalleryImages;
+    index: number;
     src: string;
-    alt: string;
     scrollRoot: RefObject<HTMLDivElement | null>;
-    enabled: boolean;
+    frozen: boolean;
 }) {
-    const imageRef = useRef<HTMLDivElement>(null);
-    const [poster, setPoster] = useState<string>();
-    const inView = useInView(imageRef, { root: scrollRoot, margin: "200px 0px" });
+    const hostRef = useRef<HTMLDivElement>(null);
     const animated = /\.gif(?:[?#]|$)/i.test(src);
-
-    const handleImageLoad = (image: HTMLImageElement) => {
-        if (!image.naturalWidth || !image.naturalHeight) return;
-
-        if (animated && !poster) {
-            const canvas = document.createElement("canvas");
-            const context = canvas.getContext("2d");
-            if (!context) return;
-
-            const posterScale = Math.min(
-                1,
-                750 / Math.max(image.naturalWidth, image.naturalHeight)
-            );
-            canvas.width = Math.max(1, Math.round(image.naturalWidth * posterScale));
-            canvas.height = Math.max(1, Math.round(image.naturalHeight * posterScale));
-            context.drawImage(image, 0, 0, canvas.width, canvas.height);
-            try {
-                setPoster(canvas.toDataURL("image/webp", 0.85));
-            } catch {}
-        }
-    };
-
+    const inView = useInView(hostRef, {
+        root: scrollRoot,
+        margin: animated ? ANIMATED_IMAGE_PRELOAD_MARGIN : STATIC_IMAGE_PRELOAD_MARGIN,
+        once: true,
+    });
+    useLayoutEffect(() => imagePool.connect(index, hostRef.current!), [imagePool, index]);
+    useEffect(() => {
+        if (inView && !frozen) imagePool.load(index);
+    }, [inView, frozen, imagePool, index]);
     return (
-        <div ref={imageRef} className={styles.tileImages}>
-            {enabled && inView && (
-                <>
-                    {poster && (
-                        <Image
-                            src={poster}
-                            alt=""
-                            aria-hidden="true"
-                            fill
-                            unoptimized
-                            className={cn(styles.previewImage, styles.previewImagePoster)}
-                            draggable={false}
-                        />
-                    )}
-                    <Image
-                        src={src}
-                        alt={alt}
-                        fill
-                        sizes="50vw"
-                        loading="eager"
-                        unoptimized={animated}
-                        className={cn(
-                            styles.previewImage,
-                            animated && poster && styles.previewImageAnimated
-                        )}
-                        onLoad={(event) => handleImageLoad(event.currentTarget)}
-                        draggable={false}
-                    />
-                </>
-            )}
-        </div>
+        <div
+            ref={hostRef}
+            className={styles.tileImages}
+            data-gallery-tile={index}
+            data-load-state="loading"
+            aria-busy="true"
+        />
+    );
+}
+
+const nextPaint = () =>
+    new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    );
+
+function usePainted() {
+    const [painted, setPainted] = useState(false);
+    useEffect(() => {
+        let cancelled = false;
+        void nextPaint().then(() => {
+            if (!cancelled) setPainted(true);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+    return painted;
+}
+
+const DIALOG_VARIANTS = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.34, ease: [0.4, 0, 0.2, 1] } },
+    exit: { opacity: 0, transition: { duration: 0.22, ease: [0.4, 0, 1, 1] } },
+} as const;
+
+const REDUCED_DIALOG_VARIANTS = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0 } },
+    exit: { opacity: 0, transition: { duration: 0 } },
+} as const;
+
+function Backdrop({ reducedMotion }: { reducedMotion: boolean }) {
+    const painted = usePainted();
+    return (
+        <m.div
+            className={styles.backdrop}
+            aria-hidden="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: painted ? 1 : 0 }}
+            exit={{ opacity: 0, transition: { duration: reducedMotion ? 0 : 0.22 } }}
+            transition={{ duration: reducedMotion ? 0 : 0.34, ease: [0.4, 0, 0.2, 1] }}
+        />
     );
 }
 
@@ -147,13 +158,65 @@ function ModalContent({
         GALLERY_PREVIEW_COUNT
     );
     const modalRef = useRef<HTMLDivElement>(null);
+    const closeRef = useRef<HTMLButtonElement>(null);
+    const previousFocusRef = useRef<Element | null>(null);
     const bodyRef = useRef<HTMLDivElement>(null);
     const tabsRef = useRef<HTMLDivElement>(null);
     const galleryElRefs = useRef<Map<number, HTMLElement>>(new Map());
     const [lightbox, setLightbox] = useState<LightboxState | null>(null);
-    const [lightboxClosing, setLightboxClosing] = useState(false);
-    const registerTile = useGalleryTilt(bodyRef, tabsRef);
+    const [lightboxBusy, setLightboxBusy] = useState(false);
+    const imagePool = useMemo(() => new GalleryImages(item.gallery), [item.gallery]);
+    const openRequest = useRef(0);
+    const pendingIndex = useRef<number | null>(null);
+    const returnFocusIndex = useRef<number | null>(null);
+    const busyRef = useRef(false);
     const [modalEntranceDone, setModalEntranceDone] = useState(false);
+    const painted = usePainted();
+    const isPresent = useIsPresent();
+    const reducedMotion = useReducedMotion();
+    const registerTile = useGalleryTilt(
+        bodyRef,
+        tabsRef,
+        lightboxBusy || !modalEntranceDone || !isPresent
+    );
+    // Lock before the first paint and keep it until the exit has actually
+    // unmounted this content. Autofocus must not scroll the page underneath.
+    useLayoutEffect(() => {
+        const html = document.documentElement;
+        const body = document.body;
+        previousFocusRef.current ??= document.activeElement;
+        const previousFocus = previousFocusRef.current;
+        const scrollbarWidth = window.innerWidth - html.clientWidth;
+        const padding = parseFloat(getComputedStyle(html).paddingRight) || 0;
+        const previousHtmlOverflow = html.style.overflow;
+        const previousBodyOverflow = body.style.overflow;
+        const previousHtmlPaddingRight = html.style.paddingRight;
+        const wasScrollLocked = html.hasAttribute("data-scroll-locked");
+        html.setAttribute("data-scroll-locked", "");
+        html.style.overflow = "hidden";
+        body.style.overflow = "hidden";
+        if (scrollbarWidth > 0) html.style.paddingRight = `${padding + scrollbarWidth}px`;
+        closeRef.current?.focus({ preventScroll: true });
+        return () => {
+            html.style.overflow = previousHtmlOverflow;
+            body.style.overflow = previousBodyOverflow;
+            html.style.paddingRight = previousHtmlPaddingRight;
+            if (!wasScrollLocked) html.removeAttribute("data-scroll-locked");
+            if (previousFocus instanceof HTMLElement && previousFocus.isConnected)
+                previousFocus.focus({ preventScroll: true });
+        };
+    }, []);
+    useLayoutEffect(() => {
+        if (lightboxBusy || returnFocusIndex.current === null) return;
+        galleryElRefs.current.get(returnFocusIndex.current)?.focus({ preventScroll: true });
+        returnFocusIndex.current = null;
+    }, [lightboxBusy]);
+    useEffect(
+        () => () => {
+            openRequest.current++;
+        },
+        []
+    );
     const autoOpenedLightboxRef = useRef(false);
     const handleTabChange = (nextTab: Tab) => {
         if (nextTab === tab) return;
@@ -187,7 +250,7 @@ function ModalContent({
 
     useEffect(() => {
         const body = bodyRef.current;
-        if (!body) return;
+        if (!body || lightboxBusy) return;
 
         let scrollEndTimer: ReturnType<typeof setTimeout>;
         const handleScroll = () => {
@@ -203,12 +266,17 @@ function ModalContent({
             clearTimeout(scrollEndTimer);
             body.removeAttribute("data-scrolling");
         };
-    }, []);
+    }, [lightboxBusy]);
 
-    const registerGalleryEl = (index: number) => (el: HTMLElement | null) => {
-        if (el) galleryElRefs.current.set(index, el);
-        else galleryElRefs.current.delete(index);
-    };
+    const galleryRefs = useMemo(
+        () =>
+            item.gallery.map((_, index) => (el: HTMLElement | null) => {
+                if (el) galleryElRefs.current.set(index, el);
+                else galleryElRefs.current.delete(index);
+                registerTile(index)(contentTab === "gallery" ? el : null);
+            }),
+        [item.gallery, registerTile, contentTab]
+    );
 
     const measureRect = (el: HTMLElement): LightboxRect | null => {
         const modalEl = modalRef.current;
@@ -223,22 +291,47 @@ function ModalContent({
         };
     };
 
-    const openLightboxAt = (index: number, el: HTMLElement) => {
-        const modalEl = modalRef.current;
-        const tileRect = measureRect(el);
-        if (!modalEl || !tileRect) return;
-
-        setLightboxClosing(false);
-        setLightbox({
-            index,
-            launchRect: tileRect,
-            fillRect: { top: 0, left: 0, width: modalEl.clientWidth, height: modalEl.clientHeight },
-        });
-        onLightboxChange?.(index);
+    const openLightboxAt = async (index: number, el: HTMLElement) => {
+        if (busyRef.current) return;
+        busyRef.current = true;
+        pendingIndex.current = index;
+        const request = ++openRequest.current;
+        setLightboxBusy(true);
+        imagePool.freeze(index);
+        try {
+            await imagePool.decode(index);
+            // Pause background work before measuring the launch geometry once.
+            await nextPaint();
+            if (request !== openRequest.current) return;
+            const modalEl = modalRef.current;
+            const tileRect = measureRect(el);
+            if (!modalEl || !tileRect) throw new Error("Missing gallery tile");
+            // Preserve subpixel layout sizes without the modal entrance's scale.
+            // clientWidth/clientHeight would round them before the FLIP starts.
+            const modalStyle = getComputedStyle(modalEl);
+            pendingIndex.current = null;
+            setLightbox({
+                index,
+                launchRect: tileRect,
+                fillRect: {
+                    top: 0,
+                    left: 0,
+                    width: parseFloat(modalStyle.width),
+                    height: parseFloat(modalStyle.height),
+                },
+            });
+        } catch {
+            if (request !== openRequest.current) return;
+            imagePool.release(index);
+            imagePool.resume();
+            pendingIndex.current = null;
+            busyRef.current = false;
+            setLightboxBusy(false);
+        }
     };
 
     const openLightbox = (index: number, e: React.MouseEvent<HTMLElement>) => {
-        openLightboxAt(index, e.currentTarget);
+        void openLightboxAt(index, e.currentTarget);
     };
 
     useEffect(() => {
@@ -250,53 +343,73 @@ function ModalContent({
         if (!el) return;
 
         autoOpenedLightboxRef.current = true;
-        openLightboxAt(initialLightboxIndex, el);
+        el.scrollIntoView({ block: "center", behavior: "instant" });
+        void openLightboxAt(initialLightboxIndex, el);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [modalEntranceDone, contentTab, initialLightboxIndex]);
 
-    const getCloseRect = (index: number): LightboxRect | null => {
+    const prepareClose = async (index: number): Promise<LightboxRect | null> => {
+        // Overview has only three tiles. Closing a later image needs its real
+        // gallery tile, prepared while the lightbox still covers the modal.
+        if (!galleryElRefs.current.has(index)) {
+            setTab("gallery");
+            setContentTab("gallery");
+            onTabChange?.("gallery");
+            for (let attempt = 0; attempt < 30 && !galleryElRefs.current.has(index); attempt++)
+                await nextPaint();
+        }
         const el = galleryElRefs.current.get(index);
         const body = bodyRef.current;
-        const modalEl = modalRef.current;
-        if (!el || !body || !modalEl) return null;
-
-        const elRect = el.getBoundingClientRect();
+        if (!el || !body) return null;
+        const rect = el.getBoundingClientRect();
         const bodyRect = body.getBoundingClientRect();
-        const currentAbsoluteTop = elRect.top - bodyRect.top + body.scrollTop;
-        const maxScrollTop = Math.max(0, body.scrollHeight - body.clientHeight);
-        const targetScrollTop = Math.min(
-            maxScrollTop,
-            Math.max(0, currentAbsoluteTop - body.clientHeight / 2 + elRect.height / 2)
-        );
-
-        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        animate(body.scrollTop, targetScrollTop, {
-            duration: reducedMotion ? 0 : CLOSE_TRANSITION.duration,
-            ease: CLOSE_TRANSITION.ease,
-            onUpdate: (value) => {
-                body.scrollTop = value;
-            },
+        const target =
+            body.scrollTop + rect.top - bodyRect.top - body.clientHeight / 2 + rect.height / 2;
+        body.scrollTo({
+            top: Math.max(0, Math.min(body.scrollHeight - body.clientHeight, target)),
+            behavior: "instant",
         });
+        // Separate scroll writes from measurement and from the closing FLIP.
+        await nextPaint();
+        return measureRect(el);
+    };
 
-        const modalRect = modalEl.getBoundingClientRect();
-        const finalTop = bodyRect.top + (currentAbsoluteTop - targetScrollTop);
-        return {
-            top: finalTop - modalRect.top,
-            left: elRect.left - modalRect.left,
-            width: elRect.width,
-            height: elRect.height,
-        };
+    const prepareBackground = async (index: number) => {
+        const request = openRequest.current;
+        imagePool.restoreTiles(index);
+        const body = bodyRef.current;
+        if (!body) return;
+        const bounds = body.getBoundingClientRect();
+        const visible: number[] = [];
+        for (const [tileIndex, tile] of galleryElRefs.current) {
+            if (tileIndex === index) continue;
+            const rect = tile.getBoundingClientRect();
+            if (rect.bottom > bounds.top - 80 && rect.top < bounds.bottom + 80)
+                visible.push(tileIndex);
+        }
+        await imagePool.prepareTiles(visible);
+        if (request !== openRequest.current) return;
+        body.style.visibility = "";
     };
 
     // ESC closes the lightbox first when it's open, the modal itself otherwise.
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (e.key !== "Escape" || lightbox) return;
+            if (busyRef.current) {
+                openRequest.current++;
+                if (pendingIndex.current !== null) imagePool.release(pendingIndex.current);
+                pendingIndex.current = null;
+                busyRef.current = false;
+                imagePool.resume();
+                setLightboxBusy(false);
+                return;
+            }
             onClose();
         };
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
-    }, [lightbox, onClose]);
+    }, [lightbox, onClose, imagePool]);
 
     const colorStyle = {
         "--c-hex": color.hex,
@@ -311,7 +424,27 @@ function ModalContent({
 
     const modalInner = (
         <>
-            <div ref={bodyRef} className={styles.body}>
+            <button
+                ref={closeRef}
+                className={styles.close}
+                onClick={onClose}
+                aria-label="Close"
+                disabled={lightboxBusy}
+            >
+                <CloseIcon className={styles.closeIcon} />
+            </button>
+
+            <div
+                ref={bodyRef}
+                className={styles.body}
+                data-lightbox-open={lightboxBusy ? "" : undefined}
+                inert={lightboxBusy}
+                onPointerMove={(event) => {
+                    // Opening under a stationary cursor is not a hover intent.
+                    if (event.pointerType === "mouse" && modalEntranceDone && !lightboxBusy)
+                        event.currentTarget.setAttribute("data-preview-hover-ready", "");
+                }}
+            >
                 <div className={styles.banner}>
                     {item.src && (
                         <div className={styles.bannerImageWrap}>
@@ -327,10 +460,6 @@ function ModalContent({
                             />
                         </div>
                     )}
-
-                    <button className={styles.close} onClick={onClose} aria-label="Close" autoFocus>
-                        <CloseIcon className={styles.closeIcon} />
-                    </button>
 
                     <h2 className={styles.bannerTitle}>{item.title}</h2>
 
@@ -384,10 +513,13 @@ function ModalContent({
                             <m.div
                                 key="overview"
                                 className={styles.tabPanel}
-                                initial={{ opacity: 0, y: 8 }}
+                                initial={lightboxBusy ? false : { opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -8 }}
-                                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                transition={{
+                                    duration: lightboxBusy ? 0 : 0.22,
+                                    ease: [0.22, 1, 0.36, 1],
+                                }}
                             >
                                 {previewImages.length > 0 && (
                                     <section className={styles.section}>
@@ -408,7 +540,7 @@ function ModalContent({
                                             {previewImages.map((image, index) => (
                                                 <button
                                                     key={image.src}
-                                                    ref={registerGalleryEl(index)}
+                                                    ref={galleryRefs[index]}
                                                     type="button"
                                                     className={styles.previewItem}
                                                     onClick={(e) => openLightbox(index, e)}
@@ -416,9 +548,10 @@ function ModalContent({
                                                 >
                                                     <TileImage
                                                         src={image.src}
-                                                        alt={image.alt}
+                                                        imagePool={imagePool}
+                                                        index={index}
                                                         scrollRoot={bodyRef}
-                                                        enabled={!lightbox || lightboxClosing}
+                                                        frozen={lightboxBusy}
                                                     />
                                                 </button>
                                             ))}
@@ -446,10 +579,13 @@ function ModalContent({
                             <m.div
                                 key="gallery"
                                 className={styles.tabPanel}
-                                initial={{ opacity: 0, y: 8 }}
+                                initial={lightboxBusy ? false : { opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -8 }}
-                                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                                transition={{
+                                    duration: lightboxBusy ? 0 : 0.22,
+                                    ease: [0.22, 1, 0.36, 1],
+                                }}
                             >
                                 <section className={styles.section}>
                                     <div className={styles.galleryRows}>
@@ -458,10 +594,7 @@ function ModalContent({
                                                 {row.map(({ image, index }) => (
                                                     <button
                                                         key={image.src}
-                                                        ref={(el) => {
-                                                            registerGalleryEl(index)(el);
-                                                            registerTile(index)(el);
-                                                        }}
+                                                        ref={galleryRefs[index]}
                                                         type="button"
                                                         className={cn(
                                                             styles.previewItem,
@@ -472,9 +605,10 @@ function ModalContent({
                                                     >
                                                         <TileImage
                                                             src={image.src}
-                                                            alt={image.alt}
+                                                            imagePool={imagePool}
+                                                            index={index}
                                                             scrollRoot={bodyRef}
-                                                            enabled={!lightbox || lightboxClosing}
+                                                            frozen={lightboxBusy}
                                                         />
                                                     </button>
                                                 ))}
@@ -491,14 +625,23 @@ function ModalContent({
             {lightbox && (
                 <GalleryLightbox
                     images={item.gallery}
+                    imagePool={imagePool}
                     initialIndex={lightbox.index}
                     launchRect={lightbox.launchRect}
                     fillRect={lightbox.fillRect}
-                    getCloseRect={getCloseRect}
-                    onCloseStart={() => setLightboxClosing(true)}
-                    onClose={() => {
+                    prepareClose={prepareClose}
+                    prepareBackground={prepareBackground}
+                    onOpened={() => {
+                        if (bodyRef.current) bodyRef.current.style.visibility = "hidden";
+                        onLightboxChange?.(lightbox.index);
+                    }}
+                    onClose={(index) => {
+                        returnFocusIndex.current = index;
                         setLightbox(null);
-                        setLightboxClosing(false);
+                        if (bodyRef.current) bodyRef.current.style.visibility = "";
+                        imagePool.resume();
+                        busyRef.current = false;
+                        setLightboxBusy(false);
                         onLightboxChange?.(null);
                     }}
                 />
@@ -513,11 +656,14 @@ function ModalContent({
             role="dialog"
             aria-modal="true"
             aria-label={item.title}
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", stiffness: 380, damping: 34 }}
-            onAnimationComplete={() => setModalEntranceDone(true)}
+            data-state={!isPresent ? "closing" : modalEntranceDone ? "open" : "opening"}
+            variants={reducedMotion ? REDUCED_DIALOG_VARIANTS : DIALOG_VARIANTS}
+            initial="hidden"
+            animate={painted ? "visible" : "hidden"}
+            exit="exit"
+            onAnimationComplete={(definition) => {
+                if (isPresent && definition === "visible") setModalEntranceDone(true);
+            }}
             onClick={(e) => e.stopPropagation()}
             style={colorStyle}
         >
@@ -551,43 +697,15 @@ export function ShowcaseModal({
 }: ShowcaseModalProps) {
     const mounted = useMounted();
 
-    useEffect(() => {
-        if (!item) return;
-
-        const html = document.documentElement;
-        const body = document.body;
-        const scrollbarWidth = window.innerWidth - html.clientWidth;
-
-        const previousHtmlOverflow = html.style.overflow;
-        const previousBodyOverflow = body.style.overflow;
-        const previousHtmlPaddingRight = html.style.paddingRight;
-
-        html.style.overflow = "hidden";
-        body.style.overflow = "hidden";
-
-        if (scrollbarWidth > 0) {
-            html.style.paddingRight = `${scrollbarWidth}px`;
-        }
-
-        return () => {
-            html.style.overflow = previousHtmlOverflow;
-            body.style.overflow = previousBodyOverflow;
-            html.style.paddingRight = previousHtmlPaddingRight;
-        };
-    }, [item]);
+    const reducedMotion = useReducedMotion();
 
     if (!mounted) return null;
 
     return createPortal(
         <AnimatePresence>
             {item && (
-                <m.div
-                    className={styles.overlay}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.22 }}
-                >
+                <div key={item.id} className={styles.overlay}>
+                    <Backdrop reducedMotion={!!reducedMotion} />
                     <div
                         className={styles.overlayInner}
                         onClick={(e) => {
@@ -607,7 +725,7 @@ export function ShowcaseModal({
                             onVisitWebsite={onVisitWebsite}
                         />
                     </div>
-                </m.div>
+                </div>
             )}
         </AnimatePresence>,
         document.body

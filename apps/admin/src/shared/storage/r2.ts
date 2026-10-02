@@ -5,6 +5,8 @@ import {
     S3Client,
 } from "@aws-sdk/client-s3";
 
+const IMMUTABLE_IMAGE_CACHE_CONTROL = "public, max-age=31536000, immutable";
+
 // Cloudflare R2 exposes an S3-compatible API, so the regular AWS SDK works
 // against it - only the endpoint/credentials differ. See
 // apps/admin/.env.example for what each env var below needs to be set to.
@@ -44,15 +46,28 @@ export async function readJsonObject<T>(key: string): Promise<T> {
     return JSON.parse(raw) as T;
 }
 
-export async function writeJsonObject(key: string, data: unknown): Promise<void> {
+export async function writeJsonObject(
+    key: string,
+    data: unknown,
+    cacheControl?: string
+): Promise<void> {
     await getClient().send(
         new PutObjectCommand({
             Bucket: requiredEnv("R2_BUCKET_NAME"),
             Key: key,
             Body: `${JSON.stringify(data, null, 4)}\n`,
             ContentType: "application/json",
+            ...(cacheControl ? { CacheControl: cacheControl } : {}),
         })
     );
+}
+
+export async function readObject(key: string): Promise<Uint8Array> {
+    const response = await getClient().send(
+        new GetObjectCommand({ Bucket: requiredEnv("R2_BUCKET_NAME"), Key: key })
+    );
+    if (!response.Body) throw new Error("Stored file is empty.");
+    return response.Body.transformToByteArray();
 }
 
 export async function writeObject(key: string, body: Buffer, contentType: string): Promise<void> {
@@ -62,6 +77,7 @@ export async function writeObject(key: string, body: Buffer, contentType: string
             Key: key,
             Body: body,
             ContentType: contentType,
+            CacheControl: IMMUTABLE_IMAGE_CACHE_CONTROL,
         })
     );
 }

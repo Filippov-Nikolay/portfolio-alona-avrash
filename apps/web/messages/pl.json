@@ -3,7 +3,12 @@
         "home": "Strona główna",
         "works": "Prace",
         "contact": "Kontakt",
-        "downloadCv": "Pobierz CV"
+        "downloadCv": "Pobierz CV",
+        "cvUnavailable": "CV chwilowo niedostępne",
+        "cvUnavailableShort": "Niedostępne",
+        "cvDownloading": "Pobieranie…",
+        "cvDownloadRetry": "Ponów",
+        "cvDownloadFailed": "Nie udało się pobrać CV. Spróbuj ponownie."
     },
     "hero": {
         "role": "Projektantka graficzna",
@@ -89,11 +94,62 @@
         "title": "Opinie"
     },
     "notFound": {
+        "eyebrow": "Błąd 404 / Nie znaleziono strony",
         "title": "Ta strona zbłądziła",
         "description": "Strona, której szukasz, nie istnieje, została przeniesiona albo nigdy nie powstała. Wróćmy do prawdziwych projektów.",
-        "button": "Wróć na stronę główną"
+        "button": "Wróć na stronę główną",
+        "worksButton": "Zobacz projekty"
     },
     "seo": {
         "description": "Identyfikacja marki, opakowania i projektowanie logo dla rozwijających się marek."
+    },
+    "privacyPreferences": {
+        "bannerText": "Ta strona korzysta z pamięci przeglądarki potrzebnej do jej wyświetlenia. Za Twoją zgodą zapamiętuje też motyw i ekran powitalny oraz mierzy odwiedziny i interakcje, aby ulepszać portfolio. Możesz zaakceptować technologie opcjonalne, odrzucić je lub zarządzać ustawieniami. Zobacz <cookies>Politykę plików cookie i pamięci przeglądarki</cookies>.",
+        "acceptOptional": "Akceptuj opcjonalne",
+        "rejectOptional": "Odrzuć opcjonalne",
+        "managePreferences": "Zarządzaj ustawieniami",
+        "panelTitle": "Ustawienia prywatności",
+        "categoryNecessaryTitle": "Niezbędne",
+        "categoryNecessaryDescription": "Zawsze aktywne. Zapewniają działanie strony i zapamiętują wybór dokonany tutaj.",
+        "categoryPreferencesTitle": "Preferencje",
+        "categoryPreferencesDescription": "Zapamiętują wygodne ustawienia, takie jak jasny lub ciemny motyw oraz to, że ekran powitalny został już wyświetlony.",
+        "categoryAnalyticsTitle": "Analityka / Wydajność",
+        "categoryAnalyticsDescription": "Mierzą wyświetlenia stron, zainteresowanie projektami i wydajność techniczną za pomocą naszych anonimowych statystyk, Vercel Analytics i Speed Insights.",
+        "alwaysActive": "Zawsze aktywne",
+        "savePreferences": "Zapisz ustawienia",
+        "close": "Zamknij"
+    },
+    "legal": {
+        "index": {
+            "title": "Informacje prawne",
+            "description": "Polityka prywatności, plików cookie i zasady korzystania z tego portfolio.",
+            "intro": "Jak to portfolio przetwarza dane osobowe, korzysta z pamięci przeglądarki i Twoich wyborów oraz na jakich zasadach można korzystać ze strony.",
+            "open": "Przeczytaj dokument"
+        },
+        "tableOfContents": "Na tej stronie",
+        "lastUpdated": "Ostatnia aktualizacja:",
+        "privacy": {
+            "title": "Polityka prywatności",
+            "description": "Jak to portfolio zbiera i wykorzystuje dane osobowe."
+        },
+        "cookies": {
+            "title": "Polityka plików cookie i pamięci przeglądarki",
+            "description": "Jak to portfolio korzysta z plików cookie, localStorage, sessionStorage i podobnej pamięci przeglądarki.",
+            "manageCalloutText": "W każdej chwili możesz zmienić swój wybór.",
+            "manageCalloutButton": "Zarządzaj ustawieniami"
+        },
+        "privacyPreferences": {
+            "title": "Ustawienia prywatności i informacja o zgodzie",
+            "description": "Za co odpowiada każdy wybór dotyczący prywatności i jak go w każdej chwili zmienić.",
+            "manageCalloutText": "Tutaj możesz sprawdzić lub zmienić swoje wybory dotyczące prywatności.",
+            "manageCalloutButton": "Zarządzaj ustawieniami"
+        },
+        "terms": {
+            "title": "Regulamin",
+            "description": "Zasady korzystania z tej strony portfolio."
+        }
+    },
+    "footer": {
+        "cookieSettings": "Ustawienia cookie"
     }
 }

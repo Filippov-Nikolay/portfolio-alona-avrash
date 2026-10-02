@@ -45,6 +45,7 @@ export function ProjectsSection({
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [pinnedIndex, setPinnedIndex] = useState<number | null>(null);
+    const [shouldPreloadImages, setShouldPreloadImages] = useState(false);
     const pointerTypeRef = useRef<string>("mouse");
     const {
         sectionRef,
@@ -55,6 +56,11 @@ export function ProjectsSection({
     } = useProjectsSectionAnimations();
     const selectedItem = selectedIndex === null ? null : (modalItems[selectedIndex] ?? null);
     const activeIndex = pinnedIndex ?? hoveredIndex;
+
+    useEffect(() => {
+        if (!selectedItem) return;
+        trackEvent("project_open", { entityId: String(selectedItem.id) });
+    }, [selectedItem]);
     const finalCards = cards.slice(0, Math.max(0, Math.floor(visibleCardCount)));
     const getSourceIndex = (image: HomeProjectGalleryCard["image"]) =>
         projects.findIndex((project) => {
@@ -84,6 +90,24 @@ export function ProjectsSection({
     useEffect(() => {
         setGalleryActiveIndex(activeIndex);
     }, [activeIndex, setGalleryActiveIndex]);
+
+    useEffect(() => {
+        const section = sectionRef.current;
+        if (!section || shouldPreloadImages) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (!entry.isIntersecting) return;
+
+                setShouldPreloadImages(true);
+                observer.disconnect();
+            },
+            { rootMargin: "200% 0px" }
+        );
+
+        observer.observe(section);
+        return () => observer.disconnect();
+    }, [sectionRef, shouldPreloadImages]);
 
     if (cards.length === 0) {
         return null;
@@ -132,10 +156,6 @@ export function ProjectsSection({
                                     }
 
                                     setSelectedIndex(sourceIndex);
-                                    const openedItem = modalItems[sourceIndex];
-                                    trackEvent("project_open", {
-                                        entityId: openedItem ? String(openedItem.id) : undefined,
-                                    });
                                 }}
                             >
                                 <span className={styles.interactionLayer} data-project-interaction>
@@ -147,6 +167,8 @@ export function ProjectsSection({
                                                 fill
                                                 className={styles.image}
                                                 sizes="(max-width: 479px) 260px, 278px"
+                                                loading={shouldPreloadImages ? "eager" : "lazy"}
+                                                fetchPriority="low"
                                                 draggable={false}
                                             />
                                         )}
@@ -159,17 +181,18 @@ export function ProjectsSection({
                         );
                     })}
 
-                    <Button
-                        as="a"
-                        ref={viewAllRef}
-                        href={`/${locale}/works`}
-                        variant="primary"
-                        size="lg"
-                        className={styles.viewAll}
-                        rightIcon={<ArrowIcon className={styles.viewAllArrow} />}
-                    >
-                        {labels.viewAll}
-                    </Button>
+                    <div ref={viewAllRef} className={styles.viewAllMotion}>
+                        <Button
+                            as="a"
+                            href={`/${locale}/works`}
+                            variant="primary"
+                            size="lg"
+                            className={styles.viewAll}
+                            rightIcon={<ArrowIcon className={styles.viewAllArrow} />}
+                        >
+                            {labels.viewAll}
+                        </Button>
+                    </div>
                 </div>
             </Container>
 
@@ -177,6 +200,15 @@ export function ProjectsSection({
                 item={selectedItem}
                 onClose={() => setSelectedIndex(null)}
                 labels={modalLabels}
+                onTabChange={(tab) => {
+                    // Only the switch-to-gallery direction is a deeper-
+                    // engagement signal - going back to overview isn't.
+                    if (tab === "gallery" && selectedItem) {
+                        trackEvent("project_gallery_view", {
+                            entityId: String(selectedItem.id),
+                        });
+                    }
+                }}
                 onVisitWebsite={() =>
                     trackEvent("project_external_click", {
                         entityId: selectedItem ? String(selectedItem.id) : undefined,

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { WorksCatalog } from "@/widgets/WorksCatalog";
 import type { CategoryKey } from "@/shared/types";
 import { getAllProjects, toShowcaseItem } from "@/entities/project/lib/resolveProjects";
@@ -12,7 +12,7 @@ import { getToolBadges } from "@/entities/toolBadge/api/getToolBadges";
 import { getCta } from "@/entities/cta/api/getCta";
 import { siteConfig } from "@/shared/config/site.config";
 import { getLocaleMeta } from "@/i18n/locales";
-import { buildPageAlternates } from "@/shared/lib/seo";
+import { DEFAULT_OG_IMAGES, buildPageAlternates } from "@/shared/lib/seo";
 
 interface WorksPageProps {
     params: Promise<{ locale: string; slug?: string[] }>;
@@ -83,13 +83,14 @@ export async function generateMetadata({ params }: WorksPageProps): Promise<Meta
             siteName: siteConfig.name,
             type: "website",
             locale: ogLocale,
-            images: [{ url: "/og/cover.png", width: 1200, height: 630 }],
+            images: DEFAULT_OG_IMAGES,
         },
     };
 }
 
 export default async function WorksPage({ params }: WorksPageProps) {
     const { locale, slug } = await params;
+    setRequestLocale(locale);
 
     if (slug && slug.length > 1) notFound();
 

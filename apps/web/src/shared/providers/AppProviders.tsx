@@ -5,13 +5,18 @@ import { MotionProvider } from "./MotionProvider";
 import { ThemeProvider } from "./ThemeProvider";
 import { PreloaderProvider } from "./PreloaderProvider";
 import { Preloader } from "@/widgets/Preloader";
+import {
+    ConditionalAnalytics,
+    ConsentBanner,
+    PrivacyPreferencesPanel,
+    PrivacyPreferencesProvider,
+} from "@/features/privacy-preferences";
 
 interface AppProvidersProps {
     children: React.ReactNode;
-    initialHasSeenPreloader: boolean;
 }
 
-export function AppProviders({ children, initialHasSeenPreloader }: AppProvidersProps) {
+export function AppProviders({ children }: AppProvidersProps) {
     useLayoutEffect(() => {
         // Keep browser scroll restoration disabled once the app has mounted.
         if ("scrollRestoration" in history) {
@@ -47,14 +52,19 @@ export function AppProviders({ children, initialHasSeenPreloader }: AppProviders
     }, []);
 
     return (
-        <ThemeProvider>
-            <PreloaderProvider initialHasSeenPreloader={initialHasSeenPreloader}>
-                <MotionProvider>
-                    <Preloader />
-                    {children}
-                </MotionProvider>
-            </PreloaderProvider>
-        </ThemeProvider>
+        <PrivacyPreferencesProvider>
+            <ThemeProvider>
+                <PreloaderProvider>
+                    <MotionProvider>
+                        <Preloader />
+                        <ConsentBanner />
+                        <PrivacyPreferencesPanel />
+                        <ConditionalAnalytics />
+                        {children}
+                    </MotionProvider>
+                </PreloaderProvider>
+            </ThemeProvider>
+        </PrivacyPreferencesProvider>
     );
 }
 

@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
 import { Almarai, Geist_Mono, Zalando_Sans_SemiExpanded } from "next/font/google";
 import localFont from "next/font/local";
-import { cookies, headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, getTranslations } from "next-intl/server";
+import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Analytics } from "@vercel/analytics/next";
 import { siteConfig } from "@/shared/config/site.config";
 import { AppProviders } from "@/shared/providers";
 import { Header } from "@/widgets/Header";
 import { Footer } from "@/widgets/Footer";
 import { LOCALES, isLocale, getLocaleMeta } from "@/i18n/locales";
-import { buildPageAlternates } from "@/shared/lib/seo";
+import { DEFAULT_OG_IMAGES, buildPageAlternates } from "@/shared/lib/seo";
 import { getSocials } from "@/entities/social/api/getSocials";
+import { getIcon } from "@/entities/icon/api/getIcon";
+import { getCv } from "@/entities/cv/api/getCv";
+import { DOCUMENT_STATE_SCRIPT } from "@/shared/lib/documentState";
+import packageJson from "../../../package.json";
+import styles from "./layout.module.scss";
 
 import "@/shared/styles/globals.scss";
 
@@ -69,7 +71,10 @@ interface LocaleLayoutProps {
 export async function generateMetadata({ params }: LocaleLayoutProps): Promise<Metadata> {
     const { locale } = await params;
     const title = `${siteConfig.name} — ${siteConfig.title}`;
-    const description = (await getTranslations({ locale, namespace: "seo" }))("description");
+    const [description, icon] = await Promise.all([
+        getTranslations({ locale, namespace: "seo" }).then((t) => t("description")),
+        getIcon(),
+    ]);
     const { ogLocale } = getLocaleMeta(locale);
     const { canonical, languages } = buildPageAlternates(locale);
 
@@ -94,16 +99,31 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
             siteName: siteConfig.name,
             type: "website",
             locale: ogLocale,
-            images: [{ url: "/og/cover.png", width: 1200, height: 630 }],
+            images: DEFAULT_OG_IMAGES,
         },
         twitter: {
             card: "summary_large_image",
             title,
             description,
+            images: [DEFAULT_OG_IMAGES[0]],
         },
         icons: {
-            icon: [{ url: "/icon/icon.png", type: "image/png" }],
-            shortcut: "/icon/icon.png",
+            // Browsers cache favicons far more aggressively than normal HTTP
+            // cache headers allow for, so a plain file swap alone often will
+            // not show up for returning visitors. Bust it with the app
+            // version, which is already incremented on every release.
+            // Browsers take the last icon they can render, so the PNG goes
+            // first as the fallback (Safari and older browsers) and the SVG
+            // last so it wins wherever SVG favicons are supported.
+            icon: [
+                { url: `${icon.src}?v=${packageJson.version}`, type: "image/png", sizes: "32x32" },
+                {
+                    url: `/icon/icon.svg?v=${packageJson.version}`,
+                    type: "image/svg+xml",
+                    sizes: "any",
+                },
+            ],
+            shortcut: `${icon.src}?v=${packageJson.version}`,
         },
         robots: { index: true, follow: true },
     };
@@ -115,27 +135,9 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     if (!isLocale(locale)) {
         notFound();
     }
+    setRequestLocale(locale);
 
-    const [messages, cookieStore, requestHeaders, socials] = await Promise.all([
-        getMessages(),
-        cookies(),
-        headers(),
-        getSocials(),
-    ]);
-
-    // Приоритет: кука (явный выбор пользователя)
-    //          → Sec-CH-Prefers-Color-Scheme (системная тема, Chrome 2й+ визит)
-    //          → "light" (абсолютный fallback - основная тема сайта; useTheme
-    //             на клиенте поправит без flash)
-    const savedTheme = cookieStore.get("site-theme")?.value;
-    const hasSeenPreloader = cookieStore.get("site-preloader")?.value === "1";
-    const clientHint = requestHeaders.get("sec-ch-prefers-color-scheme");
-    const theme: "dark" | "light" =
-        savedTheme === "light" || savedTheme === "dark"
-            ? savedTheme
-            : clientHint === "light" || clientHint === "dark"
-              ? clientHint
-              : "light";
+    const [messages, socials, cv] = await Promise.all([getMessages(), getSocials(), getCv(locale)]);
 
     // Personal-portfolio structured data — see README > Customization > SEO.
     const jsonLd = {
@@ -150,19 +152,20 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     return (
         <html
             lang={locale}
-            data-theme={theme}
+            data-theme="light"
             suppressHydrationWarning
             className={`${almarai.variable} ${zalandoSansSemiExpanded.variable} ${geistMono.variable} ${countryFlags.variable}`}
         >
+            <head>
+                <script dangerouslySetInnerHTML={{ __html: DOCUMENT_STATE_SCRIPT }} />
+            </head>
             <body>
                 <NextIntlClientProvider messages={messages}>
-                    <AppProviders initialHasSeenPreloader={hasSeenPreloader}>
-                        <Header />
-                        {children}
+                    <AppProviders>
+                        <Header cv={cv ? { href: `/api/cv/${locale}`, locale: cv.locale } : null} />
+                        <div className={styles.pageSlot}>{children}</div>
                         <Footer locale={locale} />
                     </AppProviders>
-                    <SpeedInsights />
-                    <Analytics />
                 </NextIntlClientProvider>
                 <script
                     type="application/ld+json"

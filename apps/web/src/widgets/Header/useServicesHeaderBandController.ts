@@ -13,12 +13,14 @@ const BAND_OVERLAP = 20;
 const ENTRY_SENTINEL_ID = "services-header-band-entry";
 const EXIT_SENTINEL_ID = "services-header-band-exit";
 const HEADER_SCENE_HEIGHT_VAR = "--header-scene-height";
+const UNMEASURED_BAND_HEIGHT = 120;
 
 export function useServicesHeaderBandController(
     headerRef: RefObject<HTMLElement | null>,
     bandRef: RefObject<HTMLDivElement | null>
 ) {
-    const bandY = useMotionValue(-120);
+    const bandY = useMotionValue(-UNMEASURED_BAND_HEIGHT);
+    const bandVisibility = useMotionValue<"visible" | "hidden">("hidden");
     const geometryRef = useRef<ServicesHeaderBandGeometry | null>(null);
 
     useLayoutEffect(() => {
@@ -26,12 +28,30 @@ export function useServicesHeaderBandController(
         let measureFrame = 0;
         let settleFrame = 0;
         let measureGeneration = 0;
+        const stabilizeViewportHeight = window.matchMedia(
+            "(hover: none) and (pointer: coarse)"
+        ).matches;
+        let sceneViewportWidth = window.innerWidth;
+        let sceneViewportHeight = window.innerHeight;
         const root = document.documentElement;
         const previousSceneHeight = root.style.getPropertyValue(HEADER_SCENE_HEIGHT_VAR);
+
+        const getSceneViewportHeight = () => {
+            const nextWidth = window.innerWidth;
+
+            if (!stabilizeViewportHeight || Math.abs(nextWidth - sceneViewportWidth) > 1) {
+                sceneViewportWidth = nextWidth;
+                sceneViewportHeight = window.innerHeight;
+            }
+
+            return sceneViewportHeight;
+        };
 
         const syncBand = () => {
             const nextY = calculateServicesHeaderBandY(window.scrollY, geometryRef.current);
             bandY.set(nextY);
+            const bandHeight = geometryRef.current?.bandHeight ?? UNMEASURED_BAND_HEIGHT;
+            bandVisibility.set(nextY <= -bandHeight + 0.5 ? "hidden" : "visible");
 
             if (
                 process.env.NODE_ENV === "development" &&
@@ -76,7 +96,7 @@ export function useServicesHeaderBandController(
             const thresholds = getServicesSceneScrollThresholds(
                 entryTop,
                 exitTop,
-                window.innerHeight,
+                getSceneViewportHeight(),
                 headerHeight
             );
             const nextGeometry: ServicesHeaderBandGeometry = {
@@ -144,7 +164,18 @@ export function useServicesHeaderBandController(
         });
 
         window.addEventListener("scroll", scheduleScrollSync, { passive: true });
-        window.addEventListener("resize", scheduleMeasure);
+        const handleResize = () => {
+            const widthChanged = Math.abs(window.innerWidth - sceneViewportWidth) > 1;
+
+            if (!stabilizeViewportHeight || widthChanged) {
+                scheduleMeasure();
+                return;
+            }
+
+            syncBand();
+        };
+
+        window.addEventListener("resize", handleResize);
         window.addEventListener("load", scheduleSettledMeasure);
         window.addEventListener("pageshow", scheduleSettledMeasure);
 
@@ -155,7 +186,7 @@ export function useServicesHeaderBandController(
             resizeObserver.disconnect();
             mutationObserver.disconnect();
             window.removeEventListener("scroll", scheduleScrollSync);
-            window.removeEventListener("resize", scheduleMeasure);
+            window.removeEventListener("resize", handleResize);
             window.removeEventListener("load", scheduleSettledMeasure);
             window.removeEventListener("pageshow", scheduleSettledMeasure);
             if (previousSceneHeight) {
@@ -164,7 +195,7 @@ export function useServicesHeaderBandController(
                 root.style.removeProperty(HEADER_SCENE_HEIGHT_VAR);
             }
         };
-    }, [bandRef, bandY, headerRef]);
+    }, [bandRef, bandVisibility, bandY, headerRef]);
 
-    return bandY;
+    return { bandY, bandVisibility };
 }

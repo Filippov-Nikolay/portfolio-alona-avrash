@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getSocials } from "@/entities/social/api/getSocials";
 import { ContactSection } from "@/widgets/ContactSection";
 import { siteConfig } from "@/shared/config/site.config";
 import { getLocaleMeta } from "@/i18n/locales";
-import { buildPageAlternates } from "@/shared/lib/seo";
+import { DEFAULT_OG_IMAGES, buildPageAlternates } from "@/shared/lib/seo";
 
 interface ContactPageProps {
     params: Promise<{ locale: string }>;
@@ -31,12 +31,13 @@ export async function generateMetadata({ params }: ContactPageProps): Promise<Me
             siteName: siteConfig.name,
             type: "website",
             locale: ogLocale,
-            images: [{ url: "/og/cover.png", width: 1200, height: 630 }],
+            images: DEFAULT_OG_IMAGES,
         },
     };
 }
 
-export default async function ContactPage() {
+export default async function ContactPage({ params }: ContactPageProps) {
+    setRequestLocale((await params).locale);
     const socials = await getSocials();
 
     return (

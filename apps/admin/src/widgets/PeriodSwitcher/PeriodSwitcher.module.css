@@ -1,31 +1,93 @@
 .wrap {
     display: flex;
-    gap: 4px;
+    gap: 2px;
     flex-shrink: 0;
+    padding: 3px;
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    background: #f4f4f5;
 }
 
 .option {
-    padding: 6px 12px;
-    border: 1px solid #e4e4e7;
-    border-radius: 999px;
-    background: #fff;
+    position: relative;
+    min-width: 42px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
     color: #52525b;
     font-size: 12px;
     font-weight: 600;
     text-decoration: none;
+    text-align: center;
     line-height: 1;
+    transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
 .option:hover {
-    border-color: #d4d4d8;
+    color: #1d4ed8;
+    background: #eff6ff;
 }
 
 .optionActive {
-    border-color: #18181b;
-    background: #18181b;
+    background: #2563eb;
     color: #fff;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
 }
 
 .optionActive:hover {
-    border-color: #18181b;
+    background: #1d4ed8;
+    color: #fff;
+}
+
+.option:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+.option[data-loading] .label {
+    opacity: 0;
+}
+
+.spinner {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    animation: spin 0.8s linear infinite;
+}
+
+.status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinner {
+        animation: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .wrap {
+        width: 100%;
+    }
+
+    .option {
+        flex: 1;
+    }
 }

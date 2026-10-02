@@ -30,9 +30,23 @@
     overflow: hidden;
 }
 
+.revealTrack {
+    width: 100%;
+    overflow: visible;
+}
+
+.trackAnchor {
+    display: flex;
+    width: 100%;
+}
+
 .track {
     display: flex;
+    flex: none;
     width: max-content;
+}
+
+.section[data-clients-marquee-running="true"] .track {
     will-change: transform;
 }
 
@@ -49,7 +63,11 @@
 }
 
 .row[data-direction="right"] .track {
-    margin-left: -58px;
+    margin-right: 10px;
+}
+
+.row[data-direction="right"] .trackAnchor {
+    justify-content: flex-end;
 }
 
 .pill {
@@ -138,7 +156,7 @@
     }
 
     .row[data-direction="right"] .track {
-        margin-left: -44px;
+        margin-right: -24px;
     }
 
     .pillEmpty {

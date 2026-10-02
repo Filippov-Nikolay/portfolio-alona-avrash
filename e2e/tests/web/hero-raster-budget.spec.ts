@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { sampleHeroScene } from "../../helpers/heroScene";
+import { waitForStreamedContent } from "../../helpers/streaming";
 // Captured before resizing the camera or merging the grid reveal into it,
 // then re-captured once the Hero top gap moved inside the stage (y -30,
 // title +30) and landscape Selected Work gained its 24px Stats gap. Every
@@ -46,6 +47,7 @@ test("Smaller Stats raster preserves Hero, grid and Selected Work screen positio
         const [width, height] = size.split("x").map(Number);
         await page.setViewportSize({ width, height });
         await page.goto("/en");
+        await waitForStreamedContent(page);
         const camera = page.locator('[class*="statsDepthPlane"]');
         await expect
             .poll(() => camera.evaluate((el) => el.getAnimations()[0]?.playState))

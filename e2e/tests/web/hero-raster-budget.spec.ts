@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { sampleHeroScene } from "../../helpers/heroScene";
 // Captured before resizing the camera or merging the grid reveal into it,
@@ -7,6 +9,15 @@ import { sampleHeroScene } from "../../helpers/heroScene";
 import desktop from "../../fixtures/hero-scene-chromium-desktop.json";
 import chromiumTouch from "../../fixtures/hero-scene-chromium-touch.json";
 import webkitTouch from "../../fixtures/hero-scene-webkit-touch.json";
+
+type ScenePose = { y: number; bounds: Record<string, number[]> };
+type SceneBaseline = Record<string, ScenePose[]>;
+
+function platformBaseline(name: string, windowsBaseline: SceneBaseline): SceneBaseline | null {
+    if (process.platform === "win32") return windowsBaseline;
+    const file = path.join(__dirname, "..", "..", "fixtures", `${name}.${process.platform}.json`);
+    return existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")) as SceneBaseline) : null;
+}
 
 test("Smaller Stats raster preserves Hero, grid and Selected Work screen positions", async ({
     page,
@@ -18,8 +29,20 @@ test("Smaller Stats raster preserves Hero, grid and Selected Work screen positio
     await context.addCookies([
         { name: "site-preloader", value: "1", url: String(testInfo.project.use.baseURL) },
     ]);
-    const reference = hasTouch ? (browserName === "webkit" ? webkitTouch : chromiumTouch) : desktop;
-    for (const [size, expected] of Object.entries(reference)) {
+    const [baselineName, windowsBaseline] = hasTouch
+        ? browserName === "webkit"
+            ? ["hero-scene-webkit-touch", webkitTouch as SceneBaseline]
+            : ["hero-scene-chromium-touch", chromiumTouch as SceneBaseline]
+        : ["hero-scene-chromium-desktop", desktop as SceneBaseline];
+    const reference = platformBaseline(baselineName, windowsBaseline);
+    if (!reference) {
+        testInfo.annotations.push({
+            type: "geometry baseline",
+            description: `no ${baselineName}.${process.platform}.json yet; captured geometry is attached`,
+        });
+    }
+    for (const size of Object.keys(windowsBaseline)) {
+        const expected = reference?.[size] ?? [];
         const [width, height] = size.split("x").map(Number);
         await page.setViewportSize({ width, height });
         await page.goto("/en");
@@ -30,15 +53,18 @@ test("Smaller Stats raster preserves Hero, grid and Selected Work screen positio
         await page.evaluate(() => document.fonts.ready);
         await page.waitForTimeout(1300);
         const actual = await sampleHeroScene(page);
+        await testInfo.attach(`${baselineName}.${process.platform}-${size}`, {
+            body: JSON.stringify(actual),
+            contentType: "application/json",
+        });
         let maxError = 0;
         for (let i = 0; i < expected.length; i++) {
             expect(actual[i].y).toBeCloseTo(expected[i].y, 0);
-            for (const name of Object.keys(
-                expected[i].bounds
-            ) as (keyof (typeof expected)[number]["bounds"])[]) {
+            for (const name of Object.keys(expected[i].bounds)) {
                 for (let axis = 0; axis < 4; axis++) {
                     const error = Math.abs(
-                        actual[i].bounds[name][axis] - expected[i].bounds[name][axis]
+                        actual[i].bounds[name as keyof (typeof actual)[number]["bounds"]][axis] -
+                            expected[i].bounds[name][axis]
                     );
                     maxError = Math.max(maxError, error);
                     expect(error, `${size}, pose ${i}, ${name}[${axis}]`).toBeLessThan(0.15);

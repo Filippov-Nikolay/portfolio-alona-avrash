@@ -90,7 +90,7 @@ export default defineConfig({
     // inspect after a CI run - "html" writes a report e2e-ci.yml uploads as
     // an artifact, and "github" turns a failure into an inline PR
     // annotation instead of just a line buried in the job log.
-    reporter: process.env.CI ? [["html", { open: "never" }], ["github"]] : "list",
+    reporter: process.env.CI ? [["line"], ["html", { open: "never" }], ["github"]] : "list",
     use: {
         trace: "on-first-retry",
     },

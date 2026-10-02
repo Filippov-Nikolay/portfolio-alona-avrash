@@ -65,9 +65,11 @@ const PRODUCTION_SERVER = process.env.E2E_SERVER === "production";
 const SERVED_APPS = new Set((process.env.E2E_APPS ?? "web,admin").split(","));
 const SERVER_TIMEOUT = PRODUCTION_SERVER ? 600_000 : 120_000;
 
+const PRODUCTION_SERVER_SCRIPT = path.join(__dirname, "server", "next-production-server.mjs");
+
 function serveCommand(port: number): string {
     return PRODUCTION_SERVER
-        ? `pnpm exec next build && pnpm exec next start -p ${port}`
+        ? `pnpm exec next build && node "${PRODUCTION_SERVER_SCRIPT}" ${port}`
         : `pnpm exec next dev -p ${port}`;
 }
 

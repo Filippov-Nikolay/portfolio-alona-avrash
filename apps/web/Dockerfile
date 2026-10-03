@@ -12,6 +12,7 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/web/package.json apps/web/
 COPY packages/content-schema/package.json packages/content-schema/
 COPY packages/content-data/package.json packages/content-data/
+COPY packages/rate-limit/package.json packages/rate-limit/
 COPY packages/ui/package.json packages/ui/
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile --filter "@avrash/web..."

@@ -46,7 +46,12 @@ const nextConfig: NextConfig = {
             "./node_modules/pdfjs-dist/wasm/**",
         ],
     },
-    transpilePackages: ["@avrash/content-schema", "@avrash/content-data", "@avrash/ui"],
+    transpilePackages: [
+        "@avrash/content-schema",
+        "@avrash/content-data",
+        "@avrash/rate-limit",
+        "@avrash/ui",
+    ],
     poweredByHeader: false,
     agentRules: false,
 

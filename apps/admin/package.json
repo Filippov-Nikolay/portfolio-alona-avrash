@@ -15,6 +15,7 @@
     "dependencies": {
         "@avrash/content-data": "workspace:*",
         "@avrash/content-schema": "workspace:*",
+        "@avrash/rate-limit": "workspace:*",
         "@avrash/ui": "workspace:*",
         "@aws-sdk/client-s3": "^3.1136.0",
         "bcryptjs": "^3.0.3",

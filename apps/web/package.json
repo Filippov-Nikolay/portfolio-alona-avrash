@@ -15,6 +15,7 @@
     "dependencies": {
         "@avrash/content-data": "workspace:*",
         "@avrash/content-schema": "workspace:*",
+        "@avrash/rate-limit": "workspace:*",
         "@avrash/ui": "workspace:*",
         "@gsap/react": "^2.1.2",
         "@swc/helpers": "^0.5.23",

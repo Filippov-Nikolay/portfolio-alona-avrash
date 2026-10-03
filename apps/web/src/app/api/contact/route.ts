@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import { getClientIp, isRateLimited } from "@/shared/lib/rateLimit";
+import { createRateLimiter, getClientIp } from "@avrash/rate-limit";
 import { buildContactEmail } from "./contactEmail";
 
 interface ContactRequestBody {
@@ -17,16 +17,18 @@ interface ContactRequestBody {
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const RATE_LIMIT_MAX = 5;
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const contactLimiter = createRateLimiter({
+    name: "contact",
+    max: 5,
+    windowMs: 10 * 60 * 1000,
+});
 
 function asTrimmedString(value: unknown): string {
     return typeof value === "string" ? value.trim() : "";
 }
 
 export async function POST(request: Request) {
-    const ip = getClientIp(request.headers);
-    if (isRateLimited(`contact:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS)) {
+    if (await contactLimiter.isLimited(getClientIp(request.headers))) {
         return NextResponse.json(
             { error: "Too many requests - try again later." },
             { status: 429 }

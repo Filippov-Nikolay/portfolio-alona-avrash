@@ -87,7 +87,12 @@ const nextConfig: NextConfig = {
     // this, the standalone build's file tracing wouldn't follow that
     // dependency back to the monorepo root and would silently omit it.
     outputFileTracingRoot: path.join(__dirname, "../../"),
-    transpilePackages: ["@avrash/content-schema", "@avrash/content-data", "@avrash/ui"],
+    transpilePackages: [
+        "@avrash/content-schema",
+        "@avrash/content-data",
+        "@avrash/rate-limit",
+        "@avrash/ui",
+    ],
 
     // Default is 60s. CI runners are 2-core, so page generation runs on a
     // single worker there (vs several locally) - give it real headroom

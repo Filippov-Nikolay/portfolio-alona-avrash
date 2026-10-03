@@ -3,15 +3,29 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifyCredentials } from "@/shared/auth/credentials";
-import { getClientIp, isRateLimited } from "@/shared/lib/rateLimit";
+import { createRateLimiter, getClientIp } from "@avrash/rate-limit";
 import {
     createSessionToken,
     SESSION_COOKIE_NAME,
     SESSION_MAX_AGE_SECONDS,
 } from "@/shared/auth/session";
 
-const LOGIN_RATE_LIMIT_MAX = 5;
-const LOGIN_RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const loginByClient = createRateLimiter({
+    name: "login-client",
+    max: 5,
+    windowMs: 10 * 60 * 1000,
+});
+
+const loginByAccount = createRateLimiter({
+    name: "login-account",
+    max: 10,
+    windowMs: 15 * 60 * 1000,
+});
+
+async function isLoginLimited(login: string): Promise<boolean> {
+    if (await loginByClient.isLimited(getClientIp(await headers()))) return true;
+    return login !== "" && (await loginByAccount.isLimited(login.toLowerCase()));
+}
 
 export type LoginState =
     | { status: "idle" }
@@ -28,8 +42,7 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
     // when the text happens to change.
     const attempt = Date.now();
 
-    const ip = getClientIp(await headers());
-    if (isRateLimited(`login:${ip}`, LOGIN_RATE_LIMIT_MAX, LOGIN_RATE_LIMIT_WINDOW_MS)) {
+    if (await isLoginLimited(login)) {
         return {
             status: "error",
             error: "Too many attempts - try again in a few minutes.",

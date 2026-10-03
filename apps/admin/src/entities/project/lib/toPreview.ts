@@ -63,6 +63,7 @@ export function toPreviewShowcaseItem(
         .sort((a, b) => a.order - b.order)
         .map((image) => ({
             src: assetUrl(image.src),
+            ...(image.posterSrc ? { posterSrc: assetUrl(image.posterSrc) } : {}),
             alt: image.alt ?? input.name,
             pairMode: image.pairMode,
         }));

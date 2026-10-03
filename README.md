@@ -107,6 +107,8 @@ Target one workspace with `pnpm --filter @avrash/<name> run <script>`.
     - [`web-ci.yml`](.github/workflows/web-ci.yml) and [`admin-ci.yml`](.github/workflows/admin-ci.yml):
       lint, type check, schema tests, unit tests, production build.
     - [`analytics-ci.yml`](.github/workflows/analytics-ci.yml): type check and unit tests.
+    - [`format-ci.yml`](.github/workflows/format-ci.yml): Prettier check of the whole repository on
+      every push and pull request.
     - [`docker-ci.yml`](.github/workflows/docker-ci.yml): builds the web image, starts it and
       smoke-tests the main routes.
     - [`e2e-ci.yml`](.github/workflows/e2e-ci.yml): Playwright against production builds, split into

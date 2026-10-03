@@ -92,8 +92,6 @@ export default async function WorksPage({ params }: WorksPageProps) {
     const { locale, slug } = await params;
     setRequestLocale(locale);
 
-    if (slug && slug.length > 1) notFound();
-
     const [tCategories, tWorksPage, allProjects, categories, toolBadges, cta] = await Promise.all([
         getTranslations({ locale, namespace: "categories" }),
         getTranslations({ locale, namespace: "worksPage" }),

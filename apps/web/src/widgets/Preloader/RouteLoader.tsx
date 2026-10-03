@@ -1,11 +1,11 @@
-import styles from "@/widgets/Preloader/Preloader.module.scss";
+import styles from "./Preloader.module.scss";
 import { siteConfig } from "@/shared/config/site.config";
 
 const nameParts = siteConfig.name.split(" ").filter(Boolean);
 const FIRST_NAME = nameParts[0] ?? siteConfig.name;
 const LAST_NAME = nameParts.at(-1) ?? siteConfig.name;
 
-export default function LoadingPage() {
+export function RouteLoader() {
     return (
         <div
             className={`${styles.overlay} ${styles.routeOverlay}`}

@@ -1,6 +1,6 @@
 {
     "name": "@avrash/admin",
-    "version": "0.26.2",
+    "version": "1.0.0",
     "private": true,
     "scripts": {
         "dev": "next dev -p 3001",
@@ -9,7 +9,8 @@
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "type-check": "tsc --noEmit",
-        "test": "vitest run"
+        "test": "vitest run",
+        "backfill:gif-posters": "node --env-file-if-exists=.env scripts/backfill-gif-posters.mjs"
     },
     "dependencies": {
         "@avrash/content-data": "workspace:*",
@@ -26,6 +27,7 @@
         "react": "19.2.4",
         "react-dom": "19.2.4",
         "sass": "^1.99.0",
+        "sharp": "0.35.5",
         "zod": "^4.6.5"
     },
     "devDependencies": {

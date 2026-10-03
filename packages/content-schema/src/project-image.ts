@@ -16,6 +16,7 @@ export const ProjectImageSchema = z.object({
     // never rely on the image's position in the array.
     order: z.number().int().nonnegative(),
     src: z.string().min(1),
+    posterSrc: z.string().min(1).optional(),
     alt: z.string().optional(),
     // Pairs this image with the very next one (by order) in the gallery
     // lightbox: "row" places them side by side (for two portrait images),

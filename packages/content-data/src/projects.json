@@ -26,7 +26,8 @@
                 "id": 1,
                 "order": 1,
                 "src": "/projects/esencha/001.gif",
-                "alt": "ESENCHA — visual 1"
+                "alt": "ESENCHA — visual 1",
+                "posterSrc": "/projects/esencha/001-poster.webp"
             },
             {
                 "id": 2,
@@ -108,7 +109,8 @@
                 "id": 14,
                 "order": 14,
                 "src": "/projects/esencha/014.gif",
-                "alt": "ESENCHA — visual 14"
+                "alt": "ESENCHA — visual 14",
+                "posterSrc": "/projects/esencha/014-poster.webp"
             },
             {
                 "id": 15,
@@ -208,7 +210,8 @@
                 "id": 2,
                 "order": 2,
                 "src": "/projects/crusty/002.gif",
-                "alt": "CRUSTY — visual 2"
+                "alt": "CRUSTY — visual 2",
+                "posterSrc": "/projects/crusty/002-poster.webp"
             },
             {
                 "id": 3,
@@ -234,7 +237,8 @@
                 "id": 6,
                 "order": 6,
                 "src": "/projects/crusty/006.gif",
-                "alt": "CRUSTY — visual 6"
+                "alt": "CRUSTY — visual 6",
+                "posterSrc": "/projects/crusty/006-poster.webp"
             },
             {
                 "id": 7,
@@ -247,7 +251,8 @@
                 "order": 8,
                 "src": "/projects/crusty/008.gif",
                 "alt": "CRUSTY — visual 8",
-                "pairMode": "row"
+                "pairMode": "row",
+                "posterSrc": "/projects/crusty/008-poster.webp"
             },
             {
                 "id": 9,
@@ -259,7 +264,8 @@
                 "id": 10,
                 "order": 10,
                 "src": "/projects/crusty/010.gif",
-                "alt": "CRUSTY — visual 10"
+                "alt": "CRUSTY — visual 10",
+                "posterSrc": "/projects/crusty/010-poster.webp"
             },
             {
                 "id": 11,
@@ -279,7 +285,8 @@
                 "order": 13,
                 "src": "/projects/crusty/013.gif",
                 "alt": "CRUSTY — visual 13",
-                "pairMode": "row"
+                "pairMode": "row",
+                "posterSrc": "/projects/crusty/013-poster.webp"
             },
             {
                 "id": 14,
@@ -1040,7 +1047,8 @@
                 "id": 14,
                 "order": 14,
                 "src": "/projects/glowmed/014.gif",
-                "alt": "GlowMed — visual 14"
+                "alt": "GlowMed — visual 14",
+                "posterSrc": "/projects/glowmed/014-poster.webp"
             },
             {
                 "id": 15,
@@ -1135,7 +1143,8 @@
                 "id": 9,
                 "order": 9,
                 "src": "/projects/florelle/009.gif",
-                "alt": "Florelle — visual 9"
+                "alt": "Florelle — visual 9",
+                "posterSrc": "/projects/florelle/009-poster.webp"
             },
             {
                 "id": 10,
@@ -1147,19 +1156,22 @@
                 "id": 11,
                 "order": 11,
                 "src": "/projects/florelle/011.gif",
-                "alt": "Florelle — visual 11"
+                "alt": "Florelle — visual 11",
+                "posterSrc": "/projects/florelle/011-poster.webp"
             },
             {
                 "id": 12,
                 "order": 12,
                 "src": "/projects/florelle/012.gif",
-                "alt": "Florelle — visual 12"
+                "alt": "Florelle — visual 12",
+                "posterSrc": "/projects/florelle/012-poster.webp"
             },
             {
                 "id": 13,
                 "order": 13,
                 "src": "/projects/florelle/013.gif",
-                "alt": "Florelle — visual 13"
+                "alt": "Florelle — visual 13",
+                "posterSrc": "/projects/florelle/013-poster.webp"
             },
             {
                 "id": 14,
@@ -1223,7 +1235,8 @@
                 "id": 4,
                 "order": 4,
                 "src": "/projects/rosso/004.gif",
-                "alt": "Rosso — visual 4"
+                "alt": "Rosso — visual 4",
+                "posterSrc": "/projects/rosso/004-poster.webp"
             },
             {
                 "id": 5,
@@ -1253,7 +1266,8 @@
                 "id": 9,
                 "order": 9,
                 "src": "/projects/rosso/009.gif",
-                "alt": "Rosso — visual 9"
+                "alt": "Rosso — visual 9",
+                "posterSrc": "/projects/rosso/009-poster.webp"
             },
             {
                 "id": 10,
@@ -1330,7 +1344,8 @@
                 "id": 5,
                 "order": 5,
                 "src": "/projects/gasimi-wine/005.gif",
-                "alt": "GASIMI WINE — visual 5"
+                "alt": "GASIMI WINE — visual 5",
+                "posterSrc": "/projects/gasimi-wine/005-poster.webp"
             },
             {
                 "id": 6,
@@ -1349,7 +1364,8 @@
                 "id": 8,
                 "order": 8,
                 "src": "/projects/gasimi-wine/008.gif",
-                "alt": "GASIMI WINE — visual 8"
+                "alt": "GASIMI WINE — visual 8",
+                "posterSrc": "/projects/gasimi-wine/008-poster.webp"
             },
             {
                 "id": 9,
@@ -1532,7 +1548,8 @@
                 "id": 3,
                 "order": 3,
                 "src": "/projects/patel-science/003.gif",
-                "alt": "Patel Science — visual 3"
+                "alt": "Patel Science — visual 3",
+                "posterSrc": "/projects/patel-science/003-poster.webp"
             },
             {
                 "id": 4,
@@ -1632,7 +1649,8 @@
                 "id": 1,
                 "order": 1,
                 "src": "/projects/mara-pasta/001.gif",
-                "alt": "Mara Pasta — visual 1"
+                "alt": "Mara Pasta — visual 1",
+                "posterSrc": "/projects/mara-pasta/001-poster.webp"
             },
             {
                 "id": 2,
@@ -1650,7 +1668,8 @@
                 "id": 4,
                 "order": 4,
                 "src": "/projects/mara-pasta/004.gif",
-                "alt": "Mara Pasta — visual 4"
+                "alt": "Mara Pasta — visual 4",
+                "posterSrc": "/projects/mara-pasta/004-poster.webp"
             },
             {
                 "id": 5,
@@ -1744,7 +1763,8 @@
                 "id": 6,
                 "order": 6,
                 "src": "/projects/logolove/006.gif",
-                "alt": "LogoLove — visual 6"
+                "alt": "LogoLove — visual 6",
+                "posterSrc": "/projects/logolove/006-poster.webp"
             },
             {
                 "id": 7,
@@ -1819,7 +1839,8 @@
                 "id": 5,
                 "order": 5,
                 "src": "/projects/rash-sport/005.gif",
-                "alt": "RASH sport — visual 5"
+                "alt": "RASH sport — visual 5",
+                "posterSrc": "/projects/rash-sport/005-poster.webp"
             },
             {
                 "id": 6,
@@ -2010,7 +2031,8 @@
                 "id": 8,
                 "order": 8,
                 "src": "/projects/fizzup-craft-lemonade-package/008.gif",
-                "alt": "FizzUp Craft lemonade package — visual 8"
+                "alt": "FizzUp Craft lemonade package — visual 8",
+                "posterSrc": "/projects/fizzup-craft-lemonade-package/008-poster.webp"
             },
             {
                 "id": 9,
@@ -2062,7 +2084,8 @@
                 "id": 1,
                 "order": 1,
                 "src": "/projects/brownie-bakery/001.gif",
-                "alt": "BROWNIE bakery — visual 1"
+                "alt": "BROWNIE bakery — visual 1",
+                "posterSrc": "/projects/brownie-bakery/001-poster.webp"
             },
             {
                 "id": 2,
@@ -2087,7 +2110,8 @@
                 "id": 5,
                 "order": 5,
                 "src": "/projects/brownie-bakery/005.gif",
-                "alt": "BROWNIE bakery — visual 5"
+                "alt": "BROWNIE bakery — visual 5",
+                "posterSrc": "/projects/brownie-bakery/005-poster.webp"
             },
             {
                 "id": 6,
@@ -2106,7 +2130,8 @@
                 "id": 8,
                 "order": 8,
                 "src": "/projects/brownie-bakery/008.gif",
-                "alt": "BROWNIE bakery — visual 8"
+                "alt": "BROWNIE bakery — visual 8",
+                "posterSrc": "/projects/brownie-bakery/008-poster.webp"
             },
             {
                 "id": 9,
@@ -2153,7 +2178,8 @@
                 "order": 1,
                 "src": "/projects/palum-clothing-brand/001.gif",
                 "alt": "PALUM clothing brand — visual 1",
-                "pairMode": "stack"
+                "pairMode": "stack",
+                "posterSrc": "/projects/palum-clothing-brand/001-poster.webp"
             },
             {
                 "id": 2,
@@ -2253,7 +2279,8 @@
                 "id": 5,
                 "order": 5,
                 "src": "/projects/doza-coffee/005.gif",
-                "alt": "DOZA coffee — visual 5"
+                "alt": "DOZA coffee — visual 5",
+                "posterSrc": "/projects/doza-coffee/005-poster.webp"
             },
             {
                 "id": 6,

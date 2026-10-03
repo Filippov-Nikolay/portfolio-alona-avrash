@@ -172,7 +172,7 @@ test.beforeEach(async ({ page, context }, testInfo) => {
         body: '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><path fill="#b45a8c" d="M0 0h1200v800H0z"/><circle cx="600" cy="400" r="260" fill="none" stroke="#fff" stroke-width="20"/></svg>',
     };
     await page.route("**/projects/esencha/**", (route) => route.fulfill(artwork));
-    await page.route("**/api/gallery-poster?**", (route) => route.fulfill(artwork));
+    await page.route("**/projects/esencha/*-poster.webp", (route) => route.fulfill(artwork));
 });
 
 for (const width of [1407, 390]) {
@@ -761,7 +761,9 @@ test("closing exposes restored tiles and keeps GIFs valid without a poster", asy
     page,
 }, testInfo) => {
     test.setTimeout(60_000);
-    await page.route("**/api/gallery-poster?**", (route) => route.fulfill({ status: 404 }));
+    await page.route("**/projects/esencha/*-poster.webp", (route) =>
+        route.fulfill({ status: 404 })
+    );
     await page.addInitScript(() => {
         // Cross-origin artwork can prevent poster capture in production.
         HTMLCanvasElement.prototype.toDataURL = () => {
@@ -812,7 +814,7 @@ for (const direct of [true, false]) {
     test(`GIF ${direct ? "opened directly" : "reached by scrolling"} survives a failed preview and closes smoothly`, async ({
         page,
     }) => {
-        await page.route("**/api/gallery-poster?**", (route) =>
+        await page.route("**/projects/esencha/*-poster.webp", (route) =>
             route.fulfill({ status: 503, body: "Preview unavailable" })
         );
         // Keep the original pending after the preview fails, as on a cold CDN
@@ -917,16 +919,16 @@ test("GIFs stay static throughout touch scrolling and only the settled slot play
     const launchGif = lightbox.locator('img[data-gallery-image="0"]');
     await expect(launchGif).toHaveAttribute("src", "/projects/esencha/001.gif");
     await scroll.dispatchEvent("touchstart");
-    await expect(launchGif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+    await expect(launchGif).toHaveAttribute("src", /-poster\.webp$/);
     await scroll.evaluate((element) => {
         element.scrollTop = element.clientHeight * 9;
     });
     const gif = lightbox.locator('img[data-gallery-image="13"]');
-    await expect(gif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+    await expect(gif).toHaveAttribute("src", /-poster\.webp$/);
     // Holding a touch still must not restart a GIF just because the debounce
     // has elapsed: the next touchmove would otherwise hitch again.
     await page.waitForTimeout(300);
-    await expect(gif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+    await expect(gif).toHaveAttribute("src", /-poster\.webp$/);
     expect(fullGifRequests).toBe(0);
     await gif.evaluate((image) => {
         window.gifImage = image as HTMLImageElement;
@@ -934,10 +936,10 @@ test("GIFs stay static throughout touch scrolling and only the settled slot play
     await scroll.dispatchEvent("touchend");
     await expect(gif).toHaveAttribute("src", "/projects/esencha/014.gif");
     await expect.poll(() => fullGifRequests).toBe(1);
-    await expect(launchGif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+    await expect(launchGif).toHaveAttribute("src", /-poster\.webp$/);
 
     await scroll.dispatchEvent("touchstart");
-    await expect(gif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+    await expect(gif).toHaveAttribute("src", /-poster\.webp$/);
     await gif.evaluate((image) => {
         window.gifSourceChanges = [];
         new MutationObserver((records) => {
@@ -960,7 +962,7 @@ test("GIFs stay static throughout touch scrolling and only the settled slot play
     await controlTransition(page);
     await page.keyboard.press("Escape");
     await expect(lightbox).toHaveAttribute("data-phase", "closing");
-    await expect(gif).toHaveAttribute("src", /\/api\/gallery-poster\?/);
+    await expect(gif).toHaveAttribute("src", /-poster\.webp$/);
     expect(await gif.evaluate((image) => image === window.gifImage)).toBe(true);
     await expectBackgroundReady(page, 13);
     await page.evaluate(() => window.lightboxAnimations.forEach((animation) => animation.finish()));

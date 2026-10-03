@@ -3,6 +3,7 @@ import type { Project, ProjectImage } from "@avrash/content-schema";
 export interface ImageDraft {
     id: number;
     src: string;
+    posterSrc?: string;
     alt: string;
     pairMode: "" | "row" | "stack";
     isHero: boolean;
@@ -14,6 +15,7 @@ export function toImageDrafts(images: Project["image"]): ImageDraft[] {
         .map((image) => ({
             id: image.id,
             src: image.src,
+            posterSrc: image.posterSrc,
             alt: image.alt ?? "",
             pairMode: image.pairMode ?? "",
             isHero: image.isHero ?? false,
@@ -25,6 +27,7 @@ export function fromImageDrafts(drafts: ImageDraft[]): ProjectImage[] {
         id: draft.id,
         order: index,
         src: draft.src.trim(),
+        ...(draft.posterSrc ? { posterSrc: draft.posterSrc } : {}),
         ...(draft.alt.trim() ? { alt: draft.alt.trim() } : {}),
         ...(draft.pairMode ? { pairMode: draft.pairMode } : {}),
         ...(draft.isHero ? { isHero: true } : {}),

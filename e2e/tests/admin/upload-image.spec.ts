@@ -1,7 +1,11 @@
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 
-const FIXTURE_IMAGE = path.join(__dirname, "..", "..", "fixtures", "e2e-upload-fixture.png");
+const FIXTURES = path.join(__dirname, "..", "..", "fixtures");
+const FIXTURE_IMAGE = path.join(FIXTURES, "e2e-upload-fixture.png");
+const FIXTURE_GIF = path.join(FIXTURES, "e2e-upload-fixture.gif");
+const SCRATCH_CONTENT_DIR = path.join(__dirname, "..", "..", ".scratch", "content");
 
 test.describe("upload image", () => {
     test("uploads an image into the gallery and it becomes the project's thumbnail", async ({
@@ -32,5 +36,33 @@ test.describe("upload image", () => {
 
         const row = page.locator("table tr", { hasText: "E2E Upload Project" });
         await expect(row.locator("img")).toHaveAttribute("src", /e2e-upload-fixture/);
+    });
+
+    test("stores a WebP poster next to an uploaded GIF and saves it with the image", async ({
+        page,
+    }) => {
+        await page.goto("/works/projects/new");
+        await page.getByLabel("Name").fill("E2E GIF Project");
+        await page.getByRole("button", { name: "Branding" }).click();
+
+        await page.getByRole("button", { name: "Add image" }).click();
+        await page.locator('input[type="file"]').setInputFiles(FIXTURE_GIF);
+        await expect(page.locator("img")).toHaveAttribute("src", /e2e-upload-fixture\.gif$/, {
+            timeout: 15_000,
+        });
+
+        await page.getByRole("button", { name: "Create project" }).click();
+        await page.waitForURL("/works/projects");
+
+        const projects = JSON.parse(
+            readFileSync(path.join(SCRATCH_CONTENT_DIR, "projects.json"), "utf-8")
+        ) as { name: string; image: { src: string; posterSrc?: string }[] }[];
+        const [image] = projects.find((project) => project.name === "E2E GIF Project")!.image;
+        expect(image.posterSrc).toBe(image.src.replace(/\.gif$/, "-poster.webp"));
+        const poster = readFileSync(
+            path.join(SCRATCH_CONTENT_DIR, "uploads", path.basename(image.posterSrc!))
+        );
+        expect(poster.subarray(0, 4).toString("ascii")).toBe("RIFF");
+        expect(poster.subarray(8, 12).toString("ascii")).toBe("WEBP");
     });
 });

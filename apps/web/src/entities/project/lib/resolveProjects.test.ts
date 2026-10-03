@@ -63,12 +63,18 @@ describe("getSelectedWork", () => {
 describe("toShowcaseItem", () => {
     const translate = (key: CategoryKey) => key.toUpperCase();
 
-    it("provides same-origin GIF previews even for CDN artwork", () => {
+    it("passes a GIF's stored poster through and leaves other images without one", () => {
         const item = toShowcaseItem(
             makeProject({
                 image: [
-                    { id: 1, order: 0, src: "https://cdn.test/projects/a.gif" },
-                    { id: 2, order: 1, src: "/projects/b.png" },
+                    {
+                        id: 1,
+                        order: 0,
+                        src: "https://cdn.test/projects/a.gif",
+                        posterSrc: "https://cdn.test/projects/a-poster.webp",
+                    },
+                    { id: 2, order: 1, src: "/projects/b.gif" },
+                    { id: 3, order: 2, src: "/projects/c.png" },
                 ],
             }),
             0,
@@ -76,10 +82,9 @@ describe("toShowcaseItem", () => {
             false,
             []
         );
-        expect(item.gallery[0].posterSrc).toBe(
-            "/api/gallery-poster?src=https%3A%2F%2Fcdn.test%2Fprojects%2Fa.gif"
-        );
+        expect(item.gallery[0].posterSrc).toBe("https://cdn.test/projects/a-poster.webp");
         expect(item.gallery[1].posterSrc).toBeUndefined();
+        expect(item.gallery[2].posterSrc).toBeUndefined();
     });
 
     it("picks the isHero image as src, falling back to the first image", () => {

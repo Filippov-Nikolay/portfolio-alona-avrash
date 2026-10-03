@@ -156,8 +156,8 @@ function ImageRow({
         setUploadError(null);
         setUploading(true);
         try {
-            const { src } = await uploadProjectImageAction(file);
-            onUpdate({ src });
+            const { src, posterSrc } = await uploadProjectImageAction(file);
+            onUpdate({ src, posterSrc });
         } catch (err) {
             setUploadError(err instanceof Error ? err.message : "Upload failed.");
         } finally {

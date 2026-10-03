@@ -2,6 +2,7 @@
 
 import path from "node:path";
 import { requireAdminSession } from "@/shared/auth/requireAdminSession";
+import { createGifPoster, gifPosterFileName, isGifFileName } from "@/shared/lib/gifPoster";
 import { getImageStorage } from "@/shared/storage/imageStorage";
 
 const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg"]);
@@ -15,7 +16,12 @@ function sanitizeBaseName(name: string): string {
     return cleaned || "image";
 }
 
-export async function uploadProjectImageAction(file: File): Promise<{ src: string }> {
+export interface UploadedProjectImage {
+    src: string;
+    posterSrc?: string;
+}
+
+export async function uploadProjectImageAction(file: File): Promise<UploadedProjectImage> {
     await requireAdminSession();
 
     if (!file.type.startsWith("image/")) {
@@ -33,6 +39,28 @@ export async function uploadProjectImageAction(file: File): Promise<{ src: strin
     const base = sanitizeBaseName(path.basename(file.name, ext));
     const fileName = `${Date.now()}-${base}${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
+    const storage = getImageStorage();
 
-    return getImageStorage().upload(fileName, buffer, file.type);
+    if (!isGifFileName(fileName)) {
+        return storage.upload(fileName, buffer, file.type);
+    }
+
+    let poster: Buffer;
+    try {
+        poster = await createGifPoster(buffer);
+    } catch {
+        throw new Error("This GIF could not be read. Export it again and retry.");
+    }
+    const gif = await storage.upload(fileName, buffer, file.type);
+    try {
+        const { src: posterSrc } = await storage.upload(
+            gifPosterFileName(fileName),
+            poster,
+            "image/webp"
+        );
+        return { src: gif.src, posterSrc };
+    } catch (error) {
+        await storage.delete(gif.src).catch(() => {});
+        throw error;
+    }
 }

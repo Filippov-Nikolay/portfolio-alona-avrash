@@ -18,10 +18,13 @@ import { createProject, deleteProject, getProject, updateProject } from "./proje
 // instead of on file pick - deliberately out of scope here.
 async function deleteProjectImages(images: Project["image"]): Promise<void> {
     const storage = getImageStorage();
-    const results = await Promise.allSettled(images.map((image) => storage.delete(image.src)));
+    const sources = images.flatMap((image) =>
+        image.posterSrc ? [image.src, image.posterSrc] : [image.src]
+    );
+    const results = await Promise.allSettled(sources.map((src) => storage.delete(src)));
     results.forEach((result, index) => {
         if (result.status === "rejected") {
-            console.error(`Failed to delete image "${images[index]!.src}":`, result.reason);
+            console.error(`Failed to delete image "${sources[index]!}":`, result.reason);
         }
     });
 }

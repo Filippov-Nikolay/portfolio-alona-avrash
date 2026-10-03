@@ -43,9 +43,7 @@ export function toShowcaseItem(
         .sort((a, b) => a.order - b.order)
         .map((image) => ({
             src: image.src,
-            ...(/\.gif(?:[?#]|$)/i.test(image.src)
-                ? { posterSrc: `/api/gallery-poster?src=${encodeURIComponent(image.src)}` }
-                : {}),
+            ...(image.posterSrc ? { posterSrc: image.posterSrc } : {}),
             alt: image.alt ?? project.name,
             pairMode: image.pairMode,
         }));

@@ -4,9 +4,9 @@ import path from "node:path";
 import { requireAdminSession } from "@/shared/auth/requireAdminSession";
 import { createGifPoster, gifPosterFileName, isGifFileName } from "@/shared/lib/gifPoster";
 import { getImageStorage } from "@/shared/storage/imageStorage";
+import { projectImageSizeError } from "../lib/imageUploadRules";
 
 const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg"]);
-const MAX_BYTES = 10 * 1024 * 1024;
 
 function sanitizeBaseName(name: string): string {
     const cleaned = name
@@ -27,9 +27,8 @@ export async function uploadProjectImageAction(file: File): Promise<UploadedProj
     if (!file.type.startsWith("image/")) {
         throw new Error("Only image files can be uploaded.");
     }
-    if (file.size > MAX_BYTES) {
-        throw new Error("Image is too large (max 10MB).");
-    }
+    const sizeError = projectImageSizeError(file.size);
+    if (sizeError) throw new Error(sizeError);
 
     const ext = path.extname(file.name).toLowerCase();
     if (!ALLOWED_EXTENSIONS.has(ext)) {

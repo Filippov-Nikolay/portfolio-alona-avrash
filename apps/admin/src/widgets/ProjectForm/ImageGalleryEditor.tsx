@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/shared/ui/ConfirmDialog";
 import { cn } from "@/shared/lib/cn";
 import { PAIR_MODE_OPTIONS } from "@/entities/project/model/constants";
 import { uploadProjectImageAction } from "@/entities/project/api/uploadProjectImage";
+import { projectImageSizeError } from "@/entities/project/lib/imageUploadRules";
 import { useAutoScrollWhileDragging } from "./useAutoScrollWhileDragging";
 import { usePointerYTracker } from "./usePointerYTracker";
 import type { ImageDraft } from "./ImageDraft";
@@ -150,6 +151,12 @@ function ImageRow({
         const file = e.target.files?.[0];
         e.target.value = "";
         if (!file) return;
+
+        const sizeError = projectImageSizeError(file.size);
+        if (sizeError) {
+            setUploadError(sizeError);
+            return;
+        }
 
         const objectUrl = URL.createObjectURL(file);
         setLocalPreview(objectUrl);

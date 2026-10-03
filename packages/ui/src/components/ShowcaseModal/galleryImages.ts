@@ -152,11 +152,12 @@ export class GalleryImages {
 
     private preparePoster(entry: GalleryImage) {
         if (!entry.poster) return;
-        entry.posterRequest ??= fetch(entry.poster, { cache: "force-cache" })
-            .then(async (response) => {
-                if (response.ok) await response.arrayBuffer();
-            })
-            .catch(() => {});
+        if (!entry.posterRequest) {
+            const poster = new Image();
+            poster.decoding = "async";
+            poster.src = entry.poster;
+            entry.posterRequest = poster.decode().catch(() => {});
+        }
         return entry.posterRequest;
     }
 

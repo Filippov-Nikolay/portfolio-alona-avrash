@@ -8,6 +8,7 @@ on:
             - "packages/ui/**"
             - "packages/content-schema/**"
             - "packages/content-data/**"
+            - "packages/rate-limit/**"
             - "pnpm-lock.yaml"
             - "pnpm-workspace.yaml"
             - "package.json"
@@ -19,6 +20,7 @@ on:
             - "packages/ui/**"
             - "packages/content-schema/**"
             - "packages/content-data/**"
+            - "packages/rate-limit/**"
             - "pnpm-lock.yaml"
             - "pnpm-workspace.yaml"
             - "package.json"
@@ -55,6 +57,8 @@ jobs:
             # run touches - its own tests (the Zod schemas actually reject
             # bad data) would otherwise never run in CI at all.
             - run: pnpm --filter @avrash/content-schema run test
+
+            - run: pnpm --filter @avrash/rate-limit run test
 
             - run: pnpm --filter @avrash/admin run test
 

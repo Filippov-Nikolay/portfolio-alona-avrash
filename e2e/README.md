@@ -12,7 +12,7 @@ analytics beacons and full CMS flows.
 | `web-ios`     | iPhone 13 (WebKit) | Touch and iOS-specific specs: header menu, overscroll, carousels, Hero transitions, legal TOC                                                      |
 | `web-webkit`  | iPhone 13 (WebKit) | Hero rendering and scroll performance, showcase gallery, works filter taps                                                                         |
 | `admin-setup` | -                  | Signs in once and saves the session                                                                                                                |
-| `admin`       | Desktop Chrome     | Login, logout, create and edit projects, image and GIF upload, CV management                                                                       |
+| `admin`       | Desktop Chrome     | Login, logout, create and edit projects, image and GIF upload, upload size limits, CV management                                                   |
 
 ## How a run works
 
@@ -59,7 +59,7 @@ artifact, and failures appear as annotations on the pull request.
 ```
 tests/web/       # Site specs
 tests/admin/     # CMS specs and auth.setup.ts
-fixtures/        # Shared test fixture, consent state, CV PDF generator, upload files, hero geometry baselines
+fixtures/        # Shared test fixture, consent state, CV PDF and noise PNG generators, upload files, hero geometry baselines
 helpers/         # Document height and Hero scene measurement helpers
 server/          # Production server used by E2E_SERVER=production
 ```

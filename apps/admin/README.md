@@ -139,8 +139,8 @@ src/
 ├── entities/                  # project, category, toolBadge, cv, analytics, session: repositories and Server Actions
 ├── shared/
 │   ├── auth/                  # Credentials, session tokens, requireAdminSession
-│   ├── storage/               # filesystem and R2 drivers, image storage
-│   ├── lib/                   # GIF posters, web revalidation, slugify
+│   ├── storage/               # filesystem and R2 drivers, image storage, presigned R2 uploads
+│   ├── lib/                   # Image format detection, GIF posters, web revalidation, slugify
 │   ├── config/                # Navigation, build info
 │   └── ui/                    # Button, ConfirmDialog, LineChart, ReportTabs, ...
 └── proxy.ts                   # Session gate
@@ -190,3 +190,6 @@ Browser flows (login, logout, create and edit a project, image upload, CV) are c
 
 A separate Vercel project with `apps/admin` as the root directory, `ADMIN_STORAGE_DRIVER=r2`, and
 the secrets above. Vercel provides the commit and environment shown in the system info panel.
+
+Each R2 bucket also needs the CORS policy and the lifecycle rule described in
+[Storage drivers](#storage-drivers): without CORS, direct uploads fail in the browser.

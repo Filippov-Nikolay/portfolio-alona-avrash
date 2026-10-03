@@ -1,6 +1,7 @@
 import * as contentData from "@avrash/content-data";
+import type { ContentResource } from "@avrash/content-schema";
 
-const CONTENT: Record<string, unknown> = {
+const CONTENT: Record<ContentResource, unknown> = {
     cv: contentData.cv,
     hero: contentData.hero,
     cta: contentData.cta,
@@ -19,5 +20,5 @@ const CONTENT: Record<string, unknown> = {
 };
 
 export function getContentResource(resource: string): unknown | undefined {
-    return CONTENT[resource];
+    return Object.hasOwn(CONTENT, resource) ? CONTENT[resource as ContentResource] : undefined;
 }

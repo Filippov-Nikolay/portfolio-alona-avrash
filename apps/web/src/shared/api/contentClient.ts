@@ -1,25 +1,10 @@
-import type { ZodType } from "zod";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { CONTENT_RESOURCES, type ContentOf, type ContentResource } from "@avrash/content-schema";
+import { z } from "zod";
 import { getContentResource } from "./contentStore";
 
-const RESOURCE_FILE_NAMES: Record<string, string> = {
-    cv: "cv.json",
-    hero: "hero.json",
-    cta: "cta.json",
-    footer: "footer.json",
-    socials: "social.json",
-    projects: "projects.json",
-    "home-project-gallery": "home-project-gallery.json",
-    icon: "icon.json",
-    services: "services.json",
-    reviews: "reviews.json",
-    stats: "stats.json",
-    clients: "clients.json",
-    tools: "tools.json",
-    categories: "categories.json",
-    "tool-badges": "tool-badges.json",
-};
-
-export const CONTENT_RESOURCE_TAGS = new Set(Object.keys(RESOURCE_FILE_NAMES));
+export const CONTENT_RESOURCE_TAGS: ReadonlySet<string> = new Set(Object.keys(CONTENT_RESOURCES));
 
 // Remote JSON changes only through the admin, which invalidates the matching
 // tag immediately. The fallback TTL mainly covers deployments where that
@@ -27,8 +12,11 @@ export const CONTENT_RESOURCE_TAGS = new Set(Object.keys(RESOURCE_FILE_NAMES));
 // making content permanently stale.
 const DEFAULT_REVALIDATE_SECONDS = 24 * 60 * 60;
 
-function isRemoteSource(): boolean {
-    return process.env.CONTENT_SOURCE === "remote";
+type ContentSource = "local" | "remote" | "directory";
+
+function contentSource(): ContentSource {
+    const source = process.env.CONTENT_SOURCE;
+    return source === "remote" || source === "directory" ? source : "local";
 }
 
 function revalidateSeconds(): number {
@@ -36,57 +24,63 @@ function revalidateSeconds(): number {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_REVALIDATE_SECONDS;
 }
 
-async function fetchRemoteContent<T>(path: string, tag: string): Promise<T | undefined> {
+function parse<R extends ContentResource>(resource: R, data: unknown): ContentOf<R> {
+    return CONTENT_RESOURCES[resource].schema.parse(data) as ContentOf<R>;
+}
+
+async function fetchRemoteContent(resource: ContentResource): Promise<unknown> {
     const cdnUrl = process.env.CONTENT_CDN_URL;
-    const fileName = RESOURCE_FILE_NAMES[path];
-    if (!cdnUrl || !fileName) return undefined;
+    if (!cdnUrl) return undefined;
 
     try {
-        const response = await fetch(`${cdnUrl.replace(/\/$/, "")}/content/${fileName}`, {
-            next: { tags: [tag], revalidate: revalidateSeconds() },
-        });
+        const response = await fetch(
+            `${cdnUrl.replace(/\/$/, "")}/content/${CONTENT_RESOURCES[resource].file}`,
+            { next: { tags: [resource], revalidate: revalidateSeconds() } }
+        );
         if (!response.ok) {
             console.error(
-                `[content] remote fetch for "${path}" returned ${response.status}, falling back to bundled content`
+                `[content] remote fetch for "${resource}" returned ${response.status}, falling back to bundled content`
             );
             return undefined;
         }
-        return (await response.json()) as T;
+        return await response.json();
     } catch (error) {
         console.error(
-            `[content] remote fetch for "${path}" failed, falling back to bundled content`,
+            `[content] remote fetch for "${resource}" failed, falling back to bundled content`,
             error
         );
         return undefined;
     }
 }
 
-async function resolveContent<T>(path: string, tag: string): Promise<T> {
-    if (isRemoteSource()) {
-        const remote = await fetchRemoteContent<T>(path, tag);
-        if (remote !== undefined) return remote;
+async function readDirectoryContent(resource: ContentResource): Promise<unknown> {
+    const directory = process.env.CONTENT_DIR;
+    if (!directory) {
+        throw new Error("CONTENT_SOURCE=directory requires CONTENT_DIR - see .env.example.");
+    }
+    const file = path.join(/*turbopackIgnore: true*/ directory, CONTENT_RESOURCES[resource].file);
+    return JSON.parse(await readFile(file, "utf-8"));
+}
+
+async function resolveContent<R extends ContentResource>(resource: R): Promise<ContentOf<R>> {
+    const source = contentSource();
+
+    if (source === "directory") {
+        return parse(resource, await readDirectoryContent(resource));
     }
 
-    const local = getContentResource(path);
-    if (local !== undefined) return local as T;
-
-    const apiUrl = process.env.CONTENT_API_URL;
-    if (!apiUrl) {
-        throw new Error(
-            `No content for "${path}" - CONTENT_SOURCE=remote fetch failed (or is unset), no local ` +
-                `bundled copy exists, and CONTENT_API_URL is not set - see .env.example.`
-        );
+    if (source === "remote") {
+        const remote = await fetchRemoteContent(resource);
+        if (remote !== undefined) {
+            const result = CONTENT_RESOURCES[resource].schema.safeParse(remote);
+            if (result.success) return result.data as ContentOf<R>;
+            console.error(
+                `[content] remote "${resource}" does not match its schema, falling back to bundled content\n${z.prettifyError(result.error)}`
+            );
+        }
     }
 
-    const response = await fetch(`${apiUrl}/${path}`, {
-        next: { tags: [tag] },
-    });
-
-    if (!response.ok) {
-        throw new Error(`Failed to fetch ${path}`);
-    }
-
-    return response.json();
+    return parse(resource, getContentResource(resource));
 }
 
 // Content JSON stores every project/gallery image as a root-relative path
@@ -125,13 +119,6 @@ export function resolveCdnAssetUrls<T>(value: T): T {
     return resolve(value) as T;
 }
 
-// `schema` is optional and, today, only ever passed for the resources admin
-// can actually write to R2 (projects, categories, tool-badges) - those are
-// the only ones a malformed remote fetch could plausibly return wrong data
-// for. The rest still just cast, same as before, since they only ever come
-// from the bundled, TS-checked-at-the-call-site content-data package.
-export async function fetchContent<T>(path: string, tag: string, schema?: ZodType<T>): Promise<T> {
-    const content = await resolveContent<T>(path, tag);
-    const parsed = schema ? schema.parse(content) : content;
-    return resolveCdnAssetUrls(parsed);
+export async function fetchContent<R extends ContentResource>(resource: R): Promise<ContentOf<R>> {
+    return resolveCdnAssetUrls(await resolveContent(resource));
 }

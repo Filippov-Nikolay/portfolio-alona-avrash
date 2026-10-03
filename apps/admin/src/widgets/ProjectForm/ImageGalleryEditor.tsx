@@ -8,11 +8,8 @@ import { Button } from "@/shared/ui/Button";
 import { ConfirmDialog } from "@/shared/ui/ConfirmDialog";
 import { cn } from "@/shared/lib/cn";
 import { PAIR_MODE_OPTIONS } from "@/entities/project/model/constants";
-import { uploadProjectImageAction } from "@/entities/project/api/uploadProjectImage";
-import {
-    PROJECT_IMAGE_ACCEPT,
-    projectImageSizeError,
-} from "@/entities/project/lib/imageUploadRules";
+import { PROJECT_IMAGE_ACCEPT } from "@/entities/project/lib/imageUploadRules";
+import { uploadProjectImageFile } from "@/entities/project/lib/uploadProjectImageFile";
 import { useAutoScrollWhileDragging } from "./useAutoScrollWhileDragging";
 import { usePointerYTracker } from "./usePointerYTracker";
 import type { ImageDraft } from "./ImageDraft";
@@ -155,21 +152,16 @@ function ImageRow({
         e.target.value = "";
         if (!file) return;
 
-        const sizeError = projectImageSizeError(file.size);
-        if (sizeError) {
-            setUploadError(sizeError);
-            return;
-        }
-
         const objectUrl = URL.createObjectURL(file);
         setLocalPreview(objectUrl);
         setUploadError(null);
         setUploading(true);
         try {
-            const { src, posterSrc } = await uploadProjectImageAction(file);
-            onUpdate({ src, posterSrc });
-        } catch (err) {
-            setUploadError(err instanceof Error ? err.message : "Upload failed.");
+            const result = await uploadProjectImageFile(file);
+            if (result.ok) onUpdate({ src: result.image.src, posterSrc: result.image.posterSrc });
+            else setUploadError(result.error);
+        } catch {
+            setUploadError("Upload failed. Try again.");
         } finally {
             setUploading(false);
             URL.revokeObjectURL(objectUrl);

@@ -22,7 +22,13 @@ Setup for the whole monorepo is in the [root README](../../README.md).
     - a danger zone for deleting the project.
 - Unsaved changes are kept as a local draft, so they survive a reload and can be restored.
 - Image gallery: upload, drag-and-drop ordering, a hero image, alt text and a layout per image.
-- Uploads accept JPEG, PNG, GIF, WebP and AVIF up to 4 MB and 100 megapixels.
+- Uploads accept JPEG, PNG, GIF, WebP and AVIF up to 100 megapixels: up to 50 MB with the `r2`
+  driver, and up to 4 MB with the filesystem driver.
+    - With `r2`, the browser uploads straight to the bucket through a presigned `PUT` URL that is
+      valid for 5 minutes, so large GIFs bypass the 4.5 MB request limit of a Vercel function.
+      The server then reads the object, validates it, stores the final file and deletes the
+      temporary `projects/uploads/incoming/<uuid>` object.
+    - With the filesystem driver, the file goes through a Server Action, as before.
     - The format is read from the file's bytes with `sharp`. The stored extension and `Content-Type`
       come from that format, never from the name or MIME type the browser sends.
     - SVG is rejected for project images, because a script inside an SVG would run when its CDN URL
@@ -97,6 +103,24 @@ The repositories in [`shared/storage`](src/shared/storage) write to one of two b
 Uploaded file names include a timestamp and are served with an immutable cache header, so a
 replaced image never shows a stale version. `ADMIN_CONTENT_DIR` redirects filesystem writes to
 another directory. The E2E suite uses it to work on a scratch copy instead of real content.
+
+Each R2 bucket needs a CORS policy, so the admin page may upload to it directly:
+
+```json
+[
+    {
+        "AllowedOrigins": ["https://admin.avrash.com"],
+        "AllowedMethods": ["PUT"],
+        "AllowedHeaders": ["Content-Type"],
+        "ExposeHeaders": ["ETag"],
+        "MaxAgeSeconds": 3600
+    }
+]
+```
+
+The dev bucket allows `https://admin-dev.avrash.com` instead. An upload abandoned between the `PUT`
+and the server check leaves its object under `projects/uploads/incoming/`. An R2 lifecycle rule that
+deletes that prefix after one day keeps the bucket clean.
 
 ---
 

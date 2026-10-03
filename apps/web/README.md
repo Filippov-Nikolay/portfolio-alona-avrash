@@ -27,6 +27,8 @@ Setup for the whole monorepo is in the [root README](../../README.md).
   first-party analytics and Vercel Analytics / Speed Insights run only after the matching consent.
 - **Theme:** light by default, with a dark mode switched through the View Transitions API. An inline
   head script applies the saved theme before first paint, so there is no flash.
+- **Icons:** an SVG favicon with a 192 px PNG fallback, a multi-size `/favicon.ico` for services that
+  request it directly, and a 180 px Apple touch icon, all rendered from one SVG.
 - **SEO:** per-page metadata and canonical URLs, Open Graph images (a project page uses its own hero
   image), JSON-LD `Person`, a dynamic `sitemap.xml` and `robots.txt`.
 - **Accessibility:** semantic landmarks, visible focus, keyboard-operable carousels and modal,
@@ -145,15 +147,16 @@ Copy [`.env.example`](.env.example) to `.env.local`. Every variable is optional 
 
 ## Scripts
 
-| Command                                      | What it does                                |
-| -------------------------------------------- | ------------------------------------------- |
-| `pnpm dev`                                   | Dev server on http://localhost:3000         |
-| `pnpm build` / `pnpm start`                  | Production build and server                 |
-| `pnpm build:check`                           | Standalone build, used by the pre-push hook |
-| `pnpm test`                                  | Vitest unit tests (`src/**/*.test.ts`)      |
-| `pnpm lint` / `pnpm type-check`              | ESLint and TypeScript                       |
-| `node scripts/generate-noise-tile.mjs`       | Regenerates the hero noise texture          |
-| `node scripts/generate-tool-peek-blends.mjs` | Regenerates the blurred tool card previews  |
+| Command                                      | What it does                                                                           |
+| -------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `pnpm dev`                                   | Dev server on http://localhost:3000                                                    |
+| `pnpm build` / `pnpm start`                  | Production build and server                                                            |
+| `pnpm build:check`                           | Standalone build, used by the pre-push hook                                            |
+| `pnpm test`                                  | Vitest unit tests (`src/**/*.test.ts`)                                                 |
+| `pnpm lint` / `pnpm type-check`              | ESLint and TypeScript                                                                  |
+| `node scripts/generate-noise-tile.mjs`       | Regenerates the hero noise texture                                                     |
+| `node scripts/generate-tool-peek-blends.mjs` | Regenerates the blurred tool card previews                                             |
+| `node scripts/generate-icons.mjs`            | Renders `favicon.ico`, the 192 px icon and the 180 px Apple touch icon from `icon.svg` |
 
 Browser behavior (layout, animations, iOS scrolling, consent, analytics) is covered by the
 Playwright suites in [`e2e`](../../e2e/README.md).

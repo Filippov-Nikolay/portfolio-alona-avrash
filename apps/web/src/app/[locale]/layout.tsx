@@ -116,14 +116,23 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
             // first as the fallback (Safari and older browsers) and the SVG
             // last so it wins wherever SVG favicons are supported.
             icon: [
-                { url: `${icon.src}?v=${packageJson.version}`, type: "image/png", sizes: "32x32" },
+                {
+                    url: `${icon.src}?v=${packageJson.version}`,
+                    type: "image/png",
+                    sizes: "192x192",
+                },
                 {
                     url: `/icon/icon.svg?v=${packageJson.version}`,
                     type: "image/svg+xml",
                     sizes: "any",
                 },
             ],
-            shortcut: `${icon.src}?v=${packageJson.version}`,
+            shortcut: `/favicon.ico?v=${packageJson.version}`,
+            apple: {
+                url: `/apple-touch-icon.png?v=${packageJson.version}`,
+                type: "image/png",
+                sizes: "180x180",
+            },
         },
         robots: robotsDirectives(),
     };

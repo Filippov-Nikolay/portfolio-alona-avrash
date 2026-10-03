@@ -188,9 +188,15 @@ test("Stats reels always commit their exact final digits after a tiny last scrol
                 )
             );
 
-    await expect
-        .poll(finalPositions)
-        .toEqual(["translateY(-9em)", "translateY(0em)", "translateY(0em)"]);
+    const finalValue = await page
+        .locator("#stats [data-stat-index='2']")
+        .evaluate((digits) => digits.parentElement?.firstElementChild?.textContent ?? "");
+    const expectedPositions = [...finalValue.replace(/\D/g, "")].map(
+        (digit) => `translateY(${-Number(digit)}em)`
+    );
+    expect(expectedPositions.length).toBeGreaterThan(0);
+
+    await expect.poll(finalPositions).toEqual(expectedPositions);
 });
 
 test("Stats reels settle after a reversed touch scroll without lingering movement", async ({

@@ -122,6 +122,11 @@ The dev bucket allows `https://admin-dev.avrash.com` instead. An upload abandone
 and the server check leaves its object under `projects/uploads/incoming/`. An R2 lifecycle rule that
 deletes that prefix after one day keeps the bucket clean.
 
+Content files are saved as read-modify-write with last write winning: the server reads the latest
+file, changes the one entry being saved and writes the whole file back. Two saves of the same file
+in the same instant are not merged. That is an accepted trade-off for a single editor; with several
+regular editors, writes would need R2 conditional `If-Match` updates with a retry.
+
 ---
 
 ## Project structure

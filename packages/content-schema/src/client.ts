@@ -1,19 +1,27 @@
-export type MarqueeDirection = "left" | "right";
-export type ClientPillVariant = "outline" | "filled" | "light";
+import { z } from "zod";
 
-export interface Client {
-    id: number;
-    name: string;
-    variant: ClientPillVariant;
-}
+export const MarqueeDirectionSchema = z.enum(["left", "right"]);
+export type MarqueeDirection = z.infer<typeof MarqueeDirectionSchema>;
 
-export interface ClientsRow {
-    direction: MarqueeDirection;
-    speed: number;
-    leadingGap: boolean;
-    clients: Client[];
-}
+export const ClientPillVariantSchema = z.enum(["outline", "filled", "light"]);
+export type ClientPillVariant = z.infer<typeof ClientPillVariantSchema>;
 
-export interface ClientsConfig {
-    rows: ClientsRow[];
-}
+export const ClientSchema = z.object({
+    id: z.number().int(),
+    name: z.string().min(1),
+    variant: ClientPillVariantSchema,
+});
+export type Client = z.infer<typeof ClientSchema>;
+
+export const ClientsRowSchema = z.object({
+    direction: MarqueeDirectionSchema,
+    speed: z.number().positive(),
+    leadingGap: z.boolean(),
+    clients: z.array(ClientSchema),
+});
+export type ClientsRow = z.infer<typeof ClientsRowSchema>;
+
+export const ClientsConfigSchema = z.object({
+    rows: z.array(ClientsRowSchema),
+});
+export type ClientsConfig = z.infer<typeof ClientsConfigSchema>;

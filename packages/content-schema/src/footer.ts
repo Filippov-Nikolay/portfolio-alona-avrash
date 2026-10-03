@@ -1,23 +1,27 @@
-export interface FooterLegalLinkRaw {
-    id: string;
-    href: string;
-}
+import { z } from "zod";
+import { localized } from "./localized";
 
-export interface FooterI18n {
-    tagline: string;
-    legalLinkLabels: Record<string, string>;
-}
+export const FooterLegalLinkRawSchema = z.object({
+    id: z.string().min(1),
+    href: z.string().min(1),
+});
+export type FooterLegalLinkRaw = z.infer<typeof FooterLegalLinkRawSchema>;
 
-export interface FooterContentRaw {
-    brandMark: string;
-    legalLinks: FooterLegalLinkRaw[];
-    i18n: Record<string, FooterI18n>;
-}
+export const FooterI18nSchema = z.object({
+    tagline: z.string(),
+    legalLinkLabels: z.record(z.string(), z.string()),
+});
+export type FooterI18n = z.infer<typeof FooterI18nSchema>;
 
-export interface FooterLegalLink {
-    id: string;
+export const FooterContentRawSchema = z.object({
+    brandMark: z.string(),
+    legalLinks: z.array(FooterLegalLinkRawSchema),
+    i18n: localized(FooterI18nSchema),
+});
+export type FooterContentRaw = z.infer<typeof FooterContentRawSchema>;
+
+export interface FooterLegalLink extends FooterLegalLinkRaw {
     label: string;
-    href: string;
 }
 
 export interface FooterContent {

@@ -22,7 +22,6 @@ import { getStats } from "@/entities/stat/api/getStats";
 import { getClients } from "@/entities/client/api/getClients";
 import { getTools } from "@/entities/tool/api/getTools";
 import { getCta } from "@/entities/cta/api/getCta";
-import { Card } from "@/widgets/ToolsSection/components/Card/Card";
 
 interface HomePageProps {
     params: Promise<{ locale: string }>;

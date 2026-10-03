@@ -1,11 +1,10 @@
 import type { MetadataRoute } from "next";
-import { siteConfig } from "@/shared/config/site.config";
+import { getAllProjects } from "@/entities/project/lib/resolveProjects";
+import { slugifyProjectName } from "@/entities/project/lib/slug";
 import { LOCALES, DEFAULT_LOCALE } from "@/i18n/locales";
+import { buildPageAlternates } from "@/shared/lib/seo";
 
-const BASE = siteConfig.url;
-const LAST_MODIFIED = new Date();
-
-const ROUTES: Array<{ path: string; priority: number }> = [
+const STATIC_ROUTES: Array<{ path: string; priority: number }> = [
     { path: "", priority: 1 },
     { path: "/works", priority: 0.8 },
     { path: "/contact", priority: 0.8 },
@@ -16,13 +15,41 @@ const ROUTES: Array<{ path: string; priority: number }> = [
     { path: "/legal/terms", priority: 0.3 },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
-    return LOCALES.flatMap(({ code }) =>
-        ROUTES.map(({ path, priority }) => ({
-            url: `${BASE}/${code}${path}`,
-            lastModified: LAST_MODIFIED,
+const PROJECT_PRIORITY = 0.6;
+
+function localizedEntries(
+    path: string,
+    priority: number,
+    lastModified?: Date
+): MetadataRoute.Sitemap {
+    return LOCALES.map(({ code }) => {
+        const { canonical, languages } = buildPageAlternates(code, path);
+        return {
+            url: canonical,
+            ...(lastModified ? { lastModified } : {}),
             changeFrequency: "monthly" as const,
             priority: code === DEFAULT_LOCALE ? priority : priority * 0.9,
-        }))
-    );
+            alternates: { languages },
+        };
+    });
+}
+
+function validDate(value: string): Date | undefined {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+    const projects = await getAllProjects();
+
+    return [
+        ...STATIC_ROUTES.flatMap(({ path, priority }) => localizedEntries(path, priority)),
+        ...projects.flatMap((project) =>
+            localizedEntries(
+                `/works/${slugifyProjectName(project.name)}`,
+                PROJECT_PRIORITY,
+                validDate(project.createdAt)
+            )
+        ),
+    ];
 }

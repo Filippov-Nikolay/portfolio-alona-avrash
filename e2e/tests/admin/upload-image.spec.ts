@@ -82,12 +82,15 @@ test.describe("upload image", () => {
         });
     });
 
-    test("explains the size limit without uploading an image over 4 MB", async ({ page }) => {
+    test("explains the size limit without sending an image over 4 MB", async ({ page }) => {
         const png = createNoisePng(1300, 1100);
         expect(png.length).toBeGreaterThan(4 * 1024 * 1024);
-        let uploadRequests = 0;
+        let largestRequestBody = 0;
         page.on("request", (request) => {
-            if (request.method() === "POST") uploadRequests++;
+            largestRequestBody = Math.max(
+                largestRequestBody,
+                request.postDataBuffer()?.length ?? 0
+            );
         });
 
         await page.goto("/works/projects/new");
@@ -97,6 +100,6 @@ test.describe("upload image", () => {
             .setInputFiles({ name: "e2e-oversized.png", mimeType: "image/png", buffer: png });
 
         await expect(page.getByText("Image is too large (max 4 MB).")).toBeVisible();
-        expect(uploadRequests).toBe(0);
+        expect(largestRequestBody).toBeLessThan(64 * 1024);
     });
 });

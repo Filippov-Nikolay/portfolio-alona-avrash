@@ -12,7 +12,7 @@ import { getToolBadges } from "@/entities/toolBadge/api/getToolBadges";
 import { getCta } from "@/entities/cta/api/getCta";
 import { siteConfig } from "@/shared/config/site.config";
 import { getLocaleMeta } from "@/i18n/locales";
-import { DEFAULT_OG_IMAGES, buildPageAlternates } from "@/shared/lib/seo";
+import { DEFAULT_OG_IMAGES, buildPageAlternates, formatCategoryList } from "@/shared/lib/seo";
 
 interface WorksPageProps {
     params: Promise<{ locale: string; slug?: string[] }>;
@@ -42,7 +42,15 @@ export async function generateMetadata({ params }: WorksPageProps): Promise<Meta
         const project = projects.find((p) => slugifyProjectName(p.name) === slug[0]);
         if (project) {
             const heroImage = project.image.find((image) => image.isHero) ?? project.image[0];
-            const description = project.categories.map(translateCategory).join(" · ");
+            const description = project.categories.length
+                ? tSeo("projectDescription", {
+                      project: project.name,
+                      categories: formatCategoryList(
+                          project.categories.map(translateCategory),
+                          locale
+                      ),
+                  })
+                : tSeo("projectDescriptionFallback", { project: project.name });
             const { canonical, languages } = buildPageAlternates(locale, `/works/${slug[0]}`);
             const ogTitle = `${project.name} | ${siteConfig.name}`;
 
@@ -91,8 +99,6 @@ export async function generateMetadata({ params }: WorksPageProps): Promise<Meta
 export default async function WorksPage({ params }: WorksPageProps) {
     const { locale, slug } = await params;
     setRequestLocale(locale);
-
-    if (slug && slug.length > 1) notFound();
 
     const [tCategories, tWorksPage, allProjects, categories, toolBadges, cta] = await Promise.all([
         getTranslations({ locale, namespace: "categories" }),

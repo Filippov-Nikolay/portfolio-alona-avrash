@@ -1,9 +1,11 @@
 import {
     DeleteObjectCommand,
     GetObjectCommand,
+    HeadObjectCommand,
     PutObjectCommand,
     S3Client,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const IMMUTABLE_IMAGE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
@@ -86,4 +88,27 @@ export async function deleteObject(key: string): Promise<void> {
     await getClient().send(
         new DeleteObjectCommand({ Bucket: requiredEnv("R2_BUCKET_NAME"), Key: key })
     );
+}
+
+export async function presignUpload(
+    key: string,
+    contentType: string,
+    expiresInSeconds: number
+): Promise<string> {
+    return getSignedUrl(
+        getClient(),
+        new PutObjectCommand({
+            Bucket: requiredEnv("R2_BUCKET_NAME"),
+            Key: key,
+            ContentType: contentType,
+        }),
+        { expiresIn: expiresInSeconds }
+    );
+}
+
+export async function objectSize(key: string): Promise<number> {
+    const response = await getClient().send(
+        new HeadObjectCommand({ Bucket: requiredEnv("R2_BUCKET_NAME"), Key: key })
+    );
+    return response.ContentLength ?? 0;
 }

@@ -8,6 +8,20 @@ export function isAllowedOrigin(request: Request, allowedOrigin: string): boolea
     return request.headers.get("Origin") === allowedOrigin;
 }
 
-export function isAuthorizedRead(request: Request, secret: string): boolean {
-    return request.headers.get("Authorization") === `Bearer ${secret}`;
+const encoder = new TextEncoder();
+
+async function sha256(value: string): Promise<Uint8Array> {
+    return new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(value)));
+}
+
+async function constantTimeEquals(provided: string, expected: string): Promise<boolean> {
+    const [a, b] = await Promise.all([sha256(provided), sha256(expected)]);
+    let difference = 0;
+    for (let i = 0; i < a.length; i++) difference |= a[i]! ^ b[i]!;
+    return difference === 0;
+}
+
+export async function isAuthorizedRead(request: Request, secret: string): Promise<boolean> {
+    if (!secret) return false;
+    return constantTimeEquals(request.headers.get("Authorization") ?? "", `Bearer ${secret}`);
 }

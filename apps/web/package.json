@@ -1,6 +1,6 @@
 {
     "name": "@avrash/web",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "private": true,
     "scripts": {
         "dev": "next dev",
@@ -15,6 +15,7 @@
     "dependencies": {
         "@avrash/content-data": "workspace:*",
         "@avrash/content-schema": "workspace:*",
+        "@avrash/rate-limit": "workspace:*",
         "@avrash/ui": "workspace:*",
         "@gsap/react": "^2.1.2",
         "@swc/helpers": "^0.5.23",

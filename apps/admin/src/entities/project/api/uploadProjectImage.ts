@@ -1,66 +1,84 @@
 "use server";
 
-import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { requireAdminSession } from "@/shared/auth/requireAdminSession";
-import { createGifPoster, gifPosterFileName, isGifFileName } from "@/shared/lib/gifPoster";
-import { getImageStorage } from "@/shared/storage/imageStorage";
+import { getStorageDriver } from "@/shared/storage/driver";
+import { deleteObject, objectSize, presignUpload, readObject } from "@/shared/storage/r2";
+import {
+    MAX_DIRECT_UPLOAD_BYTES,
+    PROJECT_IMAGE_CONTENT_TYPES,
+    projectImageSizeError,
+    UNSUPPORTED_PROJECT_IMAGE,
+    type ProjectImageUploadResult,
+} from "../lib/imageUploadRules";
+import { storeProjectImage, toUploadResult, UploadRejectedError } from "./storeProjectImage";
 
-const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg"]);
-const MAX_BYTES = 10 * 1024 * 1024;
+const UPLOAD_URL_TTL_SECONDS = 5 * 60;
+const INCOMING_PREFIX = "projects/uploads/incoming";
+const UPLOAD_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const CONTENT_TYPES: ReadonlySet<string> = new Set(PROJECT_IMAGE_CONTENT_TYPES);
 
-function sanitizeBaseName(name: string): string {
-    const cleaned = name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-    return cleaned || "image";
-}
+export type ProjectImageUploadTicket =
+    | { mode: "action" }
+    | { mode: "direct"; uploadId: string; uploadUrl: string; contentType: string };
 
-export interface UploadedProjectImage {
-    src: string;
-    posterSrc?: string;
-}
+export type StartProjectImageUploadResult =
+    { ok: true; ticket: ProjectImageUploadTicket } | { ok: false; error: string };
 
-export async function uploadProjectImageAction(file: File): Promise<UploadedProjectImage> {
+export async function startProjectImageUploadAction(file: {
+    size: number;
+    type: string;
+}): Promise<StartProjectImageUploadResult> {
     await requireAdminSession();
 
-    if (!file.type.startsWith("image/")) {
-        throw new Error("Only image files can be uploaded.");
-    }
-    if (file.size > MAX_BYTES) {
-        throw new Error("Image is too large (max 10MB).");
-    }
-
-    const ext = path.extname(file.name).toLowerCase();
-    if (!ALLOWED_EXTENSIONS.has(ext)) {
-        throw new Error(`Unsupported file type "${ext || "unknown"}".`);
+    if (getStorageDriver() !== "r2") {
+        const sizeError = projectImageSizeError(file.size);
+        return sizeError
+            ? { ok: false, error: sizeError }
+            : { ok: true, ticket: { mode: "action" } };
     }
 
-    const base = sanitizeBaseName(path.basename(file.name, ext));
-    const fileName = `${Date.now()}-${base}${ext}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const storage = getImageStorage();
+    const sizeError = projectImageSizeError(file.size, MAX_DIRECT_UPLOAD_BYTES);
+    if (sizeError) return { ok: false, error: sizeError };
+    if (!CONTENT_TYPES.has(file.type)) return { ok: false, error: UNSUPPORTED_PROJECT_IMAGE };
 
-    if (!isGifFileName(fileName)) {
-        return storage.upload(fileName, buffer, file.type);
+    const uploadId = randomUUID();
+    const uploadUrl = await presignUpload(
+        `${INCOMING_PREFIX}/${uploadId}`,
+        file.type,
+        UPLOAD_URL_TTL_SECONDS
+    );
+    return { ok: true, ticket: { mode: "direct", uploadId, uploadUrl, contentType: file.type } };
+}
+
+export async function finishProjectImageUploadAction(
+    uploadId: string,
+    fileName: string
+): Promise<ProjectImageUploadResult> {
+    await requireAdminSession();
+    if (getStorageDriver() !== "r2" || !UPLOAD_ID.test(uploadId)) {
+        return { ok: false, error: "Unknown upload. Try again." };
     }
 
-    let poster: Buffer;
+    const key = `${INCOMING_PREFIX}/${uploadId}`;
     try {
-        poster = await createGifPoster(buffer);
-    } catch {
-        throw new Error("This GIF could not be read. Export it again and retry.");
+        return await toUploadResult(async () => {
+            const sizeError = projectImageSizeError(await objectSize(key), MAX_DIRECT_UPLOAD_BYTES);
+            if (sizeError) throw new UploadRejectedError(sizeError);
+            return storeProjectImage(Buffer.from(await readObject(key)), fileName);
+        });
+    } finally {
+        await deleteObject(key).catch(() => {});
     }
-    const gif = await storage.upload(fileName, buffer, file.type);
-    try {
-        const { src: posterSrc } = await storage.upload(
-            gifPosterFileName(fileName),
-            poster,
-            "image/webp"
-        );
-        return { src: gif.src, posterSrc };
-    } catch (error) {
-        await storage.delete(gif.src).catch(() => {});
-        throw error;
-    }
+}
+
+export async function uploadProjectImageAction(file: File): Promise<ProjectImageUploadResult> {
+    await requireAdminSession();
+
+    const sizeError = projectImageSizeError(file.size);
+    if (sizeError) return { ok: false, error: sizeError };
+
+    return toUploadResult(async () =>
+        storeProjectImage(Buffer.from(await file.arrayBuffer()), file.name)
+    );
 }

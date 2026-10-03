@@ -33,7 +33,6 @@ export async function generateMetadata({ params }: LegalIndexPageProps): Promise
         title: t("title"),
         description: t("description"),
         alternates: { canonical: `${siteConfig.url}/${locale}/legal` },
-        robots: { index: true, follow: true },
     };
 }
 

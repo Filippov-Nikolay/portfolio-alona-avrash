@@ -10,11 +10,8 @@ export const siteConfig = {
     description: "Brand identity, packaging and logo design for growing brands.",
     url: env.siteUrl.replace(/\/$/, ""),
     links: {
-        // TODO: replace with the real handle/URL once available.
-        github: "https://github.com/your-username",
-        telegram: "https://t.me/your-username",
-        // Instagram/Behance/LinkedIn/Pinterest live in entities/social/model/
-        // social.json (getSocials()) - that's what actually renders the
+        // Instagram/Behance/LinkedIn/Pinterest live in packages/content-data/
+        // src/social.json (getSocials()) - that's what actually renders the
         // icons, so it's the single source of truth for those.
         email: "mailto:avrash.design@gmail.com",
     },

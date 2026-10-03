@@ -1,6 +1,6 @@
 {
     "name": "@avrash/admin",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "private": true,
     "scripts": {
         "dev": "next dev -p 3001",
@@ -15,8 +15,10 @@
     "dependencies": {
         "@avrash/content-data": "workspace:*",
         "@avrash/content-schema": "workspace:*",
+        "@avrash/rate-limit": "workspace:*",
         "@avrash/ui": "workspace:*",
-        "@aws-sdk/client-s3": "^3.1136.0",
+        "@aws-sdk/client-s3": "^3.1146.0",
+        "@aws-sdk/s3-request-presigner": "^3.1146.0",
         "bcryptjs": "^3.0.3",
         "country-flag-emoji-polyfill": "0.1.10",
         "framer-motion": "^12.38.0",

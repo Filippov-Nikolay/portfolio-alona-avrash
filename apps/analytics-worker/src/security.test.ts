@@ -28,18 +28,33 @@ describe("isAllowedOrigin", () => {
 });
 
 describe("isAuthorizedRead", () => {
-    it("accepts the exact bearer token", () => {
+    it("accepts the exact bearer token", async () => {
         const request = new Request(URL, { headers: { Authorization: "Bearer secret" } });
-        expect(isAuthorizedRead(request, "secret")).toBe(true);
+        expect(await isAuthorizedRead(request, "secret")).toBe(true);
     });
 
-    it("rejects a wrong token", () => {
+    it("rejects a wrong token", async () => {
         const request = new Request(URL, { headers: { Authorization: "Bearer wrong" } });
-        expect(isAuthorizedRead(request, "secret")).toBe(false);
+        expect(await isAuthorizedRead(request, "secret")).toBe(false);
     });
 
-    it("rejects a missing Authorization header", () => {
+    it("rejects a missing Authorization header", async () => {
         const request = new Request(URL);
-        expect(isAuthorizedRead(request, "secret")).toBe(false);
+        expect(await isAuthorizedRead(request, "secret")).toBe(false);
+    });
+
+    it.each([
+        ["a token that only shares a prefix", "Bearer secre"],
+        ["a longer token", "Bearer secret-and-more"],
+        ["the token without the scheme", "secret"],
+        ["the scheme in another case", "bearer secret"],
+    ])("rejects %s", async (_case, authorization) => {
+        const request = new Request(URL, { headers: { Authorization: authorization } });
+        expect(await isAuthorizedRead(request, "secret")).toBe(false);
+    });
+
+    it("never authorizes when no secret is configured", async () => {
+        const request = new Request(URL, { headers: { Authorization: "Bearer " } });
+        expect(await isAuthorizedRead(request, "")).toBe(false);
     });
 });

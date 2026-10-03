@@ -9,7 +9,7 @@ import { AppProviders } from "@/shared/providers";
 import { Header } from "@/widgets/Header";
 import { Footer } from "@/widgets/Footer";
 import { LOCALES, isLocale, getLocaleMeta } from "@/i18n/locales";
-import { DEFAULT_OG_IMAGES, buildPageAlternates } from "@/shared/lib/seo";
+import { DEFAULT_OG_IMAGES, buildPageAlternates, robotsDirectives } from "@/shared/lib/seo";
 import { getSocials } from "@/entities/social/api/getSocials";
 import { getIcon } from "@/entities/icon/api/getIcon";
 import { getCv } from "@/entities/cv/api/getCv";
@@ -125,7 +125,7 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
             ],
             shortcut: `${icon.src}?v=${packageJson.version}`,
         },
-        robots: { index: true, follow: true },
+        robots: robotsDirectives(),
     };
 }
 

@@ -101,7 +101,9 @@
         "worksButton": "View projects"
     },
     "seo": {
-        "description": "Brand identity, packaging and logo design for growing brands."
+        "description": "Brand identity, packaging and logo design for growing brands.",
+        "projectDescription": "{project}: {categories} by Alona Avrash, brand and visual designer.",
+        "projectDescriptionFallback": "{project}: a project by Alona Avrash, brand and visual designer."
     },
     "privacyPreferences": {
         "bannerText": "This site uses browser storage that is needed to show it to you. With your permission it also remembers your theme and intro screen, and measures visits and interactions to improve the portfolio. You can accept optional technologies, reject them, or manage your preferences. See the <cookies>Cookie & Browser Storage Policy</cookies>.",

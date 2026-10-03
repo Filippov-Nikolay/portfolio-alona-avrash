@@ -6,6 +6,8 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const isDev = process.env.NODE_ENV === "development";
 const isVercel = process.env.VERCEL === "1";
+const isNonProductionDeployment =
+    process.env.VERCEL_ENV !== undefined && process.env.VERCEL_ENV !== "production";
 
 // Preview deployments inject the Vercel Toolbar from vercel.live. Keep the
 // production CSP strict everywhere else while allowing the toolbar's own
@@ -87,7 +89,12 @@ const nextConfig: NextConfig = {
     // this, the standalone build's file tracing wouldn't follow that
     // dependency back to the monorepo root and would silently omit it.
     outputFileTracingRoot: path.join(__dirname, "../../"),
-    transpilePackages: ["@avrash/content-schema", "@avrash/content-data", "@avrash/ui"],
+    transpilePackages: [
+        "@avrash/content-schema",
+        "@avrash/content-data",
+        "@avrash/rate-limit",
+        "@avrash/ui",
+    ],
 
     // Default is 60s. CI runners are 2-core, so page generation runs on a
     // single worker there (vs several locally) - give it real headroom
@@ -128,6 +135,9 @@ const nextConfig: NextConfig = {
                         key: "X-Frame-Options",
                         value: "DENY",
                     },
+                    ...(isNonProductionDeployment
+                        ? [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]
+                        : []),
                     {
                         key: "X-Content-Type-Options",
                         value: "nosniff",

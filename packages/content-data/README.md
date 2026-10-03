@@ -1,12 +1,25 @@
 # @avrash/content-data
 
-The actual content JSON, typed against `@avrash/content-schema`. This is the local stand-in for what
-will eventually live on Cloudflare R2: `apps/web` reads from here to render the site, and `apps/admin`
-reads from the exact same files to display/edit them - one copy, not two that can drift apart.
+The site's content as JSON, typed against [`@avrash/content-schema`](../content-schema/README.md).
 
-Each `.ts` export in `src/index.ts` casts the matching `.json` file to its `@avrash/content-schema`
-type, so both consumers get typed data instead of `unknown`.
+- **Web** bundles it as the default content source and as the fallback when R2 is unreachable or a
+  file is missing there.
+- **Admin's filesystem driver** writes to these files during local development, and the web dev
+  server picks the changes up immediately.
+- **In production**, admin writes to R2 instead. This package is then the snapshot that ships with
+  each web build.
 
-**Adding an entity's data:** add the `.json` file here, add its typed export to `src/index.ts` against
-the corresponding `@avrash/content-schema` type (add that type first if it doesn't exist yet), then
-wire up the consumer.
+- **Edited in admin:** `projects.json`, `categories.json`, `tool-badges.json`, `cv.json`.
+- **Edited here** (no admin editor yet): `hero.json`, `services.json`, `reviews.json`, `cta.json`,
+  `footer.json`, `stats.json`, `clients.json`, `tools.json`, `social.json`,
+  `home-project-gallery.json`, `icon.json`.
+
+[`src/index.ts`](src/index.ts) exports each file typed as its schema type, so both apps get typed
+data instead of `unknown`.
+
+## Adding content
+
+1. Define its shape in `@avrash/content-schema`.
+2. Add the `.json` file here and a typed export in `src/index.ts`.
+3. In web, register the resource in `shared/api/contentStore.ts` and `contentClient.ts`, and add an
+   entity fetcher.

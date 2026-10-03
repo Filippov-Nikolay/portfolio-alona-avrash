@@ -46,9 +46,19 @@ const nextConfig: NextConfig = {
             "./node_modules/pdfjs-dist/wasm/**",
         ],
     },
-    transpilePackages: ["@avrash/content-schema", "@avrash/content-data", "@avrash/ui"],
+    transpilePackages: [
+        "@avrash/content-schema",
+        "@avrash/content-data",
+        "@avrash/rate-limit",
+        "@avrash/ui",
+    ],
     poweredByHeader: false,
     agentRules: false,
+    experimental: {
+        serverActions: {
+            bodySizeLimit: "4.5mb",
+        },
+    },
 
     // Baked in once at build time (Next's `env` replaces these references at
     // compile time, unlike process.env.X read at runtime) - the System info

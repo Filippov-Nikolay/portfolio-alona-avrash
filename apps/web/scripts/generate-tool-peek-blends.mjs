@@ -51,7 +51,9 @@ async function makeBlend(srcPath, outPath) {
         .png()
         .toBuffer();
 
-    await sharp(srcPath).composite([{ input: maskedBlurred, blend: "over" }]).toFile(outPath);
+    await sharp(srcPath)
+        .composite([{ input: maskedBlurred, blend: "over" }])
+        .toFile(outPath);
 }
 
 async function main() {

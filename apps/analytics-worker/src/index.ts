@@ -83,7 +83,7 @@ async function handleAnalyticsRead(
     url: URL,
     headers: HeadersInit
 ): Promise<Response> {
-    if (!isAuthorizedRead(request, env.ANALYTICS_READ_SECRET)) {
+    if (!(await isAuthorizedRead(request, env.ANALYTICS_READ_SECRET))) {
         return new Response("Unauthorized", { status: 401, headers });
     }
 

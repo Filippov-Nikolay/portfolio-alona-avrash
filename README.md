@@ -132,4 +132,10 @@ between apps.
 
 ## License
 
-[MIT](LICENSE).
+All rights reserved, see [LICENSE](LICENSE). The repository is public so the code can be read and
+evaluated, but it is not open source:
+
+- the source code and the website design belong to Nikolay Filippov;
+- the portfolio works, brand and content belong to Alona Avrash.
+
+Neither may be copied, reused or deployed without written permission.

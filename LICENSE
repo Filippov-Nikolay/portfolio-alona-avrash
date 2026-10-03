@@ -1,21 +1,54 @@
-MIT License
+All rights reserved.
 
-Copyright (c) 2026 Nikolay Filippov
+Copyright (c) 2026 Nikolay Filippov - source code and website design
+Copyright (c) 2026 Alona Avrash - portfolio works, brand and content
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This repository is published so that its source code can be read and
+evaluated. It is not open source. No license to use any part of it is
+granted, except as stated below.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. Source code and website design
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   The source code and the design of the website (layout, visual style,
+   animations and interactions), owned by Nikolay Filippov.
+
+2. Portfolio works, brand and content
+
+   All works, images and text of Alona Avrash, including but not limited to:
+   - project images in apps/web/public/projects and the images derived from
+     them in apps/web/public/assets/tools/peek-blend;
+   - the brand mark and icons in apps/web/public/icon, apps/web/public/og,
+     apps/web/public/favicon.ico and apps/web/public/apple-touch-icon.png;
+   - the site content in packages/content-data and e2e/fixtures/content;
+   - the legal documents in apps/web/src/content/legal;
+   - the CV and any uploaded files.
+
+   The names and marks of Alona Avrash's clients appear only to describe her
+   work and belong to their respective owners.
+
+3. Permitted
+
+   You may view and read this repository on GitHub. GitHub's Terms of Service
+   allow viewing and forking within GitHub; that does not grant any further
+   rights.
+
+4. Not permitted without prior written permission
+
+   Copying, modifying, distributing, publishing, sublicensing, selling or
+   deploying any part of this repository, in whole or in part, or using it as
+   the basis of another website, product or template.
+
+5. Third-party material
+
+   Dependencies are used under their own licenses. Fonts are used under their
+   own licenses. Social network logos in apps/web/public/assets/socials and
+   software icons in apps/web/public/assets/tools are trademarks of their
+   respective owners.
+
+For permission regarding the source code or the website design, contact
+Nikolay Filippov through GitHub (https://github.com/Filippov-Nikolay). For
+permission regarding the portfolio works or content, contact Alona Avrash at
+avrash.design@gmail.com.
+
+THIS REPOSITORY IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED.

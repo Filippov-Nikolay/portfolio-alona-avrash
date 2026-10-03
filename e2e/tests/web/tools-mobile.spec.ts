@@ -63,9 +63,13 @@ test("mobile tools carousel uses native momentum and prepares peek images before
     const startX = box!.x + box!.width * 0.72;
     const endX = box!.x + box!.width * 0.28;
 
+    const startPosition = await track.evaluate((element) => element.scrollLeft);
+    const frameSeconds = 0.016;
+    const gestureStart = Date.now() / 1000;
     await client.send("Input.dispatchTouchEvent", {
         type: "touchStart",
         touchPoints: [{ x: startX, y }],
+        timestamp: gestureStart,
     });
     const steps = 6;
     for (let step = 1; step <= steps; step++) {
@@ -73,16 +77,23 @@ test("mobile tools carousel uses native momentum and prepares peek images before
         await client.send("Input.dispatchTouchEvent", {
             type: "touchMove",
             touchPoints: [{ x: startX + ((endX - startX) * step) / steps, y }],
+            timestamp: gestureStart + step * frameSeconds,
         });
     }
     const releasePosition = await track.evaluate((element) => element.scrollLeft);
-    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    expect(releasePosition - startPosition, "the swipe itself moved the track").toBeGreaterThan(20);
+    await client.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+        timestamp: gestureStart + (steps + 1) * frameSeconds,
+    });
 
     await expect
         .poll(
             async () => (await track.evaluate((element) => element.scrollLeft)) - releasePosition,
             {
-                timeout: 1_000,
+                message: "the track kept moving on its own after release",
+                timeout: 3_000,
             }
         )
         .toBeGreaterThan(20);

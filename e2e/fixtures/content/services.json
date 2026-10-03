@@ -1,0 +1,77 @@
+[
+    {
+        "id": 0,
+        "title": "ui-ux",
+        "image": { "src": "/projects/image-rosso.png", "alt": "Mobile UI screens from the Rosso app design" },
+        "i18n": {
+            "en": {
+                "description": "I design intuitive digital experiences where visual identity and usability work as one. From user flows to responsive interfaces, every detail is shaped for clarity, function and character.",
+                "approachLabel": "Digital Design Approach"
+            },
+            "pl": {
+                "description": "Projektuję intuicyjne doświadczenia cyfrowe, w których identyfikacja wizualna i użyteczność stanowią jedność. Od ścieżek użytkownika po responsywne interfejsy — każdy detal jest dopracowany pod kątem czytelności, funkcjonalności i charakteru.",
+                "approachLabel": "Podejście do Digital Design"
+            }
+        }
+    },
+    {
+        "id": 1,
+        "title": "branding",
+        "image": { "src": "/projects/image-florelle.png", "alt": "Florelle branding stationery and packaging mockup" },
+        "i18n": {
+            "en": {
+                "description": "I build brand identities that hold together across every surface — strategy, tone and visuals as one system. From naming to full guideline documentation, each brand is shaped to be instantly recognizable and built to last.",
+                "approachLabel": "Brand Identity Approach"
+            },
+            "pl": {
+                "description": "Buduję identyfikacje marki, które spójnie działają na każdej płaszczyźnie — strategia, ton komunikacji i warstwa wizualna jako jeden system. Od nazewnictwa po pełną dokumentację brandbookową — każda marka jest projektowana tak, by była natychmiast rozpoznawalna i trwała.",
+                "approachLabel": "Podejście do Brand Identity"
+            }
+        }
+    },
+    {
+        "id": 2,
+        "title": "logo",
+        "image": { "src": "/projects/image-logofolio.png", "alt": "Logofolio Vol.03 logo mark showcase" },
+        "i18n": {
+            "en": {
+                "description": "I craft logo marks that carry meaning at any size, from favicon to storefront. Every symbol starts with the brand's story and is refined until it reads clean, memorable and true to the concept.",
+                "approachLabel": "Logo Design Approach"
+            },
+            "pl": {
+                "description": "Tworzę znaki logo, które niosą znaczenie w każdej skali — od favicony po szyld sklepowy. Każdy symbol zaczyna się od historii marki i jest dopracowywany, aż stanie się czytelny, zapadający w pamięć i wierny koncepcji.",
+                "approachLabel": "Podejście do Logo Design"
+            }
+        }
+    },
+    {
+        "id": 3,
+        "title": "packaging",
+        "image": { "src": "/projects/image-gasimi.png", "alt": "GASIMI wine bottle label design" },
+        "i18n": {
+            "en": {
+                "description": "I design packaging that turns a shelf moment into a brand moment — structure, material and print working together. Every box, label and bottle is built to protect the product and sell the story at first glance.",
+                "approachLabel": "Packaging Design Approach"
+            },
+            "pl": {
+                "description": "Projektuję opakowania, które zamieniają moment na półce w moment z marką — forma, materiał i druk działają razem. Każde pudełko, etykieta i butelka chronią produkt i sprzedają jego historię od pierwszego spojrzenia.",
+                "approachLabel": "Podejście do Packaging Design"
+            }
+        }
+    },
+    {
+        "id": 4,
+        "title": "web-design",
+        "image": { "src": "/projects/image-logolove.png", "alt": "LogoLove website shown on a laptop mockup" },
+        "i18n": {
+            "en": {
+                "description": "I design and build marketing sites and landing pages that convert as well as they look. From layout and typography to responsive behaviour, every page is crafted to load fast and guide visitors with intent.",
+                "approachLabel": "Web Design Approach"
+            },
+            "pl": {
+                "description": "Projektuję i buduję strony marketingowe oraz landing page, które konwertują tak samo dobrze, jak wyglądają. Od układu i typografii po responsywność — każda strona jest tworzona tak, by szybko się ładować i celowo prowadzić odwiedzających.",
+                "approachLabel": "Podejście do Web Design"
+            }
+        }
+    }
+]

@@ -1,0 +1,26 @@
+{
+    "brandMark": "Avrash",
+    "legalLinks": [
+        { "id": "terms", "href": "/legal/terms" },
+        { "id": "privacy", "href": "/legal/privacy" },
+        { "id": "cookies", "href": "/legal/cookies" }
+    ],
+    "i18n": {
+        "en": {
+            "tagline": "Let's work together",
+            "legalLinkLabels": {
+                "terms": "Terms of use",
+                "privacy": "Privacy policy",
+                "cookies": "Cookie policy"
+            }
+        },
+        "pl": {
+            "tagline": "Pracujmy razem",
+            "legalLinkLabels": {
+                "terms": "Warunki korzystania",
+                "privacy": "Polityka prywatności",
+                "cookies": "Polityka cookies"
+            }
+        }
+    }
+}

@@ -1,0 +1,22 @@
+[
+    {
+        "id": "pinterest",
+        "logo": { "src": "/assets/socials/Icon-pinterest.svg", "alt": "Pinterest" },
+        "link": "https://pinterest.com/avrash_design/"
+    },
+    {
+        "id": "behance",
+        "logo": { "src": "/assets/socials/Icon-behance.svg", "alt": "Behance" },
+        "link": "https://behance.net/avrash-design"
+    },
+    {
+        "id": "linkedin",
+        "logo": { "src": "/assets/socials/Icon-linkedin.svg", "alt": "LinkedIn" },
+        "link": "https://linkedin.com/in/alona-avramenko-a8b2a72b1/"
+    },
+    {
+        "id": "instagram",
+        "logo": { "src": "/assets/socials/Icon-instagram.svg", "alt": "Instagram" },
+        "link": "https://instagram.com/avrash_design"
+    }
+]

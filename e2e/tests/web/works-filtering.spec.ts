@@ -1,11 +1,9 @@
 import { expect, test } from "../../fixtures/test";
 
-// Reads the site's real, checked-in project content (packages/content-data)
-// rather than anything admin's isolated test dataset writes - this is a
-// read-only test of the public filter UI, not a content-mutation flow, so
-// it needs no isolation of its own. Assertions are shaped around "filtering
-// narrows the set and All restores it" rather than an exact hardcoded count,
-// so the test doesn't need updating every time a project is added.
+// Runs on the frozen content fixture (e2e/fixtures/content) that every web
+// spec uses. Assertions are shaped around "filtering narrows the set and All
+// restores it" rather than an exact hardcoded count, so the test doesn't need
+// updating every time a project is added to the fixture.
 test.describe("works filtering", () => {
     test("filtering by category narrows the visible cards, and All restores them", async ({
         page,

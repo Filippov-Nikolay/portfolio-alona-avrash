@@ -101,7 +101,9 @@
         "worksButton": "Zobacz projekty"
     },
     "seo": {
-        "description": "Identyfikacja marki, opakowania i projektowanie logo dla rozwijających się marek."
+        "description": "Identyfikacja marki, opakowania i projektowanie logo dla rozwijających się marek.",
+        "projectDescription": "{project}: {categories}. Projekt Alony Avrash, projektantki marki i identyfikacji wizualnej.",
+        "projectDescriptionFallback": "{project}: projekt Alony Avrash, projektantki marki i identyfikacji wizualnej."
     },
     "privacyPreferences": {
         "bannerText": "Ta strona korzysta z pamięci przeglądarki potrzebnej do jej wyświetlenia. Za Twoją zgodą zapamiętuje też motyw i ekran powitalny oraz mierzy odwiedziny i interakcje, aby ulepszać portfolio. Możesz zaakceptować technologie opcjonalne, odrzucić je lub zarządzać ustawieniami. Zobacz <cookies>Politykę plików cookie i pamięci przeglądarki</cookies>.",

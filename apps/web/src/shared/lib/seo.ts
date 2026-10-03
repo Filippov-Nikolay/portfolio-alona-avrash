@@ -32,3 +32,13 @@ export function robotsDirectives() {
     const indexable = isIndexable();
     return { index: indexable, follow: indexable };
 }
+
+function toListItem(label: string, locale: string): string {
+    return /\p{Lu}{2}/u.test(label) ? label : label.toLocaleLowerCase(locale);
+}
+
+export function formatCategoryList(labels: string[], locale: string): string {
+    return new Intl.ListFormat(locale, { type: "conjunction" }).format(
+        labels.map((label) => toListItem(label, locale))
+    );
+}

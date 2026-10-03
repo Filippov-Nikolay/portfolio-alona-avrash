@@ -22,7 +22,6 @@ export async function generateMetadata({ params }: LegalPageProps): Promise<Meta
         title: t("title"),
         description: t("description"),
         alternates: { canonical },
-        robots: { index: true, follow: true },
     };
 }
 

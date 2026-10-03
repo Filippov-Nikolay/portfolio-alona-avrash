@@ -22,3 +22,13 @@ export function buildPageAlternates(locale: string, path = "") {
 
     return { canonical, languages };
 }
+
+export function isIndexable(): boolean {
+    const environment = process.env.VERCEL_ENV;
+    return !environment || environment === "production";
+}
+
+export function robotsDirectives() {
+    const indexable = isIndexable();
+    return { index: indexable, follow: indexable };
+}

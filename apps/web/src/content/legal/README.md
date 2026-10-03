@@ -1,46 +1,54 @@
-# Avrash legal bundle — final
+# Legal documents
 
-Prepared: September 27, 2026
-Basis: final telemetry/privacy implementation supplied for dev version 0.23.0, including the subsequent referrer-origin and NEXT_LOCALE verification.
+The site's four legal documents, written as Markdown strings in TypeScript and rendered as pages
+under `/[locale]/legal/*`. The documents are in English for every locale. The page title and
+description are localized from `messages/*.json`.
 
-## Four legal documents
+| File                    | Page                         | Document                             |
+| ----------------------- | ---------------------------- | ------------------------------------ |
+| `privacy.ts`            | `/legal/privacy`             | Privacy Policy                       |
+| `cookies.ts`            | `/legal/cookies`             | Cookie & Browser Storage Policy      |
+| `terms.ts`              | `/legal/terms`               | Terms of Use                         |
+| `privacyPreferences.ts` | `/legal/privacy-preferences` | Privacy Preferences & Consent Notice |
 
-1. `privacy.ts` — Privacy Policy
-2. `cookies.ts` — Cookie & Browser Storage Policy
-3. `terms.ts` — Terms of Use
-4. `privacyPreferences.ts` — Privacy Preferences & Consent Notice
+Each file exports the Markdown and its `*_LAST_UPDATED` date (currently September 27, 2026).
+[`legalLinks.ts`](legalLinks.ts) holds routes and titles for the footer, the `/legal` index and
+the links between documents.
 
-## Integration helpers
+## Rendering
 
-- `legalLinks.ts` — routes/titles updated for all four documents.
-- `parseLegalMarkdown.ts` — existing reusable markdown parser included for convenience.
+[`parseLegalMarkdown.ts`](parseLegalMarkdown.ts) parses the small Markdown subset these documents
+use into a typed tree:
 
-## Implementation facts reflected
+- headings, paragraphs and lists;
+- tables;
+- bold text, inline code and line breaks.
 
-- Optional custom analytics, Vercel Web Analytics, and Vercel Speed Insights are disabled before Analytics consent.
-- Custom analytics uses Cloudflare Worker + D1.
-- D1 analytics retention: 730 days, with daily cleanup.
-- Referrer is reduced to HTTP(S) origin in the browser and normalized again by the Worker; full referrer URLs are not intentionally sent to the custom analytics endpoint.
-- Daily visitor ID is derived from salt + date + IP + User-Agent; raw IP and full UA are not stored in the custom analytics DB for that purpose.
-- `NEXT_LOCALE` is a Necessary session cookie created after explicit locale change; value is `en`/`pl`, Path=/, SameSite=Lax, no explicit expiry.
-- Contact submissions are not stored in the Website application's own database; they are transmitted through Resend to the contact mailbox.
-- Contact IP is processed transiently for an in-memory 5-attempts/10-minute rate limit.
-- Operator/contact used in the documents: Alona Avrash / avrash.design@gmail.com / avrash.com.
+`shared/ui/LegalDocument` renders that tree with anchored sections and a table of contents. The
+contents highlight the current section. In the sticky desktop layout they scroll only within
+themselves and never move the page. Parser behavior is covered by `parseLegalMarkdown.test.ts`.
 
-## External legal/documentation checked (September 27, 2026)
+## What the documents describe
 
-- Cloudflare Data Processing Addendum, v6.4 effective April 3, 2026.
-- Cloudflare Privacy Policy.
-- Vercel Privacy Notice, last updated June 1, 2026.
-- Vercel Data Processing Addendum.
-- Vercel Web Analytics documentation / published privacy characteristics.
-- Resend Privacy Policy, last updated August 27, 2026.
-- Resend Data Processing Addendum.
+The text has to match the implementation. Update the documents when any of these change:
 
-## Integration note
+- Optional analytics (the custom worker, Vercel Web Analytics, Speed Insights) is off until the
+  visitor gives Analytics consent.
+- Custom analytics runs on a Cloudflare Worker with D1 and keeps data for 730 days, with daily
+  cleanup.
+- Referrers are reduced to their origin, in the browser and again in the worker.
+- The daily visitor ID is a hash of a salt, the date, the IP and the User-Agent. The raw IP and
+  User-Agent are not stored for it.
+- `NEXT_LOCALE` is a necessary session cookie, set only after an explicit language change.
+- Contact submissions are not stored by the site. They are sent through Resend to the contact
+  mailbox. The sender's IP is used only for an in-memory rate limit of 5 attempts per 10 minutes.
+- Theme and preloader state are stored only with Preferences consent.
 
-The existing project previously exposed only privacy/cookies/terms legal routes. `privacyPreferences.ts` is a fourth standalone legal document, so the application must have a matching `/legal/privacy-preferences` page (or adjust `legalLinks.ts` to the route you choose). If the preference UI already links only to Privacy/Cookies, the fourth document can still be surfaced from the legal footer/preferences modal.
+The provider terms these documents rely on were reviewed on September 27, 2026:
 
-## Scope note
+- Cloudflare DPA v6.4 and Privacy Policy;
+- Vercel Privacy Notice, DPA and Web Analytics documentation;
+- Resend Privacy Policy and DPA.
 
-These files are source-aligned legal drafts prepared from the supplied implementation and current provider documentation. They intentionally do not invent a company registration number, VAT number, postal business address, DPO, governing-law clause, or exclusive jurisdiction that was not supplied.
+The documents intentionally contain no company registration number, VAT number, postal address,
+DPO, governing-law clause or jurisdiction, because none of these were provided.

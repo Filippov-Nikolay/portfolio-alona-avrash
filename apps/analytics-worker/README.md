@@ -1,98 +1,130 @@
-# Analytics Worker
+# @avrash/analytics-worker
 
-A small Cloudflare Worker that collects the site's custom product events - `project_open`,
-`project_gallery_view`, `project_external_click`, `works_filter`, `cv_download`,
-`contact_started`, `contact_success`, `social_click` - plus a `page_view` for every page a visitor
-reaches, into a Cloudflare D1 database, and serves aggregated reads of them back to the Admin
-dashboard. Traffic is kept here as well as in Vercel Analytics because Vercel only retains a
-limited window, while these rows stay until the retention cron removes them.
+A Cloudflare Worker that collects the site's product events into Cloudflare D1 and serves aggregated
+reports to the admin dashboard. It runs in two environments:
 
-Every event also stores:
+- `analytics.avrash.com` for production;
+- `analytics-dev.avrash.com` for the dev site.
 
-- `country` from Cloudflare (`request.cf.country`); the IP address itself is never stored.
-- `device`, `os` and `browser`, parsed server-side from the `User-Agent` header.
-- `visitor_id`, a SHA-256 of `VISITOR_SALT | UTC day | IP | User-Agent` (first 16 bytes). It
-  rotates every day, needs no cookie or storage, and cannot be reversed to an IP. A visitor is
-  therefore counted once per day, the same model Vercel Analytics uses.
+Vercel Analytics keeps only a limited history and has no project-level events. This worker keeps
+both for as long as the retention period allows.
 
-Requests whose `User-Agent` looks like a crawler, a link preview, a headless browser or an HTTP
-client are acknowledged with `204` and not stored.
+Setup for the whole monorepo is in the [root README](../../README.md).
 
-`apps/web`'s `shared/analytics/analytics.ts` (`trackEvent(...)`) is the only writer. It's a no-op
-until `NEXT_PUBLIC_ANALYTICS_ENDPOINT` is set, so nothing here needs to exist for the site to work.
+---
 
-`apps/admin`'s `entities/analytics/api/analyticsRepository.ts` is the only reader, same story -
-its Analytics page shows a "not connected" state until `ANALYTICS_WORKER_URL` /
-`ANALYTICS_READ_SECRET` are set there.
+## What is collected
+
+[`apps/web`](../web/README.md)'s `trackEvent()` is the only writer. It sends events only after the
+visitor allows analytics. Events: `page_view`, `project_open`, `project_gallery_view`,
+`project_external_click`, `works_filter`, `cv_download`, `contact_started`, `contact_success`,
+`social_click`.
+
+Each event also stores:
+
+- **`country`** from Cloudflare (`request.cf.country`). The IP address itself is never stored.
+- **`device`, `os`, `browser`**, parsed on the server from the `User-Agent` header.
+- **`visitor_id`**: a SHA-256 of `VISITOR_SALT | UTC day | IP | User-Agent`, truncated to 16 bytes.
+  It rotates daily, needs no cookie, and cannot be reversed to an IP, so a visitor is counted once
+  per day.
+- **Referrer** reduced to its origin, in the browser and again here. Search terms and paths never
+  reach the database.
+- **UTM parameters**: only `utm_source`, `utm_medium`, `utm_campaign` and `utm_content`, capped at
+  100 characters, and only on the first page view after consent.
+
+Requests from crawlers, link previews, headless browsers and HTTP clients get a `204` and are not
+stored.
+
+---
 
 ## Endpoints
 
-- `POST /event` - public, no bearer auth (a beacon from any visitor's browser), but it does check
-  the request's `Origin` header against `ALLOWED_ORIGIN` and rejects a mismatch with `403` - a
-  CORS response header alone only constrains browsers, not curl or a script, so this is the actual
-  server-side gate. Not spoof-proof (a non-browser client can set `Origin` to whatever it wants),
-  but it stops a random third-party site's own visitors' browsers from posting events here.
-  Validated against the event allowlist, rate-limited and deduped per session too - see
-  `src/handleEvent.ts`.
-- `GET /analytics/overview?days=30` - daily `project_open`/`contact_started`/`contact_success`
-  counts, plus the contact form's start-to-send conversion rate.
-- `GET /analytics/projects?days=30` - per-project opens/external clicks/CTR/gallery views/gallery
-  view rate, sorted by opens desc.
-- `GET /analytics/projects/:entityId?days=30` - one project's totals, daily timeline, top
-  countries and languages.
-- `GET /analytics/categories?days=30` - `works_filter` counts by category, as percentages of the
-  total (top 10).
-- `GET /analytics/traffic?days=30` - page views, daily visitors, views per visitor, a daily
-  timeline of page views, visitors and sessions, the top 50 pages with their share of views,
-  the top 10 countries, languages, referrer hosts, devices, operating systems and browsers by
-  visitors, and the top 20 UTM campaign combinations.
-- `GET /analytics/engagement?days=30` - `cv_download` total and its split by the language of
-  the downloaded CV, `social_click` counts per network, and a trend of both (daily up to 30
-  days, weekly beyond).
-- `GET /analytics/sessions?days=30` - sessions with at least one page view, pages and events
-  per session, the single-page share, the median length of multi-page sessions, and two
-  session funnels: project open -> gallery view / external click, and contact started -> sent.
+| Route                                       | Auth   | Returns                                                                                                     |
+| ------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
+| `POST /event`                               | Origin | Stores one event: validated, rate-limited and deduplicated per session                                      |
+| `GET /analytics/overview?days=30`           | Bearer | Daily project opens, contact starts and sends, and the contact conversion rate                              |
+| `GET /analytics/projects?days=30`           | Bearer | Per project: opens, external clicks, CTR, gallery views and gallery view rate                               |
+| `GET /analytics/projects/:entityId?days=30` | Bearer | One project's totals, daily timeline, and top countries and languages                                       |
+| `GET /analytics/categories?days=30`         | Bearer | Top 10 works filters as shares of the total                                                                 |
+| `GET /analytics/traffic?days=30`            | Bearer | Views, visitors, sessions, top pages, countries, languages, referrers, devices, OS, browsers, UTM campaigns |
+| `GET /analytics/engagement?days=30`         | Bearer | CV downloads by language, social clicks by network, and their trend                                         |
+| `GET /analytics/sessions?days=30`           | Bearer | Pages and events per session, single-page share, median length, and conversion funnels                      |
 
-Only `utm_source`, `utm_medium`, `utm_campaign` and `utm_content` are kept, each capped at 100
-characters, and only on the first page view after the visitor allows analytics - the rest of
-the landing query string is never sent.
+- **`POST /event`** is a public beacon, so it has no bearer token. The worker rejects a request
+  with `403` when its `Origin` header does not match `ALLOWED_ORIGIN`. That stops other sites'
+  visitors from posting events. It does not stop a script that fakes the header.
+- **`GET /analytics/*`** requires `Authorization: Bearer <ANALYTICS_READ_SECRET>`, which only admin
+  has.
 
-The referrer is reduced to its origin (`https://www.google.com`) both in the browser and again
-in the worker before it is stored, so search terms, paths and query strings of the referring
-page never reach the database. Migration 0004 rewrites referrers stored before this rule to
-their origin as well.
+---
 
-The `GET /analytics/*` routes require `Authorization: Bearer <ANALYTICS_READ_SECRET>` -
-they're read access to real (if anonymized) visitor behavior, not a public API.
+## Project structure
 
-## Status
+```
+src/
+├── index.ts             # Workers fetch and scheduled handlers, routing, CORS
+├── handleEvent.ts       # Event pipeline: validation, bot filtering, rate limit, dedupe
+├── analyticsQueries.ts  # SQL for every report
+├── db.ts                # D1 access
+├── schema.ts            # Zod event schema and event allowlist
+├── security.ts          # Origin check and bearer check
+└── userAgent.ts         # Device, OS, browser, bot detection and the visitor hash
+migrations/              # D1 schema, applied in order (0001 - 0004)
+wrangler.toml            # dev (default) and production environments
+```
 
-Code and schema only - **not deployed anywhere yet**. `src/handleEvent.ts`, `src/db.ts` and
-`src/schema.ts` are plain TypeScript with no Workers-only globals, so they're covered by real unit
-tests (`pnpm test`) under Node. `src/index.ts` is the thin Workers `fetch` adapter around them - it
-needs an actual Cloudflare account to run (`wrangler dev` / `wrangler deploy`), so it's only verified
-by `tsc --noEmit` so far, not by a live request.
+All modules except `index.ts` are plain TypeScript without Workers globals, so Vitest tests them
+under Node.
 
-## Deploying (when you're ready to)
+---
 
-1. `wrangler login`
-2. `wrangler d1 create avrash-analytics` - paste the printed `database_id` into `wrangler.toml`.
-3. `wrangler d1 migrations apply avrash-analytics --remote` - runs every file in `migrations/`
-   that has not been applied yet (`0002_traffic.sql` adds the visitor/device columns).
-4. Set `ALLOWED_ORIGIN` in `wrangler.toml` to the real site origin (e.g. `https://avrash.com`).
-5. `wrangler secret put VISITOR_SALT` - any long random string. Without it the read secret is
-   used as the salt.
-6. `wrangler deploy`, then either uncomment the `[[routes]]` block in `wrangler.toml` for a custom
-   domain (e.g. `analytics.avrash.com`) or use the `*.workers.dev` URL Wrangler prints.
-7. Set `apps/web`'s `NEXT_PUBLIC_ANALYTICS_ENDPOINT` to that URL + `/event`.
+## Configuration
 
-Local dev without deploying: copy `.dev.vars.example` to `.dev.vars` (gitignored) and pick any
-value for `ANALYTICS_READ_SECRET` - just make sure `apps/admin/.env`'s own
-`ANALYTICS_READ_SECRET` matches it. `pnpm --filter @avrash/analytics-worker run dev` (or the root
-`pnpm dev`, which now runs web/admin/this worker together) runs `wrangler dev`, which emulates D1
-locally (`--local` migrations from step 3 target that emulated database, not the real one).
+| Name                    | Where                 | Purpose                                                         |
+| ----------------------- | --------------------- | --------------------------------------------------------------- |
+| `ALLOWED_ORIGIN`        | `wrangler.toml` vars  | Site origin allowed to post events                              |
+| `RETENTION_DAYS`        | `wrangler.toml` vars  | Events older than this are deleted (730)                        |
+| `DB`                    | `wrangler.toml` D1    | `avrash-analytics-dev` or `avrash-analytics-prod`               |
+| `ANALYTICS_READ_SECRET` | `wrangler secret put` | Bearer token for reports. Must match admin's value              |
+| `VISITOR_SALT`          | `wrangler secret put` | Salt for the daily visitor hash (falls back to the read secret) |
+
+---
+
+## Local development
+
+```bash
+cp .dev.vars.example .dev.vars        # any ANALYTICS_READ_SECRET; use the same value in apps/admin/.env
+pnpm exec wrangler d1 migrations apply avrash-analytics-dev --local
+pnpm dev                              # wrangler dev on http://localhost:8787
+```
+
+`wrangler dev` emulates D1 locally. Point web's `NEXT_PUBLIC_ANALYTICS_ENDPOINT` at
+`http://localhost:8787/event` and admin's `ANALYTICS_WORKER_URL` at `http://localhost:8787`.
+
+| Command           | What it does               |
+| ----------------- | -------------------------- |
+| `pnpm dev`        | Local worker with D1       |
+| `pnpm test`       | Vitest unit tests          |
+| `pnpm type-check` | TypeScript                 |
+| `pnpm deploy`     | Deploy the dev environment |
+
+---
+
+## Deployment
+
+```bash
+# dev
+pnpm exec wrangler d1 migrations apply avrash-analytics-dev --remote
+pnpm exec wrangler deploy
+
+# production
+pnpm exec wrangler d1 migrations apply avrash-analytics-prod --remote --env production
+pnpm exec wrangler deploy --env production
+```
+
+Secrets are set once per environment with `wrangler secret put <NAME>`, adding `--env production`
+for production. Custom domains are declared in `wrangler.toml`.
 
 ## Retention
 
-A daily cron (`[triggers]` in `wrangler.toml`) deletes events older than `RETENTION_DAYS`
-(730 by default).
+A daily cron (`17 3 * * *`) deletes events older than `RETENTION_DAYS`.

@@ -1,89 +1,129 @@
-# Portfolio — Alona Avrash
+# Alona Avrash - Portfolio Platform
 
-A `pnpm` monorepo for Alona Avrash's portfolio site and (eventually) the CMS that edits its content.
+Portfolio site of brand and visual designer Alona Avrash, together with the CMS that edits it and a
+privacy-friendly analytics service. Live at [avrash.com](https://avrash.com).
 
-```
-apps/
-├── web/     # the public Next.js site — see apps/web/README.md for everything about it
-└── admin/   # placeholder for the CMS, not started yet — see apps/admin/README.md
-packages/
-└── content-schema/   # TypeScript types both apps/web and (later) apps/admin agree on
-```
+A `pnpm` monorepo with three deployable apps and three shared packages:
 
-The two apps never import each other directly. `content-schema` is the contract between them: it
-describes the shape of every piece of content (hero, services, projects, reviews, ...) as plain
-TypeScript types, with no runtime code — `apps/web` reads content matching those shapes today from
-local JSON, and the CMS will eventually write content matching those same shapes to Cloudflare R2,
-which `apps/web` will read directly (not through the CMS's API — see `packages/content-schema` for the
-full plan once it's written up there).
+| Workspace                                                      | What it is                                                                                                         | Runs on            |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------ |
+| [`apps/web`](apps/web/README.md)                               | Public site: home, works catalog with project showcases, contact form, CV download, legal pages. `en` / `pl`.      | Vercel             |
+| [`apps/admin`](apps/admin/README.md)                           | Password-protected CMS: projects, image galleries, categories, tool badges, per-language CV, analytics dashboards. | Vercel             |
+| [`apps/analytics-worker`](apps/analytics-worker/README.md)     | Cookie-free event collector and reporting API.                                                                     | Cloudflare Workers |
+| [`packages/content-schema`](packages/content-schema/README.md) | Zod schemas and types for every content file - the contract between web and admin.                                 | -                  |
+| [`packages/content-data`](packages/content-data/README.md)     | Bundled content JSON, the local source and the build-time fallback.                                                | -                  |
+| [`packages/ui`](packages/ui/README.md)                         | React components rendered by both apps (works card, showcase modal), so the CMS preview matches the site.          | -                  |
+| [`e2e`](e2e/README.md)                                         | Playwright suites for web (desktop Chrome, iPhone WebKit) and admin.                                               | CI                 |
 
 ---
 
-## Getting Started
+## How it fits together
 
-```bash
-git clone <repo-url> portfolio-alona-avrash
-cd portfolio-alona-avrash
-pnpm install
-pnpm --filter @avrash/web run dev     # http://localhost:3000
+```
+                     writes JSON + images                 reads JSON + images
+   apps/admin  ───────────────────────────►  Cloudflare R2  ◄──────────────────────  apps/web
+       │                                       (CDN)                                    │
+       │  POST /api/revalidate (tag) ─────────────────────────────────────────────────►│
+       │                                                                                │
+       │  GET /analytics/* (bearer)                          POST /event (beacon)       │
+       └──────────────────────────►  apps/analytics-worker  ◄──────────────────────────┘
+                                         Cloudflare D1
 ```
 
-Requires Node.js 22+ (see `.nvmrc`) and `pnpm` (see `packageManager` in `package.json`; `corepack
-enable` will fetch the pinned version automatically).
+- **Content.** The apps never import each other. Admin writes content JSON and uploaded images to
+  Cloudflare R2. Web reads the same files from the CDN, validates them with the same
+  `content-schema`, and falls back to the snapshot bundled from `content-data` when R2 is
+  unavailable. After each save, admin calls web's `/api/revalidate` with a cache tag, so changes
+  appear within seconds while pages stay statically rendered.
+- **Local mode.** Without any env vars, admin writes straight into `packages/content-data` and
+  `apps/web/public`, and the web dev server picks the changes up. Nothing external is needed to work
+  on either app.
+- **Analytics.** Web sends events only after the visitor allows analytics. The worker stores them in
+  D1 without IP addresses or cookies (a daily rotating visitor hash), and admin reads aggregated
+  reports from it.
+
+---
+
+## Tech stack
+
+- **Frontend:** Next.js 16 (App Router, static rendering, Server Actions), React 19, TypeScript
+  (strict), SCSS Modules, Framer Motion, GSAP, Embla Carousel, next-intl.
+- **Backend:** Next.js route handlers and Server Actions, Zod, `jose` sessions with bcrypt
+  passwords, `sharp`, Resend for email, AWS S3 SDK for R2.
+- **Edge:** Cloudflare Workers, D1 (SQLite), R2.
+- **Quality:** Vitest, Playwright, ESLint, Prettier, Husky, lint-staged, GitHub Actions.
+
+---
+
+## Getting started
+
+Requires Node.js 22+ (`.nvmrc`) and pnpm 10 (`corepack enable` installs the version pinned in
+`package.json`).
+
+```bash
+pnpm install
+cp apps/admin/.env.example apps/admin/.env   # set ADMIN_USERS and SESSION_SECRET to sign in
+pnpm dev
+```
+
+`pnpm dev` starts all three apps:
+
+| App              | URL                   |
+| ---------------- | --------------------- |
+| web              | http://localhost:3000 |
+| admin            | http://localhost:3001 |
+| analytics-worker | http://localhost:8787 |
+
+The site works with no env file at all. Email sending, remote content and analytics are optional and
+described in each app's README. To run a single app, use `pnpm dev:web`, `pnpm dev:admin` or
+`pnpm dev:analytics`.
 
 ---
 
 ## Scripts
 
-Run from the root, fan out to every workspace member that defines the script:
+Run from the repository root:
 
-```bash
-pnpm run build         # pnpm -r --if-present run build
-pnpm run lint
-pnpm run type-check
-pnpm run format         # repo-wide, not per-package (prettier . --write)
-pnpm run format:check
-```
+| Command                             | What it does                                   |
+| ----------------------------------- | ---------------------------------------------- |
+| `pnpm dev`                          | Start web, admin and the worker in parallel    |
+| `pnpm build`                        | Build every workspace that has a build step    |
+| `pnpm lint` / `pnpm lint:fix`       | ESLint across the workspace                    |
+| `pnpm type-check`                   | `tsc --noEmit` in every workspace              |
+| `pnpm test`                         | Vitest unit tests (web, admin, worker, schema) |
+| `pnpm test:e2e`                     | Playwright suites (see [`e2e`](e2e/README.md)) |
+| `pnpm format` / `pnpm format:check` | Prettier for the whole repository              |
 
-To target one app specifically: `pnpm --filter @avrash/web run <script>` (or `pnpm --filter
-@avrash/content-schema run type-check`). `pnpm run dev` always targets `@avrash/web` — it's the only
-app with anything to serve right now.
-
----
-
-## Docker
-
-Build context is the repo root (the image needs `pnpm-lock.yaml` and `packages/content-schema`, both
-outside `apps/web/`):
-
-```bash
-docker compose up --build
-# or
-docker build -t avrash-web -f apps/web/Dockerfile .
-docker run -p 3000:3000 avrash-web
-```
-
-Multi-stage `apps/web/Dockerfile`: `builder` installs the whole workspace with `pnpm` and runs `pnpm
---filter @avrash/web run build`; `runner` is a minimal `node:22-alpine` image running as a non-root
-user, using Next's `output: standalone`.
+Target one workspace with `pnpm --filter @avrash/<name> run <script>`.
 
 ---
 
-## CI
+## Quality gates
 
-GitHub Actions runs `pnpm install → lint → type-check → build` against `@avrash/web` on every push/PR
-to `main`. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+- **Pre-commit:** lint-staged runs ESLint and Prettier on staged files, then a workspace type check.
+- **Pre-push:** a standalone production build of web.
+- **CI** (GitHub Actions, on pushes and pull requests to `main`, filtered by changed paths):
+    - [`web-ci.yml`](.github/workflows/web-ci.yml) and [`admin-ci.yml`](.github/workflows/admin-ci.yml):
+      lint, type check, schema tests, unit tests, production build.
+    - [`analytics-ci.yml`](.github/workflows/analytics-ci.yml): type check and unit tests.
+    - [`docker-ci.yml`](.github/workflows/docker-ci.yml): builds the web image, starts it and
+      smoke-tests the main routes.
+    - [`e2e-ci.yml`](.github/workflows/e2e-ci.yml): Playwright against production builds, split into
+      five parallel jobs (web in two shards, two iPhone WebKit projects, admin).
 
 ---
 
 ## Deployment
 
-**Vercel** — connect the repo, set the root directory to `apps/web`, set `NEXT_PUBLIC_SITE_URL`, deploy.
+| App               | Target                    | Notes                                                                                  |
+| ----------------- | ------------------------- | -------------------------------------------------------------------------------------- |
+| web               | Vercel, root `apps/web`   | Production at `avrash.com`, dev deployment at `dev.avrash.com`. Reads content from R2. |
+| admin             | Vercel, root `apps/admin` | Separate project with the `r2` storage driver.                                         |
+| analytics-worker  | Cloudflare Workers        | `wrangler deploy` (dev) and `wrangler deploy --env production`.                        |
+| web (self-hosted) | Docker                    | Standalone image, see [web's Docker section](apps/web/README.md#docker).               |
 
-**Docker / any VPS** — `docker compose up -d`, then reverse-proxy to `localhost:3000`.
-
-**Any other Node host** (Railway, Render, Fly.io, etc.) — `pnpm install && pnpm --filter @avrash/web
-run build && pnpm --filter @avrash/web run start`.
+Each app's README lists the environment variables it needs and the shared secrets that must match
+between apps.
 
 ---
 

@@ -1,5 +1,90 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resolveCdnAssetUrls } from "./contentClient";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { stats as bundledStats } from "@avrash/content-data";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fetchContent, resolveCdnAssetUrls } from "./contentClient";
+
+const remoteStats = [{ id: 0, value: "99K+", label: "project views" }];
+const contentDir = mkdtempSync(path.join(tmpdir(), "avrash-content-"));
+
+afterAll(() => {
+    rmSync(contentDir, { recursive: true, force: true });
+});
+
+describe("fetchContent", () => {
+    afterEach(() => {
+        vi.unstubAllEnvs();
+        vi.unstubAllGlobals();
+        vi.restoreAllMocks();
+    });
+
+    it("serves the bundled content by default", async () => {
+        expect(await fetchContent("stats")).toEqual(bundledStats);
+    });
+
+    it("reads every resource from CONTENT_DIR with CONTENT_SOURCE=directory", async () => {
+        writeFileSync(path.join(contentDir, "stats.json"), JSON.stringify(remoteStats));
+        vi.stubEnv("CONTENT_SOURCE", "directory");
+        vi.stubEnv("CONTENT_DIR", contentDir);
+        expect(await fetchContent("stats")).toEqual(remoteStats);
+    });
+
+    it("fails loudly when directory content breaks its schema", async () => {
+        writeFileSync(path.join(contentDir, "cta.json"), JSON.stringify({ i18n: { pl: {} } }));
+        vi.stubEnv("CONTENT_SOURCE", "directory");
+        vi.stubEnv("CONTENT_DIR", contentDir);
+        await expect(fetchContent("cta")).rejects.toThrow();
+    });
+
+    it("requires CONTENT_DIR for the directory source", async () => {
+        vi.stubEnv("CONTENT_SOURCE", "directory");
+        vi.stubEnv("CONTENT_DIR", "");
+        await expect(fetchContent("stats")).rejects.toThrow("requires CONTENT_DIR");
+    });
+
+    describe("with CONTENT_SOURCE=remote", () => {
+        beforeEach(() => {
+            vi.stubEnv("CONTENT_SOURCE", "remote");
+            vi.stubEnv("CONTENT_CDN_URL", "https://cdn.example");
+            vi.spyOn(console, "error").mockImplementation(() => {});
+        });
+
+        it("uses valid remote content and tags the fetch with the resource", async () => {
+            const fetchMock = vi.fn(async () => Response.json(remoteStats));
+            vi.stubGlobal("fetch", fetchMock);
+            expect(await fetchContent("stats")).toEqual(remoteStats);
+            expect(fetchMock).toHaveBeenCalledWith(
+                "https://cdn.example/content/stats.json",
+                expect.objectContaining({ next: expect.objectContaining({ tags: ["stats"] }) })
+            );
+        });
+
+        it("falls back to bundled content when remote content breaks its schema", async () => {
+            vi.stubGlobal(
+                "fetch",
+                vi.fn(async () => Response.json([{ id: "zero", value: 58 }]))
+            );
+            expect(await fetchContent("stats")).toEqual(bundledStats);
+            expect(console.error).toHaveBeenCalledWith(
+                expect.stringContaining('remote "stats" does not match its schema')
+            );
+        });
+
+        it.each([
+            ["answers 404", async () => new Response("missing", { status: 404 })],
+            [
+                "is unreachable",
+                async () => {
+                    throw new TypeError("network");
+                },
+            ],
+        ])("falls back to bundled content when R2 %s", async (_case, respond) => {
+            vi.stubGlobal("fetch", vi.fn(respond));
+            expect(await fetchContent("stats")).toEqual(bundledStats);
+        });
+    });
+});
 
 describe("resolveCdnAssetUrls", () => {
     afterEach(() => {

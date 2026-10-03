@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
+import { createNoisePng } from "../../fixtures/png";
 
 const FIXTURES = path.join(__dirname, "..", "..", "fixtures");
 const FIXTURE_IMAGE = path.join(FIXTURES, "e2e-upload-fixture.png");
@@ -64,5 +65,38 @@ test.describe("upload image", () => {
         );
         expect(poster.subarray(0, 4).toString("ascii")).toBe("RIFF");
         expect(poster.subarray(8, 12).toString("ascii")).toBe("WEBP");
+    });
+
+    test("uploads an image larger than the 1 MB Server Action default", async ({ page }) => {
+        const png = createNoisePng(1000, 1000);
+        expect(png.length).toBeGreaterThan(2.5 * 1024 * 1024);
+
+        await page.goto("/works/projects/new");
+        await page.getByRole("button", { name: "Add image" }).click();
+        await page
+            .locator('input[type="file"]')
+            .setInputFiles({ name: "e2e-large-upload.png", mimeType: "image/png", buffer: png });
+
+        await expect(page.locator("img")).toHaveAttribute("src", /e2e-large-upload\.png$/, {
+            timeout: 30_000,
+        });
+    });
+
+    test("explains the size limit without uploading an image over 4 MB", async ({ page }) => {
+        const png = createNoisePng(1300, 1100);
+        expect(png.length).toBeGreaterThan(4 * 1024 * 1024);
+        let uploadRequests = 0;
+        page.on("request", (request) => {
+            if (request.method() === "POST") uploadRequests++;
+        });
+
+        await page.goto("/works/projects/new");
+        await page.getByRole("button", { name: "Add image" }).click();
+        await page
+            .locator('input[type="file"]')
+            .setInputFiles({ name: "e2e-oversized.png", mimeType: "image/png", buffer: png });
+
+        await expect(page.getByText("Image is too large (max 4 MB).")).toBeVisible();
+        expect(uploadRequests).toBe(0);
     });
 });

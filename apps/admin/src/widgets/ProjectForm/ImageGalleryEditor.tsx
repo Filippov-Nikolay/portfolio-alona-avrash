@@ -9,7 +9,10 @@ import { ConfirmDialog } from "@/shared/ui/ConfirmDialog";
 import { cn } from "@/shared/lib/cn";
 import { PAIR_MODE_OPTIONS } from "@/entities/project/model/constants";
 import { uploadProjectImageAction } from "@/entities/project/api/uploadProjectImage";
-import { projectImageSizeError } from "@/entities/project/lib/imageUploadRules";
+import {
+    PROJECT_IMAGE_ACCEPT,
+    projectImageSizeError,
+} from "@/entities/project/lib/imageUploadRules";
 import { useAutoScrollWhileDragging } from "./useAutoScrollWhileDragging";
 import { usePointerYTracker } from "./usePointerYTracker";
 import type { ImageDraft } from "./ImageDraft";
@@ -246,7 +249,7 @@ function ImageRow({
                 <label className={styles.preview}>
                     <input
                         type="file"
-                        accept="image/*"
+                        accept={PROJECT_IMAGE_ACCEPT}
                         className={styles.fileInput}
                         onChange={handleFileSelected}
                         aria-label={`Upload image ${order}`}

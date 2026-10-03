@@ -22,6 +22,11 @@ Setup for the whole monorepo is in the [root README](../../README.md).
     - a danger zone for deleting the project.
 - Unsaved changes are kept as a local draft, so they survive a reload and can be restored.
 - Image gallery: upload, drag-and-drop ordering, a hero image, alt text and a layout per image.
+- Uploads accept JPEG, PNG, GIF, WebP and AVIF up to 4 MB and 100 megapixels.
+    - The format is read from the file's bytes with `sharp`. The stored extension and `Content-Type`
+      come from that format, never from the name or MIME type the browser sends.
+    - SVG is rejected for project images, because a script inside an SVG would run when its CDN URL
+      is opened directly. Icon uploads will need SVG sanitization first.
 - GIF uploads get a WebP poster of the first frame, generated with `sharp` and stored next to the
   GIF. If the poster cannot be stored, the uploaded GIF is removed again. Deleting a project or an
   image also deletes the poster.

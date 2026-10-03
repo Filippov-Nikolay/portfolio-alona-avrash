@@ -2,11 +2,12 @@
 
 import path from "node:path";
 import { requireAdminSession } from "@/shared/auth/requireAdminSession";
-import { createGifPoster, gifPosterFileName, isGifFileName } from "@/shared/lib/gifPoster";
+import { createGifPoster, gifPosterFileName } from "@/shared/lib/gifPoster";
+import { detectImage, MAX_INPUT_PIXELS } from "@/shared/lib/imageFormat";
 import { getImageStorage } from "@/shared/storage/imageStorage";
-import { projectImageSizeError } from "../lib/imageUploadRules";
+import { PROJECT_IMAGE_FORMATS, projectImageSizeError } from "../lib/imageUploadRules";
 
-const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg"]);
+const ALLOWED_FORMATS: ReadonlySet<string> = new Set(PROJECT_IMAGE_FORMATS);
 
 function sanitizeBaseName(name: string): string {
     const cleaned = name
@@ -24,24 +25,24 @@ export interface UploadedProjectImage {
 export async function uploadProjectImageAction(file: File): Promise<UploadedProjectImage> {
     await requireAdminSession();
 
-    if (!file.type.startsWith("image/")) {
-        throw new Error("Only image files can be uploaded.");
-    }
     const sizeError = projectImageSizeError(file.size);
     if (sizeError) throw new Error(sizeError);
 
-    const ext = path.extname(file.name).toLowerCase();
-    if (!ALLOWED_EXTENSIONS.has(ext)) {
-        throw new Error(`Unsupported file type "${ext || "unknown"}".`);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const image = await detectImage(buffer);
+    if (!image || !ALLOWED_FORMATS.has(image.format)) {
+        throw new Error("Upload a JPEG, PNG, GIF, WebP or AVIF image.");
+    }
+    if (image.width * image.height > MAX_INPUT_PIXELS) {
+        throw new Error("Image dimensions are too large (max 100 megapixels).");
     }
 
-    const base = sanitizeBaseName(path.basename(file.name, ext));
-    const fileName = `${Date.now()}-${base}${ext}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const base = sanitizeBaseName(path.basename(file.name, path.extname(file.name)));
+    const fileName = `${Date.now()}-${base}${image.extension}`;
     const storage = getImageStorage();
 
-    if (!isGifFileName(fileName)) {
-        return storage.upload(fileName, buffer, file.type);
+    if (image.format !== "gif") {
+        return storage.upload(fileName, buffer, image.contentType);
     }
 
     let poster: Buffer;
@@ -50,7 +51,7 @@ export async function uploadProjectImageAction(file: File): Promise<UploadedProj
     } catch {
         throw new Error("This GIF could not be read. Export it again and retry.");
     }
-    const gif = await storage.upload(fileName, buffer, file.type);
+    const gif = await storage.upload(fileName, buffer, image.contentType);
     try {
         const { src: posterSrc } = await storage.upload(
             gifPosterFileName(fileName),

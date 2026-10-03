@@ -15,3 +15,5 @@ export * from "./home-project-gallery";
 export * from "./icon";
 export * from "./cv";
 export * from "./locale";
+export * from "./localized";
+export * from "./resources";

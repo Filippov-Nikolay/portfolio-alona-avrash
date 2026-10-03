@@ -9,6 +9,7 @@ import { createCvPdf } from "./fixtures/cv";
 const REPO_ROOT = path.join(__dirname, "..");
 const SCRATCH_CONTENT_DIR = path.join(__dirname, ".scratch", "content");
 const WEB_CV_DIR = path.join(SCRATCH_CONTENT_DIR, "web-cv");
+const WEB_CONTENT_FIXTURE_DIR = path.join(__dirname, "fixtures", "content");
 const STORAGE_STATE_PATH = path.join(__dirname, ".scratch", "admin-storage-state.json");
 const WEB_BASE_URL = "http://localhost:3100";
 const WEB_STORAGE_STATE = acceptedConsentState(WEB_BASE_URL);
@@ -160,7 +161,8 @@ export default defineConfig({
                 timeout: SERVER_TIMEOUT,
                 env: {
                     CONTENT_DATA_DIR: WEB_CV_DIR,
-                    CONTENT_SOURCE: "local",
+                    CONTENT_SOURCE: "directory",
+                    CONTENT_DIR: WEB_CONTENT_FIXTURE_DIR,
                     // Not a real service - specs that care intercept this exact
                     // URL with page.route() before it ever leaves the browser.
                     // Set unconditionally so the CSP connect-src it also drives

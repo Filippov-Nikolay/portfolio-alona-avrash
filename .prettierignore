@@ -9,3 +9,4 @@ pnpm-workspace.yaml
 # Written by the admin CMS and by E2E captures in their own serialization
 packages/content-data/src/*.json
 e2e/fixtures/*.json
+e2e/fixtures/content/

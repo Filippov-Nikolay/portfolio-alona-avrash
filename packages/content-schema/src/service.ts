@@ -1,22 +1,26 @@
-import type { CategoryKey } from "./category";
-import type { ProjectImage } from "./project-image";
+import { z } from "zod";
+import { CategoryKeySchema } from "./category";
+import { localized } from "./localized";
+import { ContentImageSchema } from "./project-image";
 
-export interface ServiceI18n {
-    description: string;
-    approachLabel: string;
-}
+export const ServiceI18nSchema = z.object({
+    description: z.string(),
+    approachLabel: z.string(),
+});
+export type ServiceI18n = z.infer<typeof ServiceI18nSchema>;
 
-export interface ServiceRaw {
+export const ServiceRawSchema = z.object({
+    id: z.number().int(),
+    title: CategoryKeySchema,
+    image: ContentImageSchema,
+    i18n: localized(ServiceI18nSchema),
+});
+export type ServiceRaw = z.infer<typeof ServiceRawSchema>;
+
+export const ServicesRawSchema = z.array(ServiceRawSchema);
+
+export interface Service extends ServiceI18n {
     id: number;
-    title: CategoryKey;
-    image: ProjectImage;
-    i18n: Record<string, ServiceI18n>;
-}
-
-export interface Service {
-    id: number;
-    title: CategoryKey;
-    description: string;
-    approachLabel: string;
-    image: ProjectImage;
+    title: string;
+    image: ServiceRaw["image"];
 }

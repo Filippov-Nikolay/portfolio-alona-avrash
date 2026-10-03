@@ -1,7 +1,11 @@
-import type { ProjectImage } from "./project-image";
+import { z } from "zod";
+import { ContentImageSchema } from "./project-image";
 
-export interface Social {
-    id: string;
-    logo: ProjectImage;
-    link: string;
-}
+export const SocialSchema = z.object({
+    id: z.string().min(1),
+    logo: ContentImageSchema,
+    link: z.string().min(1),
+});
+export type Social = z.infer<typeof SocialSchema>;
+
+export const SocialsSchema = z.array(SocialSchema);

@@ -1,0 +1,25 @@
+{
+    "rows": [
+        {
+            "direction": "left",
+            "speed": 34,
+            "leadingGap": true,
+            "clients": [
+                { "id": 0, "name": "XTB", "variant": "filled" },
+                { "id": 1, "name": "OLVA", "variant": "outline" },
+                { "id": 2, "name": "ESENCHA", "variant": "light" }
+            ]
+        },
+        {
+            "direction": "right",
+            "speed": 34,
+            "leadingGap": false,
+            "clients": [
+                { "id": 3, "name": "BITEBOX", "variant": "filled" },
+                { "id": 4, "name": "CRUSTY", "variant": "outline" },
+                { "id": 5, "name": "BRUNZO", "variant": "light" },
+                { "id": 6, "name": "MIRAGE", "variant": "outline" }
+            ]
+        }
+    ]
+}

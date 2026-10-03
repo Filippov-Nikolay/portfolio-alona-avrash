@@ -33,3 +33,11 @@ export const ProjectImageSchema = z.object({
     scale: z.number().optional(),
 });
 export type ProjectImage = z.infer<typeof ProjectImageSchema>;
+
+export const ContentImageSchema = ProjectImageSchema.pick({
+    src: true,
+    alt: true,
+    focalPoint: true,
+    scale: true,
+});
+export type ContentImage = z.infer<typeof ContentImageSchema>;

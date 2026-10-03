@@ -58,6 +58,8 @@ jobs:
             # bad data) would otherwise never run in CI at all.
             - run: pnpm --filter @avrash/content-schema run test
 
+            - run: pnpm --filter @avrash/content-data run test
+
             - run: pnpm --filter @avrash/rate-limit run test
 
             - run: pnpm --filter @avrash/web run test

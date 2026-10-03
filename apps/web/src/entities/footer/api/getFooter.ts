@@ -1,9 +1,9 @@
 import { fetchContent } from "@/shared/api/contentClient";
 import { resolveLocaleContent } from "@/shared/lib/resolveLocaleContent";
-import type { FooterContent, FooterContentRaw } from "@avrash/content-schema";
+import type { FooterContent } from "@avrash/content-schema";
 
 export async function getFooter(locale: string): Promise<FooterContent> {
-    const { i18n, legalLinks, ...rest } = await fetchContent<FooterContentRaw>("footer", "footer");
+    const { i18n, legalLinks, ...rest } = await fetchContent("footer");
     const { tagline, legalLinkLabels } = resolveLocaleContent(i18n, locale);
 
     return {

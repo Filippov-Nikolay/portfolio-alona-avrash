@@ -18,7 +18,9 @@ Setup for the whole monorepo is in the [root README](../../README.md).
 - **Localization:** English and Polish via `next-intl`, with locale-prefixed routes, `hreflang`
   alternates and English fallback for untranslated content.
 - **Contact form:** sends email through Resend, with server-side validation, a honeypot field and a
-  per-IP rate limit (5 requests / 10 minutes).
+  per-IP rate limit (5 requests / 10 minutes) from
+  [`@avrash/rate-limit`](../../packages/rate-limit/README.md), shared across instances through
+  Upstash Redis.
 - **CV download:** one PDF per language, uploaded in admin. Visitors get the CV in their language,
   otherwise the English one, otherwise any uploaded one.
 - **Privacy consent:** a banner and a preferences panel. The saved theme, the "preloader seen" flag,
@@ -80,7 +82,7 @@ src/
 │   ├── api/              # Content client, bundled content store, contact service
 │   ├── analytics/        # trackEvent() and the page view tracker
 │   ├── config/           # Site config, navigation, scroll choreography
-│   ├── lib/, hooks/      # SEO, rate limit, locale resolution, GSAP/Motion helpers, theme
+│   ├── lib/, hooks/      # SEO, locale resolution, GSAP/Motion helpers, theme
 │   ├── providers/        # Theme, motion and preloader providers
 │   ├── styles/           # Design tokens, typography, mixins
 │   └── ui/               # Site-only UI kit; components shared with admin live in @avrash/ui
@@ -123,19 +125,21 @@ four UTM parameters are kept. Without `NEXT_PUBLIC_ANALYTICS_ENDPOINT` the funct
 
 Copy [`.env.example`](.env.example) to `.env.local`. Every variable is optional for local development.
 
-| Variable                         | When needed            | Purpose                                                                           |
-| -------------------------------- | ---------------------- | --------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SITE_URL`           | Production             | Canonical URL for metadata, sitemap and robots                                    |
-| `CONTENT_SOURCE`                 | Production             | `remote` reads content from R2                                                    |
-| `CONTENT_CDN_URL`                | With R2                | Public R2 base URL. Also allowed in `next/image` and the CSP                      |
-| `CONTENT_REVALIDATE_SECONDS`     | Optional               | Fallback cache lifetime for remote content (default `86400`)                      |
-| `REVALIDATE_SECRET`              | With admin             | Bearer secret for `/api/revalidate`. Must match admin's value                     |
-| `CONTENT_DATA_DIR`               | Shared filesystem only | Directory with `cv.json` and `cv/uploads`. Must match admin's `ADMIN_CONTENT_DIR` |
-| `CONTENT_API_URL`                | Optional               | External CMS API used when a resource is not found locally or in R2               |
-| `NEXT_PUBLIC_ANALYTICS_ENDPOINT` | With analytics         | Worker URL including `/event`                                                     |
-| `RESEND_API_KEY`                 | Contact form           | Resend API key                                                                    |
-| `CONTACT_EMAIL_TO`               | Contact form           | Inbox that receives submissions                                                   |
-| `CONTACT_EMAIL_FROM`             | Optional               | Sender address, defaults to Resend's sandbox sender                               |
+| Variable                                             | When needed            | Purpose                                                                           |
+| ---------------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SITE_URL`                               | Production             | Canonical URL for metadata, sitemap and robots                                    |
+| `CONTENT_SOURCE`                                     | Production             | `remote` reads content from R2                                                    |
+| `CONTENT_CDN_URL`                                    | With R2                | Public R2 base URL. Also allowed in `next/image` and the CSP                      |
+| `CONTENT_REVALIDATE_SECONDS`                         | Optional               | Fallback cache lifetime for remote content (default `86400`)                      |
+| `REVALIDATE_SECRET`                                  | With admin             | Bearer secret for `/api/revalidate`. Must match admin's value                     |
+| `CONTENT_DATA_DIR`                                   | Shared filesystem only | Directory with `cv.json` and `cv/uploads`. Must match admin's `ADMIN_CONTENT_DIR` |
+| `CONTENT_API_URL`                                    | Optional               | External CMS API used when a resource is not found locally or in R2               |
+| `NEXT_PUBLIC_ANALYTICS_ENDPOINT`                     | With analytics         | Worker URL including `/event`                                                     |
+| `RESEND_API_KEY`                                     | Contact form           | Resend API key                                                                    |
+| `CONTACT_EMAIL_TO`                                   | Contact form           | Inbox that receives submissions                                                   |
+| `CONTACT_EMAIL_FROM`                                 | Optional               | Sender address, defaults to Resend's sandbox sender                               |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Production             | Shared rate-limit counter (`KV_REST_API_*` from the Vercel integration also work) |
+| `TRUST_PROXY`                                        | Self-hosted only       | `1` when a reverse proxy in front appends `X-Forwarded-For`                       |
 
 ---
 
@@ -181,6 +185,8 @@ docker run -p 3000:3000 --env-file apps/web/.env.docker avrash-web
 - **Build arguments:** `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_ANALYTICS_ENDPOINT`, `CONTENT_SOURCE`
   and `CONTENT_CDN_URL`. Pages, metadata and the CSP are generated at build time, so these values
   must be known then.
+- **Behind a reverse proxy:** set `TRUST_PROXY=1` so the contact form's rate limit uses the real
+  client IP. Without it, all requests share one counter.
 - **Runtime secrets:** `RESEND_API_KEY`, `CONTACT_EMAIL_TO`, `REVALIDATE_SECRET` and the others go
   in `apps/web/.env.docker`, which is gitignored and never copied into the image.
 - **Project galleries:** they are not in git or in the image, the same as on Vercel, so set

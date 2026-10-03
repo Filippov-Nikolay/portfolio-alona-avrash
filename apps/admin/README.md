@@ -70,7 +70,10 @@ running deployment.
   session cookie (HS256 JWT via `jose`, valid for 7 days).
 - Users come from `ADMIN_USERS`: a base64-encoded JSON array of `{ login, passwordHash }` with
   bcrypt hashes. No plaintext passwords are stored anywhere.
-- Login attempts are rate-limited per IP (5 attempts / 10 minutes).
+- Login is rate-limited twice through [`@avrash/rate-limit`](../../packages/rate-limit/README.md):
+  5 attempts / 10 minutes per IP, and 10 attempts / 15 minutes per login name. The second limit
+  catches guessing spread across many IPs. Counters live in Upstash Redis, so all serverless
+  instances share them.
 - Server Actions and API routes check the session themselves too, not only through the proxy.
   Routes that change data also check the request origin.
 
@@ -108,7 +111,7 @@ src/
 ├── shared/
 │   ├── auth/                  # Credentials, session tokens, requireAdminSession
 │   ├── storage/               # filesystem and R2 drivers, image storage
-│   ├── lib/                   # GIF posters, web revalidation, rate limit, slugify
+│   ├── lib/                   # GIF posters, web revalidation, slugify
 │   ├── config/                # Navigation, build info
 │   └── ui/                    # Button, ConfirmDialog, LineChart, ReportTabs, ...
 └── proxy.ts                   # Session gate
@@ -133,6 +136,7 @@ Copy [`.env.example`](.env.example) to `.env`. It explains each value and how to
 | `REVALIDATE_SECRET`                                                           | With the above | Must match web's `REVALIDATE_SECRET`                                    |
 | `ANALYTICS_WORKER_URL`                                                        | Dashboard      | Base URL of the analytics worker                                        |
 | `ANALYTICS_READ_SECRET`                                                       | Dashboard      | Must match the worker's `ANALYTICS_READ_SECRET`                         |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`                          | Production     | Shared login rate-limit counter (`KV_REST_API_*` also work)             |
 | `ADMIN_CONTENT_DIR`                                                           | Optional       | Alternative content directory for the filesystem driver                 |
 | `NEXT_PUBLIC_ASSET_BASE_URL`                                                  | Optional       | Where previews load root-relative images from (default: web dev server) |
 

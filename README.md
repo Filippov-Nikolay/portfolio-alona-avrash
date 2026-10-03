@@ -12,6 +12,7 @@ A `pnpm` monorepo with three deployable apps and three shared packages:
 | [`apps/analytics-worker`](apps/analytics-worker/README.md)     | Cookie-free event collector and reporting API.                                                                     | Cloudflare Workers |
 | [`packages/content-schema`](packages/content-schema/README.md) | Zod schemas and types for every content file - the contract between web and admin.                                 | -                  |
 | [`packages/content-data`](packages/content-data/README.md)     | Bundled content JSON, the local source and the build-time fallback.                                                | -                  |
+| [`packages/rate-limit`](packages/rate-limit/README.md)         | Rate limiting for login and the contact form: Upstash Redis with an in-memory fallback, spoof-safe client IP.      | -                  |
 | [`packages/ui`](packages/ui/README.md)                         | React components rendered by both apps (works card, showcase modal), so the CMS preview matches the site.          | -                  |
 | [`e2e`](e2e/README.md)                                         | Playwright suites for web (desktop Chrome, iPhone WebKit) and admin.                                               | CI                 |
 
@@ -50,7 +51,7 @@ A `pnpm` monorepo with three deployable apps and three shared packages:
   (strict), SCSS Modules, Framer Motion, GSAP, Embla Carousel, next-intl.
 - **Backend:** Next.js route handlers and Server Actions, Zod, `jose` sessions with bcrypt
   passwords, `sharp`, Resend for email, AWS S3 SDK for R2.
-- **Edge:** Cloudflare Workers, D1 (SQLite), R2.
+- **Edge:** Cloudflare Workers, D1 (SQLite), R2, Upstash Redis.
 - **Quality:** Vitest, Playwright, ESLint, Prettier, Husky, lint-staged, GitHub Actions.
 
 ---

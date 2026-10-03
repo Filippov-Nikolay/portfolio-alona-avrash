@@ -21,6 +21,9 @@ analytics beacons and full CMS flows.
 - **Isolated content.** Admin writes to `e2e/.scratch/content`, which is wiped and reseeded on every
   run. Real content in `packages/content-data` is never touched. Web gets a seeded CV from the same
   scratch directory.
+- **Frozen content.** Web runs with `CONTENT_SOURCE=directory` on `e2e/fixtures/content`, a copy of
+  the site content. Edits to the real content in R2 or in `packages/content-data` never change what
+  the specs see. Update the fixture on purpose, together with the specs that depend on it.
 - **Test credentials.** A test user and session secret are generated from
   [`fixtures/testCredentials.ts`](fixtures/testCredentials.ts). No real secrets are needed.
 - **Consent.** Web specs start with analytics consent already given. The analytics endpoint is a
@@ -59,7 +62,7 @@ artifact, and failures appear as annotations on the pull request.
 ```
 tests/web/       # Site specs
 tests/admin/     # CMS specs and auth.setup.ts
-fixtures/        # Shared test fixture, consent state, CV PDF and noise PNG generators, upload files, hero geometry baselines
+fixtures/        # Content fixture (content/), shared test fixture, consent state, CV PDF and noise PNG generators, upload files, hero geometry baselines
 helpers/         # Document height and Hero scene measurement helpers
 server/          # Production server used by E2E_SERVER=production
 ```

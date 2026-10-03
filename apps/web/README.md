@@ -46,11 +46,16 @@ is applied on the client.
 
 Content goes through [`shared/api/contentClient.ts`](src/shared/api/contentClient.ts):
 
-1. With `CONTENT_SOURCE=remote`, it fetches `<CONTENT_CDN_URL>/content/<file>.json` from R2. The
-   fetch is cached under a tag named after the resource.
-2. Resources that admin can edit are validated with their Zod schema from `@avrash/content-schema`.
-3. If the remote file is missing or the request fails, it falls back to the JSON bundled from
-   `@avrash/content-data`.
+1. The resource registry in `@avrash/content-schema` (`CONTENT_RESOURCES`) names the file and the
+   Zod schema of every resource.
+2. The source is chosen by `CONTENT_SOURCE`:
+    - `local` (default): the JSON bundled from `@avrash/content-data`;
+    - `remote`: `<CONTENT_CDN_URL>/content/<file>.json` from R2, cached under a tag named after the
+      resource;
+    - `directory`: the files in `CONTENT_DIR`, which the E2E suite uses for its frozen fixture.
+3. Every resource is validated against its schema. Remote content that is missing, unreachable or
+   invalid falls back to the bundled copy, and the schema errors are logged with the field path, so
+   a bad edit in R2 never takes a page down. Invalid `directory` content fails loudly.
 4. Root-relative `/projects/...` image paths are rewritten to absolute CDN URLs.
 
 When admin saves something, it calls `POST /api/revalidate` with that tag. The route checks a shared
@@ -130,12 +135,12 @@ Copy [`.env.example`](.env.example) to `.env.local`. Every variable is optional 
 | Variable                                             | When needed            | Purpose                                                                           |
 | ---------------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL`                               | Production             | Canonical URL for metadata, sitemap and robots                                    |
-| `CONTENT_SOURCE`                                     | Production             | `remote` reads content from R2                                                    |
+| `CONTENT_SOURCE`                                     | Production             | `remote` reads content from R2; `directory` reads `CONTENT_DIR` (tests)           |
+| `CONTENT_DIR`                                        | With `directory`       | Directory holding one JSON file per content resource                              |
 | `CONTENT_CDN_URL`                                    | With R2                | Public R2 base URL. Also allowed in `next/image` and the CSP                      |
 | `CONTENT_REVALIDATE_SECONDS`                         | Optional               | Fallback cache lifetime for remote content (default `86400`)                      |
 | `REVALIDATE_SECRET`                                  | With admin             | Bearer secret for `/api/revalidate`. Must match admin's value                     |
 | `CONTENT_DATA_DIR`                                   | Shared filesystem only | Directory with `cv.json` and `cv/uploads`. Must match admin's `ADMIN_CONTENT_DIR` |
-| `CONTENT_API_URL`                                    | Optional               | External CMS API used when a resource is not found locally or in R2               |
 | `NEXT_PUBLIC_ANALYTICS_ENDPOINT`                     | With analytics         | Worker URL including `/event`                                                     |
 | `RESEND_API_KEY`                                     | Contact form           | Resend API key                                                                    |
 | `CONTACT_EMAIL_TO`                                   | Contact form           | Inbox that receives submissions                                                   |

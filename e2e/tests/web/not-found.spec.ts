@@ -5,6 +5,41 @@ const viewports = [
     { name: "mobile", width: 390, height: 844 },
 ] as const;
 
+test("missing URLs answer with a real 404 status, existing pages with 200", async ({ request }) => {
+    const statuses = async (paths: string[]) =>
+        Promise.all(paths.map(async (path) => [path, (await request.get(path)).status()] as const));
+
+    expect(
+        await statuses([
+            "/en/definitely-missing",
+            "/en/definitely/missing",
+            "/en/works/definitely-missing",
+            "/en/works/esencha/extra",
+            "/en/legal/definitely-missing",
+            "/en/contact/definitely-missing",
+            "/pl/definitely-missing",
+        ])
+    ).toEqual([
+        ["/en/definitely-missing", 404],
+        ["/en/definitely/missing", 404],
+        ["/en/works/definitely-missing", 404],
+        ["/en/works/esencha/extra", 404],
+        ["/en/legal/definitely-missing", 404],
+        ["/en/contact/definitely-missing", 404],
+        ["/pl/definitely-missing", 404],
+    ]);
+
+    expect(
+        await statuses(["/en", "/pl/works", "/en/works/esencha", "/en/contact", "/en/legal/terms"])
+    ).toEqual([
+        ["/en", 200],
+        ["/pl/works", 200],
+        ["/en/works/esencha", 200],
+        ["/en/contact", 200],
+        ["/en/legal/terms", 200],
+    ]);
+});
+
 for (const viewport of viewports) {
     test(`branded 404 page is complete on ${viewport.name}`, async ({ page }, testInfo) => {
         const negativeTimestampErrors: string[] = [];

@@ -1,14 +1,17 @@
 services:
-  web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_OUTPUT=standalone
-      - NEXT_PUBLIC_SITE_URL=http://localhost:3000
-      # Optional - only needed if a resource isn't in the local content
-      # JSON. See apps/web/.env.example.
-      # - CONTENT_API_URL=https://your-content-api.com/api
-    restart: unless-stopped
+    web:
+        build:
+            context: .
+            dockerfile: apps/web/Dockerfile
+            args:
+                NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+                NEXT_PUBLIC_ANALYTICS_ENDPOINT: ${NEXT_PUBLIC_ANALYTICS_ENDPOINT:-}
+                CONTENT_SOURCE: ${CONTENT_SOURCE:-local}
+                CONTENT_CDN_URL: ${CONTENT_CDN_URL:-}
+        image: avrash-web
+        ports:
+            - "3000:3000"
+        env_file:
+            - path: apps/web/.env.docker
+              required: false
+        restart: unless-stopped

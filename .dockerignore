@@ -1,9 +1,21 @@
 # Dependencies
 **/node_modules
 
+# Workspaces outside the web image
+apps/admin
+apps/analytics-worker
+e2e
+.github
+.husky
+
 # Next.js
 **/.next
+**/.next-*
 **/out
+
+# Untracked media, served from R2 in deployments
+apps/web/public/projects/*/
+packages/content-data/src/cv/uploads
 
 # Logs
 npm-debug.log*

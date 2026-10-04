@@ -60,6 +60,25 @@ const nextConfig: NextConfig = {
         },
     },
 
+    async headers() {
+        return [
+            {
+                source: "/(.*)",
+                headers: [
+                    { key: "X-Frame-Options", value: "DENY" },
+                    { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+                    { key: "X-Content-Type-Options", value: "nosniff" },
+                    { key: "Referrer-Policy", value: "same-origin" },
+                    { key: "X-Robots-Tag", value: "noindex, nofollow" },
+                    {
+                        key: "Permissions-Policy",
+                        value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+                    },
+                ],
+            },
+        ];
+    },
+
     // Baked in once at build time (Next's `env` replaces these references at
     // compile time, unlike process.env.X read at runtime) - the System info
     // panel's "Last deploy" needs an actual build timestamp, not "now",

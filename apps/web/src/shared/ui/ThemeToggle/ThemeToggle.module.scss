@@ -1,58 +1,62 @@
 @use "@/shared/styles/mixins" as *;
 
-.toggle {
-    // Reset
-    appearance: none;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    padding: 0;
+@layer reset, global, base;
 
-    // Layout
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border-radius: var(--radius-sm);
-    flex-shrink: 0;
+@layer base {
+    .toggle {
+        // Reset
+        appearance: none;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        padding: 0;
 
-    // Style — ghost, matching Button variant="ghost"
-    color: var(--color-text-secondary);
-    border: 1px solid transparent;
-    transition:
-        color var(--transition-fast),
-        background var(--transition-fast),
-        border-color var(--transition-fast);
+        // Layout
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
 
-    @include can-hover {
-        &:hover {
-            color: var(--color-text-primary);
-            background: var(--color-surface-light);
-            border-color: var(--color-border);
+        // Style — ghost, matching Button variant="ghost"
+        color: var(--color-text-secondary);
+        border: 1px solid transparent;
+        transition:
+            color var(--transition-fast),
+            background var(--transition-fast),
+            border-color var(--transition-fast);
+
+        @include can-hover {
+            &:hover {
+                color: var(--color-text-primary);
+                background: var(--color-surface-light);
+                border-color: var(--color-border);
+            }
+        }
+
+        &:active {
+            opacity: 0.7;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
         }
     }
 
-    &:active {
-        opacity: 0.7;
+    // SSR placeholder — same dimensions, no layout shift
+    .placeholder {
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
     }
 
-    &:focus-visible {
-        outline: 2px solid var(--color-primary);
-        outline-offset: 2px;
+    // Icon wrapper — handles AnimatePresence positioning
+    .icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
-}
-
-// SSR placeholder — same dimensions, no layout shift
-.placeholder {
-    width: 44px;
-    height: 44px;
-    flex-shrink: 0;
-}
-
-// Icon wrapper — handles AnimatePresence positioning
-.icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }

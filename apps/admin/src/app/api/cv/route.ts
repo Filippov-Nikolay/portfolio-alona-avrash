@@ -59,7 +59,7 @@ export async function GET(request: Request) {
                     ? "private, max-age=31536000, immutable"
                     : "private, no-store",
                 "X-Content-Type-Options": "nosniff",
-                "X-Frame-Options": "SAMEORIGIN",
+                "X-Frame-Options": "DENY",
             },
         });
     } catch (error) {

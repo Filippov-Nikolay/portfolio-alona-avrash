@@ -1,43 +1,47 @@
 @use "@/shared/styles/mixins" as *;
 
-.breadcrumbs {
-    font-size: 13px;
-}
+@layer reset, global, base;
 
-.list {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
+@layer base {
+    .breadcrumbs {
+        font-size: 13px;
+    }
 
-.item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
+    .list {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
 
-.link {
-    color: var(--color-text-secondary);
-    text-decoration: none;
-    @include transition(color);
-    @include focus-ring;
+    .item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
 
-    @include can-hover {
-        &:hover {
-            color: var(--color-accent);
+    .link {
+        color: var(--color-text-secondary);
+        text-decoration: none;
+        @include transition(color);
+        @include focus-ring;
+
+        @include can-hover {
+            &:hover {
+                color: var(--color-accent);
+            }
         }
     }
-}
 
-.current {
-    color: var(--color-text-primary);
-    font-weight: 500;
-}
+    .current {
+        color: var(--color-text-primary);
+        font-weight: 500;
+    }
 
-.separator {
-    color: var(--color-text-secondary);
+    .separator {
+        color: var(--color-text-secondary);
+    }
 }

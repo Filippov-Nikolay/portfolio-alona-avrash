@@ -1,45 +1,49 @@
 @use "@/shared/styles/mixins" as *;
 
-.card {
-    position: relative;
-    background: var(--color-card);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 32px;
-    overflow: hidden;
-    transition: border-color var(--transition-base);
+@layer reset, global, base;
 
-    &::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        border-radius: inherit;
-        transition: opacity var(--transition-base);
-        pointer-events: none;
-    }
+@layer base {
+    .card {
+        position: relative;
+        background: var(--color-card);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: 32px;
+        overflow: hidden;
+        transition: border-color var(--transition-base);
 
-    @include can-hover {
-        &:hover::before {
-            opacity: 1;
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            border-radius: inherit;
+            transition: opacity var(--transition-base);
+            pointer-events: none;
         }
-    }
-}
 
-// === Glow =====================================
-
-.glow {
-    @include can-hover {
-        &:hover {
-            border-color: rgba(234, 253, 39, 0.3);
+        @include can-hover {
+            &:hover::before {
+                opacity: 1;
+            }
         }
     }
 
-    &::before {
-        background: radial-gradient(
-            600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-            rgba(234, 253, 39, 0.06),
-            transparent 40%
-        );
+    // === Glow =====================================
+
+    .glow {
+        @include can-hover {
+            &:hover {
+                border-color: rgba(234, 253, 39, 0.3);
+            }
+        }
+
+        &::before {
+            background: radial-gradient(
+                600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                rgba(234, 253, 39, 0.06),
+                transparent 40%
+            );
+        }
     }
 }

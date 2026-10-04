@@ -1,10 +1,14 @@
-.noise {
-    position: absolute;
-    inset: 0;
-    z-index: 9999;
-    pointer-events: none;
+@layer reset, global, base;
 
-    background-image: url("/assets/noise/hero-noise.png");
-    background-repeat: repeat;
-    background-size: 128px 128px;
+@layer base {
+    .noise {
+        position: absolute;
+        inset: 0;
+        z-index: 9999;
+        pointer-events: none;
+
+        background-image: url("/assets/noise/hero-noise.png");
+        background-repeat: repeat;
+        background-size: 128px 128px;
+    }
 }

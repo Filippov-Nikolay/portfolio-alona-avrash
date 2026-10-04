@@ -3,7 +3,6 @@
 .section {
     background: var(--color-bg);
     color: var(--color-text-primary);
-    padding-block: clamp(16px, 2vw, 24px) clamp(56px, 7.6vw, 96px);
 }
 
 .inner {
@@ -62,7 +61,7 @@
     background: var(--color-primary);
     color: #000;
     border-radius: var(--radius-lg);
-    padding: clamp(28px, 3.5vw, 30px) clamp(24px, 3.5vw, 44px);
+    padding-inline: clamp(24px, 3.5vw, 44px);
 }
 
 .bannerInner {
@@ -108,11 +107,6 @@
 }
 
 .button {
-    border-radius: 30px;
-    height: 52px;
-    padding: 0 22px;
-    font-size: 16px;
-    font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     gap: 8px;

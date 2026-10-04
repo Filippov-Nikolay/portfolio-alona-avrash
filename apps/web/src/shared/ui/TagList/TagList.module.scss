@@ -1,6 +1,10 @@
-.tagList {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 4px;
+@layer reset, global, base;
+
+@layer base {
+    .tagList {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 4px;
+    }
 }

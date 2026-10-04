@@ -2,78 +2,73 @@
 
 .banner {
     position: fixed;
-    left: 20px;
     right: 20px;
     bottom: 20px;
     z-index: 190;
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 20px 24px;
+    flex-direction: column;
+    gap: 10px;
+    width: min(440px, calc(100% - 40px));
+    padding: 14px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-v-sm);
     background: var(--color-bg);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
 
     @include respond-to("mobile") {
-        left: 12px;
-        right: 12px;
-        bottom: 12px;
-        padding: 16px;
-        flex-direction: column;
-        align-items: stretch;
+        right: 10px;
+        bottom: 10px;
+        width: calc(100% - 20px);
+        padding: 12px;
     }
 }
 
 .text {
-    flex: 1 1 380px;
+    flex: 1 1 auto;
     margin: 0;
     font-size: 13px;
-    line-height: 1.6;
+    line-height: 1.45;
     color: var(--color-text-secondary);
-
-    @include respond-to("mobile") {
-        flex: none;
-    }
 }
 
-.link {
+.link,
+.manageLink {
     color: var(--color-text-primary);
     text-decoration: underline;
+    text-underline-offset: 2px;
     @include focus-ring;
 }
 
-.actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-
-    @include respond-to("mobile") {
-        justify-content: stretch;
-
-        > * {
-            flex: 1 1 auto;
-        }
-    }
+.manageLink {
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    cursor: pointer;
 }
 
-.manageButton,
+.actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.choice {
+    width: 100%;
+    height: 38px;
+    padding: 0 16px;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
 .rejectButton {
-    padding: 10px 16px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-v-sm);
     background: transparent;
-    font-size: 13px;
     font-weight: 500;
     color: var(--color-text-primary);
     cursor: pointer;
-    white-space: nowrap;
     @include transition(border-color, background);
     @include focus-ring;
 
@@ -85,5 +80,5 @@
 }
 
 .acceptButton {
-    white-space: nowrap;
+    border-radius: var(--radius-v-sm);
 }

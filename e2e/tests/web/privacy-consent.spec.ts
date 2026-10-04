@@ -33,6 +33,51 @@ const storedConsent = (page: Page) =>
 const hasVercelScript = (page: Page) =>
     page.evaluate(() => document.querySelector('script[src*="vercel"]') !== null);
 
+type Box = { x: number; y: number; width: number; height: number };
+const overlaps = (a: Box, b: Box) =>
+    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+test("on the home page the banner waits for the hero intro and leaves its call to action free", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/en");
+    const banner = page.getByRole("region", { name: "Privacy preferences" });
+
+    await page.waitForTimeout(300);
+    await expect(banner).toBeHidden();
+    await expect(banner).toBeVisible({ timeout: 8_000 });
+
+    const cta = page
+        .locator("#hero a")
+        .filter({ hasText: /work together/i })
+        .first();
+    await expect(cta).toBeVisible();
+    expect(overlaps((await banner.boundingBox())!, (await cta.boundingBox())!)).toBe(false);
+});
+
+test("other pages show the banner without waiting", async ({ page }) => {
+    await page.goto("/en/works");
+    await expect(page.getByRole("region", { name: "Privacy preferences" })).toBeVisible({
+        timeout: 1_500,
+    });
+});
+
+test("on a phone the banner stays compact with both choices side by side", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/works");
+    const banner = page.getByRole("region", { name: "Privacy preferences" });
+    await expect(banner).toBeVisible();
+
+    const box = (await banner.boundingBox())!;
+    expect(box.height).toBeLessThanOrEqual(844 * 0.2);
+
+    const reject = (await banner.getByRole("button", { name: "Reject optional" }).boundingBox())!;
+    const accept = (await banner.getByRole("button", { name: "Accept optional" }).boundingBox())!;
+    expect(Math.abs(reject.y - accept.y)).toBeLessThan(1);
+    expect(Math.abs(reject.width - accept.width)).toBeLessThan(1);
+});
+
 test("a new visitor sees the banner and nothing is measured before a choice", async ({ page }) => {
     const beacons = await captureBeacons(page);
     await page.goto("/en");

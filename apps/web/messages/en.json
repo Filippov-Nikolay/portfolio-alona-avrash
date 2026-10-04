@@ -106,7 +106,7 @@
         "projectDescriptionFallback": "{project}: a project by Alona Avrash, brand and visual designer."
     },
     "privacyPreferences": {
-        "bannerText": "This site uses browser storage that is needed to show it to you. With your permission it also remembers your theme and intro screen, and measures visits and interactions to improve the portfolio. You can accept optional technologies, reject them, or manage your preferences. See the <cookies>Cookie & Browser Storage Policy</cookies>.",
+        "bannerText": "With your consent, we save your preferences and measure visits. <cookies>Cookie Policy</cookies>",
         "acceptOptional": "Accept optional",
         "rejectOptional": "Reject optional",
         "managePreferences": "Manage preferences",
@@ -119,7 +119,8 @@
         "categoryAnalyticsDescription": "Measure page views, project interest and technical performance through our own anonymous statistics, Vercel Analytics and Speed Insights.",
         "alwaysActive": "Always active",
         "savePreferences": "Save preferences",
-        "close": "Close"
+        "close": "Close",
+        "bannerSettings": "Settings"
     },
     "legal": {
         "index": {

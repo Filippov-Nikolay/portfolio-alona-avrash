@@ -21,6 +21,7 @@ import { createViewportResizeGuard } from "@/shared/lib/motion/mobileViewport";
 import { staggerContainer } from "@/shared/lib/motion/stagger";
 import { StatsSelectedChoreographyProvider } from "@/shared/lib/motion/StatsSelectedChoreographyContext";
 import { usePreloader } from "@/shared/providers";
+import { markHeroIntroComplete } from "@/shared/lib/heroIntro";
 import { trackEvent } from "@/shared/analytics/analytics";
 import { Button, Container, GlassSurface, NoiseLayer, Section } from "@/shared/ui";
 import { StatsSection } from "@/widgets/StatsSection";
@@ -512,6 +513,9 @@ export function HeroSectionClient({ hero, socials, stats, selectedWork }: HeroSe
                                 variants={safeStagger}
                                 initial="hidden"
                                 animate={isReady ? "visible" : "hidden"}
+                                onAnimationComplete={(definition) => {
+                                    if (definition === "visible") markHeroIntroComplete();
+                                }}
                             >
                                 <m.div className={styles.topRow} variants={safeFadeIn}>
                                     <span className={styles.role}>{t("role")}</span>

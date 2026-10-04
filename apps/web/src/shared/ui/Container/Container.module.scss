@@ -1,8 +1,12 @@
-.container {
-    width: 100%;
-    max-width: var(--container-width);
+@layer reset, global, base;
 
-    margin: 0 auto;
+@layer base {
+    .container {
+        width: 100%;
+        max-width: var(--container-width);
 
-    padding-inline: 20px;
+        margin: 0 auto;
+
+        padding-inline: 20px;
+    }
 }

@@ -1,4 +1,8 @@
-.section {
-    padding-block-start: var(--_pad-top, var(--section-spacing));
-    padding-block-end: var(--_pad-bottom, var(--section-spacing));
+@layer reset, global, base;
+
+@layer base {
+    .section {
+        padding-block-start: var(--_pad-top, var(--section-spacing));
+        padding-block-end: var(--_pad-bottom, var(--section-spacing));
+    }
 }

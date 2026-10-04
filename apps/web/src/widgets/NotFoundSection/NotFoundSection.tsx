@@ -46,7 +46,7 @@ export function NotFoundSection() {
 
     return (
         <Section as="div" className={styles.section}>
-            <Container className={styles.container}>
+            <Container>
                 <div className={styles.stage}>
                     <div className={styles.topRail} aria-hidden="true">
                         <span className={styles.statusLabel} data-not-found-meta>

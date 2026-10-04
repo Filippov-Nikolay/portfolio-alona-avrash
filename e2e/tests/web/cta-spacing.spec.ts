@@ -14,16 +14,30 @@ for (const viewport of [
         await page.setViewportSize(viewport);
         await page.goto("/en");
 
+        await page.locator("#cta").scrollIntoViewIfNeeded();
+
         const gaps = await page.evaluate(() => {
-            const top = (element: Element) => element.getBoundingClientRect().top;
-            const bottom = (element: Element) => element.getBoundingClientRect().bottom;
-            const reviews = document.getElementById("reviews")!;
-            const cards = [...reviews.querySelectorAll("[data-review-card]")];
-            const cta = document.getElementById("cta")!.firstElementChild!;
-            const footer = document.querySelector("footer")!;
+            const layoutTop = (element: HTMLElement) => {
+                let top = 0;
+                for (
+                    let node: HTMLElement | null = element;
+                    node;
+                    node = node.offsetParent as HTMLElement | null
+                ) {
+                    top += node.offsetTop;
+                }
+                return top;
+            };
+            const layoutBottom = (element: HTMLElement) =>
+                layoutTop(element) + element.offsetHeight;
+            const cards = [
+                ...document.querySelectorAll<HTMLElement>("#reviews [data-review-card]"),
+            ];
+            const cta = document.getElementById("cta")!.firstElementChild as HTMLElement;
+            const footer = document.querySelector<HTMLElement>("footer")!;
             return {
-                reviewsToCta: top(cta) - Math.max(...cards.map(bottom)),
-                ctaToFooter: top(footer) - bottom(cta),
+                reviewsToCta: layoutTop(cta) - Math.max(...cards.map(layoutBottom)),
+                ctaToFooter: layoutTop(footer) - layoutBottom(cta),
             };
         });
 

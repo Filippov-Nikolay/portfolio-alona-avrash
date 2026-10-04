@@ -155,6 +155,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             resumeTimeoutId = setTimeout(() => {
                 if (dragRef.current.active || isUserScrolling) return;
 
+                closePinnedTool();
                 recenterTrack();
                 autoScrollPosition = track.scrollLeft;
                 isPaused = false;
@@ -430,13 +431,17 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
         };
     }, [activeId, isPeeking, sectionRef, trackRef]);
 
+    function closePinnedTool() {
+        setIsOverlayActive(false);
+        setPinnedId(null);
+    }
+
     function startDrag(event: PointerEvent<HTMLDivElement>) {
         if (event.pointerType === "mouse" && event.button !== 0) return;
 
         pauseAutoScrollRef.current();
-        if (event.pointerType !== "mouse") {
-            setIsOverlayActive(false);
-            setPinnedId(null);
+        if (event.pointerType !== "mouse" && !(event.target as Element).closest("button")) {
+            closePinnedTool();
         }
         const track = event.currentTarget;
         dragRef.current = {
@@ -446,10 +451,6 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
             didDrag: false,
             pointerType: event.pointerType,
         };
-
-        if (event.pointerType === "mouse") {
-            track.setPointerCapture(event.pointerId);
-        }
     }
 
     function drag(event: PointerEvent<HTMLDivElement>) {
@@ -458,6 +459,10 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
 
         const deltaX = event.clientX - state.startX;
         if (Math.abs(deltaX) > 3) {
+            if (!state.didDrag && state.pointerType !== "mouse") closePinnedTool();
+            if (!state.didDrag && state.pointerType === "mouse") {
+                event.currentTarget.setPointerCapture(event.pointerId);
+            }
             state.didDrag = true;
             pauseAutoScrollRef.current();
         }
@@ -481,6 +486,7 @@ export function ToolsSection({ tools, labels }: ToolsSectionProps) {
     function cancelDrag(event: PointerEvent<HTMLDivElement>) {
         if (!dragRef.current.active) return;
 
+        if (dragRef.current.pointerType !== "mouse") closePinnedTool();
         dragRef.current.active = false;
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);

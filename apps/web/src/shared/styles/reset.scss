@@ -1,40 +1,44 @@
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
-}
+@layer reset, global, base;
 
-* {
-    margin: 0;
-    padding: 0;
-}
+@layer reset {
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
 
-body {
-    min-height: 100vh;
-}
+    * {
+        margin: 0;
+        padding: 0;
+    }
 
-img,
-picture,
-video,
-canvas,
-svg {
-    display: block;
-    max-width: 100%;
-}
+    body {
+        min-height: 100vh;
+    }
 
-button,
-input,
-textarea,
-select {
-    font: inherit;
-}
+    img,
+    picture,
+    video,
+    canvas,
+    svg {
+        display: block;
+        max-width: 100%;
+    }
 
-a {
-    color: inherit;
-    text-decoration: none;
-}
+    button,
+    input,
+    textarea,
+    select {
+        font: inherit;
+    }
 
-ul,
-ol {
-    list-style: none;
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    ul,
+    ol {
+        list-style: none;
+    }
 }

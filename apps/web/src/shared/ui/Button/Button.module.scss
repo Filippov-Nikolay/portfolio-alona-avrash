@@ -1,116 +1,120 @@
 @use "@/shared/styles/mixins" as *;
 
-.button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-family: inherit;
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-        background var(--transition-fast),
-        color var(--transition-fast),
-        border-color var(--transition-fast),
-        opacity var(--transition-fast),
-        box-shadow var(--transition-fast);
-    white-space: nowrap;
+@layer reset, global, base;
 
-    &:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-    }
+@layer base {
+    .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: inherit;
+        font-weight: 500;
+        cursor: pointer;
+        transition:
+            background var(--transition-fast),
+            color var(--transition-fast),
+            border-color var(--transition-fast),
+            opacity var(--transition-fast),
+            box-shadow var(--transition-fast);
+        white-space: nowrap;
 
-    &:active:not(:disabled) {
-        opacity: 0.8;
-    }
-}
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
 
-// === Variants ==========================================
-
-.primary {
-    background: var(--color-primary);
-    color: #000;
-
-    @include can-hover {
-        &:hover:not(:disabled) {
-            background: #000;
-            color: var(--color-primary);
+        &:active:not(:disabled) {
+            opacity: 0.8;
         }
     }
-}
 
-.second {
-    background: #fff;
-    border: 1px solid #000;
-    color: #000;
+    // === Variants ==========================================
 
-    @include can-hover {
-        &:hover:not(:disabled) {
-            background: var(--color-primary);
-            color: #000;
+    .primary {
+        background: var(--color-primary);
+        color: #000;
+
+        @include can-hover {
+            &:hover:not(:disabled) {
+                background: #000;
+                color: var(--color-primary);
+            }
         }
     }
-}
 
-.ghost {
-    background: transparent;
-    color: var(--color-text-secondary);
+    .second {
+        background: #fff;
+        border: 1px solid #000;
+        color: #000;
 
-    @include can-hover {
-        &:hover:not(:disabled) {
-            background: var(--color-surface-light);
-            color: var(--color-text-primary);
+        @include can-hover {
+            &:hover:not(:disabled) {
+                background: var(--color-primary);
+                color: #000;
+            }
         }
     }
-}
 
-.outline {
-    background: transparent;
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border);
+    .ghost {
+        background: transparent;
+        color: var(--color-text-secondary);
 
-    @include can-hover {
-        &:hover:not(:disabled) {
-            border-color: rgba(255, 255, 255, 0.2);
-            background: var(--color-card);
+        @include can-hover {
+            &:hover:not(:disabled) {
+                background: var(--color-surface-light);
+                color: var(--color-text-primary);
+            }
         }
     }
-}
 
-// === Sizes =============================================
+    .outline {
+        background: transparent;
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border);
 
-.sm {
-    height: 36px;
-    padding: 0 16px;
-    font-size: 13px;
-}
+        @include can-hover {
+            &:hover:not(:disabled) {
+                border-color: rgba(255, 255, 255, 0.2);
+                background: var(--color-card);
+            }
+        }
+    }
 
-.md {
-    height: 44px;
-    padding: 0 24px;
-    font-size: 14px;
-}
+    // === Sizes =============================================
 
-.lg {
-    height: 52px;
-    padding: 0 32px;
-    font-size: 16px;
-}
+    .sm {
+        height: 36px;
+        padding: 0 16px;
+        font-size: 13px;
+    }
 
-// === Loading ===========================================
+    .md {
+        height: 44px;
+        padding: 0 24px;
+        font-size: 14px;
+    }
 
-.loading {
-    opacity: 0.6;
-    cursor: wait;
-}
+    .lg {
+        height: 52px;
+        padding: 0 32px;
+        font-size: 16px;
+    }
 
-// === Icon ==============================================
+    // === Loading ===========================================
 
-.icon {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
+    .loading {
+        opacity: 0.6;
+        cursor: wait;
+    }
+
+    // === Icon ==============================================
+
+    .icon {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
 }

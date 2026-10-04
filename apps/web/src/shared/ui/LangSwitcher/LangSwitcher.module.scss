@@ -1,147 +1,151 @@
 @use "@/shared/styles/mixins" as *;
 
-.wrapper {
-    position: relative;
-    flex-shrink: 0;
-}
+@layer reset, global, base;
 
-// =============================================
-// Trigger
-// =============================================
+@layer base {
+    .wrapper {
+        position: relative;
+        flex-shrink: 0;
+    }
 
-.trigger {
-    @include flex-center;
+    // =============================================
+    // Trigger
+    // =============================================
 
-    gap: 10px;
-    padding: 3px 8px;
-    border: 1px solid var(--color-border);
-    // No border-radius here — set by each usage context to avoid CSS Modules
-    // order-dependent overrides (e.g. langMobileTrigger needs radius-sm, not radius-v-sm)
-    background: transparent;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: var(--font-mono);
-    color: var(--color-text-primary);
-    letter-spacing: 0.08em;
-    cursor: pointer;
-    white-space: nowrap;
-    appearance: none;
-    -webkit-appearance: none;
-    -webkit-tap-highlight-color: transparent;
-    @include transition(border-color, background, color, text-shadow, transform);
-    @include focus-ring;
+    .trigger {
+        @include flex-center;
 
-    @include can-hover {
-        &:hover {
-            color: var(--color-primary);
-            border-color: rgba(234, 253, 39, 0.4);
-            text-shadow: 0 0 12px rgba(234, 253, 39, 0.55);
-            transform: scale(1.06);
+        gap: 10px;
+        padding: 3px 8px;
+        border: 1px solid var(--color-border);
+        // No border-radius here — set by each usage context to avoid CSS Modules
+        // order-dependent overrides (e.g. langMobileTrigger needs radius-sm, not radius-v-sm)
+        background: transparent;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: var(--font-mono);
+        color: var(--color-text-primary);
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        white-space: nowrap;
+        appearance: none;
+        -webkit-appearance: none;
+        -webkit-tap-highlight-color: transparent;
+        @include transition(border-color, background, color, text-shadow, transform);
+        @include focus-ring;
+
+        @include can-hover {
+            &:hover {
+                color: var(--color-primary);
+                border-color: rgba(234, 253, 39, 0.4);
+                text-shadow: 0 0 12px rgba(234, 253, 39, 0.55);
+                transform: scale(1.06);
+            }
+        }
+
+        &:active {
+            transform: scale(0.96);
         }
     }
 
-    &:active {
-        transform: scale(0.96);
-    }
-}
-
-.triggerOpen {
-    border-color: rgba(234, 253, 39, 0.4);
-    background: rgba(234, 253, 39, 0.06);
-}
-
-.dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--color-primary);
-    box-shadow: 0 0 6px rgba(234, 253, 39, 0.8);
-    flex-shrink: 0;
-}
-
-// =============================================
-// Dropdown
-// =============================================
-
-.dropdown {
-    position: absolute;
-    top: calc(100% - 1px);
-    left: -0.8px;
-    right: -0.8px;
-    z-index: 100;
-    list-style: none;
-    margin: 0;
-    padding: 6px;
-    width: auto;
-    box-sizing: border-box;
-    background: var(--lang-dropdown-bg, var(--color-bg-btn));
-    border: 1px solid var(--lang-dropdown-border, rgba(234, 253, 39, 0.18));
-    border-top: none;
-    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-    box-shadow: 0 16px 24px -16px rgba(0, 0, 0, 0.45);
-
-    [data-theme="dark"] & {
-        background: var(--lang-dropdown-bg, rgba(20, 20, 24, 0.92));
-        -webkit-backdrop-filter: blur(20px) saturate(160%);
-        backdrop-filter: blur(20px) saturate(160%);
-        border-color: var(--lang-dropdown-border, rgba(255, 255, 255, 0.12));
-    }
-}
-
-// =============================================
-// Options
-// =============================================
-
-.option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 7px 14px;
-    border: none;
-    border-radius: var(--radius-v-sm);
-    background: transparent;
-    font-size: 13px;
-    font-weight: 600;
-    font-family: var(--font-mono);
-    letter-spacing: 0.08em;
-    color: var(--color-text-primary-reverse);
-    opacity: 0.65;
-    text-align: left;
-    cursor: pointer;
-    white-space: nowrap;
-    @include transition(background, color, opacity, transform);
-
-    [data-theme="dark"] & {
-        color: #ffffff;
+    .triggerOpen {
+        border-color: rgba(234, 253, 39, 0.4);
+        background: rgba(234, 253, 39, 0.06);
     }
 
-    @include can-hover {
-        &:hover {
+    .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--color-primary);
+        box-shadow: 0 0 6px rgba(234, 253, 39, 0.8);
+        flex-shrink: 0;
+    }
+
+    // =============================================
+    // Dropdown
+    // =============================================
+
+    .dropdown {
+        position: absolute;
+        top: calc(100% - 1px);
+        left: -0.8px;
+        right: -0.8px;
+        z-index: 100;
+        list-style: none;
+        margin: 0;
+        padding: 6px;
+        width: auto;
+        box-sizing: border-box;
+        background: var(--lang-dropdown-bg, var(--color-bg-btn));
+        border: 1px solid var(--lang-dropdown-border, rgba(234, 253, 39, 0.18));
+        border-top: none;
+        border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+        box-shadow: 0 16px 24px -16px rgba(0, 0, 0, 0.45);
+
+        [data-theme="dark"] & {
+            background: var(--lang-dropdown-bg, rgba(20, 20, 24, 0.92));
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            backdrop-filter: blur(20px) saturate(160%);
+            border-color: var(--lang-dropdown-border, rgba(255, 255, 255, 0.12));
+        }
+    }
+
+    // =============================================
+    // Options
+    // =============================================
+
+    .option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 7px 14px;
+        border: none;
+        border-radius: var(--radius-v-sm);
+        background: transparent;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: var(--font-mono);
+        letter-spacing: 0.08em;
+        color: var(--color-text-primary-reverse);
+        opacity: 0.65;
+        text-align: left;
+        cursor: pointer;
+        white-space: nowrap;
+        @include transition(background, color, opacity, transform);
+
+        [data-theme="dark"] & {
+            color: #ffffff;
+        }
+
+        @include can-hover {
+            &:hover {
+                background: rgba(255, 255, 255, 0.08);
+                opacity: 1;
+            }
+        }
+
+        &:active {
+            transform: scale(0.96);
             background: rgba(255, 255, 255, 0.08);
             opacity: 1;
         }
     }
 
-    &:active {
-        transform: scale(0.96);
-        background: rgba(255, 255, 255, 0.08);
+    .optionActive {
+        color: var(--color-primary);
         opacity: 1;
-    }
-}
 
-.optionActive {
-    color: var(--color-primary);
-    opacity: 1;
-
-    @include can-hover {
-        &:hover {
-            background: rgba(234, 253, 39, 0.12);
-            color: var(--color-primary);
+        @include can-hover {
+            &:hover {
+                background: rgba(234, 253, 39, 0.12);
+                color: var(--color-primary);
+            }
         }
-    }
 
-    &:active {
-        background: rgba(234, 253, 39, 0.12);
+        &:active {
+            background: rgba(234, 253, 39, 0.12);
+        }
     }
 }

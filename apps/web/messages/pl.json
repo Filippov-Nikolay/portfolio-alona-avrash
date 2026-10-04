@@ -106,7 +106,7 @@
         "projectDescriptionFallback": "{project}: projekt Alony Avrash, projektantki marki i identyfikacji wizualnej."
     },
     "privacyPreferences": {
-        "bannerText": "Ta strona korzysta z pamięci przeglądarki potrzebnej do jej wyświetlenia. Za Twoją zgodą zapamiętuje też motyw i ekran powitalny oraz mierzy odwiedziny i interakcje, aby ulepszać portfolio. Możesz zaakceptować technologie opcjonalne, odrzucić je lub zarządzać ustawieniami. Zobacz <cookies>Politykę plików cookie i pamięci przeglądarki</cookies>.",
+        "bannerText": "Za Twoją zgodą zapisujemy Twoje preferencje i mierzymy odwiedziny. <cookies>Polityka cookie</cookies>",
         "acceptOptional": "Akceptuj opcjonalne",
         "rejectOptional": "Odrzuć opcjonalne",
         "managePreferences": "Zarządzaj ustawieniami",
@@ -119,7 +119,8 @@
         "categoryAnalyticsDescription": "Mierzą wyświetlenia stron, zainteresowanie projektami i wydajność techniczną za pomocą naszych anonimowych statystyk, Vercel Analytics i Speed Insights.",
         "alwaysActive": "Zawsze aktywne",
         "savePreferences": "Zapisz ustawienia",
-        "close": "Zamknij"
+        "close": "Zamknij",
+        "bannerSettings": "Ustawienia"
     },
     "legal": {
         "index": {

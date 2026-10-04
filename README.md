@@ -130,6 +130,12 @@ between apps.
 
 ---
 
+## Security
+
+Report vulnerabilities privately, as described in [SECURITY.md](SECURITY.md).
+
+---
+
 ## License
 
 All rights reserved, see [LICENSE](LICENSE). The repository is public so the code can be read and

@@ -108,3 +108,59 @@ test("mobile tools carousel uses native momentum and prepares peek images before
     await illustratorCard.dispatchEvent("click");
     await expect(section.locator('[data-tools-peek-overlay][data-active="true"]')).toBeVisible();
 });
+
+test("a tapped tool closes on a second tap, on an empty tap and when auto-scroll resumes", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en");
+
+    const section = page.locator("#tools");
+    await section.evaluate((element) => {
+        const view = element.ownerDocument.defaultView!;
+        const absoluteTop = element.getBoundingClientRect().top + view.scrollY;
+        view.scrollTo(0, absoluteTop - view.innerHeight * 0.25);
+    });
+    await expect(section).toBeInViewport();
+    await expect
+        .poll(() =>
+            section
+                .locator("[data-tools-peek-preloader] img")
+                .evaluateAll((images) =>
+                    images.every((image) => (image as unknown as { complete: boolean }).complete)
+                )
+        )
+        .toBe(true);
+
+    const track = section.locator("[data-tools-track]");
+    const overlay = section.locator('[data-tools-peek-overlay][data-active="true"]');
+    const touch = { pointerId: 2, pointerType: "touch", clientX: 100, clientY: 100 };
+    const tap = async (card: ReturnType<typeof track.locator>) => {
+        await card.dispatchEvent("pointerdown", touch);
+        await card.dispatchEvent("pointerup", touch);
+        await card.dispatchEvent("click");
+    };
+    const card = () => track.locator("button").filter({ hasText: "Illustrator" }).nth(1);
+
+    const arrowTransform = () =>
+        card()
+            .locator('[class*="cardArrowIcon"]')
+            .evaluate((arrow) => getComputedStyle(arrow).transform);
+
+    await tap(card());
+    await expect(overlay).toBeVisible();
+    await expect.poll(arrowTransform).toMatch(/^matrix\(0\.707\d*, -0\.707/);
+    await tap(card());
+    await expect(overlay).toHaveCount(0, { timeout: 500 });
+    await expect.poll(arrowTransform).toBe("none");
+
+    await tap(card());
+    await expect(overlay).toBeVisible();
+    await track.dispatchEvent("pointerdown", touch);
+    await track.dispatchEvent("pointerup", touch);
+    await expect(overlay).toHaveCount(0, { timeout: 500 });
+
+    await tap(card());
+    await expect(overlay).toBeVisible();
+    await expect(overlay).toHaveCount(0, { timeout: 4_000 });
+});

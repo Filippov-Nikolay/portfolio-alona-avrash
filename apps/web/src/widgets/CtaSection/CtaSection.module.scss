@@ -1,6 +1,9 @@
 @use "@/shared/styles/mixins" as *;
 
 .section {
+    --_pad-top: 120px;
+    --_pad-bottom: 120px;
+
     background: var(--color-bg);
     color: var(--color-text-primary);
 }

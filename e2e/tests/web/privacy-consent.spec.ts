@@ -69,13 +69,27 @@ test("on a phone the banner stays compact with both choices side by side", async
     const banner = page.getByRole("region", { name: "Privacy preferences" });
     await expect(banner).toBeVisible();
 
-    const box = (await banner.boundingBox())!;
-    expect(box.height).toBeLessThanOrEqual(844 * 0.2);
+    await expect
+        .poll(() => banner.evaluate((element) => getComputedStyle(element).transform))
+        .toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
 
-    const reject = (await banner.getByRole("button", { name: "Reject optional" }).boundingBox())!;
-    const accept = (await banner.getByRole("button", { name: "Accept optional" }).boundingBox())!;
-    expect(Math.abs(reject.y - accept.y)).toBeLessThan(1);
-    expect(Math.abs(reject.width - accept.width)).toBeLessThan(1);
+    const layout = await banner.evaluate((element) => {
+        const box = (selector: string) => {
+            const button = [...element.querySelectorAll("button")].find(
+                (candidate) => candidate.textContent?.trim() === selector
+            )!;
+            const { top, width } = button.getBoundingClientRect();
+            return { top, width };
+        };
+        return {
+            height: element.getBoundingClientRect().height,
+            reject: box("Reject optional"),
+            accept: box("Accept optional"),
+        };
+    });
+    expect(layout.height).toBeLessThanOrEqual(844 * 0.2);
+    expect(Math.abs(layout.reject.top - layout.accept.top)).toBeLessThan(1);
+    expect(Math.abs(layout.reject.width - layout.accept.width)).toBeLessThan(1);
 });
 
 test("a new visitor sees the banner and nothing is measured before a choice", async ({ page }) => {

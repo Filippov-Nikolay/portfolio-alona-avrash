@@ -24,8 +24,10 @@ declare global {
 }
 type AuditWindow = Window;
 
-// Recorded from bac5316 before changing GSAP integration. Keep these snapshots
-// frozen: they pin positions, perspective, scale, opacity and stacking order.
+// Recorded after the Projects entry was shortened to 5% of the scene, so the
+// title fades in sooner and cards start moving earlier. Poses at 0 and from
+// 0.79 on match the original bac5316 recording. Keep these snapshots frozen:
+// they pin positions, perspective, scale, opacity and stacking order.
 test.beforeEach(async ({ context, page, hasTouch }, testInfo) => {
     await page.setViewportSize(
         hasTouch ? { width: 390, height: 664 } : { width: 1920, height: 912 }

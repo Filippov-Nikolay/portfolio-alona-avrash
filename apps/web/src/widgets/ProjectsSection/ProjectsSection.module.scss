@@ -52,7 +52,7 @@
 .track {
     --_card: 278px;
 
-    height: round(190svh + max(450svh, var(--projects-steps, 6) * var(--_card) * 0.84 + 35vw), 1px);
+    height: calc(190svh + max(450svh, var(--projects-steps, 6) * var(--_card) * 0.84 + 35vw));
 
     @media (max-width: 479px) {
         --_card: 208px;

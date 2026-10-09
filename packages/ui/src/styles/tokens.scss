@@ -11,10 +11,10 @@
     --content-width: 1280px;
     --page-top-offset: calc(var(--header-height, 120px) + 50px);
     --section-spacing: 160px;
-    --hero-scroll-runway: clamp(1260px, 182vh, 2140px);
-    --hero-scroll-runway-compact: clamp(760px, 122vh, 1080px);
-    --hero-flat-handoff-overlap: clamp(160px, 24vh, 220px);
-    --hero-flat-handoff-overlap-compact: clamp(92px, 15vh, 132px);
+    --hero-scroll-runway: clamp(1260px, calc(182 * var(--lvh, 1vh)), 2140px);
+    --hero-scroll-runway-compact: clamp(760px, calc(122 * var(--lvh, 1vh)), 1080px);
+    --hero-flat-handoff-overlap: clamp(160px, calc(24 * var(--lvh, 1vh)), 220px);
+    --hero-flat-handoff-overlap-compact: clamp(92px, calc(15 * var(--lvh, 1vh)), 132px);
 
     // === Spacing scale =================================
     // Generic scale for new sections/components. Existing sections keep

@@ -210,6 +210,31 @@ describe("shared ScrollTrigger refresh scheduling", () => {
         expect(harness.refresh).toHaveBeenCalledExactlyOnceWith();
     });
 
+    it("waits for the last chrome resize before the settled refresh", () => {
+        mount();
+        flushFrame();
+        emit("refresh");
+        harness.refresh.mockClear();
+        window.innerHeight = 740;
+        window.dispatchEvent(new Event("resize"));
+        documentMock.body.scrollHeight = 1300;
+        resize();
+
+        vi.advanceTimersByTime(900);
+        window.innerHeight = 780;
+        window.dispatchEvent(new Event("resize"));
+        vi.advanceTimersByTime(300);
+        flushFrame();
+        expect(harness.refresh).not.toHaveBeenCalled();
+
+        vi.advanceTimersByTime(899);
+        flushFrame();
+        expect(harness.refresh).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1);
+        flushFrame();
+        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith();
+    });
+
     it("skips the settled refresh when the document is back to its measured height", () => {
         mount();
         flushFrame();

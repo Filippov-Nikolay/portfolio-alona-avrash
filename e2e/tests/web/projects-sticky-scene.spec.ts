@@ -53,3 +53,49 @@ test("Projects stays glued to the viewport when the layout above shifts before a
 
     expect(offsets).toEqual([true, true, true, true]);
 });
+
+test("the final stack keeps its gap above View all when the stage height changes", async ({
+    page,
+}) => {
+    await page.goto("/en");
+    await expect(page.locator("#projects [data-phase]")).toBeAttached();
+    await page.waitForTimeout(800);
+
+    const gaps = await page.evaluate(async () => {
+        const scene = document.querySelector<HTMLElement>("#projects [data-phase]")!;
+        const runway = scene.parentElement!;
+        const button = document.querySelector<HTMLElement>('#projects a[href$="/works"]')!;
+        const frame = () =>
+            new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const gap = () => {
+            const stackBottom = Math.max(
+                ...[
+                    ...scene.querySelectorAll<HTMLElement>('[data-project-instance="final-tail"]'),
+                ].map((card) => card.getBoundingClientRect().bottom)
+            );
+            return Math.round(button.getBoundingClientRect().top - stackBottom);
+        };
+
+        scrollTo(
+            0,
+            runway.getBoundingClientRect().top + scrollY + runway.offsetHeight - scene.offsetHeight
+        );
+        await frame();
+        const before = gap();
+
+        document.dispatchEvent(
+            new PointerEvent("pointerdown", { pointerId: 92, pointerType: "touch" })
+        );
+        scene.style.height = `${scene.offsetHeight + 76}px`;
+        await frame();
+        const after = gap();
+        scene.style.removeProperty("height");
+        document.dispatchEvent(
+            new PointerEvent("pointerup", { pointerId: 92, pointerType: "touch" })
+        );
+        return { before, after };
+    });
+
+    expect(gaps.before).toBeGreaterThan(20);
+    expect(gaps.after).toBe(gaps.before);
+});

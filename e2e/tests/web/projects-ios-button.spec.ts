@@ -17,7 +17,7 @@ test("Projects CTA keeps its painted layer while the iOS scene is pinned", async
     const section = page.locator("#projects");
     const button = section.locator('a[href$="/works"]');
     await expect(button).toBeAttached();
-    await expect(section.locator(".pin-spacer")).toBeAttached();
+    await expect(section.locator("[data-phase]")).toBeAttached();
     await page.waitForTimeout(800);
 
     const sectionStart = await section.evaluate((element) => {
@@ -78,20 +78,19 @@ test("Projects does not change the iOS scroll position after touch scrolling sto
 }) => {
     await page.goto("/en");
     const section = page.locator("#projects");
-    // SSR contains the section before GSAP constructs its scroll range. Measuring
-    // then gives a zero distance and tests hydration, not the pinned scene.
-    await expect(section.locator(".pin-spacer")).toBeAttached();
+    // Wait for GSAP to build the scene, so the scroll below drives its animation.
+    await expect(section.locator("[data-phase]")).toBeAttached();
     await page.waitForTimeout(800);
 
     const range = await section.evaluate((element) => {
         const view = element.ownerDocument.defaultView!;
         const scene = element.querySelector("[class*='stage']")!;
-        const spacer = scene.parentElement!;
-        const start = spacer.getBoundingClientRect().top + view.scrollY;
+        const runway = scene.parentElement!;
+        const start = runway.getBoundingClientRect().top + view.scrollY;
 
         return {
             start,
-            distance: spacer.getBoundingClientRect().height - scene.getBoundingClientRect().height,
+            distance: runway.getBoundingClientRect().height - scene.getBoundingClientRect().height,
         };
     });
 

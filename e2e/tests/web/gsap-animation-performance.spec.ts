@@ -38,7 +38,9 @@ test.beforeEach(async ({ context, page, hasTouch }, testInfo) => {
     await page.addInitScript({ path: path.join(__dirname, "../../fixtures/animation-audit.js") });
     await page.goto("/en");
     await page.waitForFunction(() =>
-        (window as AuditWindow).__animationAudit?.ScrollTrigger?.getAll().some((t) => t.pin)
+        (window as AuditWindow).__animationAudit?.ScrollTrigger?.getAll().some((t) =>
+            t.trigger.closest("#projects")
+        )
     );
     await page.waitForTimeout(1800);
 });
@@ -52,7 +54,9 @@ test("Projects retains every pose forward and in reverse after a refresh", async
     const result = await page.evaluate(
         (progresses) => {
             const audit = (window as AuditWindow).__animationAudit;
-            const trigger = audit.ScrollTrigger.getAll().find((t) => t.pin)!;
+            const trigger = audit.ScrollTrigger.getAll().find((t) =>
+                t.trigger.closest("#projects")
+            )!;
             const targets = [
                 ...document.querySelectorAll<HTMLElement>("[data-project-card]"),
                 document.querySelector<HTMLElement>("#projects h2")!,
@@ -123,7 +127,7 @@ test("refresh, responsive changes and navigation keep one set of homepage trigge
     const expectedCount = hasTouch ? 4 : 8;
     const original = await inventory();
     expect(original).toHaveLength(expectedCount);
-    expect(original.filter((t) => t.pin)).toHaveLength(1);
+    expect(original.filter((t) => t.pin)).toHaveLength(0);
     expect(original.every((t) => t.connected)).toBe(true);
     expect(original.filter((t) => t.invalidate).map((t) => t.section)).toEqual(["projects"]);
     const counts = await page.evaluate(() => {
@@ -158,11 +162,9 @@ test("refresh, responsive changes and navigation keep one set of homepage trigge
             .evaluate((link: HTMLAnchorElement) => link.click());
         await page.waitForURL("**/en");
         await expect.poll(inventory).toEqual(original);
-        await expect(page.locator("#projects .pin-spacer")).toHaveCount(1);
     }
     await page.emulateMedia({ reducedMotion: "reduce" });
     await expect.poll(inventory).toEqual([]);
-    await expect(page.locator("#projects .pin-spacer")).toHaveCount(0);
     await expect(page.locator("[data-project-card]").first()).toHaveCSS("transform", "none");
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await expect.poll(inventory).toEqual(original);

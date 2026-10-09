@@ -27,7 +27,6 @@ const HANDOFF_TRACK_END = 0.93;
 const FINAL_TAIL_TRACK_ADVANCE = 0.25;
 const FINAL_COMPOSITION_VISUAL_OFFSET = 20;
 const FINAL_STOP_VELOCITY = 1400;
-const FINAL_HOLD_SCROLL_DISTANCE = 0.9;
 const COMPACT_MEDIA_QUERY = "(max-width: 479px)";
 const PATH_SAMPLES_PER_CARD = 64;
 
@@ -85,6 +84,7 @@ export function useProjectsSectionAnimations() {
     const reduced = useReducedMotionPreference();
     const compact = useCompactViewport();
     const sectionRef = useRef<HTMLElement>(null);
+    const trackRef = useRef<HTMLDivElement>(null);
     const sceneRef = useRef<HTMLDivElement>(null);
     const titleRef = useRef<HTMLHeadingElement>(null);
     const viewAllRef = useRef<HTMLDivElement>(null);
@@ -93,10 +93,11 @@ export function useProjectsSectionAnimations() {
 
     useGSAP(
         () => {
+            const track = trackRef.current;
             const scene = sceneRef.current;
             const title = titleRef.current;
             const viewAll = viewAllRef.current;
-            if (!scene || !title || !viewAll) return;
+            if (!track || !scene || !title || !viewAll) return;
 
             const cards = gsap.utils.toArray<HTMLElement>("[data-project-card]", scene);
             if (reduced || cards.length === 0) {
@@ -119,18 +120,6 @@ export function useProjectsSectionAnimations() {
             let viewportWidth = window.innerWidth;
             let viewportHeight = scene.clientHeight;
 
-            const getSceneDistance = () => {
-                const logicalSteps = Math.max(finalTailStart + 2.6, 6);
-                const sceneHeight = scene.clientHeight || viewportHeight;
-
-                return (
-                    Math.max(
-                        sceneHeight * 4.5,
-                        logicalSteps * cardWidth * 0.84 + window.innerWidth * 0.35
-                    ) +
-                    sceneHeight * FINAL_HOLD_SCROLL_DISTANCE
-                );
-            };
             const getFocusInfluence = (relative: number) =>
                 Math.exp(-(relative * relative) / (2 * 0.42 * 0.42));
             const getFocusDetentInfluence = (relative: number) =>
@@ -305,7 +294,7 @@ export function useProjectsSectionAnimations() {
                     baseY,
                     maxRise,
                     viewAllX: (viewportWidth - viewAll.offsetWidth) / 2,
-                    viewAllY: compositionTop + cardHeight + 34,
+                    viewAllY: baseY + cardHeight / 2 + 34,
                 };
             };
             const getFinalTransform = (
@@ -513,14 +502,10 @@ export function useProjectsSectionAnimations() {
             let fastFinalApproach = false;
             let finalStopConsumed = false;
             const scrollTrigger = ScrollTrigger.create({
-                trigger: scene,
+                trigger: track,
                 start: "top top",
-                end: () => `+=${Math.round(getSceneDistance())}`,
-                pin: true,
-                pinSpacing: true,
+                end: () => `+=${Math.max(track.offsetHeight - scene.offsetHeight, 1)}`,
                 scrub: true,
-                anticipatePin: 1,
-                refreshPriority: 1,
                 invalidateOnRefresh: true,
                 snap: allowVelocitySnap
                     ? {
@@ -572,5 +557,5 @@ export function useProjectsSectionAnimations() {
         void index;
     };
 
-    return { sectionRef, sceneRef, titleRef, viewAllRef, setActiveIndex };
+    return { sectionRef, trackRef, sceneRef, titleRef, viewAllRef, setActiveIndex };
 }

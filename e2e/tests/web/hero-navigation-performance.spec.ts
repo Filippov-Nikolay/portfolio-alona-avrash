@@ -51,7 +51,7 @@ test("Works to Home keeps the compact camera and defers refresh throughout a tou
     await expect
         .poll(() => plane.evaluate((element) => element.getAnimations()[0]?.playState))
         .toBe("paused");
-    await expect(page.locator(".pin-spacer").first()).toBeAttached();
+    await expect(page.locator("#projects [data-phase]")).toBeAttached();
 
     const during = await page.evaluate(async () => {
         // Finish initial trigger construction, then exercise the delayed startup

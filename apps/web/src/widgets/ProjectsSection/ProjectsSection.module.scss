@@ -46,10 +46,24 @@
     user-select: none;
 }
 
-// The pin target is a self-contained viewport: project transforms cannot be
+// The runway is sized in CSS so its height ships with the server HTML and never
+// depends on the mobile browser chrome. The stage sticks inside it, so the
+// browser keeps it in place instead of a JS pin switching between fixed and flow.
+.track {
+    --_card: 278px;
+
+    height: calc(190svh + max(450svh, var(--projects-steps, 6) * var(--_card) * 0.84 + 35vw));
+
+    @media (max-width: 479px) {
+        --_card: 208px;
+    }
+}
+
+// The stage is a self-contained viewport: project transforms cannot be
 // affected by the height or offsets of the sections above it.
 .stage {
-    position: relative;
+    position: sticky;
+    top: 0;
     width: 100%;
     height: 100svh;
     overflow: hidden;
@@ -150,9 +164,11 @@
     }
 }
 
+// Anchored to the stage center like the cards, so the gap between the final
+// stack and the button cannot change with the stage height.
 .viewAllMotion {
     position: absolute;
-    top: 0;
+    top: 50%;
     left: 0;
     z-index: 12;
     display: inline-flex;
@@ -208,7 +224,12 @@
 }
 
 @include reduced-motion {
+    .track {
+        height: auto;
+    }
+
     .stage {
+        position: relative;
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(240px, 278px));
         justify-content: center;
@@ -224,5 +245,9 @@
         top: auto;
         left: auto;
         transform: none !important;
+    }
+
+    .viewAllMotion {
+        top: 0;
     }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import type { ShowcaseItem } from "@/shared/types";
@@ -49,6 +49,7 @@ export function ProjectsSection({
     const pointerTypeRef = useRef<string>("mouse");
     const {
         sectionRef,
+        trackRef,
         sceneRef,
         titleRef,
         viewAllRef,
@@ -116,82 +117,91 @@ export function ProjectsSection({
     return (
         <Section id="projects" ref={sectionRef} className={styles.section}>
             <Container className={styles.container}>
-                <div ref={sceneRef} className={styles.stage}>
-                    <h2 ref={titleRef} className={styles.ghostTitle} aria-hidden="true">
-                        {labels.title}
-                    </h2>
+                <div
+                    ref={trackRef}
+                    className={styles.track}
+                    style={{ "--projects-steps": Math.max(cards.length + 2.6, 6) } as CSSProperties}
+                >
+                    <div ref={sceneRef} className={styles.stage}>
+                        <h2 ref={titleRef} className={styles.ghostTitle} aria-hidden="true">
+                            {labels.title}
+                        </h2>
 
-                    {trackItems.map(({ image, label, sourceIndex, instanceType }, index) => {
-                        const isFinalTail = instanceType === "final-tail";
+                        {trackItems.map(({ image, label, sourceIndex, instanceType }, index) => {
+                            const isFinalTail = instanceType === "final-tail";
 
-                        return (
-                            <button
-                                key={`${instanceType}-${image?.src ?? label}-${index}`}
-                                type="button"
-                                className={cn(
-                                    styles.cardTransform,
-                                    activeIndex === index && styles.cardTransformActive
-                                )}
-                                data-project-card
-                                data-project-instance={isFinalTail ? "final-tail" : "main"}
-                                aria-label={`${labels.viewLabel}: ${label}`}
-                                aria-pressed={activeIndex === index}
-                                onPointerEnter={(event) => {
-                                    if (event.pointerType === "mouse") setHoveredIndex(index);
-                                }}
-                                onPointerLeave={(event) => {
-                                    if (event.pointerType === "mouse") setHoveredIndex(null);
-                                }}
-                                onPointerDown={(event) => {
-                                    pointerTypeRef.current = event.pointerType;
-                                }}
-                                onClick={() => {
-                                    if (sourceIndex === null) return;
+                            return (
+                                <button
+                                    key={`${instanceType}-${image?.src ?? label}-${index}`}
+                                    type="button"
+                                    className={cn(
+                                        styles.cardTransform,
+                                        activeIndex === index && styles.cardTransformActive
+                                    )}
+                                    data-project-card
+                                    data-project-instance={isFinalTail ? "final-tail" : "main"}
+                                    aria-label={`${labels.viewLabel}: ${label}`}
+                                    aria-pressed={activeIndex === index}
+                                    onPointerEnter={(event) => {
+                                        if (event.pointerType === "mouse") setHoveredIndex(index);
+                                    }}
+                                    onPointerLeave={(event) => {
+                                        if (event.pointerType === "mouse") setHoveredIndex(null);
+                                    }}
+                                    onPointerDown={(event) => {
+                                        pointerTypeRef.current = event.pointerType;
+                                    }}
+                                    onClick={() => {
+                                        if (sourceIndex === null) return;
 
-                                    if (pointerTypeRef.current !== "mouse") {
-                                        if (pinnedIndex !== index) {
-                                            setPinnedIndex(index);
-                                            return;
+                                        if (pointerTypeRef.current !== "mouse") {
+                                            if (pinnedIndex !== index) {
+                                                setPinnedIndex(index);
+                                                return;
+                                            }
                                         }
-                                    }
 
-                                    setSelectedIndex(sourceIndex);
-                                }}
+                                        setSelectedIndex(sourceIndex);
+                                    }}
+                                >
+                                    <span
+                                        className={styles.interactionLayer}
+                                        data-project-interaction
+                                    >
+                                        <span className={styles.card}>
+                                            {image?.src && (
+                                                <Image
+                                                    src={image.src}
+                                                    alt={image.alt ?? label}
+                                                    fill
+                                                    className={styles.image}
+                                                    sizes="(max-width: 479px) 260px, 278px"
+                                                    loading={shouldPreloadImages ? "eager" : "lazy"}
+                                                    fetchPriority="low"
+                                                    draggable={false}
+                                                />
+                                            )}
+                                        </span>
+                                        <span className={styles.cardLabel} aria-hidden="true">
+                                            {label}
+                                        </span>
+                                    </span>
+                                </button>
+                            );
+                        })}
+
+                        <div ref={viewAllRef} className={styles.viewAllMotion}>
+                            <Button
+                                as="a"
+                                href={`/${locale}/works`}
+                                variant="primary"
+                                size="lg"
+                                className={styles.viewAll}
+                                rightIcon={<ArrowIcon className={styles.viewAllArrow} />}
                             >
-                                <span className={styles.interactionLayer} data-project-interaction>
-                                    <span className={styles.card}>
-                                        {image?.src && (
-                                            <Image
-                                                src={image.src}
-                                                alt={image.alt ?? label}
-                                                fill
-                                                className={styles.image}
-                                                sizes="(max-width: 479px) 260px, 278px"
-                                                loading={shouldPreloadImages ? "eager" : "lazy"}
-                                                fetchPriority="low"
-                                                draggable={false}
-                                            />
-                                        )}
-                                    </span>
-                                    <span className={styles.cardLabel} aria-hidden="true">
-                                        {label}
-                                    </span>
-                                </span>
-                            </button>
-                        );
-                    })}
-
-                    <div ref={viewAllRef} className={styles.viewAllMotion}>
-                        <Button
-                            as="a"
-                            href={`/${locale}/works`}
-                            variant="primary"
-                            size="lg"
-                            className={styles.viewAll}
-                            rightIcon={<ArrowIcon className={styles.viewAllArrow} />}
-                        >
-                            {labels.viewAll}
-                        </Button>
+                                {labels.viewAll}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </Container>

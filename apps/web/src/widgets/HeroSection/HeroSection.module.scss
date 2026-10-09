@@ -4,12 +4,12 @@
     --_pad-top: 0px;
     --_pad-bottom: 0px;
     --hero-title-start-offset: 6vw;
-    --stats-camera-runway: clamp(1120px, 148svh, 1540px);
-    --stats-handoff-runway: clamp(152px, 22svh, 250px);
-    --stats-selected-runway: clamp(1120px, 150svh, 1560px);
+    --stats-camera-runway: clamp(1120px, #{svh(148)}, 1540px);
+    --stats-handoff-runway: clamp(152px, #{svh(22)}, 250px);
+    --stats-selected-runway: clamp(1120px, #{svh(150)}, 1560px);
     --selected-focus-runway: 0px;
     --selected-handoff-runway: 0px;
-    --selected-final-offset: clamp(440px, 62svh, 840px);
+    --selected-final-offset: clamp(440px, #{svh(62)}, 840px);
 
     --_floater-bg: var(--color-visual-bg);
     --_floater-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
@@ -26,12 +26,12 @@
     }
 
     @include respond-to("tablet") {
-        --stats-camera-runway: clamp(720px, 108svh, 960px);
-        --stats-handoff-runway: clamp(112px, 18svh, 180px);
-        --stats-selected-runway: clamp(760px, 112svh, 980px);
+        --stats-camera-runway: clamp(720px, #{svh(108)}, 960px);
+        --stats-handoff-runway: clamp(112px, #{svh(18)}, 180px);
+        --stats-selected-runway: clamp(760px, #{svh(112)}, 980px);
         --selected-focus-runway: 0px;
         --selected-handoff-runway: 0px;
-        --selected-final-offset: clamp(292px, 52svh, 460px);
+        --selected-final-offset: clamp(292px, #{svh(52)}, 460px);
     }
 
     @media (max-width: 767px) {
@@ -45,7 +45,7 @@
     }
 
     @media (min-width: 768px) and (max-width: 1023px) {
-        --hero-lower-gap: clamp(44px, 5vh, 60px);
+        --hero-lower-gap: clamp(44px, #{lvh(5)}, 60px);
         --hero-meta-gap: 28px;
     }
 }
@@ -53,14 +53,14 @@
 .transitionTrack {
     position: relative;
     height: calc(
-        100svh + var(--hero-scroll-runway) + var(--stats-camera-runway) +
+        svh(100) + var(--hero-scroll-runway) + var(--stats-camera-runway) +
             var(--stats-handoff-runway) + var(--stats-selected-runway) +
             var(--selected-focus-runway) + var(--selected-handoff-runway)
     );
 
     @include respond-to("tablet") {
         height: calc(
-            100svh + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
+            svh(100) + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
                 var(--stats-handoff-runway) + var(--stats-selected-runway) +
                 var(--selected-focus-runway) + var(--selected-handoff-runway)
         );
@@ -71,12 +71,12 @@
     position: absolute;
     inset: 0 auto auto 0;
     width: 1px;
-    height: calc(100svh + var(--hero-scroll-runway));
+    height: calc(svh(100) + var(--hero-scroll-runway));
     pointer-events: none;
     opacity: 0;
 
     @include respond-to("tablet") {
-        height: calc(100svh + var(--hero-scroll-runway-compact));
+        height: calc(svh(100) + var(--hero-scroll-runway-compact));
     }
 }
 
@@ -85,7 +85,7 @@
     inset: 0 auto auto 0;
     width: 1px;
     height: calc(
-        100svh + var(--hero-scroll-runway) + var(--stats-camera-runway) +
+        svh(100) + var(--hero-scroll-runway) + var(--stats-camera-runway) +
             var(--stats-handoff-runway)
     );
     pointer-events: none;
@@ -93,7 +93,7 @@
 
     @include respond-to("tablet") {
         height: calc(
-            100svh + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
+            svh(100) + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
                 var(--stats-handoff-runway)
         );
     }
@@ -104,7 +104,7 @@
     inset: 0 auto auto 0;
     width: 1px;
     height: calc(
-        100svh + var(--hero-scroll-runway) + var(--stats-camera-runway) +
+        svh(100) + var(--hero-scroll-runway) + var(--stats-camera-runway) +
             var(--stats-handoff-runway) + var(--stats-selected-runway)
     );
     pointer-events: none;
@@ -112,7 +112,7 @@
 
     @include respond-to("tablet") {
         height: calc(
-            100svh + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
+            svh(100) + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
                 var(--stats-handoff-runway) + var(--stats-selected-runway)
         );
     }
@@ -123,7 +123,7 @@
     inset: 0 auto auto 0;
     width: 1px;
     height: calc(
-        100svh + var(--hero-scroll-runway) + var(--stats-camera-runway) +
+        svh(100) + var(--hero-scroll-runway) + var(--stats-camera-runway) +
             var(--stats-handoff-runway) + var(--stats-selected-runway) +
             var(--selected-focus-runway)
     );
@@ -132,7 +132,7 @@
 
     @include respond-to("tablet") {
         height: calc(
-            100svh + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
+            svh(100) + var(--hero-scroll-runway-compact) + var(--stats-camera-runway) +
                 var(--stats-handoff-runway) + var(--stats-selected-runway) +
                 var(--selected-focus-runway)
         );
@@ -143,7 +143,7 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    height: 100svh;
+    height: svh(100);
     overflow: visible;
 }
 
@@ -244,7 +244,7 @@
 
 .glow {
     position: absolute;
-    top: -18svh;
+    top: svh(-18);
     left: -8%;
     width: 700px;
     height: 700px;
@@ -260,7 +260,7 @@
     }
 
     @media (max-width: 767px) {
-        top: -10svh;
+        top: svh(-10);
         left: -18%;
         width: 360px;
         height: 360px;
@@ -269,7 +269,7 @@
 
 .glowSecondary {
     position: absolute;
-    top: 8svh;
+    top: svh(8);
     right: -12%;
     width: 620px;
     height: 620px;
@@ -286,7 +286,7 @@
     }
 
     @media (max-width: 767px) {
-        top: 2svh;
+        top: svh(2);
         right: -24%;
         width: 320px;
         height: 320px;
@@ -305,8 +305,8 @@
 
     position: relative;
     width: 100%;
-    min-height: 100svh;
-    height: 100svh;
+    min-height: svh(100);
+    height: svh(100);
     box-sizing: border-box;
     padding: 160px 0 72px;
     overflow: visible;
@@ -426,7 +426,7 @@
     z-index: 2;
     will-change: transform;
     width: calc(100% - var(--hero-title-start-offset));
-    margin-top: clamp(34px, 7vh, 88px);
+    margin-top: clamp(34px, lvh(7), 88px);
     margin-inline-start: var(--hero-title-start-offset);
     overflow: visible;
 }
@@ -498,7 +498,7 @@
 
 .lowerFloater {
     position: absolute;
-    top: clamp(490px, 67vh, 620px);
+    top: clamp(490px, lvh(67), 620px);
     left: 52%;
     width: 136px;
     height: 142px;
@@ -510,7 +510,7 @@
 
 .lowerFloaterSecondary {
     position: absolute;
-    top: clamp(430px, 61vh, 560px);
+    top: clamp(430px, lvh(61), 560px);
     left: 20%;
     width: 170px;
     height: 176px;
@@ -539,13 +539,13 @@
 .introCardWrap {
     position: absolute;
     z-index: 5;
-    bottom: clamp(86px, 10vh, 124px);
+    bottom: clamp(86px, lvh(10), 124px);
     left: 0;
     width: clamp(292px, 32vw, 340px);
     will-change: transform;
 
     @media (min-width: 1024px) and (min-height: 1000px) {
-        bottom: 30vh;
+        bottom: lvh(30);
     }
 }
 
@@ -611,7 +611,7 @@
 .availability {
     position: absolute;
     right: 0;
-    bottom: clamp(86px, 10vh, 124px);
+    bottom: clamp(86px, lvh(10), 124px);
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -623,7 +623,7 @@
     will-change: transform;
 
     @media (min-width: 1024px) and (min-height: 1000px) {
-        bottom: 30vh;
+        bottom: lvh(30);
     }
 }
 
@@ -732,7 +732,7 @@
 
 @media (max-width: 767px) {
     .content {
-        min-height: 100svh;
+        min-height: svh(100);
         height: auto;
         padding-top: var(--hero-top-gap);
         padding-bottom: 24px;

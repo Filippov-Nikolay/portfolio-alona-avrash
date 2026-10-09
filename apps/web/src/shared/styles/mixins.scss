@@ -5,3 +5,14 @@
 // in this app resolving to the exact same file, so nothing else here
 // has to change.
 @forward "../../../../../packages/ui/src/styles/mixins";
+
+// Viewport heights for layout. They resolve to svh and vh, unless the head
+// script has frozen --svh/--lvh for an in-app browser whose svh follows its
+// toolbars (WebKit bug 255852), where the page length would change mid-scroll.
+@function svh($value) {
+    @return calc($value * var(--svh, 1svh));
+}
+
+@function lvh($value) {
+    @return calc($value * var(--lvh, 1vh));
+}

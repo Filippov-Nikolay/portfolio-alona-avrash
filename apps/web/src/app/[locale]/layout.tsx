@@ -14,6 +14,7 @@ import { getSocials } from "@/entities/social/api/getSocials";
 import { getIcon } from "@/entities/icon/api/getIcon";
 import { getCv } from "@/entities/cv/api/getCv";
 import { DOCUMENT_STATE_SCRIPT } from "@/shared/lib/documentState";
+import { VIEWPORT_UNITS_SCRIPT } from "@/shared/lib/viewportUnits";
 import packageJson from "../../../package.json";
 import styles from "./layout.module.scss";
 
@@ -167,6 +168,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         >
             <head>
                 <script dangerouslySetInnerHTML={{ __html: DOCUMENT_STATE_SCRIPT }} />
+                <script dangerouslySetInnerHTML={{ __html: VIEWPORT_UNITS_SCRIPT }} />
             </head>
             <body>
                 <NextIntlClientProvider messages={messages}>

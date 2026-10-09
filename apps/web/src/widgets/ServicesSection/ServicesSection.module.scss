@@ -1,12 +1,12 @@
 @use "@/shared/styles/mixins" as *;
 
 $stack-base-offset: clamp(168px, 15vw, 220px);
-$stack-focus-runway: clamp(360px, 40svh, 440px);
-$stack-focus-runway-mobile: clamp(220px, 28svh, 280px);
-$stack-opening-runway: clamp(600px, 66svh, 680px);
-$stack-opening-runway-mobile: clamp(460px, 54svh, 540px);
-$stack-terminal-hold: clamp(88px, 12svh, 132px);
-$stack-terminal-hold-mobile: clamp(68px, 10svh, 88px);
+$stack-focus-runway: clamp(360px, svh(40), 440px);
+$stack-focus-runway-mobile: clamp(220px, svh(28), 280px);
+$stack-opening-runway: clamp(600px, svh(66), 680px);
+$stack-opening-runway-mobile: clamp(460px, svh(54), 540px);
+$stack-terminal-hold: clamp(88px, svh(12), 132px);
+$stack-terminal-hold-mobile: clamp(68px, svh(10), 88px);
 
 .section {
     --_pad-top: 30px;

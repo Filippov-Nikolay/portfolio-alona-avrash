@@ -1,6 +1,8 @@
+@use "@/shared/styles/mixins" as *;
+
 .pageSlot {
     // Route loading screens are fixed overlays and therefore have no document
     // height. Keep the persistent footer below the viewport while a new page
     // is streaming so it cannot flash or trigger its reveal prematurely.
-    min-height: 100svh;
+    min-height: svh(100);
 }

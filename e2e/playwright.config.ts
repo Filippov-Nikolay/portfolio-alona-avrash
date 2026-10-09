@@ -126,7 +126,7 @@ export default defineConfig({
             name: "web-ios",
             testDir: "./tests/web",
             testMatch:
-                /(gsap-animation-performance|document-integrity|legal-toc|clients-tools-reviews-ios|contact-footer-mobile|footer-ios-overscroll|footer-reveal-navigation|header-menu-ios|hero-selected-work-state|hero-theme-transition|hero-scroll-performance|hero-navigation-performance|hero-raster-budget|hero-stats-selected-spacing|stats-reel-clipping|projects-ios-button|reviews-ios-reveal|services-ios-resize|services-mobile|tools-ios-scroll|tools-ios-visibility|works-filter-ios-tap|works-scroll-performance)\.spec\.ts/,
+                /(gsap-animation-performance|document-integrity|legal-toc|clients-tools-reviews-ios|contact-footer-mobile|footer-ios-overscroll|footer-reveal-navigation|header-menu-ios|hero-selected-work-state|hero-theme-transition|hero-scroll-performance|hero-navigation-performance|hero-raster-budget|hero-stats-selected-spacing|stats-reel-clipping|projects-ios-button|projects-sticky-scene|reviews-ios-reveal|services-ios-resize|services-mobile|tools-ios-scroll|tools-ios-visibility|works-filter-ios-tap|works-scroll-performance)\.spec\.ts/,
             use: {
                 ...devices["iPhone 13"],
                 baseURL: WEB_BASE_URL,

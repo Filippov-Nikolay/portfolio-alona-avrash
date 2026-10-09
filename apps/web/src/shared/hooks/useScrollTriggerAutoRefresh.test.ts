@@ -189,6 +189,42 @@ describe("shared ScrollTrigger refresh scheduling", () => {
         }
     );
 
+    it("refreshes a layout change held during chrome resizing once the chrome settles", () => {
+        mount();
+        flushFrame();
+        emit("refresh");
+        harness.refresh.mockClear();
+        window.innerHeight = 740;
+        window.dispatchEvent(new Event("resize"));
+        resize();
+        documentMock.body.scrollHeight = 1300;
+        resize();
+        flushFrame();
+        expect(harness.refresh).not.toHaveBeenCalled();
+
+        vi.advanceTimersByTime(1199);
+        flushFrame();
+        expect(harness.refresh).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(1);
+        flushFrame();
+        expect(harness.refresh).toHaveBeenCalledExactlyOnceWith();
+    });
+
+    it("skips the settled refresh when the document is back to its measured height", () => {
+        mount();
+        flushFrame();
+        emit("refresh");
+        harness.refresh.mockClear();
+        window.innerHeight = 740;
+        documentMock.body.scrollHeight = 1020;
+        resize();
+        window.dispatchEvent(new Event("resize"));
+        documentMock.body.scrollHeight = 1000;
+        vi.advanceTimersByTime(1200);
+        flushFrame();
+        expect(harness.refresh).not.toHaveBeenCalled();
+    });
+
     it("coalesces startup and layout requests until both touch and inertia end", () => {
         mount();
         pointer("pointerdown");

@@ -53,6 +53,10 @@ function refreshAfterChromeSettles() {
     settledRefreshTimer = window.setTimeout(
         () => {
             settledRefreshTimer = 0;
+            if (performance.now() < suppressTouchDocumentResizeUntil) {
+                refreshAfterChromeSettles();
+                return;
+            }
             if (Math.abs(readLayoutSnapshot().documentHeight - refreshedDocumentHeight) > 1) {
                 queueRefresh();
             }

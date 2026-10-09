@@ -15,6 +15,8 @@ let activeTouches = 0;
 let lastScrollTime = Number.NEGATIVE_INFINITY;
 let scrollIdleTimer = 0;
 let viewportSnapshot: { width: number; height: number } | null = null;
+let settledRefreshTimer = 0;
+let refreshedDocumentHeight = 0;
 
 const TOUCH_CHROME_RESIZE_SETTLE_MS = 1_200;
 const SCROLL_IDLE_MS = 250;
@@ -41,6 +43,22 @@ function isTouchOnlyViewport() {
 
 function suppressHeightDrivenDocumentResize() {
     suppressTouchDocumentResizeUntil = performance.now() + TOUCH_CHROME_RESIZE_SETTLE_MS;
+}
+
+// A layout change that lands while the browser chrome settles is held, not
+// dropped. Once the chrome is still, a document that no longer matches the last
+// refresh is measured again, so trigger bounds never stay stale.
+function refreshAfterChromeSettles() {
+    window.clearTimeout(settledRefreshTimer);
+    settledRefreshTimer = window.setTimeout(
+        () => {
+            settledRefreshTimer = 0;
+            if (Math.abs(readLayoutSnapshot().documentHeight - refreshedDocumentHeight) > 1) {
+                queueRefresh();
+            }
+        },
+        Math.max(suppressTouchDocumentResizeUntil - performance.now(), 0)
+    );
 }
 
 function handleViewportResize() {
@@ -87,7 +105,10 @@ function handleDocumentResize() {
     if (!widthChanged && !documentHeightChanged) return;
     if (isTouchOnlyViewport() && !widthChanged) {
         if (heightChanged) suppressHeightDrivenDocumentResize();
-        if (heightChanged || performance.now() < suppressTouchDocumentResizeUntil) return;
+        if (heightChanged || performance.now() < suppressTouchDocumentResizeUntil) {
+            refreshAfterChromeSettles();
+            return;
+        }
     }
 
     queueRefresh();
@@ -165,6 +186,7 @@ function handleRefresh() {
     // Pin spacers change document height during refresh. Treat that resulting
     // layout as the baseline before ResizeObserver reports it back to us.
     layoutSnapshot = readLayoutSnapshot();
+    refreshedDocumentHeight = layoutSnapshot.documentHeight;
     refreshRequested = false;
     window.clearTimeout(scrollIdleTimer);
     scrollIdleTimer = 0;
@@ -177,6 +199,7 @@ function attachSharedWatchers() {
     if (activeConsumers > 1) return;
 
     layoutSnapshot = readLayoutSnapshot();
+    refreshedDocumentHeight = layoutSnapshot.documentHeight;
     viewportSnapshot = {
         width: layoutSnapshot.viewportWidth,
         height: layoutSnapshot.viewportHeight,
@@ -217,6 +240,8 @@ function detachSharedWatchers() {
     lastScrollTime = Number.NEGATIVE_INFINITY;
     window.clearTimeout(scrollIdleTimer);
     scrollIdleTimer = 0;
+    window.clearTimeout(settledRefreshTimer);
+    settledRefreshTimer = 0;
     document.fonts?.removeEventListener("loadingdone", queueRefresh);
     document.fonts?.removeEventListener("loadingerror", queueRefresh);
     window.removeEventListener("resize", handleViewportResize);

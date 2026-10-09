@@ -164,9 +164,11 @@
     }
 }
 
+// Anchored to the stage center like the cards, so the gap between the final
+// stack and the button cannot change with the stage height.
 .viewAllMotion {
     position: absolute;
-    top: 0;
+    top: 50%;
     left: 0;
     z-index: 12;
     display: inline-flex;
@@ -243,5 +245,9 @@
         top: auto;
         left: auto;
         transform: none !important;
+    }
+
+    .viewAllMotion {
+        top: 0;
     }
 }

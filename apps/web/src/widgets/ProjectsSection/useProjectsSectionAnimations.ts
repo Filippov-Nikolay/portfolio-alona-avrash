@@ -294,7 +294,7 @@ export function useProjectsSectionAnimations() {
                     baseY,
                     maxRise,
                     viewAllX: (viewportWidth - viewAll.offsetWidth) / 2,
-                    viewAllY: compositionTop + cardHeight + 34,
+                    viewAllY: baseY + cardHeight / 2 + 34,
                 };
             };
             const getFinalTransform = (

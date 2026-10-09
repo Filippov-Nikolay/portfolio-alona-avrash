@@ -41,7 +41,9 @@ for (const viewport of [
             };
         });
 
-        expect(Math.round(gaps.reviewsToCta)).toBe(120);
-        expect(Math.round(gaps.ctaToFooter)).toBe(120);
+        // offsetTop rounds every ancestor, so a fractional section height above
+        // (the svh-based Projects runway) can move the sum by one pixel.
+        expect(Math.abs(gaps.reviewsToCta - 120)).toBeLessThanOrEqual(1);
+        expect(Math.abs(gaps.ctaToFooter - 120)).toBeLessThanOrEqual(1);
     });
 }

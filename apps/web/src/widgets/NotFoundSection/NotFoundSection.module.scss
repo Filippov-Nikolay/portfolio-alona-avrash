@@ -15,7 +15,7 @@
 
     position: relative;
     isolation: isolate;
-    min-height: 100svh;
+    min-height: svh(100);
     overflow: hidden;
     background: var(--_not-found-bg);
     color: var(--_not-found-text);

@@ -13,9 +13,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100svh;
+    min-height: svh(100);
     width: 100%;
-    padding-block: clamp(96px, 13svh, 148px);
+    padding-block: clamp(96px, svh(13), 148px);
 }
 
 .grid,
@@ -109,7 +109,7 @@
 
 @media (max-width: 1023px) {
     .content {
-        padding-block: clamp(88px, 11svh, 120px);
+        padding-block: clamp(88px, svh(11), 120px);
     }
 
     .grid,
@@ -134,7 +134,7 @@
 
 @media (max-width: 599px) {
     .content {
-        padding-block: clamp(96px, 14svh, 128px) clamp(56px, 9svh, 80px);
+        padding-block: clamp(96px, svh(14), 128px) clamp(56px, svh(9), 80px);
     }
 
     .grid {
